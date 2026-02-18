@@ -40,3 +40,7 @@ skills/last30days/assets/
 
 # Remotion render output
 packages/remotion-studio/out/
+
+# Dashboard SQLite database
+packages/dashboard/data/
+packages/dashboard/drizzle/

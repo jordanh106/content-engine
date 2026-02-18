@@ -13,6 +13,7 @@
     "preview": "cd packages/remotion-studio && npx remotion preview",
     "render": "cd packages/remotion-studio && npx remotion render",
     "typecheck": "cd packages/remotion-studio && npx tsc --noEmit",
+    "dashboard": "cd packages/dashboard && npx tsx server/index.ts",
     "test:skills": "cd skills/last30days && python3 -m pytest tests/ -v"
   },
   "author": "Jordan Harper",

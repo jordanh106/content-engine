@@ -1,0 +1,38 @@
+{
+  "name": "@content-engine/dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Content engine production dashboard",
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "better-sqlite3": "^11.7.0",
+    "chokidar": "^4.0.0",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.38.0",
+    "express": "^5.0.0",
+    "framer-motion": "^12.0.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.0",
+    "vite-express": "^0.22.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/express": "^5.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "drizzle-kit": "^0.30.0",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}
