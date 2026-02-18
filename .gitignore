@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build output
+dist/
+out/
+*.tsbuildinfo
+
+# Remotion
+packages/remotion-studio/.remotion/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Vendored skill demo assets (large binaries)
+skills/last30days/assets/
+
+# Remotion render output
+packages/remotion-studio/out/

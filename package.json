@@ -1,0 +1,20 @@
+{
+  "name": "content-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Industry-agnostic content creation toolkit with Claude skills, reusable video formats, and Remotion-powered motion graphics",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "install-skills": "bash scripts/install-skills.sh",
+    "uninstall-skills": "bash scripts/uninstall-skills.sh",
+    "new-industry": "bash scripts/new-industry.sh",
+    "preview": "cd packages/remotion-studio && npx remotion preview",
+    "render": "cd packages/remotion-studio && npx remotion render",
+    "typecheck": "cd packages/remotion-studio && npx tsc --noEmit",
+    "test:skills": "cd skills/last30days && python3 -m pytest tests/ -v"
+  },
+  "author": "Jordan Harper",
+  "license": "MIT"
+}

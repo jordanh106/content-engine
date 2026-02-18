@@ -1,0 +1,21 @@
+{
+  "name": "INDUSTRY_NAME",
+  "slug": "INDUSTRY_NAME",
+  "description": "",
+  "audiences": [
+    { "id": "audience1", "label": "Audience 1" },
+    { "id": "audience2", "label": "Audience 2" }
+  ],
+  "conditions": [
+    { "id": "condition1", "audience": "audience1", "label": "Condition 1" }
+  ],
+  "platforms": ["instagram_reels", "youtube_shorts"],
+  "content_mix": {
+    "filmed": 0.5,
+    "ai_generated": 0.5
+  },
+  "posting_cadence": {
+    "instagram_reels": "4-5 per week",
+    "youtube_shorts": "2-3 per week"
+  }
+}
