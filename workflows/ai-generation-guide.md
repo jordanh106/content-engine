@@ -31,18 +31,19 @@ For each locked Hero Frame:
 2. Set speed (linear, slow-mo, speed-up, ramp)
 3. Generate the video clip
 
-## Step 4: Generate Vibe Motion Graphics
+## Step 4: Generate Remotion Graphics (Primary)
 
 For stat cards, title cards, checklist overlays, and other text-based graphics:
-1. Use Vibe Motion (or the Remotion compositions in this repo)
+1. Use the Remotion compositions in this repo (`packages/remotion-studio/`)
 2. Match brand colors from the industry config
 3. Keep typography consistent with brand guidelines
+4. Use Vibe Motion only as an optional fallback for one-off experiments
 
 ## Step 5: Assemble in CapCut
 
 1. Import voiceover audio as primary track
 2. Place Cinema Studio clips sequentially, trimming to align with audio
-3. Insert Vibe Motion graphics at appropriate points
+3. Insert Remotion graphics at appropriate points
 4. Add transitions (0.2-0.3s cross-dissolve between live shots, hard cuts for graphics)
 5. Add background music at 12-15% volume
 6. Add auto-captions with brand color keyword highlights

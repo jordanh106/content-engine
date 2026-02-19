@@ -38,7 +38,7 @@ scripts/             Repo utilities (install, scaffold)
 
 ### Skill Pipeline
 ```
-/last30days → /content-planner → /video-director → Remotion + Cinema Studio → Assembly
+/last30days → /content-planner → /video-director → Remotion (primary graphics) + Cinema Studio (footage) → Assembly
 ```
 
 ## Video Formats
@@ -57,7 +57,7 @@ Five reusable templates in `formats/`. Swap the topic, keep the structure:
 
 Location: `packages/remotion-studio/`
 
-Renders motion graphics programmatically (title cards, stat cards, checklist overlays, myth/truth reveals, step indicators, CTAs). Does NOT replace Cinema Studio for cinematic footage. They combine in post-production.
+Renders motion graphics programmatically (title cards, stat cards, checklist overlays, myth/truth reveals, step indicators, CTAs). This is the PRIMARY graphics pipeline for this repo. Does NOT replace Cinema Studio for cinematic footage. They combine in post-production.
 
 Each composition accepts parametrized input via Zod schemas. Brand colors come from the theme system.
 
@@ -158,7 +158,7 @@ Reference: `industries/chiropractic/production-guides/`
 "Film Real. Enhance with AI." Authenticity is the competitive advantage. AI makes real content look professionally produced.
 
 - 80% hybrid content (real footage + AI enhancement)
-- 15% AI-generated graphics (Vibe Motion stats, checklists, typography)
+- 15% AI-generated graphics (Remotion primary; Vibe Motion optional fallback)
 - 5% AI supplemental inserts (environments, anatomical visuals)
 
 ### 3 VFX Tricks (from River Cody)
@@ -175,7 +175,7 @@ Reference: `industries/chiropractic/production-guides/`
 | Cinema Studio | Add cinematic camera moves to static shots |
 | Upscale | Match phone footage quality to AI segments |
 | Motion Engine | Smooth shaky real footage |
-| Vibe Motion | Animated stats, quotes, infographics, kinetic typography |
+| Vibe Motion | Optional fallback for quick one-off graphics when Remotion is not practical |
 | Lipsync Studio | Polish speaking performances |
 
 ### AI Models
@@ -236,7 +236,7 @@ Jordan's natural humor style, calibrated from the chainsaw video and production 
 | Phase | Activity | Time | Output |
 |-------|----------|------|--------|
 | Voiceover Night | Record all scripts for one audience category (5-8 videos) | 45-60 min | Audio files |
-| Generation Night | Cinema Studio shots + Vibe Motion graphics | 60-90 min | Video clips + graphics |
+| Generation Night | Cinema Studio shots + Remotion graphics | 60-90 min | Video clips + graphics |
 | Assembly Night | CapCut editing, captioning, export | 60-90 min | 5-8 final videos |
 
 Per video: ~20-30 min total. Per month (8 sessions): 24-40 videos. Entire 57-video library: 6-8 weeks of evening sessions.
@@ -258,7 +258,7 @@ Per video: ~20-30 min total. Per month (8 sessions): 24-40 videos. Entire 57-vid
 
 - **Instagram Reels**: 15-30s, 9:16, hook in first 1-2s, slower cuts outperform rapid cuts. 4-5/week.
 - **YouTube Shorts**: Up to 60s, slightly longer and more educational. 2-3/week.
-- **YouTube Long-form**: 3-10 min, pattern: you speaking (real) > Vibe Motion graphic > B-roll (AI/enhanced) > back to you. 1/week.
+- **YouTube Long-form**: 3-10 min, pattern: you speaking (real)  > Remotion graphic > B-roll (AI/enhanced) > back to you. 1/week.
 
 ## Key Commands
 

@@ -15,10 +15,16 @@ Plan (/content-planner)
     ↓
 Script (/video-director)
     ↓
-Produce (Remotion + Cinema Studio)
+Produce (Remotion [primary motion graphics] + Cinema Studio [cinematic footage])
     ↓
 Distribute (IG Reels, YT Shorts, patient resources)
 ```
+
+## Motion Graphics Direction
+
+- Primary motion graphics tool: **Remotion** (`packages/remotion-studio/`)
+- Vibe Motion: optional fallback for one-off experiments only
+- Standard workflow: Remotion graphics + Cinema Studio footage + CapCut assembly
 
 ## Quick Start
 
