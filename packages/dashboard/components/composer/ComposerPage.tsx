@@ -11,12 +11,16 @@ import type {
   VideoDetailResponse,
   ShotsResponse,
   VibeMotionComponent,
+  ComposerAiRequest,
+  ComposerAiResponse,
+  ComponentOperation,
 } from "../../shared/types.js";
 import { COMPONENT_REGISTRY } from "./component-registry.js";
 import { ComposerPlayer } from "./ComposerPlayer.js";
 import { ComponentList } from "./ComponentList.js";
 import { PropEditor } from "./PropEditor.js";
 import { AddComponentModal } from "./AddComponentModal.js";
+import { AiChatPanel } from "./AiChatPanel.js";
 import { cn } from "../../utils/cn.js";
 
 type ComposerPageProps = {
@@ -51,6 +55,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Initialize components from API data
   useEffect(() => {
@@ -205,6 +210,137 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
   );
 
   // ==========================================
+  // AI prompt handler
+  // ==========================================
+
+  const handleAiPrompt = useCallback(
+    async (prompt: string): Promise<string | null> => {
+      setAiLoading(true);
+      try {
+        const requestBody: ComposerAiRequest = {
+          prompt,
+          components,
+          selectedIndex,
+          videoContext: {
+            code: videoCode,
+            title: video?.title || "",
+            format: video?.formatName || "",
+            script: video?.script || "",
+            audience: video?.audienceLabel || "",
+            tags: video?.tags || [],
+          },
+        };
+
+        const response = await fetch("/api/composer/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "AI request failed" }));
+          return `Error: ${errorData.error || "Something went wrong"}`;
+        }
+
+        const data: ComposerAiResponse = await response.json();
+
+        // Apply operations
+        applyOperations(data.operations);
+
+        return data.message;
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : "AI request failed";
+        return `Error: ${msg}`;
+      } finally {
+        setAiLoading(false);
+      }
+    },
+    [components, selectedIndex, videoCode, video],
+  );
+
+  const applyOperations = useCallback(
+    (operations: ComponentOperation[]) => {
+      let updatedComponents = [...components];
+      let newSelectedIndex = selectedIndex;
+
+      for (const op of operations) {
+        switch (op.action) {
+          case "add":
+            updatedComponents = [...updatedComponents, op.component];
+            newSelectedIndex = updatedComponents.length - 1;
+            break;
+
+          case "replace":
+            if (op.index >= 0 && op.index < updatedComponents.length) {
+              updatedComponents = updatedComponents.map((c, i) =>
+                i === op.index ? op.component : c,
+              );
+              newSelectedIndex = op.index;
+            }
+            break;
+
+          case "modify":
+            if (op.index >= 0 && op.index < updatedComponents.length) {
+              updatedComponents = updatedComponents.map((c, i) =>
+                i === op.index
+                  ? {
+                      ...c,
+                      props: { ...c.props, ...op.props },
+                      durationInSeconds:
+                        op.durationInSeconds ?? c.durationInSeconds,
+                      label: inferLabel(c.componentType, {
+                        ...c.props,
+                        ...op.props,
+                      }),
+                    }
+                  : c,
+              );
+              newSelectedIndex = op.index;
+            }
+            break;
+
+          case "remove":
+            if (op.index >= 0 && op.index < updatedComponents.length) {
+              updatedComponents = updatedComponents.filter(
+                (_, i) => i !== op.index,
+              );
+              if (newSelectedIndex === op.index) {
+                newSelectedIndex =
+                  updatedComponents.length > 0
+                    ? Math.min(op.index, updatedComponents.length - 1)
+                    : null;
+              } else if (
+                newSelectedIndex !== null &&
+                newSelectedIndex > op.index
+              ) {
+                newSelectedIndex = newSelectedIndex - 1;
+              }
+            }
+            break;
+
+          case "reorder":
+            if (op.order && op.order.length === updatedComponents.length) {
+              const reordered = op.order.map((i) => updatedComponents[i]);
+              updatedComponents = reordered;
+              newSelectedIndex =
+                newSelectedIndex !== null
+                  ? op.order.indexOf(newSelectedIndex)
+                  : null;
+            }
+            break;
+        }
+      }
+
+      setComponents(updatedComponents);
+      setSelectedIndex(newSelectedIndex);
+    },
+    [components, selectedIndex],
+  );
+
+  // ==========================================
   // Render
   // ==========================================
 
@@ -341,6 +477,11 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
                 onRemove={handleRemove}
               />
             </div>
+          </div>
+
+          {/* AI Chat panel */}
+          <div className="border-b border-slate-200 h-[240px] flex-shrink-0">
+            <AiChatPanel onSubmit={handleAiPrompt} isLoading={aiLoading} />
           </div>
 
           {/* Prop editor */}

@@ -1,10 +1,28 @@
+import fs from "fs";
 import express from "express";
 import path from "path";
 import ViteExpress from "vite-express";
 import chokidar from "chokidar";
+
+// Load .env file (lightweight, no dependency)
+const envPath = path.resolve(import.meta.dirname, "..", ".env");
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const val = trimmed.slice(eqIndex + 1).trim();
+    if (!process.env[key]) {
+      process.env[key] = val;
+    }
+  }
+}
 import { createVideosRouter } from "./routes/videos.js";
 import { createPipelineRouter } from "./routes/pipeline.js";
 import { createRendersRouter } from "./routes/renders.js";
+import { createComposerAiRouter } from "./routes/composer-ai.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 
@@ -25,6 +43,7 @@ const renderOutputDir = path.join(repoRoot, "packages", "dashboard", "data", "re
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
 app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, renderOutputDir));
+app.use("/api/composer", createComposerAiRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

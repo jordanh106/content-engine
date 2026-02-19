@@ -187,3 +187,38 @@ export type ShotsResponse = {
   components: VibeMotionComponent[];
   jobs: RenderJob[];
 };
+
+// ============================================
+// AI Composer Types
+// ============================================
+
+export type ComponentOperation =
+  | { action: "add"; component: VibeMotionComponent }
+  | { action: "replace"; index: number; component: VibeMotionComponent }
+  | {
+      action: "modify";
+      index: number;
+      props: Record<string, unknown>;
+      durationInSeconds?: number;
+    }
+  | { action: "remove"; index: number }
+  | { action: "reorder"; order: number[] };
+
+export type ComposerAiRequest = {
+  prompt: string;
+  components: VibeMotionComponent[];
+  selectedIndex: number | null;
+  videoContext: {
+    code: string;
+    title: string;
+    format: string;
+    script: string;
+    audience: string;
+    tags: string[];
+  };
+};
+
+export type ComposerAiResponse = {
+  operations: ComponentOperation[];
+  message: string;
+};
