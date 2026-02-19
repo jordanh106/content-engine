@@ -31,14 +31,24 @@ export const ChecklistOverlay: React.FC<ChecklistOverlayProps> = ({
     config: { damping: 15, stiffness: 200 },
     delay: 12,
   });
+  const flashProgress = spring({
+    frame,
+    fps,
+    config: { damping: 200 },
+    delay: 14,
+  });
 
   const slideX = interpolate(enterProgress, [0, 1], [-80, 0]);
   const checkScale = interpolate(checkProgress, [0, 1], [0, 1]);
+  const flashOpacity = interpolate(flashProgress, [0, 0.3, 1], [0.4, 0.4, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: theme.darkBackground,
+        background: `radial-gradient(ellipse at center, ${theme.darkBackground} 0%, #0f0f1e 100%)`,
         justifyContent: "center",
         padding: 60,
       }}
@@ -52,30 +62,42 @@ export const ChecklistOverlay: React.FC<ChecklistOverlayProps> = ({
           transform: `translateX(${slideX}px)`,
         }}
       >
-        {/* Checkmark circle */}
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: theme.primaryColor,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexShrink: 0,
-            transform: `scale(${checkScale})`,
-          }}
-        >
-          <span
+        {/* Checkmark circle with flash */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          {/* Flash ring on check completion */}
+          <div
             style={{
-              fontFamily: theme.headingFont,
-              fontSize: 40,
-              fontWeight: "bold",
-              color: theme.textColor,
+              position: "absolute",
+              inset: -8,
+              borderRadius: 48,
+              border: `2px solid ${theme.primaryColor}`,
+              opacity: flashOpacity,
+            }}
+          />
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: theme.primaryColor,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              transform: `scale(${checkScale})`,
+              boxShadow: `0 4px 20px ${theme.primaryColor}40`,
             }}
           >
-            {number}
-          </span>
+            <span
+              style={{
+                fontFamily: theme.headingFont,
+                fontSize: 40,
+                fontWeight: "bold",
+                color: theme.textColor,
+              }}
+            >
+              {number}
+            </span>
+          </div>
         </div>
 
         {/* Text */}
@@ -87,6 +109,7 @@ export const ChecklistOverlay: React.FC<ChecklistOverlayProps> = ({
               fontWeight: "bold",
               color: theme.textColor,
               lineHeight: 1.2,
+              textShadow: "0 2px 12px rgba(0,0,0,0.2)",
             }}
           >
             {label}

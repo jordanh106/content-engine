@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import type { DashboardView } from "../shared/types.js";
 import { Layout } from "./Layout.js";
 import { DashboardHome } from "./DashboardHome.js";
 import { PipelineBoard } from "./PipelineBoard.js";
 import { ContentLibrary } from "./ContentLibrary.js";
 import { VideoDetail } from "./VideoDetail.js";
+import { ComposerPage } from "./composer/ComposerPage.js";
 
 export const App: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
+  const [previousView, setPreviousView] = useState<DashboardView>("LIBRARY");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
+  const [composerVideoCode, setComposerVideoCode] = useState<string | null>(null);
 
   const handleSelectVideo = (code: string) => {
     setSelectedVideoCode(code);
@@ -17,6 +20,34 @@ export const App: React.FC = () => {
   const handleCloseDetail = () => {
     setSelectedVideoCode(null);
   };
+
+  const handleOpenComposer = useCallback(
+    (code: string) => {
+      setPreviousView(view);
+      setComposerVideoCode(code);
+      setSelectedVideoCode(null);
+      setView("COMPOSER");
+    },
+    [view],
+  );
+
+  const handleBackFromComposer = useCallback(() => {
+    setView(previousView);
+    if (composerVideoCode) {
+      setSelectedVideoCode(composerVideoCode);
+    }
+    setComposerVideoCode(null);
+  }, [previousView, composerVideoCode]);
+
+  // Composer is a full-page view - rendered outside Layout
+  if (view === "COMPOSER" && composerVideoCode) {
+    return (
+      <ComposerPage
+        videoCode={composerVideoCode}
+        onBack={handleBackFromComposer}
+      />
+    );
+  }
 
   return (
     <Layout currentView={view} onNavigate={setView}>
@@ -43,7 +74,11 @@ export const App: React.FC = () => {
       )}
 
       {selectedVideoCode && (
-        <VideoDetail code={selectedVideoCode} onClose={handleCloseDetail} />
+        <VideoDetail
+          code={selectedVideoCode}
+          onClose={handleCloseDetail}
+          onOpenComposer={handleOpenComposer}
+        />
       )}
     </Layout>
   );

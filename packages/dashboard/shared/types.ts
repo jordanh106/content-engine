@@ -122,6 +122,7 @@ export const DASHBOARD_VIEWS = [
   "LIBRARY",
   "CALENDAR",
   "SESSION",
+  "COMPOSER",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -161,8 +162,28 @@ export type RenderJob = {
   completedAt: string | null;
   outputUrl: string | null;
   error: string | null;
+  shotId: string | null;
+  componentType: string | null;
 };
 
 export type RenderJobsResponse = {
+  jobs: RenderJob[];
+};
+
+// ============================================
+// Vibe Motion Component Types
+// ============================================
+
+export type VibeMotionComponent = {
+  id: string;
+  componentType: string;
+  compositionId: string;
+  durationInSeconds: number;
+  props: Record<string, unknown>;
+  label: string;
+};
+
+export type ShotsResponse = {
+  components: VibeMotionComponent[];
   jobs: RenderJob[];
 };

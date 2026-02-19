@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
   RenderJobsResponse,
+  ShotsResponse,
+  VibeMotionComponent,
 } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
@@ -15,11 +17,12 @@ import { cn } from "../utils/cn.js";
 type VideoDetailProps = {
   code: string;
   onClose: () => void;
+  onOpenComposer?: (code: string) => void;
 };
 
 type Tab = "script" | "shots" | "info";
 
-export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
+export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
   const queryClient = useQueryClient();
 
@@ -38,8 +41,22 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
     },
   });
 
+  const { data: shotsData } = useQuery<ShotsResponse>({
+    queryKey: ["shots", code],
+    queryFn: () => fetch(`/api/renders/${code}/shots`).then((r) => r.json()),
+    refetchInterval: (query) => {
+      const jobs = query.state.data?.jobs ?? [];
+      const hasActive = jobs.some((j) => j.status === "queued" || j.status === "running");
+      return hasActive ? 2000 : false;
+    },
+  });
+
   const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
   const isRendering = latestJob ? latestJob.status === "queued" || latestJob.status === "running" : false;
+
+  const hasActiveShotJobs = (shotsData?.jobs ?? []).some(
+    (j) => j.status === "queued" || j.status === "running",
+  );
 
   const renderMutation = useMutation({
     mutationFn: async () => {
@@ -66,6 +83,42 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["render-jobs", code] });
+    },
+  });
+
+  const renderShotMutation = useMutation({
+    mutationFn: async (shotId: string) => {
+      const response = await fetch(`/api/renders/${code}/shot/${shotId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: "Failed to render shot" }));
+        throw new Error(data.error || "Failed to render shot");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shots", code] });
+      queryClient.invalidateQueries({ queryKey: ["render-jobs", code] });
+    },
+  });
+
+  const renderAllShotsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/renders/${code}/all-shots`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: "Failed to render shots" }));
+        throw new Error(data.error || "Failed to render shots");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shots", code] });
       queryClient.invalidateQueries({ queryKey: ["render-jobs", code] });
     },
   });
@@ -123,84 +176,119 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
 
         {/* Render panel */}
         <div className="px-4 md:px-6 py-4 border-b border-slate-200 bg-teal-50/40">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-1">
-                Remotion Graphics
+                Motion Graphics
               </p>
               <p className="text-xs text-slate-600">
-                Generate the format-matched composition for this video.
+                Generate individual clips for assembly in CapCut.
               </p>
             </div>
-            <button
-              onClick={() => renderMutation.mutate()}
-              disabled={renderMutation.isPending || isRendering}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[40px]",
-                renderMutation.isPending || isRendering
-                  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                  : "bg-teal-600 text-white hover:bg-teal-700",
+            <div className="flex gap-2 flex-shrink-0">
+              {onOpenComposer && (
+                <button
+                  onClick={() => onOpenComposer(code)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px] bg-violet-600 text-white hover:bg-violet-700"
+                >
+                  <Pencil size={12} />
+                  Composer
+                </button>
               )}
-            >
-              {renderMutation.isPending || isRendering ? (
-                <>
-                  <Loader2 size={12} className="animate-spin" />
-                  Rendering
-                </>
-              ) : (
-                <>
-                  <Wand2 size={12} />
-                  Render MP4
-                </>
-              )}
-            </button>
+              <button
+                onClick={() => renderAllShotsMutation.mutate()}
+                disabled={renderAllShotsMutation.isPending || hasActiveShotJobs}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
+                  renderAllShotsMutation.isPending || hasActiveShotJobs
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : "bg-teal-600 text-white hover:bg-teal-700",
+                )}
+              >
+                {renderAllShotsMutation.isPending || hasActiveShotJobs ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Rendering
+                  </>
+                ) : (
+                  <>
+                    <Layers size={12} />
+                    Render All
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => renderMutation.mutate()}
+                disabled={renderMutation.isPending || isRendering}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
+                  renderMutation.isPending || isRendering
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    : "bg-slate-600 text-white hover:bg-slate-700",
+                )}
+              >
+                {renderMutation.isPending || isRendering ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Full
+                  </>
+                ) : (
+                  <>
+                    <Wand2 size={12} />
+                    Full Comp
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
+          {(renderAllShotsMutation.error as Error | null)?.message && (
+            <p className="text-xs text-rose-600 mb-2">
+              {(renderAllShotsMutation.error as Error).message}
+            </p>
+          )}
           {(renderMutation.error as Error | null)?.message && (
-            <p className="text-xs text-rose-600 mt-2">
+            <p className="text-xs text-rose-600 mb-2">
               {(renderMutation.error as Error).message}
             </p>
           )}
 
-          {latestJob && (
+          {/* Shot component cards */}
+          {shotsData?.components && shotsData.components.length > 0 && (
+            <div className="space-y-2">
+              {shotsData.components.map((comp) => (
+                <ShotCard
+                  key={comp.id}
+                  component={comp}
+                  job={findJobForShot(shotsData.jobs, comp.id)}
+                  onRender={() => renderShotMutation.mutate(comp.id)}
+                  isRendering={renderShotMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Legacy full composition latest job */}
+          {latestJob && !latestJob.shotId && (
             <div className="mt-3 p-3 rounded-xl border border-slate-200 bg-white">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-slate-600">
-                  Latest: <span className="font-mono text-slate-800">{latestJob.id.slice(0, 8)}</span>
+                  Full composition: <span className="font-mono text-slate-800">{latestJob.id.slice(0, 8)}</span>
                 </p>
-                <span
-                  className={cn(
-                    "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
-                    latestJob.status === "completed" && "bg-emerald-100 text-emerald-700",
-                    latestJob.status === "failed" && "bg-rose-100 text-rose-700",
-                    (latestJob.status === "queued" || latestJob.status === "running") &&
-                      "bg-amber-100 text-amber-700",
-                  )}
-                >
-                  {latestJob.status}
-                </span>
+                <JobStatusBadge status={latestJob.status} />
               </div>
-
               {latestJob.outputUrl && (
                 <div className="mt-2 flex gap-2">
-                  <a
-                    href={latestJob.outputUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-semibold text-teal-700 hover:text-teal-800"
-                  >
+                  <a href={latestJob.outputUrl} target="_blank" rel="noreferrer"
+                    className="text-xs font-semibold text-teal-700 hover:text-teal-800">
                     Open MP4
                   </a>
-                  <a
-                    href={latestJob.outputUrl}
-                    download
-                    className="text-xs font-semibold text-slate-600 hover:text-slate-800"
-                  >
+                  <a href={latestJob.outputUrl} download
+                    className="text-xs font-semibold text-slate-600 hover:text-slate-800">
                     Download
                   </a>
                 </div>
               )}
-
               {latestJob.error && (
                 <div className="mt-2 flex items-start gap-1.5 text-rose-700">
                   <CircleAlert size={13} className="mt-0.5" />
@@ -405,6 +493,99 @@ const InfoTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
             Notes
           </p>
           <p className="text-sm text-slate-700">{video.notes}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// Shot Components
+// ============================================
+
+const COMPONENT_TYPE_COLORS: Record<string, string> = {
+  TitleCard: "bg-violet-100 text-violet-700",
+  StatCard: "bg-blue-100 text-blue-700",
+  SectionCard: "bg-teal-100 text-teal-700",
+  HookText: "bg-amber-100 text-amber-700",
+  ChecklistOverlay: "bg-emerald-100 text-emerald-700",
+  MythTruthReveal: "bg-rose-100 text-rose-700",
+  StepIndicator: "bg-indigo-100 text-indigo-700",
+  FrequencyCard: "bg-cyan-100 text-cyan-700",
+  CallToAction: "bg-orange-100 text-orange-700",
+};
+
+function findJobForShot(jobs: RenderJob[], shotId: string): RenderJob | null {
+  return jobs.find((j) => j.shotId === shotId) ?? null;
+}
+
+const JobStatusBadge: React.FC<{ status: RenderJob["status"] }> = ({ status }) => (
+  <span
+    className={cn(
+      "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+      status === "completed" && "bg-emerald-100 text-emerald-700",
+      status === "failed" && "bg-rose-100 text-rose-700",
+      (status === "queued" || status === "running") && "bg-amber-100 text-amber-700",
+    )}
+  >
+    {status}
+  </span>
+);
+
+const ShotCard: React.FC<{
+  component: VibeMotionComponent;
+  job: RenderJob | null;
+  onRender: () => void;
+  isRendering: boolean;
+}> = ({ component, job, onRender, isRendering }) => {
+  const typeColor = COMPONENT_TYPE_COLORS[component.componentType] || "bg-slate-100 text-slate-700";
+  const isActive = job && (job.status === "queued" || job.status === "running");
+
+  return (
+    <div className="p-3 rounded-xl border border-slate-200 bg-white">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", typeColor)}>
+            {component.componentType}
+          </span>
+          <span className="text-[10px] font-mono text-slate-400">
+            {component.durationInSeconds}s
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {job && <JobStatusBadge status={job.status} />}
+          {job?.outputUrl && (
+            <a
+              href={job.outputUrl}
+              download
+              className="p-1 rounded hover:bg-slate-100 text-slate-500"
+              title="Download"
+            >
+              <Download size={14} />
+            </a>
+          )}
+          <button
+            onClick={onRender}
+            disabled={isRendering || !!isActive}
+            className={cn(
+              "p-1 rounded transition-colors",
+              isRendering || isActive
+                ? "text-slate-300 cursor-not-allowed"
+                : "text-teal-600 hover:bg-teal-50",
+            )}
+            title="Render this clip"
+          >
+            {isActive ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-slate-600 mt-1.5 truncate" title={component.label}>
+        {component.label}
+      </p>
+      {job?.error && (
+        <div className="mt-1.5 flex items-start gap-1 text-rose-600">
+          <CircleAlert size={11} className="mt-0.5 flex-shrink-0" />
+          <p className="text-[10px] line-clamp-2">{job.error}</p>
         </div>
       )}
     </div>

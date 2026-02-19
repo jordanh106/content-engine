@@ -12,7 +12,8 @@
     "noEmit": true,
     "strict": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@remotion-studio/*": ["../remotion-studio/src/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

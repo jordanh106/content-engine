@@ -15,3 +15,26 @@ export type { MythBusterProps } from "./myth-buster";
 
 export { WalkthroughSchema } from "./walkthrough";
 export type { WalkthroughProps } from "./walkthrough";
+
+export {
+  ShotTitleCardSchema,
+  ShotStatCardSchema,
+  ShotSectionCardSchema,
+  ShotHookTextSchema,
+  ShotChecklistSchema,
+  ShotMythTruthSchema,
+  ShotStepIndicatorSchema,
+  ShotFrequencyCardSchema,
+  ShotCTASchema,
+} from "./shot";
+export type {
+  ShotTitleCardProps,
+  ShotStatCardProps,
+  ShotSectionCardProps,
+  ShotHookTextProps,
+  ShotChecklistProps,
+  ShotMythTruthProps,
+  ShotStepIndicatorProps,
+  ShotFrequencyCardProps,
+  ShotCTAProps,
+} from "./shot";

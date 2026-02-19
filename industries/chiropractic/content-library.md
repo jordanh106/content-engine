@@ -248,10 +248,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Pregnant woman in comfortable clothing, hand on lower back, warm home environment, soft natural lighting, 32 weeks pregnant | Slow Push In |
-| 2 | 4s | Anatomical visualization of pelvis with ligaments highlighted in teal glow, medical illustration style, dark background | Slow Orbit Right |
-| 3 | 3s | Gentle chiropractic adjustment on pregnant patient, side-lying position, warm clinical setting, practitioner's hands on pelvis | Static Hold |
-| 4 | 2s | Same pregnant woman from shot 1, now standing comfortably, smiling, hands on belly | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. Woman in her early 30s, 32 weeks pregnant, soft grey athleisure, one hand resting on lower back, expression of mild discomfort. Bright modern living room, white couch, green plants. Warm diffused window light from camera right, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, subject centered with negative space above. Intimate, empathetic, wellness. | Slow Push In |
+| 2 | 4s | Close-up of female pelvis anatomical model, sacroiliac joints and pubic symphysis visible, ligaments highlighted in glowing teal (#0d9488), surrounding tissue semi-transparent. Pure black background. Single cool light source from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Sharp detail, centered composition. Clinical, precise, educational. | Slow Orbit Right |
+| 3 | 3s | Medium shot, slightly elevated angle. Chiropractor performing side-lying pelvic adjustment on pregnant patient, fingertip contact on ilium, patient in soft clothing on padded table. Warm clinical room, white walls, teal accents. Key light from camera right, 3800K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on practitioner's hands. Gentle, professional, reassuring. | Static Hold |
+| 4 | 2s | Medium shot, eye level. Same woman now standing comfortably, both hands cradling belly, genuine smile, relaxed posture. Same bright living room. Warm golden light from camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Subject centered, negative space above for CTA text. Warm, hopeful, relieved. | Slow Pull Out |
+
+**Vibe Motion:** TitleCard: "What Is Pelvic Pain During Pregnancy?" in white Georgia 48px on dark (#1a1a2e), teal (#0d9488) accent line below. Slide down from -60px, subtitle delayed 8 frames. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -269,9 +271,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Pregnant woman mid-sneeze, hand on lower belly, surprised expression, bright living room | Quick Snap Zoom |
-| 2 | 4s | Anatomical visualization showing uterus with round ligaments highlighted in teal, stretching motion, dark medical background | Slow Tilt Down |
-| 3 | 3s | Chiropractor performing gentle pelvic assessment, patient on adjustment table, warm clinical lighting | Slow Push In |
+| 1 | 3s | Close-up, eye level. Pregnant woman in her late 20s, loose white tee, mid-sneeze with hand pressing lower belly, startled expression. Bright modern living room, soft couch behind her. Natural daylight from large window camera right, 5000K, crisp quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, subject fills frame. Visceral, relatable, authentic. | Quick Snap Zoom |
+| 2 | 4s | Anatomical visualization of uterus and round ligaments, ligaments glowing teal (#0d9488) and visibly stretching under tension, pelvis in muted grey. Pure black background. Cool directional light from above, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered composition, clean negative space. Medical, precise, illuminating. | Slow Tilt Down |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing gentle pelvic assessment, hands on patient's iliac crest, patient lying on adjustment table in comfortable clothing. Warm clinical room, natural wood accents. Soft key light from camera left, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on hands and patient's relaxed expression. Reassuring, professional, caring. | Slow Push In |
+
+**Vibe Motion:** SectionCard: "Round Ligament Pain" label in teal (#0d9488) Georgia 36px, "Stretching ligaments + uneven tension = spasms" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -290,12 +294,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Pregnant woman in third trimester, touching top of belly, thoughtful expression, cozy nursery background | Slow Push In |
-| 2 | 4s | Anatomical visualization of pelvis from front view, baby in breech position (head up), teal glow highlighting pelvic alignment, dark background | Slow Orbit Left |
-| 3 | 4s | Same visualization, pelvis now aligned, baby rotating to head-down position, fluid motion, teal glow | Slow Tilt Down |
-| 4 | 3s | Chiropractor performing Webster technique on pregnant patient, face-down on pregnancy pillow table, gentle sacral contact | Static Hold |
+| 1 | 3s | Medium close-up, eye level. Woman in her early 30s, third trimester, soft cream sweater, one hand resting on top of belly, pensive expression. Cozy nursery, wooden crib in soft focus behind. Warm window light from camera left, 3800K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, subject in left third with nursery bokeh right. Thoughtful, intimate, hopeful. | Slow Push In |
+| 2 | 4s | Anatomical visualization of female pelvis, front view, full-term baby in breech position (head up, feet down), pelvic bones in cool grey, misalignment highlighted in warm red at SI joints. Teal (#0d9488) glow on baby outline. Pure black background. Dual light: cool blue from camera left, warm amber from camera right. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, symmetrical. Clinical, informative, clear. | Slow Orbit Left |
+| 3 | 4s | Same pelvis visualization, SI joints now aligned in teal (#0d9488), baby rotating smoothly to vertex (head-down) position, fluid organic motion. Teal glow intensifies as baby reaches correct position. Pure black background. Same dual lighting. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered composition. Hopeful, resolving, educational. | Slow Tilt Down |
+| 4 | 3s | Medium shot, slightly elevated angle. Chiropractor performing Webster technique on pregnant patient face-down on pregnancy drop-table with belly cutout, thumb on sacrum with gentle sustained contact. Warm clinical room, pregnancy pillow visible. Soft key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Focus on sacral contact, patient's relaxed expression in soft focus. Precise, gentle, specialized. | Static Hold |
 
-**Vibe Motion:** Stat card: "82% success rate between weeks 34-37" (teal on dark, serif heading)
+**Vibe Motion:** StatCard: "82% success rate" in white Georgia 56px, "between weeks 34-37" subtitle in Nunito Sans 32px on dark (#1a1a2e). Teal (#0d9488) accent bar at top. Scale from 0.9 to 1.0, subtitle delayed 8 frames. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -316,14 +320,14 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Pregnant woman standing confidently, hands on belly, warm golden light, determination in expression | Slow Push In |
-| 2 | 2s | Chiropractor checking pelvic alignment on pregnant patient, clinical warmth | Slow Pan Right |
-| 3 | 2s | Pregnant woman practicing deep breathing, eyes closed, peaceful setting | Static Hold |
-| 4 | 2s | Pregnant woman walking outdoors, park setting, golden hour light | Slow Dolly |
-| 5 | 2s | Pregnant woman sleeping on side with pillow, cozy bedroom | Static Hold |
-| 6 | 2s | Pregnant woman on chiropractic table, smiling, second trimester | Slow Pull Out |
+| 1 | 2s | Medium shot, eye level. Woman in her early 30s, 34 weeks pregnant, fitted navy maternity top, both hands on belly, quiet determination in expression. Open living space, warm wood floors, soft furnishings. Golden hour light from large window camera left, 3500K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, subject centered with headroom for title overlay. Empowering, warm, confident. | Slow Push In |
+| 2 | 2s | Medium close-up, slightly elevated angle. Chiropractor's hands assessing pelvic alignment on pregnant patient lying supine, fingertips on anterior iliac crests. Warm clinical room, soft padding on table. Key light from camera right, 4000K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Focus on practitioner's hands, patient relaxed. Professional, reassuring, precise. | Slow Pan Right |
+| 3 | 2s | Close-up, eye level. Same woman, eyes closed, hands on lower belly, practicing deep diaphragmatic breath, serene expression. Soft neutral background, cushion visible. Warm diffused light from camera left, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, face and hands sharp. Peaceful, mindful, centered. | Static Hold |
+| 4 | 2s | Medium wide shot, eye level. Pregnant woman walking along tree-lined park path, comfortable maternity athleisure, relaxed stride. Lush green park, dappled sunlight through leaves. Golden hour light from behind camera right, 3200K, warm natural quality. ARRI Alexa, Cooke, 35mm. Subject in left third, path leading eye into frame. Active, peaceful, natural. | Slow Dolly |
+| 5 | 2s | Medium shot, slightly overhead angle. Pregnant woman lying on left side in bed, pillow between knees to ankles, small support pillow under belly, peaceful expression. Cozy bedroom, soft white bedding, warm nightstand lamp. Warm lamplight from camera left, 2800K, soft quality. ARRI Alexa, Cooke, 35mm. Full body visible, positioning clear. Cozy, restful, practical. | Static Hold |
+| 6 | 2s | Medium shot, eye level. Pregnant woman sitting on chiropractic table, second trimester, smiling warmly at chiropractor beside her, natural conversation. Bright clinical space, teal accents. Key light from camera right, 4500K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, warm interaction visible. Trusting, proactive, welcoming. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-5) with teal checkmarks appearing sequentially
+**Vibe Motion:** ChecklistOverlay: 5 items ("Get your pelvis checked", "Practice deep belly breathing", "Stay moving", "Side-sleep with knee pillow", "Start chiropractic early") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White text on dark (#1a1a2e). Georgia 42px numbers, Nunito Sans 32px items. 3-frame stagger.
 
 ---
 
@@ -343,13 +347,13 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Pregnant patient and chiropractor talking in consultation room, warm clinical setting, both smiling | Slow Push In |
-| 2 | 3s | Pregnancy chiropractic table with belly drop-away section visible, clean clinical environment, soft lighting | Slow Pan Right |
-| 3 | 4s | Pregnant woman face-down on pregnancy table, chiropractor's hands gently on lower back, professional setting | Slow Orbit Right |
-| 4 | 3s | Close-up of gentle hand contact on sacrum area, professional and precise, warm lighting | Slow Push In |
-| 5 | 3s | Pregnant woman sitting up after adjustment, relieved expression, hand on hip, smiling | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Pregnant patient in her late 20s, casual maternity dress, sitting across from chiropractor in consultation room, both smiling naturally. Warm clinical room, anatomical poster on wall in soft focus, potted plant on desk. Warm key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both subjects in frame, shallow DOF on patient's face. Welcoming, warm, personal. | Slow Push In |
+| 2 | 3s | Medium wide shot, slightly elevated angle. Pregnancy chiropractic table with belly drop-away section visible, clean white padding, pillow positioned. Bright clinical room, white walls, teal (#0d9488) accent on cabinetry. Soft overhead light with window light from camera left, 4500K, even diffused quality. ARRI Alexa, Cooke, 35mm. Table centered, professionalism evident. Clean, reassuring, specialized. | Slow Pan Right |
+| 3 | 4s | Medium shot, slightly elevated angle. Pregnant woman lying face-down on pregnancy drop-table, belly in cutout section, chiropractor's hands gently on lower back, patient's expression relaxed. Same bright clinical room. Warm key light from camera right, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Focus on comfortable positioning and gentle contact. Gentle, safe, professional. | Slow Orbit Right |
+| 4 | 3s | Close-up, slightly overhead. Chiropractor's hands making precise contact on sacral area, fingertips positioned with deliberate gentleness, patient's lower back visible. Clean clinical surface. Warm directional light from camera left, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Sharp focus on contact point, surrounding area in soft bokeh. Precise, skilled, delicate. | Slow Push In |
+| 5 | 3s | Medium shot, eye level. Pregnant woman sitting up on table edge, one hand on hip, relieved smile, shoulders more relaxed, chiropractor in background. Warm clinical room. Soft light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Patient centered, positive body language dominant. Relieved, grateful, empowered. | Slow Pull Out |
 
-**Vibe Motion:** Step overlays: "Step 1: Consultation" / "Step 2: Positioning" / "Step 3: The Adjustment" / "Step 4: Relief"
+**Vibe Motion:** StepIndicator: 4 steps ("Consultation", "Positioning", "The Adjustment", "Relief") entering sequentially via \<Series\>, each sliding up 50px with description delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) step numbers in Georgia 48px, labels in white Nunito Sans 36px on semi-transparent dark overlay. 10-12s hold per step. Upper third placement.
 
 ---
 
@@ -370,10 +374,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Pregnant woman tossing uncomfortably in bed at night, soft bedroom lighting | Slow Pan Right |
-| 2 | 4s | Same woman on left side with pillow between knees, proper positioning demonstrated, cozy bedroom | Slow Push In |
-| 3 | 3s | Close-up of pillow placement between knees and ankles, clean demonstration | Static Hold |
-| 4 | 2s | Woman sleeping comfortably, peaceful expression, soft warm lighting | Slow Pull Out |
+| 1 | 3s | Medium shot, slightly overhead. Pregnant woman in her early 30s, third trimester, soft sleep clothes, tossing restlessly in bed, hand reaching for lower back, frustrated expression. Dimly lit bedroom, rumpled sheets, alarm clock on nightstand. Warm lamplight from camera right, 2800K, soft quality. Sony Venice, Canon K35, 24mm. Full body visible, environmental context clear. Restless, relatable, authentic. | Slow Pan Right |
+| 2 | 4s | Medium shot, eye level. Same woman now on left side, pillow between knees extending to ankles, posture aligned, body more settled. Same cozy bedroom, sheets smoothed. Warm lamplight from camera right supplemented by cool moonlight from window camera left, 2800K/5600K. Sony Venice, Canon K35, 24mm. Full body visible, pillow placement clearly demonstrated. Instructional, calm, improving. | Slow Push In |
+| 3 | 3s | Close-up, slightly overhead. Pillow placement between knees and ankles, proper alignment visible, small support pillow tucked under belly. Soft bedding, neutral tones. Warm lamplight from camera right, 2800K, soft focused quality. Sony Venice, Canon K35, 24mm. Sharp focus on positioning, body in context. Clear, practical, demonstrative. | Static Hold |
+| 4 | 2s | Medium close-up, eye level. Same woman peacefully asleep in optimized position, serene expression, breathing steady, body fully supported. Same bedroom, slightly warmer ambiance. Soft warm glow from camera right, 2800K, gentle diffused quality. Sony Venice, Canon K35, 24mm. Face and upper body in frame. Peaceful, restful, resolved. | Slow Pull Out |
+
+**Vibe Motion:** StepIndicator: 3 steps ("Left side with knee pillow", "Support under belly", "Pillow behind back") entering sequentially via \<Series\>, each sliding up 50px, description delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) step numbers in Georgia 42px, white Nunito Sans 28px on semi-transparent dark overlay. Lower third placement.
 
 ---
 
@@ -391,10 +397,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | New mother holding newborn, beautiful but clearly tired, soft home lighting, postpartum reality | Slow Push In |
-| 2 | 3s | Anatomical visualization of postpartum pelvis, showing shifted alignment, teal highlights on stress points | Slow Orbit Left |
-| 3 | 3s | Chiropractor performing gentle adjustment on postpartum patient, clinical warmth | Slow Pan Right |
-| 4 | 2s | Mother standing tall, holding baby comfortably, smiling, warm golden light | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. New mother in her late 20s, hair in loose bun, oversized soft sweatshirt, cradling sleeping newborn against chest, love layered with deep fatigue in expression. Lived-in living room, throw blanket on couch, burp cloth on shoulder. Warm diffused light from window camera left, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, mother's face sharp. Intimate, tender, real. | Slow Push In |
+| 2 | 3s | Anatomical visualization of postpartum pelvis, SI joints showing asymmetric positioning, pubic symphysis slightly separated, stress points glowing warm red, core muscle attachments shown as faded outlines. Teal (#0d9488) highlights on recovery areas. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, symmetrical. Clinical, honest, informative. | Slow Orbit Left |
+| 3 | 3s | Medium shot, eye level. Chiropractor performing gentle supine pelvic adjustment on postpartum patient in comfortable clothing, small support pillow under knees. Warm clinical room, natural light supplementing overhead. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, practitioner's gentle hands prominent. Caring, professional, restorative. | Slow Pan Right |
+| 4 | 2s | Medium shot, eye level. Same mother standing confidently, holding baby comfortably on hip, natural upright posture, warm genuine smile. Bright home setting, soft sunlight. Golden light from camera right, 3500K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Mother and baby centered, headroom for text overlay. Warm, strong, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Your Body After Delivery" label in teal (#0d9488) Georgia 36px, "Pelvis shifts + spine compensates + core shuts down" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -414,12 +422,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Mother nursing baby, visibly hunched forward, rounded shoulders, home setting | Slow Push In |
-| 2 | 3s | Woman sitting on chair edge, hands clasped behind head, beginning the thoracic extension stretch | Slow Pan Right |
-| 3 | 4s | Same woman, elbows wide, looking up, chest open, demonstrating full stretch position | Slow Orbit Right |
-| 4 | 3s | Mother nursing with proper posture, baby elevated on nursing pillow, upright and comfortable | Static Hold |
+| 1 | 3s | Medium close-up, eye level. New mother in her early 30s, nursing baby in arms, shoulders visibly rounded forward, upper back hunched, neck dropped, strain in posture. Cozy home, nursing chair, dim warm ambient light. Warm lamplight from camera left, 3000K, soft quality. Sony Venice, Canon K35, 24mm. Subject centered, poor posture clearly visible. Relatable, empathetic, honest. | Slow Push In |
+| 2 | 3s | Medium shot, eye level. Same woman sitting on chair edge, hands clasped behind head, beginning to open elbows wide, initial thoracic extension position. Clean neutral room, simple chair. Bright natural light from window camera right, 4500K, even quality. Sony Venice, Canon K35, 24mm. Full upper body visible, form clearly demonstrated. Instructional, clear, encouraging. | Slow Pan Right |
+| 3 | 4s | Medium shot, slightly lower angle. Same woman with elbows fully wide, chin tilted up toward ceiling, chest open, thoracic spine extended, visible relief in expression. Same clean setting. Bright natural light from camera right, 4500K, crisp quality. Sony Venice, Canon K35, 24mm. Full upper body in frame, stretch position unmistakable. Liberating, restorative, empowering. | Slow Orbit Right |
+| 4 | 3s | Medium shot, eye level. Mother nursing baby elevated on nursing pillow, back straight, shoulders neutral, baby brought to breast level. Warm home setting, chair with back support. Warm diffused light from camera left, 3800K, soft quality. Sony Venice, Canon K35, 24mm. Full upper body and baby visible, correct posture evident. Comfortable, sustainable, corrected. | Static Hold |
 
-**Vibe Motion:** "Do this: 5 reps, 3x daily" overlay card (teal on white)
+**Vibe Motion:** FrequencyCard: "5 reps, 3x daily" in white Nunito Sans 36px, teal (#0d9488) badge "After feeding sessions" in 24px. Key cue slides up 40px, badge scale pop (damping: 12) delayed 8 frames. Dark (#1a1a2e) background. Georgia 42px "Key Cue:" label. Hold 3s.
 
 ---
 
@@ -439,12 +447,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Partner with hand on pregnant woman's lower back, supportive gesture, home setting, warm light | Slow Push In |
-| 2 | 2s | Couple doing supported squat together, partner holding hands, exercise setting | Slow Pan Left |
-| 3 | 2s | Couple in chiropractic office together, both engaged with practitioner | Static Hold |
-| 4 | 2s | Partner arranging pillows on bed for pregnant woman, caring gesture, bedroom setting | Slow Pull Out |
+| 1 | 2s | Medium close-up, eye level. Male partner in his early 30s, casual flannel, standing behind pregnant woman, both hands gently pressing on her lower back, her expression showing relief. Warm home kitchen, morning light, coffee mugs on counter. Golden morning light from window camera left, 3800K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, hands and her expression sharp. Caring, supportive, intimate. | Slow Push In |
+| 2 | 2s | Medium shot, eye level. Couple facing each other, partner holding pregnant woman's hands in supported deep squat, both in athleisure. Bright open living space, yoga mat on floor. Natural daylight from camera right, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Both subjects fully visible, teamwork evident. Active, connected, empowering. | Slow Pan Left |
+| 3 | 2s | Medium shot, eye level. Couple in chiropractic office, partner seated beside adjustment table, pregnant woman on table, chiropractor explaining, all three engaged. Warm clinical room, anatomical chart in soft focus. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Three subjects balanced in frame. Involved, committed, collaborative. | Static Hold |
+| 4 | 2s | Medium shot, slightly overhead. Partner arranging pillow fortress on bed, placing pillow between knee area, pregnant woman watching from doorway with appreciative smile. Cozy bedroom, warm evening light, soft bedding. Warm lamplight from camera left, 2800K, soft quality. ARRI Alexa, Cooke, 35mm. Both in frame, caring gesture prominent. Tender, thoughtful, devoted. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-4) with teal checkmarks
+**Vibe Motion:** ChecklistOverlay: 4 items ("Learn where it hurts", "Help her stretch", "Go to the appointments", "Protect her sleep") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White text on dark (#1a1a2e). Georgia 42px numbers, Nunito Sans 32px items. 3-frame stagger.
 
 ---
 
@@ -468,12 +476,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Exhausted parent holding crying infant at night, dim nursery lighting, emotional weight visible | Slow Push In |
-| 2 | 4s | Anatomical visualization of infant spine and nervous system, teal glow on nerve pathways, gentle and medical, dark background | Slow Orbit Right |
-| 3 | 4s | Chiropractor holding infant gently, fingertip contact on upper spine, baby calm, warm clinical setting, extreme gentleness visible | Slow Push In |
-| 4 | 3s | Same infant now calm, resting peacefully, parent smiling with relief, warm soft lighting | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. Exhausted young mother in her late 20s, messy bun, oversized grey hoodie, holding crying infant against shoulder at 2am, face showing love mixed with deep fatigue. Dimly lit nursery, rocking chair behind, soft warm lamplight casting gentle shadows. Warm practical lamplight from camera right, 2800K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, mother's face and baby sharp. Intimate, raw, documentary. | Slow Push In |
+| 2 | 4s | Anatomical visualization of infant spine from occiput to sacrum, central nervous system glowing in teal (#0d9488), nerve branches extending from each vertebral level, tension highlighted as subtle warm spots near upper cervical and cranium. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, clean composition. Medical, gentle, illuminating. | Slow Orbit Right |
+| 3 | 4s | Close-up, eye level. Chiropractor's hands performing gentle cranial adjustment on calm 3-month-old infant, baby lying on soft white surface, fingertip contact only, extreme gentleness in hand positioning. Warm clinical room, clean white surface. Warm key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on fingertip contact and baby's peaceful face. Intimate, reassuring, precise. | Slow Push In |
+| 4 | 3s | Medium shot, eye level. Calm infant held by relieved parent, baby alert and content, parent's genuine smile, soft blanket texture. Warm nursery, natural light from window. Golden hour quality light from camera left, 3500K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, relief radiating. Peaceful, tender, resolved. | Slow Pull Out |
 
-**Vibe Motion:** Stat card: "3-3-3 Rule: 3 hours, 3 days, 3 weeks" (teal on dark)
+**Vibe Motion:** StatCard: "3-3-3 Rule" headline in white Georgia 56px, "3 hours / 3 days / 3 weeks" in teal (#0d9488) Nunito Sans 36px, each number appearing sequentially with gentle scale-up. Dark (#1a1a2e) background. Numbers stagger 10 frames apart. Smooth spring (damping: 200). Hold 4s.
 
 ---
 
@@ -493,13 +501,13 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Newborn baby with classic Moro reflex, arms extended, startle response, clinical white background | Quick Snap Zoom |
-| 2 | 4s | Anatomical visualization of infant brain and spinal cord with neural pathways highlighted in teal, reflex arc illustrated | Slow Orbit Left |
-| 3 | 3s | Young child (3-4 years) struggling to sit still at desk, fidgeting, school setting | Slow Pan Right |
-| 4 | 3s | Chiropractor working with toddler, gentle assessment, playful clinical environment | Slow Push In |
-| 5 | 2s | Same child from shot 3 now focused and calm, engaged in activity | Slow Pull Out |
+| 1 | 3s | Close-up, slightly overhead. Newborn demonstrating Moro reflex, arms flung outward, fingers spread, startled expression on clinical white surface. Clean white background, minimal set dressing. Bright even overhead light, 5000K, clinical quality. ARRI Alexa, Cooke, 35mm. Baby fills frame, reflex clearly visible. Documentary, clinical, illustrative. | Quick Snap Zoom |
+| 2 | 4s | Anatomical visualization of infant brain and spinal cord, neural pathways in teal (#0d9488), reflex arcs as glowing loops from spine to extremities, primitive reflex centers in brainstem highlighted. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, symmetrical. Medical, educational, precise. | Slow Orbit Left |
+| 3 | 3s | Medium shot, eye level. Young child (3-4 years), sandy hair, colorful shirt, fidgeting at classroom desk, hands gripping chair edge, feet swinging, unable to stay still. Classroom, other desks in soft focus. Bright overhead fluorescent, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Subject centered, restless energy visible. Authentic, concerning, empathetic. | Slow Pan Right |
+| 4 | 3s | Medium close-up, eye level. Chiropractor performing gentle assessment on toddler (2 years) sitting on parent's lap, hands on upper cervical area. Warm playful clinical environment, colorful toys in soft focus. Warm key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on gentle contact. Warm, playful, professional. | Slow Push In |
+| 5 | 2s | Medium close-up, eye level. Same child from shot 3, now seated calmly, engaged in coloring, focused expression, body still. Same classroom, brighter mood. Natural light from window camera left, 4500K, warm quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, focused expression sharp. Calm, hopeful, transformed. | Slow Pull Out |
 
-**Vibe Motion:** Six reflex names listed vertically with teal bullet points, appearing sequentially
+**Vibe Motion:** ChecklistOverlay: 6 reflex names ("Moro (startle)", "ATNR (hand-eye)", "STNR (sitting/focus)", "TLR (balance)", "Palmar (grip)", "Spinal Galant (fidgeting)") with teal (#0d9488) bullets appearing sequentially, 6-frame stagger. White Nunito Sans 28px on dark (#1a1a2e). Heading "Primitive Reflexes" in Georgia 42px. Smooth spring (damping: 200).
 
 ---
 
@@ -519,10 +527,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Young child covering ears, overwhelmed expression, busy environment with other children | Slow Push In |
-| 2 | 3s | Infant demonstrating Moro reflex, arms outstretched, startle position, clinical setting | Quick Snap Zoom |
-| 3 | 3s | Anatomical visualization of fight-or-flight nervous system response, adrenal glands highlighted, teal nerve pathways on dark background | Slow Orbit Right |
-| 4 | 3s | Child lying comfortably during gentle chiropractic session, practitioner performing integration technique | Slow Pan Right |
+| 1 | 3s | Medium close-up, eye level. Young child (4-5 years), light brown hair, bright patterned shirt, covering both ears, eyes squeezed shut, overwhelmed. Busy indoor play area, other children blurred in background. Bright overhead fluorescent, 4500K, harsh quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, child sharp against busy bokeh. Visceral, empathetic, concerning. | Slow Push In |
+| 2 | 3s | Close-up, slightly elevated. Infant demonstrating full Moro reflex, arms outstretched, fingers splayed, legs extended, wide-eyed startle. Clean clinical white surface. Bright even clinical light from overhead, 5000K, clean quality. ARRI Alexa, Cooke, 35mm. Baby fills frame, reflex posture unmistakable. Clinical, illustrative, documentary. | Quick Snap Zoom |
+| 3 | 3s | Anatomical visualization of sympathetic chain glowing warm red, adrenal glands highlighted above kidneys, teal (#0d9488) parasympathetic pathways shown in contrast. Pure black background. Dual light: warm amber camera right, cool blue camera left. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, systems differentiated. Medical, dramatic, educational. | Slow Orbit Right |
+| 4 | 3s | Medium shot, eye level. Same child from shot 1, lying comfortably on padded surface, chiropractor performing gentle reflex integration on spine, child relaxed with eyes half-closed. Warm clinical room, soft teal accents. Key light from camera right, 4000K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, relaxation evident. Calm, therapeutic, hopeful. | Slow Pan Right |
+
+**Vibe Motion:** SectionCard: "Retained Moro Reflex" label in teal (#0d9488) Georgia 36px, "Nervous system stuck in hyper-alert state" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -541,10 +551,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Mother struggling to breastfeed, baby turning away, frustration visible, soft home lighting | Slow Push In |
-| 2 | 3s | Anatomical visualization of infant skull and upper cervical spine, tension points highlighted in teal, dark background | Slow Orbit Left |
-| 3 | 3s | Chiropractor performing cranial work on infant, fingertip pressure, extreme gentleness, warm clinical setting | Slow Push In |
-| 4 | 2s | Mother nursing comfortably, baby latched and feeding, peaceful moment, warm lighting | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. New mother in her late 20s, soft pink sleep shirt, attempting to breastfeed, baby turning away and fussing, frustration and worry in expression. Soft home setting, nursing pillow visible. Warm diffused light from window camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, mother and baby's faces sharp. Intimate, vulnerable, relatable. | Slow Push In |
+| 2 | 3s | Anatomical visualization of infant skull in profile, cranial suture lines visible, upper cervical spine (C1-C2), tension points at occiput highlighted in warm amber, jaw musculature with teal (#0d9488) nerve supply lines. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Clean profile view. Medical, informative, precise. | Slow Orbit Left |
+| 3 | 3s | Close-up, eye level. Chiropractor performing cranial work on calm infant, fingertip pressure on temporal and occipital bones, baby on soft white surface, extreme gentleness visible. Warm clinical room. Warm key light from camera right, 4000K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Sharp focus on fingertip contact. Delicate, precise, reassuring. | Slow Push In |
+| 4 | 2s | Medium close-up, eye level. Same mother and baby, baby now latched and feeding peacefully, mother's expression showing relief and tenderness. Same soft home setting. Warm golden light from camera left, 3500K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, both faces in focus. Peaceful, tender, resolved. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Why Latching Is Hard" label in teal (#0d9488) Georgia 36px, "Birth tension in neck, jaw, and skull" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -563,10 +575,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Infant with visible head tilt to one side, lying on back, nursery setting, soft lighting | Slow Push In |
-| 2 | 3s | Anatomical visualization of infant neck showing SCM muscle highlighted in teal, one side shortened, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor performing gentle neck work on infant, light fingertip contact, calm baby, warm setting | Slow Pan Left |
-| 4 | 2s | Same infant with improved head position, centered, alert and happy | Slow Pull Out |
+| 1 | 3s | Close-up, slightly overhead. Infant (3-4 months), lying on back, visible head tilt to right side, one cheek resting more on surface. Soft nursery, light play mat. Warm diffused light from above and camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Baby fills frame, head tilt clearly visible. Documentary, gentle, diagnostic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of infant neck in three-quarter view, SCM muscle highlighted in teal (#0d9488) on one side, shortened/tightened side in warm red contrast, cervical spine visible beneath. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Three-quarter angle, muscle detail sharp. Clinical, precise, educational. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing gentle neck work on infant on padded surface, light fingertip contact on SCM area, baby calm and making eye contact. Warm clinical room, soft teal accents. Warm key light from camera right, 3800K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, contact and baby's face sharp. Gentle, skilled, reassuring. | Slow Pan Left |
+| 4 | 2s | Close-up, slightly overhead. Same infant with improved midline head position, centered, alert, happy expression. Same nursery, brighter mood. Warm natural light from camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Baby centered. Bright, resolved, encouraging. | Slow Pull Out |
+
+**Vibe Motion:** StatCard: "1 in 250 babies" in white Georgia 56px, "affected by torticollis" subtitle in Nunito Sans 32px on dark (#1a1a2e). Teal (#0d9488) accent bar. Scale from 0.9 to 1.0, subtitle delayed 8 frames. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -587,13 +601,13 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Baby lifting head during tummy time, strong neck, bright playroom | Slow Push In |
-| 2 | 2s | Baby rolling over on soft mat, joyful expression | Slow Pan Right |
-| 3 | 2s | Baby sitting independently, playing with toy, stable core | Static Hold |
-| 4 | 2s | Baby crawling across floor, cross-body movement visible, determined expression | Slow Dolly |
-| 5 | 2s | Toddler taking first steps, parent hands nearby, bright room | Slow Pull Out |
+| 1 | 2s | Close-up, slightly low angle. Baby (3-4 months) lifting head strongly during tummy time, alert curious expression, bright onesie. Colorful playroom, soft mat, toys in soft focus. Natural daylight from window camera right, 4500K, bright even quality. ARRI Alexa, Cooke, 35mm. Baby fills lower frame, achievement visible. Encouraging, bright, developmental. | Slow Push In |
+| 2 | 2s | Medium close-up, slightly overhead. Baby mid-roll on soft mat, arms extending, legs rotating, joyful expression. Bright playroom, clean carpet. Warm natural light from camera left, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Movement captured, joy visible. Playful, dynamic, milestone. | Slow Pan Right |
+| 3 | 2s | Medium shot, eye level. Baby (7-8 months) sitting independently on floor, stable core, playing with stacking toy, focused expression. Bright living room, soft rug. Warm window light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Baby centered, stability evident. Confident, developmental, proud. | Static Hold |
+| 4 | 2s | Medium shot, slightly low angle. Baby crawling across living room floor, determined expression, cross-body arm-leg coordination visible. Warm home, wood floors. Natural daylight from camera right, 4500K, warm quality. ARRI Alexa, Cooke, 35mm. Baby in motion, purposeful. Dynamic, determined, developmental. | Slow Dolly |
+| 5 | 2s | Medium shot, eye level. Toddler (12-13 months) taking tentative first steps toward parent's outstretched hands in foreground, wobbly but determined. Bright living room, natural light flooding in. Golden light from window behind camera, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Toddler centered, milestone moment. Joyful, triumphant, milestone. | Slow Pull Out |
 
-**Vibe Motion:** Numbered milestone checklist (1-5) with age ranges, teal checkmarks
+**Vibe Motion:** ChecklistOverlay: 5 milestone items ("Head control (3-4 mo)", "Rolling over (5-6 mo)", "Sitting (7-8 mo)", "Crawling (9-10 mo)", "Walking (12-15 mo)") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White Nunito Sans 32px on dark (#1a1a2e). Georgia 42px numbers. 3-frame stagger.
 
 ---
 
@@ -614,13 +628,13 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Parent holding infant in chiropractic office, slightly nervous expression, warm clinical setting | Slow Push In |
-| 2 | 3s | Chiropractor observing infant's movement on soft mat, assessment mode, professional and warm | Slow Pan Right |
-| 3 | 3s | Close-up of practitioner's hands palpating infant spine, extreme gentleness, soft lighting | Slow Push In |
-| 4 | 4s | Fingertip adjustment on infant upper spine, baby calm and relaxed, parent watching with relief | Slow Orbit Right |
-| 5 | 3s | Baby sleeping peacefully after adjustment, parent smiling at practitioner, warm setting | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Young parent in her late 20s, casual clothes, holding infant (3 months) close to chest, slightly nervous expression, standing in chiropractic waiting area. Warm clinical reception, plants on counter, children's toys visible. Warm overhead light with window light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, protective posture visible. Authentic, anxious, warm. | Slow Push In |
+| 2 | 3s | Medium shot, slightly elevated. Chiropractor kneeling beside soft mat, observing infant's natural movement, watching head rotation and arm patterns. Warm clinical room, teal accents. Natural light from camera left with overhead, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Both in frame, assessment posture visible. Professional, observant, gentle. | Slow Pan Right |
+| 3 | 3s | Close-up, slightly overhead. Practitioner's hands gently palpating infant cervical spine, index fingers alongside vertebral bodies, baby on soft white surface, calm expression. Clean clinical surface. Warm key light from camera right, 3800K, soft focused quality. ARRI Alexa, Cooke, 35mm. Sharp focus on finger contact, baby's face in frame. Precise, delicate, reassuring. | Slow Push In |
+| 4 | 4s | Close-up, eye level. Chiropractor performing fingertip adjustment on infant upper cervical area, single finger contact with minimal force, baby calm and relaxed, parent's hand visible holding baby's hand. Warm clinical setting. Warm diffused light from camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Sharp on fingertip contact, peaceful expression. Gentle, precise, reassuring. | Slow Orbit Right |
+| 5 | 3s | Medium shot, eye level. Baby sleeping peacefully in parent's arms after adjustment, parent smiling at chiropractor with visible relief, practitioner smiling back. Warm clinical room, window light. Soft golden light from camera right, 3800K, warm diffused quality. ARRI Alexa, Cooke, 35mm. All three in frame, positive interaction. Relieved, tender, trusting. | Slow Pull Out |
 
-**Vibe Motion:** Step overlays: "Step 1: Observe" / "Step 2: Gentle Exam" / "Step 3: Fingertip Adjustment" / "Step 4: Happy Baby"
+**Vibe Motion:** StepIndicator: 4 steps ("Observe", "Gentle Exam", "Fingertip Adjustment", "Happy Baby") entering sequentially via \<Series\>, each sliding up 50px with description delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) step numbers in Georgia 48px, labels in white Nunito Sans 36px on semi-transparent dark overlay. 10-12s hold per step. Upper third placement.
 
 ---
 
@@ -639,11 +653,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Young child with hand on ear, uncomfortable expression, home setting | Quick Snap Zoom |
-| 2 | 4s | Anatomical visualization of upper cervical spine with nerve pathways to ear highlighted in teal, drainage pathway shown, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor performing upper cervical adjustment on child, gentle and precise | Slow Push In |
+| 1 | 3s | Close-up, eye level. Young child (3-4 years), flushed cheeks, pressing hand against right ear, pained expression, slightly teary eyes. Home setting, dim warm background. Single hard light from camera left, 3800K, casting dramatic shadows. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Tight framing, face fills frame, discomfort visceral. Dramatic, empathetic, urgent. | Quick Snap Zoom |
+| 2 | 4s | Anatomical visualization of upper cervical spine (C1-C2) with nerve pathways in teal (#0d9488) extending to inner ear, eustachian tube and drainage pathway shown, atlas misalignment creating compression visible. Pure black background. Cool single light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Pathway clearly traced. Medical, precise, revelatory. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing gentle upper cervical adjustment on child seated in parent's lap, precise fingertip contact on atlas area, child calm. Warm clinical room, lighting shifting warmer than shot 1. Warm key light from camera right, 4000K, diffused quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Focus on precise contact. Professional, gentle, precise. | Slow Push In |
 
-**Vibe Motion:** Red "MYTH" stamp, then green "TRUTH" reveal animation
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scales from 3x to 1x with rotation (damping: 8, stiffness: 200), text "Just ride it out" slides in 6 frames later. Hold 2s. "TRUTH" stamp in teal (#0d9488) same animation, "Upper neck nerves control ear drainage" slides in. Georgia 56px stamps, Nunito Sans 32px text on dark (#1a1a2e). Full safe zone width.
 
 ---
 
@@ -664,12 +678,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Baby crying during tummy time, frustrated, nursery floor setting | Slow Push In |
-| 2 | 3s | Baby lying on parent's chest, content, parent reclined, warm living room | Slow Pan Right |
-| 3 | 3s | Baby on floor with rolled towel under chest, better head lift, engaged | Slow Push In |
-| 4 | 3s | Parent lying face-to-face with baby during tummy time, eye contact, smiles | Slow Pull Out |
+| 1 | 3s | Medium close-up, slightly low angle. Baby (2-3 months) during tummy time on soft mat, face scrunched in frustration, arms pushing against floor, head barely lifting. Bright nursery, colorful play mat. Natural daylight from window camera right, 4500K, bright even quality. Sony Venice, Canon K35, 24mm. Baby fills lower frame, struggle visible. Authentic, empathetic, relatable. | Slow Push In |
+| 2 | 3s | Medium shot, eye level. Baby lying contentedly on parent's reclined chest, lifting head to make eye contact, both relaxed. Warm living room, couch, soft throw. Warm diffused light from camera left, 3800K, soft quality. Sony Venice, Canon K35, 24mm. Both in frame, connection visible. Warm, bonding, achievable. | Slow Pan Right |
+| 3 | 3s | Medium close-up, slightly overhead. Baby on tummy with rolled towel under chest for support, improved head lift, reaching for colorful toy. Bright play area, soft mat. Natural daylight from camera right, 4500K, even quality. Sony Venice, Canon K35, 24mm. Positioning clear, improvement visible. Instructional, encouraging, progressive. | Slow Push In |
+| 4 | 3s | Medium shot, slightly low angle. Parent lying face-to-face with baby during tummy time, eye contact, parent smiling encouragingly, baby lifting head with effort. Same bright play area. Warm natural light from camera left, 4000K, soft quality. Sony Venice, Canon K35, 24mm. Both faces at same level, connection driving effort. Playful, interactive, motivating. | Slow Pull Out |
 
-**Vibe Motion:** "Goal: 30-60 min/day by 3 months (in short sessions)" overlay card
+**Vibe Motion:** FrequencyCard: "Goal: 30-60 min/day by 3 months" in white Nunito Sans 36px, teal (#0d9488) badge "In short 1-2 min sessions" in 24px. Key cue slides up 40px, badge scale pop (damping: 12) delayed 8 frames. Dark (#1a1a2e) background. Georgia 42px label. Hold 3s.
 
 ---
 
@@ -688,10 +702,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Exhausted parent walking with wide-awake baby at night, dim room, visible fatigue | Slow Push In |
-| 2 | 3s | Visualization of nervous system with "dimmer switch" concept, alert state shown in warm red, teal showing calm state, dark background | Slow Orbit Left |
-| 3 | 3s | Gentle chiropractic work on infant upper neck, baby starting to relax | Slow Push In |
-| 4 | 2s | Baby sleeping peacefully in crib, parent resting nearby, warm soft lighting | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Exhausted parent in her late 20s, hair disheveled, dark circles, walking slowly with wide-awake infant (4 months) on shoulder, rocking motion. Dimly lit hallway at night, nightlight glow, shadows. Warm dim lamplight from camera left, 2800K, soft quality. ARRI Alexa, Cooke, 35mm. Both in frame, fatigue vs. alertness contrast. Raw, empathetic, documentary. | Slow Push In |
+| 2 | 3s | Conceptual visualization of nervous system as dimmer switch, left side showing dial stuck on bright (warm red/amber glow), right side showing calm low setting (teal #0d9488 glow), neural pathways connecting both states. Pure black background. Split lighting: warm amber camera right, cool teal camera left. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Split composition, concept clear. Metaphorical, educational, elegant. | Slow Orbit Left |
+| 3 | 3s | Close-up, eye level. Chiropractor performing gentle upper cervical adjustment on infant on soft surface, fingertip contact at C1, baby's eyes beginning to droop, body relaxing. Warm clinical room. Warm key light from camera right, 3800K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Sharp on fingertip contact and baby's relaxing face. Gentle, transformative, precise. | Slow Push In |
+| 4 | 2s | Medium close-up, slightly overhead. Same baby sleeping peacefully in crib, soft blanket, rhythmic breathing, completely settled. Nursery, soft warm nightlight glow, mobile in soft focus above. Warm dim light from nightlight camera left, 2800K, gentle quality. ARRI Alexa, Cooke, 35mm. Baby centered, peace radiating. Serene, resolved, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "The Dimmer Switch" label in teal (#0d9488) Georgia 36px, "Nervous system stuck on alert = baby can't settle" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -715,10 +731,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Child at school desk, fidgeting, unable to focus, papers scattered, classroom setting | Slow Push In |
-| 2 | 3s | Anatomical visualization of upper cervical spine with nerve pathways to brain, interference shown as disrupted signal, teal pathways, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor adjusting child's upper neck, professional setting, child cooperative | Slow Pan Right |
-| 4 | 3s | Same child now focused, reading a book, calm expression, warm lighting | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Child (7-8 years), messy brown hair, striped polo, fidgeting at school desk, papers scattered, pencil tapping, unable to focus. Elementary classroom, colorful posters on walls, other desks in soft focus. Bright overhead fluorescent with window light from camera left, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Subject centered, restless energy palpable. Authentic, empathetic, observational. | Slow Push In |
+| 2 | 3s | Anatomical visualization of upper cervical spine (C1-C2), nerve pathways extending to brain, interference shown as fragmented signal pulses in warm red, clear teal (#0d9488) pathways showing normal flow for contrast. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, interference concept clear. Medical, illustrative, educational. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing precise upper cervical adjustment on cooperative child lying on table, hands on atlas/axis area. Professional clinical room, warm tones. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Focus on precise hand contact. Professional, confident, skilled. | Slow Pan Right |
+| 4 | 3s | Medium close-up, eye level. Same child now seated calmly, absorbed in reading, focused expression, body still. Warm setting, soft natural light. Warm window light from camera left, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, focused expression sharp. Calm, hopeful, transformed. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Neural Interference" label in teal (#0d9488) Georgia 36px, "Too much input, can't filter what matters" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade: label first, text 8 frames later. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -736,11 +754,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Child rubbing legs in bed at night, uncomfortable expression, dim bedroom | Slow Push In |
-| 2 | 3s | Visualization of growing bones with muscle tension illustrated, teal highlights on growth plates, dark background | Slow Tilt Up |
-| 3 | 2s | Chiropractor working with child, adjusting lower back and pelvis, warm clinical setting | Slow Pan Right |
+| 1 | 3s | Close-up, eye level. Child (6-7 years), pajamas, rubbing calves in bed at night, genuine discomfort in face, legs pulled up. Dim bedroom, nightlight glow, stuffed animals on pillow. Warm lamplight from camera left, 2800K, soft quality casting long shadows. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Tight framing on face and hands. Dramatic, empathetic, real. | Slow Push In |
+| 2 | 3s | Anatomical visualization of child's leg bones (tibia/femur), growth plates highlighted in teal (#0d9488), surrounding muscles in warm red tension indicating lagging behind bone growth, periosteum stress visible. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Structures clearly differentiated by color. Medical, educational, precise. | Slow Tilt Up |
+| 3 | 2s | Medium close-up, eye level. Chiropractor adjusting child's lower back and pelvis, child lying prone on padded table, precise hand contact on lumbar area. Warm clinical setting, lighting warmer than shots 1-2. Key light from camera right, 4000K, diffused quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Focus on precise contact. Professional, warm, capable. | Slow Pan Right |
 
-**Vibe Motion:** Red "MYTH" stamp, then green "TRUTH" reveal
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scales from 3x to 1x with rotation (damping: 8, stiffness: 200), text "Kids are just being dramatic" slides in 6 frames later. Hold 2s. "TRUTH" stamp in teal (#0d9488), "Bone growth outpaces muscle development" slides in. Georgia 56px stamps, Nunito Sans 32px text on dark (#1a1a2e).
 
 ---
 
@@ -761,13 +779,13 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Teenager hunched over phone, forward head posture visible from side angle, living room | Slow Push In |
-| 2 | 2s | Child gaming at desk, rounded shoulders, monitor glare on face | Slow Pan Right |
-| 3 | 2s | Teenager rubbing back of neck, pain expression, after phone use | Quick Snap Zoom |
-| 4 | 2s | Side-by-side visualization: proper spine alignment vs. forward head posture, teal highlights, dark background | Static Hold |
-| 5 | 2s | Teenager standing with corrected posture after awareness, confident | Slow Pull Out |
+| 1 | 2s | Medium shot, side angle. Teenager (14-15 years), dark hoodie, hunched over smartphone, forward head posture clearly visible from profile, ear ahead of shoulder line. Living room, couch, afternoon light. Natural window light from camera right, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Profile view, posture deviation unmistakable. Diagnostic, concerning, authentic. | Slow Push In |
+| 2 | 2s | Medium close-up, slightly elevated. Child (11-12 years) gaming at desk, rounded shoulders, chest collapsed, monitor glare on face, headphones on. Dark room, RGB keyboard and monitor glow. Cool monitor light from front, 6500K, harsh quality. ARRI Alexa, Cooke, 35mm. Shoulders and posture visible. Modern, concerning, relatable. | Slow Pan Right |
+| 3 | 2s | Close-up, eye level. Teenager rubbing back of neck, grimacing, phone lowered in other hand. Neutral background. Warm natural light from camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Face and hand fill frame, discomfort visible. Visceral, immediate, concerning. | Quick Snap Zoom |
+| 4 | 2s | Side-by-side anatomical visualization: left shows proper cervical alignment in teal (#0d9488), right shows forward head posture with weight labels showing 10lb per inch of forward displacement in red. Pure black background. Even cool light, 5600K. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Split composition, comparison stark. Educational, diagnostic, clear. | Static Hold |
+| 5 | 2s | Medium shot, eye level. Same teenager from shot 1, standing with corrected posture, shoulders back, chin tucked, ear over shoulder, confident expression. Bright living room, natural light. Warm light from window camera right, 4500K, bright quality. ARRI Alexa, Cooke, 35mm. Subject centered. Hopeful, corrected, confident. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-5) with severity indicators, teal on white
+**Vibe Motion:** ChecklistOverlay: 5 items ("Forward head posture", "Rounded shoulders", "Frequent headaches", "Neck pain after phone use", "Can't sit up straight") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White Nunito Sans 32px on dark (#1a1a2e). Georgia 42px numbers. 3-frame stagger.
 
 ---
 
@@ -787,11 +805,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Child with heavy, low-hanging backpack, one strap, slouching, school hallway | Slow Push In |
-| 2 | 3s | Same child with properly fitted backpack, both straps, high and snug, good posture | Slow Pan Right |
-| 3 | 3s | Parent adjusting backpack straps on child, checking fit, home setting | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Child (10-11 years), school uniform, heavy oversized backpack hanging low on back with one strap, visible slouch, compensating lean. School hallway, lockers in soft focus. Bright overhead fluorescent, 4500K, even quality. Sony Venice, Canon K35, 24mm. Full body visible, poor fit obvious. Diagnostic, concerning, relatable. | Slow Push In |
+| 2 | 3s | Medium shot, eye level. Same child, backpack now properly fitted, both straps, bottom at waist, chest strap engaged, upright posture, confident stride. Same hallway. Same bright lighting. Sony Venice, Canon K35, 24mm. Full body visible, transformation clear. Instructional, corrected, confident. | Slow Pan Right |
+| 3 | 3s | Medium close-up, eye level. Parent kneeling behind child, adjusting shoulder straps, checking fit by sliding hand between pack and back. Warm home entryway, morning light. Natural light from door camera right, 4000K, soft quality. Sony Venice, Canon K35, 24mm. Hands and backpack in focus. Practical, caring, instructional. | Slow Pull Out |
 
-**Vibe Motion:** "Rule: 10-15% of body weight max" stat card (teal on dark)
+**Vibe Motion:** StatCard: "Rule: 10-15% of body weight max" in white Georgia 48px, "60lb child = 6-9lb backpack" subtitle in Nunito Sans 28px on dark (#1a1a2e). Teal (#0d9488) accent bar. Scale from 0.9 to 1.0, subtitle delayed 8 frames. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -810,10 +828,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Young athlete (soccer/basketball) mid-competition, intense effort, outdoor sports field | Slow Push In |
-| 2 | 3s | Same young athlete grabbing knee or shin after play, pain expression, sideline | Quick Snap Zoom |
-| 3 | 3s | Chiropractor assessing young athlete's spine and pelvis, sports medicine clinical setting | Slow Pan Right |
-| 4 | 2s | Young athlete back on field, running confidently | Slow Dolly |
+| 1 | 3s | Medium shot, eye level. Young athlete (12-13 years), soccer jersey, mid-sprint on outdoor field, intense effort, determination visible. Green grass, blurred teammates. Golden afternoon light from camera right, 3500K, warm natural quality. ARRI Alexa, Cooke, 35mm. Subject in left third, motion dynamic. Energetic, competitive, alive. | Slow Push In |
+| 2 | 3s | Close-up, eye level. Same athlete on sideline, grabbing knee with both hands, pain expression, sitting on bench. Sideline setting, field blurred behind. Harsh overhead sun, 5600K, creating contrast. ARRI Alexa, Cooke, 35mm. Face and hands fill frame. Visceral, urgent, empathetic. | Quick Snap Zoom |
+| 3 | 3s | Medium close-up, eye level. Chiropractor assessing young athlete's spine and pelvis, athlete in athletic wear on exam table, practitioner checking sacral alignment. Sports medicine clinic, anatomy charts on wall. Key light from camera right, 4500K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, assessment visible. Professional, athletic, thorough. | Slow Pan Right |
+| 4 | 2s | Medium shot, slightly low angle. Same athlete back on field running confidently, no favoring, full stride, joy visible. Green field, golden light. Golden afternoon light from behind camera, 3500K, warm quality. ARRI Alexa, Cooke, 35mm. Subject centered, movement free. Triumphant, recovered, dynamic. | Slow Dolly |
+
+**Vibe Motion:** SectionCard: "The Kinetic Chain" label in teal (#0d9488) Georgia 36px, "When the foundation is off, compensation becomes injury" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -833,12 +853,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Child standing, back to camera, shoulders visibly uneven, clinical setting, good lighting | Slow Push In |
-| 2 | 2s | Same child bending forward, rib hump visible on one side, clear demonstration | Slow Pan Right |
-| 3 | 2s | Chiropractor performing scoliosis assessment, measuring with hands, professional setting | Slow Push In |
-| 4 | 2s | X-ray style visualization of spine with mild curve highlighted in teal, dark background | Slow Orbit Left |
+| 1 | 2s | Medium shot, behind subject. Child (11-12 years), light tank top, back to camera, one shoulder visibly higher, subtle waistline asymmetry. Clean clinical setting, neutral background. Bright even light, 4500K, diffused quality. ARRI Alexa, Cooke, 35mm. Full back visible, asymmetry clear. Clinical, diagnostic, educational. | Slow Push In |
+| 2 | 2s | Medium shot, side angle. Same child bending forward, arms hanging, rib hump visible on one side (Adam's test). Same clinical setting. Even side lighting from camera left, 4500K, crisp quality. ARRI Alexa, Cooke, 35mm. Rib asymmetry clearly shown. Clinical, illustrative, diagnostic. | Slow Pan Right |
+| 3 | 2s | Medium close-up, eye level. Chiropractor measuring shoulder height and rib symmetry on standing child, hands positioned for assessment. Professional clinical room, warm tones. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, measurement visible. Professional, thorough, caring. | Slow Push In |
+| 4 | 2s | Anatomical visualization of spine from posterior view, mild S-curve scoliosis highlighted in teal (#0d9488), vertebral rotation shown, Cobb angle measurement lines visible. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, curve clearly visible. Medical, precise, educational. | Slow Orbit Left |
 
-**Vibe Motion:** Numbered checklist (1-4), "Best window: Ages 10-15" stat card
+**Vibe Motion:** ChecklistOverlay: 4 items ("Uneven shoulders", "Asymmetric waistline", "Rib hump on bend test", "Uneven hip drop when walking") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White Nunito Sans 32px on dark (#1a1a2e). Georgia 42px numbers. StatCard follows: "Best window: Ages 10-15" in Georgia 36px.
 
 ---
 
@@ -857,9 +877,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Anatomical visualization of lower spine and nerve pathways to bladder, teal nerve glow, dark background | Slow Orbit Right |
-| 2 | 3s | Chiropractor checking child's lower spine, gentle palpation, warm clinical setting | Slow Push In |
-| 3 | 2s | Happy child waking up in the morning, confident, bright bedroom lighting | Slow Pull Out |
+| 1 | 3s | Anatomical visualization of lower lumbar spine and sacrum, nerve pathways in teal (#0d9488) from L3-S3 extending to bladder (transparent blue-grey), misalignment at L4-L5 creating subtle compression visible. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, nerve-to-organ pathway clear. Medical, sensitive, educational. | Slow Orbit Right |
+| 2 | 3s | Medium close-up, eye level. Chiropractor performing gentle palpation on child's (6-7 years) lower lumbar area, child lying prone on padded table, relaxed and comfortable. Warm clinical room, soft lighting. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on hands and child's relaxed expression. Gentle, professional, reassuring. | Slow Push In |
+| 3 | 2s | Medium shot, eye level. Happy child (6-7 years), pajamas, waking up in morning sunlight, stretching with confident smile, stuffed animal in hand. Bright cheerful bedroom, sunlight from window. Warm golden morning light from camera right, 3500K, warm quality. ARRI Alexa, Cooke, 35mm. Child centered, morning joy. Confident, hopeful, bright. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Bladder Control" label in teal (#0d9488) Georgia 36px, "Lower spine nerves control bladder signals" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -878,10 +900,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Child covering ears and eyes, overwhelmed by sensory input, busy colorful environment | Slow Push In |
-| 2 | 3s | Anatomical visualization of brain processing centers with nerve pathways from spine, interference shown as disrupted signals, teal pathways, dark background | Slow Orbit Left |
-| 3 | 3s | Chiropractor working gently with child, upper cervical focus, calm environment | Slow Pan Right |
-| 4 | 2s | Same child engaged in play, calm and regulated, warm lighting | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. Child (5-6 years), soft clothing, covering ears and squeezing eyes shut, body tense. Busy colorful playroom, other children in background, bright lights. Harsh overhead fluorescent, 4500K, cool quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, child sharp against chaotic bokeh. Visceral, empathetic, overwhelming. | Slow Push In |
+| 2 | 3s | Anatomical visualization of brain with sensory processing regions highlighted, nerve pathways from upper cervical spine (C1-C2) extending upward, interference as fragmented signal pulses in warm red, clear teal (#0d9488) signals for contrast. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered, signal distortion concept clear. Medical, complex, educational. | Slow Orbit Left |
+| 3 | 3s | Medium close-up, eye level. Chiropractor working gently with child, upper cervical focus, child lying on side on padded surface. Quiet clinical room, dimmer lighting, soft teal accents, reduced stimuli. Warm key light from camera right, 3800K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Gentle contact visible, child comfortable. Calm, focused, therapeutic. | Slow Pan Right |
+| 4 | 2s | Medium shot, eye level. Same child engaged in calm play, building blocks, regulated body language, content expression. Warm play area, natural light. Warm window light from camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Child centered, composure visible. Calm, hopeful, transformed. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Sensory Processing" label in teal (#0d9488) Georgia 36px, "Noisy signals in = distorted responses out" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -904,10 +928,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Athlete holding injured knee on field, competitive sport setting, intensity | Quick Snap Zoom |
-| 2 | 3s | Anatomical visualization showing kinetic chain from ankle to hip to spine, compensation pattern in red shifting to teal as correction happens, dark background | Slow Tilt Up |
-| 3 | 3s | Chiropractor performing sports-specific spinal adjustment on athletic patient, clinical setting | Slow Pan Right |
-| 4 | 2s | Athlete back in action, explosive movement, confidence, outdoor field | Slow Dolly |
+| 1 | 3s | Close-up, eye level. Athlete in mid-20s, compression shorts and jersey, gripping injured knee on grass field, teeth clenched, intensity in expression. Outdoor sports field, chalk lines, blurred teammates. Harsh afternoon sun from camera left, 5600K, hard quality. ARRI Alexa, Cooke, 35mm. Tight on knee and face. Visceral, urgent, athletic. | Quick Snap Zoom |
+| 2 | 3s | Anatomical visualization of full kinetic chain from ankle to knee to hip to spine, compensation pattern as warm red stress points traveling upward, correction shown as teal (#0d9488) alignment restoring bottom-up. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Full chain visible. Medical, dynamic, educational. | Slow Tilt Up |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing sports-specific thoracic adjustment on athletic patient in compression gear, side-lying on padded table, precise hand contact. Performance clinic, clean modern. Key light from camera right, 4500K, crisp diffused quality. ARRI Alexa, Cooke, 35mm. Focus on technique. Athletic, professional, precise. | Slow Pan Right |
+| 4 | 2s | Medium shot, slightly low angle. Same athlete back in explosive action on field, cutting movement, confidence in body language. Green field, afternoon light. Golden light from camera right, 3500K, warm quality. ARRI Alexa, Cooke, 35mm. Motion dynamic, power visible. Triumphant, explosive, restored. | Slow Dolly |
+
+**Vibe Motion:** SectionCard: "The Kinetic Chain" label in teal (#0d9488) Georgia 36px, "Injuries don't happen in isolation" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -926,10 +952,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Athlete in peak performance moment, explosive movement, intensity captured, high-end sports photography style | Slow Push In |
-| 2 | 3s | Anatomical visualization of nervous system with spine, nerve signals traveling from brain to muscles shown as teal electrical pulses, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor adjusting athletic patient's spine, precise technique, performance-focused clinical setting | Slow Pan Right |
-| 4 | 2s | Athlete training at peak form, fluid movement, power, outdoor setting | Slow Dolly |
+| 1 | 3s | Medium shot, slightly low angle. Athlete in late 20s, lean build, compression gear, at peak explosive moment mid-sprint start, every muscle engaged. Outdoor track, blurred background. Golden afternoon light from camera right, 3500K, warm hard quality. ARRI Alexa, Cooke, 35mm. Subject centered, motion at peak. Powerful, aspirational, dynamic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of nervous system with spine as central column, nerve signals from brain to muscle groups as teal (#0d9488) electrical pulses, speed of transmission shown with trailing light effect. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Full body nervous system visible. Medical, electric, dynamic. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing precise spinal adjustment on athletic patient prone on padded table, hands on thoracic spine with authority. Performance clinic, modern equipment. Key light from camera right, 4500K, crisp diffused quality. ARRI Alexa, Cooke, 35mm. Hands and technique in focus. Professional, elite, precise. | Slow Pan Right |
+| 4 | 2s | Medium shot, slightly low angle. Same athlete training at peak form, fluid powerful stride, outdoor setting with open sky. Golden light from behind camera, 3500K, warm quality. ARRI Alexa, Cooke, 35mm. Full body in motion, fluidity visible. Powerful, optimized, aspirational. | Slow Dolly |
+
+**Vibe Motion:** StatCard: "Faster reaction time" in white Georgia 48px, "Better body awareness + quicker recovery" in Nunito Sans 28px on dark (#1a1a2e). Teal (#0d9488) accent bar. Scale 0.9 to 1.0. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -949,12 +977,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Athlete testing range of motion, stretching injured area, clinical setting | Slow Push In |
-| 2 | 2s | Athlete performing single-leg strength test, comparing both sides, gym setting | Slow Pan Right |
-| 3 | 2s | Athlete performing sport-specific movement (cutting/jumping), no hesitation, field setting | Slow Dolly |
-| 4 | 2s | Chiropractor assessing spinal alignment on athletic patient, final clearance feel | Slow Pull Out |
+| 1 | 2s | Medium close-up, eye level. Athlete in late 20s, workout shorts, testing range of motion on previously injured shoulder, rotating through full arc. Bright clinical rehab room, resistance bands on rack. Key light from camera right, 4500K, diffused quality. ARRI Alexa, Cooke, 35mm. Joint movement visible. Diagnostic, athletic, recovering. | Slow Push In |
+| 2 | 2s | Medium shot, eye level. Same athlete performing single-leg squat, comparing injured side, mirror showing form. Gym setting, clean equipment. Bright overhead, 5000K, even quality. ARRI Alexa, Cooke, 35mm. Full body, asymmetry assessment clear. Athletic, diagnostic, functional. | Slow Pan Right |
+| 3 | 2s | Medium shot, slightly low angle. Athlete performing sport-specific cutting movement on field, no hesitation, confident body language. Outdoor training field, cones. Natural afternoon light, 4500K, warm quality. ARRI Alexa, Cooke, 35mm. Dynamic motion, confidence visible. Athletic, recovered, explosive. | Slow Dolly |
+| 4 | 2s | Medium close-up, eye level. Chiropractor assessing spinal alignment on athletic patient, hands on pelvic landmarks, both in assessment. Professional clinical room. Key light from camera left, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, final assessment visible. Professional, thorough, decisive. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-4) with "Ready?" heading, teal checkmarks
+**Vibe Motion:** ChecklistOverlay: 4 items ("Full range of motion", "Symmetrical strength", "Sport-specific without hesitation", "Spinal and pelvic alignment") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. Heading "Ready?" in Georgia 48px. White Nunito Sans 32px on dark (#1a1a2e). 3-frame stagger.
 
 ---
 
@@ -972,9 +1000,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person sitting at office desk all week, then quick transition to playing basketball, split-frame energy | Quick Snap Zoom |
-| 2 | 3s | Same person on Sunday, stiff, sore, moving slowly, home setting | Slow Pan Right |
-| 3 | 3s | Chiropractor adjusting patient, restoring mobility, warm clinical setting | Slow Push In |
+| 1 | 3s | Medium shot, eye level. Man in his mid-30s, business casual, at desk (monitor, keyboard visible), then quick-cut to same man in basketball gear on outdoor court, mid-layup. Office side: cool fluorescent 4500K; sport side: warm afternoon sun 3500K. ARRI Alexa, Cooke, 35mm. Dynamic contrast between work and play. Energetic, relatable, humorous. | Quick Snap Zoom |
+| 2 | 3s | Medium shot, eye level. Same person Sunday morning, stiff, moving slowly from couch, hand on lower back, grimacing. Home living room, morning light, coffee on table. Warm morning light from window camera right, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Full body, stiffness visible. Relatable, rueful, honest. | Slow Pan Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing thoracic and lumbar adjustment, patient prone, hands on mid-back with controlled technique. Warm clinical room, modern. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Technique visible. Restorative, professional, capable. | Slow Push In |
+
+**Vibe Motion:** SectionCard: "The Weekend Warrior Trap" label in teal (#0d9488) Georgia 36px, "Desk all week + full intensity weekend = injury" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -994,12 +1024,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Athletic person performing cat-cow stretch, gym or home setting, proper form, bright clean lighting | Slow Pan Right |
-| 2 | 4s | Same person in 90-90 hip stretch position, leaning forward, demonstrating hold | Slow Push In |
-| 3 | 3s | Person performing chin tucks while seated, exaggerated for clarity, profile view | Slow Pan Left |
-| 4 | 2s | Person standing post-workout, loose and mobile, confident | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Athletic person in early 30s, gym shorts and tank, performing cat-cow on all fours, arching back in cat position. Bright clean home gym, yoga mat. Natural light from large window camera right, 4500K, bright even quality. Sony Venice, Canon K35, 24mm. Full body visible, spinal movement clear. Instructional, active, clean. | Slow Pan Right |
+| 2 | 4s | Medium shot, slightly elevated. Same person in 90-90 hip stretch, legs in position, leaning chest toward front knee, deep hold. Same bright setting, mat. Same natural light. Sony Venice, Canon K35, 24mm. Full body visible, hip opening clear. Instructional, deep, restorative. | Slow Push In |
+| 3 | 3s | Medium shot, profile view. Person performing chin tucks while seated on bench, pulling chin back, exaggerated for clarity. Same bright setting. Natural light from camera right, 4500K, even quality. Sony Venice, Canon K35, 24mm. Profile clear, neck reset visible. Clear, corrective, practical. | Slow Pan Left |
+| 4 | 2s | Medium shot, eye level. Same person standing post-workout, rolling shoulders, shaking out limbs, loose and mobile. Same bright setting. Warm natural light from camera left, 4000K, soft quality. Sony Venice, Canon K35, 24mm. Full body, ease of movement visible. Recovered, mobile, confident. | Slow Pull Out |
 
-**Vibe Motion:** "Post-Training Recovery: Cat-Cow > 90-90 > Chin Tucks" overlay card, "Do this after every session" closing card
+**Vibe Motion:** StepIndicator: 3 steps ("Cat-Cow: 10 slow reps", "90-90 Hip Stretch: 30s each", "Chin Tucks: 10 reps, 5s holds") entering sequentially via \<Series\>, sliding up 50px, descriptions delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) numbers in Georgia 42px, white Nunito Sans 28px. FrequencyCard: "After every training session" teal badge (damping: 12).
 
 ---
 
@@ -1018,12 +1048,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person in office clothes leaving desk, transitioning to gym, split scene energy | Quick Snap Zoom |
-| 2 | 3s | Person doing wall angels, back against wall, arms sliding, gym or home setting | Slow Pan Right |
-| 3 | 3s | Person in lunge with torso rotation, stretching hip flexor, good form | Slow Orbit Right |
-| 4 | 3s | Person hanging from pull-up bar, decompression visible, relaxed | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Office worker in his early 30s, dress shirt, rising from desk and grabbing gym bag, transition energy. Office, monitor and keyboard behind. Cool overhead fluorescent, 4500K. Sony Venice, Canon K35, 24mm. Full body visible, transition moment. Relatable, motivated, transitional. | Quick Snap Zoom |
+| 2 | 3s | Medium shot, eye level. Same person in gym clothes, performing wall angels, back flat against wall, arms in goalpost position sliding upward. Gym, clean wall. Bright overhead, 5000K, even quality. Sony Venice, Canon K35, 24mm. Full body, wall contact and arm movement clear. Instructional, corrective, precise. | Slow Pan Right |
+| 3 | 3s | Medium shot, slightly lower angle. Person in deep lunge, torso rotating toward front knee, hip flexor stretch with twist. Gym floor, mat. Bright even lighting, 5000K. Sony Venice, Canon K35, 24mm. Full body, rotation and stretch visible. Dynamic, opening, functional. | Slow Orbit Right |
+| 4 | 3s | Medium shot, slightly low angle. Person hanging from pull-up bar, arms extended, spine decompressing, relaxed expression. Gym, pull-up station. Bright overhead, 5000K, even quality. Sony Venice, Canon K35, 24mm. Full body, decompression evident. Liberating, simple, effective. | Slow Pull Out |
 
-**Vibe Motion:** "3-Minute Desk-to-Gym Warm-Up" title card, exercise names overlaid on each demo
+**Vibe Motion:** StepIndicator: 3 steps ("Wall Angels: 10 reps", "Hip Flexor + Twist: 30s each", "Dead Hang: 30 seconds") entering sequentially via \<Series\>, sliding up 50px, descriptions delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) numbers in Georgia 42px, white Nunito Sans 28px. FrequencyCard: "3 min before every workout" teal badge (damping: 12).
 
 ---
 
@@ -1047,12 +1077,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person looking down at phone, severe forward head posture visible from side angle, office or living room | Slow Push In |
-| 2 | 3s | Side-view anatomical visualization showing 10-20-30 pound weight markers as head moves forward from neutral, teal spine, dark background | Slow Pan Right |
-| 3 | 3s | Chiropractor performing cervical adjustment, restoring neck curve, clinical setting | Slow Orbit Right |
-| 4 | 2s | Person with corrected posture, head over shoulders, confident, bright setting | Slow Pull Out |
+| 1 | 3s | Medium shot, side angle. Person in early 30s, casual clothes, looking down at phone, severe forward head posture visible from profile, ear 3 inches ahead of shoulder. Office or living room, desk in background. Cool overhead light, 4500K, flat quality. ARRI Alexa, Cooke, 35mm. Profile clear, posture deviation stark. Diagnostic, relatable, concerning. | Slow Push In |
+| 2 | 3s | Anatomical side-view visualization of cervical spine, head moving incrementally forward with weight markers: 10lb (neutral, teal #0d9488), 20lb (1 inch, yellow), 30lb (2 inches, amber), 40lb (3 inches, red). Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Progressive load visible. Medical, stark, educational. | Slow Pan Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing cervical adjustment, hands restoring natural lordotic curve, patient supine. Warm clinical room, clean surfaces. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Focus on hand technique. Professional, precise, restorative. | Slow Orbit Right |
+| 4 | 2s | Medium shot, eye level. Same person standing with corrected posture, head over shoulders, ear aligned with shoulder, confident expression. Bright setting, natural light. Warm light from camera right, 4500K, bright quality. ARRI Alexa, Cooke, 35mm. Subject centered, alignment clear. Corrected, confident, empowered. | Slow Pull Out |
 
-**Vibe Motion:** "Every inch forward = +10 lbs on your neck" stat card (teal on dark)
+**Vibe Motion:** StatCard: "Every inch forward = +10 lbs on your neck" in white Georgia 48px on dark (#1a1a2e). Teal (#0d9488) accent bar. Scale from 0.9 to 1.0. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1071,10 +1101,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person at desk, long day visible, rubbing low back, office setting | Slow Push In |
-| 2 | 3s | Anatomical visualization of pelvis in seated position, hip flexors shortened, lumbar compression highlighted in red shifting to teal, dark background | Slow Orbit Left |
-| 3 | 3s | Chiropractor adjusting lumbar spine and pelvis, patient on table, clinical warmth | Slow Pan Right |
-| 4 | 2s | Person standing from desk, moving freely, no pain expression | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Office worker in early 30s, business casual, late in the day, one hand reaching behind to rub lower back, grimace visible. Office setting, multiple monitors, empty coffee cups. Cool overhead fluorescent, 4500K, flat quality. ARRI Alexa, Cooke, 35mm. Subject centered, pain familiar. Relatable, honest, diagnostic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of pelvis in seated position, hip flexors visibly shortened pulling pelvis into anterior tilt, lumbar compression shown in warm red, correction pathway in teal (#0d9488), deactivated glutes shown as faded. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Side view, mechanics clear. Medical, educational, precise. | Slow Orbit Left |
+| 3 | 3s | Medium close-up, eye level. Chiropractor adjusting lumbar spine and pelvis, patient prone on padded table, hands on L4-L5 with precise contact. Warm clinical room, natural light supplementing. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Technique and contact visible. Professional, restorative, confident. | Slow Pan Right |
+| 4 | 2s | Medium shot, eye level. Same person standing from desk, moving freely, no guarding, easy movement. Same office, brighter mood. Warmer light from window camera right, 4000K. ARRI Alexa, Cooke, 35mm. Movement ease visible. Relieved, mobile, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "The Sitting Problem" label in teal (#0d9488) Georgia 36px, "Hip flexors shorten + glutes deactivate + lumbar compresses" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1092,10 +1124,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person standing, hand on lower back and hip, pain visible radiating down leg, shown with subtle red glow, home setting | Slow Push In |
-| 2 | 4s | Anatomical visualization of sciatic nerve from lumbar spine through pelvis and down leg, compression point highlighted in red, teal nerve pathway, dark background | Slow Tilt Down |
-| 3 | 3s | Chiropractor performing lumbar adjustment, precise technique, clinical setting | Slow Pan Right |
-| 4 | 2s | Person walking normally, no pain, outdoor setting, relieved | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Person in mid-40s, casual clothes, standing with hand pressing lower back and opposite hip, face showing sharp radiating pain, weight shifted off affected leg. Home living room, morning light. Warm natural light from window camera right, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Full body, pain pattern visible. Visceral, empathetic, authentic. | Slow Push In |
+| 2 | 4s | Anatomical visualization of sciatic nerve from L4-S3 through piriformis and down posterior leg, compression point at disc/piriformis highlighted in warm red, nerve pathway in teal (#0d9488). Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Full leg pathway visible. Medical, detailed, educational. | Slow Tilt Down |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing lumbar adjustment targeting L4-L5 disc area, patient side-lying, precise segmental contact. Clinical room, warm tones. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Technique specific and visible. Professional, precise, targeted. | Slow Pan Right |
+| 4 | 2s | Medium shot, eye level. Same person walking outdoors normally, no guarding or favoring, natural easy stride, relieved expression. Park path, natural afternoon light. Warm golden light from behind camera, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Full body, pain-free movement. Relieved, free, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "3 Common Causes" label in teal (#0d9488) Georgia 36px, "Disc bulge / Piriformis / SI joint" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1113,9 +1147,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person pointing to specific SI joint area (low back, one side), standing from chair, pain expression | Slow Push In |
-| 2 | 3s | Anatomical visualization of pelvis with SI joints highlighted in teal, one side showing dysfunction/inflammation in red, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor performing side-lying SI joint adjustment, precise contact, clinical setting | Slow Pan Right |
+| 1 | 3s | Medium close-up, eye level. Person in mid-30s, pressing thumb into specific SI joint area (right side low back, just above buttock), standing from office chair, sharp localized pain in expression. Office setting, chair pushed back. Warm overhead light, 4000K, neutral quality. ARRI Alexa, Cooke, 35mm. Hand on exact pain location. Specific, diagnostic, relatable. | Slow Push In |
+| 2 | 3s | Anatomical visualization of pelvis from posterior view, both SI joints visible, left in healthy teal (#0d9488), right showing dysfunction with inflammation in warm red, joint space asymmetry visible. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Symmetry comparison clear. Medical, diagnostic, precise. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing side-lying SI joint adjustment, patient's top leg draped, precise hand contact on sacral base, controlled thrust visible. Warm clinical room. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Technique specific and confident. Professional, targeted, skilled. | Slow Pan Right |
+
+**Vibe Motion:** SectionCard: "SI Joint" label in teal (#0d9488) Georgia 36px, "Most commonly misdiagnosed as disc or muscle" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1134,10 +1170,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person holding jaw, discomfort while eating, close-up of jaw tension | Slow Push In |
-| 2 | 3s | Anatomical visualization of upper cervical spine connecting to jaw via muscles and nerves, asymmetric tension shown, teal pathways, dark background | Slow Orbit Left |
-| 3 | 3s | Chiropractor performing upper cervical and jaw assessment, clinical precision | Slow Pan Right |
-| 4 | 2s | Person chewing comfortably, no clicking or pain, relaxed expression | Slow Pull Out |
+| 1 | 3s | Close-up, eye level. Person in early 30s, hand pressing on jaw joint, wincing while attempting to chew, jaw tension visible in masseter muscle. Kitchen table setting, meal in front. Warm natural light from camera left, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Tight on jaw and expression. Visceral, specific, empathetic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of upper cervical spine (atlas/axis) connecting to TMJ via muscles and nerve branches, asymmetric tension shown in warm red on one side, teal (#0d9488) normal pathways on the other. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Connection from neck to jaw clear. Medical, revelatory, educational. | Slow Orbit Left |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing upper cervical assessment with one hand, other hand palpating TMJ, clinical precision, patient relaxed. Professional clinical room. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Dual assessment visible. Professional, integrative, thorough. | Slow Pan Right |
+| 4 | 2s | Close-up, eye level. Same person eating comfortably, jaw moving smoothly, no clicking or guarding, relaxed expression. Same kitchen setting, warmer mood. Warm golden light from camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Jaw movement smooth. Comfortable, resolved, natural. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "The Jaw-Neck Connection" label in teal (#0d9488) Georgia 36px, "Atlas misalignment = asymmetric jaw tension" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1156,10 +1194,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person pressing fingers into temples, headache pain, dim lighting suggesting sensitivity | Slow Push In |
-| 2 | 3s | Anatomical visualization of upper cervical spine with pain referral pattern shown traveling from base of skull over head to temples, teal and red, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor performing upper cervical adjustment, precise hand placement, clinical setting | Slow Pan Right |
-| 4 | 2s | Person bright-eyed, clear-headed, natural lighting, relief visible | Slow Pull Out |
+| 1 | 3s | Close-up, eye level. Person in late 30s, pressing fingers into both temples, eyes closed, light sensitivity evident, dim environment. Dark home setting, curtains drawn. Minimal warm light from camera left, 2800K, very soft quality. ARRI Alexa, Cooke, 35mm. Face fills frame, pain intense and real. Dark, visceral, empathetic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of upper cervical spine with pain referral pattern: origin at suboccipital muscles in warm red, pathway traveling over skull to temples shown as red gradient shifting to teal (#0d9488) at correction points. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Referral pattern clearly mapped. Medical, revealing, educational. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing upper cervical adjustment, precise hand placement at C1-C2 with patient supine. Warm clinical room. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Hand technique specific. Professional, precise, skilled. | Slow Pan Right |
+| 4 | 2s | Medium close-up, eye level. Same person now bright-eyed, clear-headed, looking directly at camera, relief visible. Bright setting, natural light, curtains open. Warm natural light from window camera right, 4500K, bright quality. ARRI Alexa, Cooke, 35mm. Face clear and present. Relieved, clear, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Cervicogenic Headaches" label in teal (#0d9488) Georgia 36px, "Tight muscles at skull base compress nerves and refer pain upward" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1179,12 +1219,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person in bed, just waking up, stiff and uncomfortable, morning lighting through window | Slow Push In |
-| 2 | 3s | Person doing knee rolls in bed, smooth side-to-side movement, comfortable | Slow Pan Right |
-| 3 | 3s | Person pulling knee to chest in bed, stretching, morning light | Slow Push In |
-| 4 | 2s | Person sitting on bed edge doing chin tucks, alert and ready | Slow Pull Out |
+| 1 | 3s | Medium shot, slightly overhead. Person in mid-40s, just waking, face showing stiffness, moving tentatively under covers. Bedroom, warm morning light filtering through curtains. Warm golden morning light from window camera right, 3200K, soft diffused quality. Sony Venice, Canon K35, 24mm. Full upper body visible, stiffness palpable. Relatable, morning, authentic. | Slow Push In |
+| 2 | 3s | Medium shot, slightly overhead. Same person lying supine, knees bent, dropping both knees smoothly side to side in controlled motion. Same bedroom, morning light growing. Warm light from camera right, 3500K, soft quality. Sony Venice, Canon K35, 24mm. Full body visible, spinal mobility clear. Instructional, fluid, awakening. | Slow Pan Right |
+| 3 | 3s | Medium shot, eye level. Person pulling right knee to chest with both hands, gentle hold, left leg extended. Same bedroom. Warm morning light from window, 3500K, soft quality. Sony Venice, Canon K35, 24mm. Full body, stretch visible. Instructional, opening, therapeutic. | Slow Push In |
+| 4 | 2s | Medium close-up, profile view. Person sitting on bed edge performing chin tucks, pulling chin back, alert expression, ready for the day. Same bedroom, brighter now. Warm natural light from camera left, 4000K, soft quality. Sony Venice, Canon K35, 24mm. Profile clear, cervical reset visible. Alert, corrective, ready. | Slow Pull Out |
 
-**Vibe Motion:** "2-Minute Morning Reset" title card, exercise sequence overlay
+**Vibe Motion:** StepIndicator: 3 steps ("Knee Rolls: 10 each side", "Knee to Chest: 15s each", "Chin Tucks: 5 reps") entering sequentially via \<Series\>, sliding up 50px, descriptions delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) numbers in Georgia 42px, white Nunito Sans 28px. FrequencyCard: "2 minutes every morning" teal badge (damping: 12).
 
 ---
 
@@ -1205,11 +1245,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Person lifting box incorrectly, rounded back, far from body, red highlight on spine stress | Slow Push In |
-| 2 | 3s | Same person demonstrating proper lift: close to body, hip hinge, chest up, braced core, teal highlight on correct form | Slow Pan Right |
-| 3 | 2s | Person lifting toddler with proper mechanics, practical application, home setting | Slow Pull Out |
+| 1 | 2s | Medium shot, eye level. Person in casual clothes, lifting box from floor with rounded back, arms extended far from body, clear bad form. Home garage, boxes and items around. Bright overhead, 4500K, flat quality. Sony Venice, Canon K35, 24mm. Full body visible, dangerous mechanics obvious. Diagnostic, cautionary, instructional. | Slow Push In |
+| 2 | 3s | Medium shot, eye level. Same person demonstrating proper lift: box pulled close to body, hip hinge with chest up, braced core visible in posture, legs driving the lift. Same setting. Same lighting. Sony Venice, Canon K35, 24mm. Full body, correct form unmistakable. Instructional, controlled, correct. | Slow Pan Right |
+| 3 | 2s | Medium shot, eye level. Parent lifting toddler with proper mechanics: child close to body, hip hinge, legs driving, chest up. Warm home living room, natural light. Warm natural light from window camera right, 4000K, soft quality. Sony Venice, Canon K35, 24mm. Practical application clear. Practical, applicable, safe. | Slow Pull Out |
 
-**Vibe Motion:** "Lift Right" title card, 4-step overlay during demo
+**Vibe Motion:** StepIndicator: 4 steps ("Get close", "Hinge at hips", "Brace your core", "Push through legs") entering sequentially via \<Series\>, sliding up 50px, descriptions delayed 8 frames. Smooth spring (damping: 200). Teal (#0d9488) numbers in Georgia 42px, white Nunito Sans 28px. Lower third placement.
 
 ---
 
@@ -1227,10 +1267,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person at desk, visibly stressed, tension in shoulders and jaw, harsh office lighting | Slow Push In |
-| 2 | 3s | Anatomical visualization of nervous system toggling between red sympathetic (stressed) and teal parasympathetic (calm) states, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractic adjustment in progress, patient visibly relaxing during treatment, warm clinical setting | Slow Pan Right |
-| 4 | 2s | Person calm, breathing slowly, peaceful setting, natural light | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. Person in mid-30s, at desk, visibly stressed, jaw clenched, shoulders elevated toward ears, shallow breathing. Office setting, cluttered desk, harsh overhead light. Cool fluorescent from above, 4500K, flat harsh quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, tension in face and body palpable. Tense, honest, recognizable. | Slow Push In |
+| 2 | 3s | Anatomical visualization of autonomic nervous system, left side showing sympathetic chain in warm red (elevated heart rate, muscle tension, constricted blood vessels), right side showing parasympathetic in teal (#0d9488) (calm, digesting, recovering). Toggle effect between states. Pure black background. Split lighting: warm red camera right, cool teal camera left. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Split composition, contrast clear. Medical, dramatic, educational. | Slow Orbit Right |
+| 3 | 3s | Medium shot, eye level. Chiropractor performing thoracic adjustment, patient visibly relaxing mid-treatment, shoulders dropping, breathing deepening. Warm clinical room, soft lighting. Key light from camera right, 3800K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Relaxation visible in real time. Transformative, calming, therapeutic. | Slow Pan Right |
+| 4 | 2s | Medium close-up, eye level. Same person now calm, eyes softened, breathing slowly, peaceful expression. Natural outdoor setting or bright window scene, green plants. Warm natural light from camera left, 3500K, soft golden quality. ARRI Alexa, Cooke, 35mm. Face peaceful. Calm, reset, grounded. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Fight or Flight" label in teal (#0d9488) Georgia 36px, "Chronic stress keeps your nervous system stuck on alert" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1249,11 +1291,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Person tossing and turning in bed, uncomfortable, nighttime setting | Slow Push In |
-| 2 | 3s | Side-view visualization of spine alignment while sleeping, misalignment shown in red correcting to teal, dark background | Slow Pan Right |
-| 3 | 2s | Person sleeping comfortably, properly aligned, peaceful expression | Slow Pull Out |
+| 1 | 3s | Medium shot, slightly overhead. Person in late 30s, tossing in bed, pulling at pillow, frustrated, unable to get comfortable. Dark bedroom, nighttime. Warm dim lamplight from camera left, 2800K, soft quality casting long shadows. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Tight framing, discomfort visceral. Dramatic, restless, relatable. | Slow Push In |
+| 2 | 3s | Anatomical side-view visualization of spine alignment while sleeping: left showing misaligned spine in warm red (muscles working to compensate), right showing corrected alignment in teal (#0d9488) (muscles relaxed). Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Split comparison clear. Medical, revelatory, educational. | Slow Pan Right |
+| 3 | 2s | Medium shot, slightly overhead. Same person sleeping comfortably, properly aligned, peaceful expression, body fully relaxed. Same bedroom, warmer glow. Warm lamplight from camera left, 2800K, soft quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Peace and alignment visible. Serene, resolved, restful. | Slow Pull Out |
 
-**Vibe Motion:** Red "MYTH" stamp, green "TRUTH" reveal
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scales from 3x to 1x with rotation (damping: 8, stiffness: 200), text "It's your mattress" slides in 6 frames later. Hold 2s. "TRUTH" stamp in teal (#0d9488), "It's your spinal alignment" slides in. Georgia 56px stamps, Nunito Sans 32px text on dark (#1a1a2e).
 
 ---
 
@@ -1274,12 +1316,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Person at poorly set up desk, monitor too low, slouching, common office setup | Slow Push In |
-| 2 | 2s | Screen being raised to eye level, clean desk setup demonstration | Slow Pan Right |
-| 3 | 2s | Proper seated posture from side view, feet flat, elbows at 90, monitor at eye level, ergonomic setup | Slow Orbit Right |
-| 4 | 2s | Person standing and stretching at desk, timer visible, movement break | Slow Pull Out |
+| 1 | 2s | Medium shot, eye level. Person at poorly set up desk, monitor too low, slouching, neck flexed, feet dangling from high chair. Common office setup, papers and coffee. Cool overhead fluorescent, 4500K, flat quality. ARRI Alexa, Cooke, 35mm. Full upper body, poor setup obvious. Diagnostic, common, correctable. | Slow Push In |
+| 2 | 2s | Medium close-up, eye level. Hands raising monitor on stack of books to eye level, clean desk organization visible. Same desk, tidier. Warm natural light from camera right, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Action clear, improvement immediate. Instructional, practical, transformative. | Slow Pan Right |
+| 3 | 2s | Medium shot, side view. Person in properly ergonomic position: feet flat, elbows at 90 degrees, monitor at eye level, back supported, neutral spine. Same desk, fully corrected. Even lighting, 4500K, clean quality. ARRI Alexa, Cooke, 35mm. Full body from side, every angle correct. Educational, benchmark, satisfying. | Slow Orbit Right |
+| 4 | 2s | Medium shot, eye level. Person standing at desk, gentle stretch, arms overhead, timer on phone showing 30-min mark. Same office, movement break. Warm light from window camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Standing motion visible. Active, refreshing, practical. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-5), "Fix these in 5 minutes" heading, teal checkmarks
+**Vibe Motion:** ChecklistOverlay: 5 items ("Screen at eye level", "Feet flat on floor", "Elbows at 90 degrees", "2-3 fingers behind knees", "Move every 30 min") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. Heading "Fix These in 5 Minutes" in Georgia 42px. White Nunito Sans 32px on dark (#1a1a2e). 3-frame stagger.
 
 ---
 
@@ -1301,10 +1343,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Active senior (65-70s) walking in park, some stiffness visible but determination, golden hour light | Slow Push In |
-| 2 | 3s | Anatomical visualization of joint with synovial fluid movement, teal glow showing healthy motion, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor working with senior patient, gentle adjustment, respectful and warm clinical setting | Slow Pan Right |
-| 4 | 2s | Same senior moving freely, gardening or playing with grandchild, bright warm setting | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Active senior woman (late 60s), silver hair, casual walking clothes, striding through park with slight stiffness in gait but clear determination. Tree-lined park path, autumn leaves. Golden hour light from camera right, 3200K, warm soft quality. ARRI Alexa, Cooke, 35mm. Full body, resilience visible. Dignified, active, authentic. | Slow Push In |
+| 2 | 3s | Anatomical visualization of synovial joint cross-section, synovial fluid moving within capsule glowing in teal (#0d9488), cartilage surfaces smooth, surrounding ligaments visible. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Joint mechanics clear. Medical, elegant, educational. | Slow Orbit Right |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing gentle adjusted technique on senior patient, low-force instrument or drop table, respectful positioning. Warm clinical room, comfortable seating nearby. Key light from camera right, 4000K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Gentleness and respect visible. Caring, professional, adapted. | Slow Pan Right |
+| 4 | 2s | Medium shot, eye level. Same senior woman kneeling in garden, planting flowers, moving freely, grandchild nearby handing her a pot. Bright home garden, lush greenery. Warm golden afternoon light from camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Activity and joy visible. Vibrant, free, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: "Mobility Is Reversible" label in teal (#0d9488) Georgia 36px, "Joints + muscles + nervous system all respond to care" in white Nunito Sans 28px on dark (#1a1a2e). Two-stage fade. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1323,11 +1367,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Senior hands showing some joint stiffness, reaching for something, warm home setting | Slow Push In |
-| 2 | 3s | Anatomical visualization of arthritic joint vs. healthy joint comparison, teal highlighting compensation pattern in surrounding joints, dark background | Slow Orbit Left |
-| 3 | 3s | Chiropractor performing gentle adjustment on senior patient, adapted technique, warm setting | Slow Pan Right |
+| 1 | 3s | Close-up, eye level. Senior hands (70s), some visible joint enlargement at knuckles, reaching for coffee mug on counter, slight hesitation in grip. Warm kitchen, morning light. Warm natural light from window camera right, 3800K, soft quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Hands fill frame, stiffness visible but functional. Intimate, honest, dignified. | Slow Push In |
+| 2 | 3s | Anatomical visualization showing arthritic knee joint (narrowed space, osteophytes visible in warm amber) alongside healthy adjacent hip joint in teal (#0d9488), compensation pattern arrows showing load shift. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Comparison clear. Medical, educational, nuanced. | Slow Orbit Left |
+| 3 | 3s | Medium close-up, eye level. Chiropractor performing gentle low-force adjustment on senior patient using Activator instrument, patient seated comfortably, adapted technique for age. Warm clinical room, soft teal accents. Key light from camera right, 4000K, warm diffused quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Technique adapted and gentle. Professional, adapted, caring. | Slow Pan Right |
 
-**Vibe Motion:** Red "MYTH" stamp, green "TRUTH" reveal
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scales from 3x to 1x with rotation (damping: 8, stiffness: 200), text "Adjustments make arthritis worse" slides in 6 frames later. Hold 2s. "TRUTH" stamp in teal (#0d9488), "Keeps surrounding joints mobile, reduces overall load" slides in. Georgia 56px stamps, Nunito Sans 32px text on dark (#1a1a2e).
 
 ---
 
@@ -1347,12 +1391,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Active senior couple walking together, park setting, joyful, golden hour | Slow Push In |
-| 2 | 2s | Senior doing balance exercise, standing on one foot, confident, home setting | Slow Pan Right |
-| 3 | 2s | Senior in chiropractic office, getting adjusted, positive interaction | Static Hold |
-| 4 | 2s | Senior reaching overhead, full range of motion, active and capable, bright setting | Slow Pull Out |
+| 1 | 2s | Medium shot, eye level. Active senior couple (late 60s), comfortable walking shoes, striding together on park path, holding hands, joyful conversation. Tree-lined park, golden hour. Golden light from camera right, 3200K, warm soft quality. ARRI Alexa, Cooke, 35mm. Both in frame, connection and vitality. Joyful, active, aspirational. | Slow Push In |
+| 2 | 2s | Medium shot, eye level. Senior woman (70s), confident expression, standing on one foot while holding kitchen counter, balance exercise during daily routine. Bright home kitchen, morning light. Warm natural light from window camera left, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Full body, balance visible. Practical, confident, achievable. | Slow Pan Right |
+| 3 | 2s | Medium close-up, eye level. Senior man (70s) on chiropractic table, receiving gentle adjustment, positive conversation with practitioner, both smiling. Warm clinical room, comfortable. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Positive interaction visible. Warm, collaborative, trusting. | Static Hold |
+| 4 | 2s | Medium shot, eye level. Senior reaching overhead confidently, stretching full range of motion, capable and proud expression. Bright home or outdoor setting. Warm golden light from camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Full range visible. Capable, empowered, vital. | Slow Pull Out |
 
-**Vibe Motion:** Numbered checklist (1-4), "Age is a number. Mobility is a choice." closing card
+**Vibe Motion:** ChecklistOverlay: 4 items ("Walk 20-30 min daily", "Practice balance daily", "Get adjusted regularly", "Never stop moving through full range") entering sequentially via \<Series\>, each sliding from left (-80px) with teal (#0d9488) checkmark pop (damping: 12, stiffness: 200) delayed 12 frames. White Nunito Sans 32px on dark (#1a1a2e). Georgia 42px numbers. CallToAction: "Age is a number. Mobility is a choice." scale 0.8 to 1.0 (damping: 12, stiffness: 180).
 
 ---
 
@@ -1371,9 +1415,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Senior walking confidently on uneven surface (path, garden), navigating well | Slow Push In |
-| 2 | 3s | Anatomical visualization of vestibular and proprioceptive system, balance centers in brain connected to spine and joints, teal pathways, dark background | Slow Orbit Right |
-| 3 | 3s | Chiropractor working with senior, balance assessment, supportive clinical setting | Slow Pan Right |
+| 1 | 3s | Medium shot, eye level. Senior man (early 70s), light jacket, walking confidently on uneven garden path, navigating stone steps without hesitation. Home garden, mixed surfaces, afternoon light. Warm golden light from camera right, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Full body, confident navigation visible. Capable, steady, inspiring. | Slow Push In |
+| 2 | 3s | Anatomical visualization of vestibular and proprioceptive system: brain balance centers highlighted at cerebellum, nerve pathways in teal (#0d9488) extending down spine to joint receptors in feet, ankles, and pelvis. Pure black background. Cool directional light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Full pathway from brain to feet. Medical, systems-level, educational. | Slow Orbit Right |
+| 3 | 3s | Medium shot, eye level. Chiropractor performing balance assessment with senior patient standing, practitioner observing stance and weight distribution. Supportive clinical room, grab bars nearby, warm tones. Key light from camera right, 4000K, diffused quality. ARRI Alexa, Cooke, 35mm. Both in frame, assessment visible. Professional, supportive, thorough. | Slow Pan Right |
+
+**Vibe Motion:** StatCard: "#1 cause of injury over 65" in white Georgia 48px, "Balance + reaction time + mobility = prevention" in Nunito Sans 28px on dark (#1a1a2e). Teal (#0d9488) accent bar. Scale 0.9 to 1.0. Smooth spring (damping: 200). Hold 3s.
 
 ---
 
@@ -1392,9 +1438,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Senior (75+) entering chiropractic office for the first time, slightly hesitant, warm reception area | Slow Push In |
-| 2 | 3s | Chiropractor performing gentle low-force technique on senior patient, Activator or drop table, warm clinical setting | Slow Pan Right |
-| 3 | 3s | Same senior leaving office, noticeably more upright, smiling, confidence visible | Slow Pull Out |
+| 1 | 3s | Medium shot, eye level. Senior woman (late 70s), neat cardigan, silver hair, entering chiropractic office for first time, slightly hesitant posture, looking around warm reception area. Reception with plants, warm wood counter, welcoming signage. Warm overhead and window light, 4000K, soft diffused quality. ARRI Alexa, Cooke, 35mm. Full body, initial uncertainty visible. Authentic, warm, inviting. | Slow Push In |
+| 2 | 3s | Medium close-up, eye level. Chiropractor performing gentle low-force technique using Activator instrument on senior patient's thoracic spine, patient seated comfortably, minimal force evident. Warm clinical room, padded chair. Key light from camera right, 4000K, warm diffused quality. ARRI Alexa, Cooke, 35mm. Instrument and gentle contact visible. Adapted, precise, gentle. | Slow Pan Right |
+| 3 | 3s | Medium shot, eye level. Same senior woman leaving office, noticeably more upright, genuine smile, shoulders back, confidence in stride. Same reception area, warm light. Warm golden light from window camera left, 3500K, soft quality. ARRI Alexa, Cooke, 35mm. Transformation in posture visible. Uplifted, confident, grateful. | Slow Pull Out |
+
+**Vibe Motion:** CallToAction: "It's never too late to start" in white Georgia 48px, teal (#0d9488) circular accent element, scale 0.8 to 1.0 with glow delayed 10 frames (damping: 12, stiffness: 180). Dark (#1a1a2e) background. Hold 4s.
 
 ---
 
@@ -1418,10 +1466,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Clean, modern chiropractic office, warm and inviting, professional but approachable | Slow Pan Right |
-| 2 | 4s | Anatomical visualization of spine with nervous system branching out to entire body, teal nerve pathways, organs and muscles connected, dark background | Slow Orbit Right |
-| 3 | 3s | Close-up of chiropractic adjustment in progress, precise hand contact, professional technique | Slow Push In |
-| 4 | 3s | Patient sitting up after adjustment, moving freely, testing range of motion, pleasantly surprised | Slow Pull Out |
+| 1 | 3s | Wide shot, eye level. Clean modern chiropractic office, adjustment table centered, anatomical spine model on shelf, green plants on windowsill. Warm diffused window light from camera right, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Deep focus, inviting negative space. Warm, professional, welcoming. | Slow Pan Right |
+| 2 | 4s | Extreme close-up. Anatomical visualization of full spine with nervous system branching to organs and muscles, teal (#0d9488) nerve pathways illuminating sequentially from brain stem downward, each organ glowing as signal reaches it. Single cool rim light from above, 5600K, hard edge. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Pure black background, spine centered. Scientific, luminous, awe. | Slow Orbit Right |
+| 3 | 3s | Close-up, slightly above eye level. Chiropractor's hands making precise contact on thoracic spine, patient prone and relaxed, white clinical shirt with rolled sleeves. Warm practical light from overhead, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on hands, patient softly blurred. Precise, controlled, clinical. | Slow Push In |
+| 4 | 3s | Medium shot, eye level. Man in his 40s sitting up on adjustment table, rolling shoulders with expression of pleasant surprise, testing neck rotation. Warm window light from camera left, 4500K, diffused. ARRI Alexa, Cooke, 35mm. Subject centered, headroom for text. Relieved, natural, hopeful. | Slow Pull Out |
+
+**Vibe Motion:** TitleCard: "What Does a Chiropractor Actually Do?" sliding down from -60px (damping: 200), subtitle "No gimmicks. No mystery." delayed 8 frames. White text on dark (#1a1a2e), Georgia 52px heading, Nunito Sans 32px subtitle. SectionCard at nervous system segment: two-stage fade, label "THE NERVOUS SYSTEM" in teal (#0d9488) 28px caps, body text Nunito Sans 36px. Hold 4s.
 
 ---
 
@@ -1440,10 +1490,12 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Dramatic visualization of brain with electrical signals firing, high-detail, cinematic dark background with teal nerve pulses | Slow Push In |
-| 2 | 4s | Full nervous system visualization, signals traveling from brain through spinal cord branching to every organ and muscle, teal pathways lighting up sequentially, dark background | Slow Tilt Down |
-| 3 | 3s | Close-up of spinal segment, restricted motion shown, then freed with adjustment, teal glow returning | Slow Orbit Right |
-| 4 | 2s | Full body visualization with all nerve pathways glowing teal, clear communication | Slow Pull Out |
+| 1 | 3s | Extreme close-up. Human brain rendered in high anatomical detail, electrical impulses firing across cortex in teal (#0d9488) bursts, synaptic arcs visible. Single cold blue light from camera left, 5600K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Pure black background, brain filling frame. Dramatic, electric, scientific. | Slow Push In |
+| 2 | 4s | Wide anatomical shot. Full nervous system visualization, luminous teal (#0d9488) signals traveling from brain stem through spinal cord, branching to heart, lungs, stomach, muscles, each organ glowing as signal arrives. Cool rim light from above, 5600K, hard edge. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Black background, body centered. Awe, interconnected, alive. | Slow Tilt Down |
+| 3 | 3s | Extreme close-up. Single spinal segment in cross-section, vertebra misaligned with dim red (#e53e3e) nerve signal struggling through narrowed foramen, then vertebra shifts into alignment and signal surges bright teal (#0d9488). Side light from camera right, 5000K, hard quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Dark background, segment centered. Tense-to-resolved, clinical, precise. | Slow Orbit Right |
+| 4 | 2s | Wide shot. Full translucent human figure, every nerve pathway glowing steady teal (#0d9488), organs pulsing gently with healthy function. Balanced rim light from both sides, 5200K, soft quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Black background, figure centered with space above. Whole, luminous, thriving. | Slow Pull Out |
+
+**Vibe Motion:** StatCard: "3 MILLION messages per second" with large Georgia 56px number scaling from 0.8 to 1 (damping: 12, stiffness: 180), teal (#0d9488) accent on number, white descriptor text Nunito Sans 32px on dark (#1a1a2e). Delayed glow ring 10 frames after number lands. Hold 4s. SectionCard at "It's neuroscience" beat: label "THE SCIENCE" in teal caps 28px, body text Nunito Sans 36px, two-stage fade (damping: 200).
 
 ---
 
@@ -1462,12 +1514,14 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 2s | Newborn being adjusted, fingertip pressure, warm lighting | Slow Push In |
-| 2 | 2s | Toddler on adjustment table, playful interaction with chiropractor | Slow Pan Right |
-| 3 | 2s | Teenager getting adjusted, sports-active appearance | Slow Pan Right |
-| 4 | 2s | Adult on adjustment table, standard adjustment | Slow Pan Right |
-| 5 | 2s | Senior getting gentle low-force technique | Slow Pan Right |
-| 6 | 2s | Multi-generational family leaving office together, all smiling, warm reception area | Slow Pull Out |
+| 1 | 2s | Close-up, slightly above. Newborn (3 days old) cradled in parent's arms, chiropractor's single fingertip making gentle contact on tiny upper cervical spine, baby calm and drowsy. Warm soft light from camera right, 3800K, diffused. ARRI Alexa, Cooke, 35mm. Shallow DOF on fingertip contact point. Tender, delicate, trust. | Slow Push In |
+| 2 | 2s | Medium shot, eye level. Toddler (2 years old) in colorful overalls sitting up on adjustment table, giggling, chiropractor making playful face while hands on small spine. Bright warm overhead light, 4200K, soft quality. ARRI Alexa, Cooke, 35mm. Subject centered, colorful and lively. Playful, joyful, gentle. | Slow Pan Right |
+| 3 | 2s | Medium shot, eye level. Teenage girl (15) in soccer jersey lying prone, chiropractor adjusting mid-back, athletic bag visible beside table. Warm practical light from above, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Clean clinical background. Active, growing, supported. | Slow Pan Right |
+| 4 | 2s | Medium close-up, eye level. Man in his 30s on adjustment table, chiropractor performing standard thoracic adjustment, patient relaxed with eyes closed. Warm diffused light from camera left, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF. Routine, comfortable, professional. | Slow Pan Right |
+| 5 | 2s | Medium shot, eye level. Woman in her 70s seated upright, chiropractor using activator instrument on cervical spine, patient smiling gently. Warm soft light from camera right, 3800K, diffused. ARRI Alexa, Cooke, 35mm. Clean background. Gentle, dignified, careful. | Slow Pan Right |
+| 6 | 2s | Wide shot, eye level. Three generations (grandma, parents, two kids) walking through reception area toward front door, all smiling, receptionist waving. Warm golden light from windows, 3800K, soft quality. ARRI Alexa, Cooke, 35mm. Deep focus, group fills frame. Warm, connected, whole-family. | Slow Pull Out |
+
+**Vibe Motion:** SectionCard: sequential age labels entering via <Series>, each label ("Newborns" / "Toddlers" / "Teens" / "Adults" / "Seniors") sliding up from 40px with teal (#0d9488) age icon, Nunito Sans 36px white text on dark (#1a1a2e). 2-frame stagger, smooth spring (damping: 200). Each holds 60 frames (2s) before next enters. Georgia 48px heading "Every Age. Every Stage." at top.
 
 ---
 
@@ -1486,9 +1540,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Family (parents, two kids, grandparent) walking into chiropractic office together, warm reception | Slow Push In |
-| 2 | 3s | Split-frame montage: dad getting adjusted, mom getting adjusted, kid getting adjusted, warm clinical setting | Quick Snap Zoom |
-| 3 | 3s | Same family at home, relaxed, connected, playing together, warm natural lighting | Slow Pull Out |
+| 1 | 3s | Wide shot, eye level. Family of five (dad, mom, two kids under 10, grandmother) walking through glass front door of bright chiropractic office, receptionist greeting them warmly, green plants flanking entrance. Golden morning light from windows, 4000K, soft quality. ARRI Alexa, Cooke, 35mm. Deep focus, family filling center frame. Warm, welcoming, togetherness. | Slow Push In |
+| 2 | 3s | Medium shot, eye level. Dad (late 30s, casual polo) prone on adjustment table receiving thoracic adjustment, expression of calm trust, clean clinical room with teal accent wall. Warm overhead light, 4500K, even quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, clinical background softly blurred. Routine, comfortable, family-centered. | Quick Snap Zoom |
+| 3 | 3s | Wide shot, slightly elevated. Same family at home in living room, kids playing on carpet, parents on couch looking relaxed and present, grandmother reading to youngest child, warm natural light streaming through windows. Golden hour light from camera left, 3800K, soft diffused. ARRI Alexa, Cooke, 35mm. Deep focus, family fills frame naturally. Connected, peaceful, thriving. | Slow Pull Out |
+
+**Vibe Motion:** TitleCard: "Why the Whole Family Comes Together" sliding down from -60px (damping: 200), white text Georgia 48px on dark (#1a1a2e). SectionCard at family-functions-better beat: label "THE RIPPLE EFFECT" in teal (#0d9488) caps 28px, body text "When everyone functions better, the family functions better" Nunito Sans 36px, two-stage fade (damping: 200). Hold 4s.
 
 ---
 
@@ -1510,15 +1566,15 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | New patient arriving at clean, welcoming chiropractic office, reception desk, warm lighting | Slow Push In |
-| 2 | 2s | Patient filling out forms on tablet, comfortable waiting area | Slow Pan Right |
-| 3 | 3s | Chiropractor and patient in consultation room, face-to-face conversation, genuine engagement | Slow Push In |
-| 4 | 3s | Physical exam, chiropractor assessing posture and range of motion, professional clinical setting | Slow Pan Right |
-| 5 | 3s | First adjustment in progress, patient comfortable, chiropractor explaining before performing | Slow Orbit Right |
-| 6 | 3s | Post-adjustment discussion, chiropractor showing findings, patient nodding, understanding | Slow Pan Right |
-| 7 | 2s | Patient leaving, shaking chiropractor's hand, smiling, relieved | Slow Pull Out |
+| 1 | 3s | Wide shot, eye level. Woman in her 30s (first-time patient, casual blouse and jeans) walking through glass front door of bright modern chiropractic office, reception desk with friendly staff, green plants, warm wood accents. Golden morning light from windows, 4000K, soft diffused. ARRI Alexa, Cooke, 35mm. Deep focus, patient centered with welcoming space around her. Approachable, reassuring, fresh-start. | Slow Push In |
+| 2 | 2s | Close-up, slightly above. Patient's hands filling out health history on iPad, comfortable waiting chair visible, soft neutral tones. Warm practical light from above, 4200K, even quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on tablet screen, background softly blurred. Organized, comfortable, thorough. | Slow Pan Right |
+| 3 | 3s | Medium shot, eye level. Chiropractor (mid-30s, professional but approachable, white clinical coat) seated across from patient in consultation room, leaning forward with genuine engagement, clipboard on desk. Warm diffused light from camera right, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Both subjects in frame, shallow DOF on background. Empathetic, conversational, trust-building. | Slow Push In |
+| 4 | 3s | Medium shot, eye level. Chiropractor assessing patient's standing posture from side view, hands palpating cervical spine, patient in comfortable clothing. Bright even overhead light, 4500K, clinical quality. ARRI Alexa, Cooke, 35mm. Clean clinical background, full postural view. Professional, methodical, thorough. | Slow Pan Right |
+| 5 | 3s | Medium close-up, slightly above. First adjustment in progress, chiropractor's hands positioned on patient's thoracic spine, patient prone and relaxed, chiropractor's mouth open mid-explanation. Warm overhead light, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF on hand contact, patient at ease. Gentle, precise, communicative. | Slow Orbit Right |
+| 6 | 3s | Medium shot, eye level. Post-adjustment, chiropractor pointing to spinal model on desk while patient sits upright, nodding with understanding, screen showing posture scan in background. Warm diffused light from camera left, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Both subjects visible, educational props in frame. Collaborative, clear, empowering. | Slow Pan Right |
+| 7 | 2s | Medium shot, eye level. Patient standing at reception, shaking chiropractor's hand, genuine smile of relief, scheduling card in other hand. Warm golden light from windows, 3800K, soft diffused. ARRI Alexa, Cooke, 35mm. Subject centered with headroom for text. Relieved, grateful, confident. | Slow Pull Out |
 
-**Vibe Motion:** Step overlays: "Step 1: Health History" / "Step 2: Consultation" / "Step 3: Exam" / "Step 4: Adjustment" / "Step 5: Plan"
+**Vibe Motion:** StepIndicator: 5 steps ("Health History" / "Consultation" / "Exam" / "Adjustment" / "Your Plan") entering sequentially via <Series>, each sliding up from 50px with step number in teal (#0d9488) circle. Georgia 48px step number, Nunito Sans 36px step label, white on dark (#1a1a2e). Smooth spring (damping: 200), description delayed 8 frames after number. Each step holds 10-12s (300-360 frames). Upper third placement to keep scene visible below.
 
 ---
 
@@ -1537,11 +1593,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Calendar showing regular monthly appointments, consistency visual, clean design | Slow Push In |
-| 2 | 3s | Visualization of spine going from misaligned (red) to aligned (teal) and staying aligned with regular care, dark background | Slow Orbit Right |
-| 3 | 2s | Patient and chiropractor in maintenance visit, quick and easy, smiling | Slow Pull Out |
+| 1 | 3s | Close-up, eye level. Stylized calendar page showing regular monthly appointments marked with teal (#0d9488) dots, consistent spacing, clean minimalist design on white background. Single soft light from above, 5000K, even quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Shallow DOF, calendar fills frame. Organized, consistent, intentional. | Slow Push In |
+| 2 | 3s | Extreme close-up. Three-stage spinal visualization on black background: first vertebra glowing red (#e53e3e) misaligned, then shifting to aligned teal (#0d9488), then maintaining steady teal glow with protective aura. Cool rim light from above, 5600K, hard edge. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Centered composition, dark background. Progressive, scientific, reassuring. | Slow Orbit Right |
+| 3 | 2s | Medium shot, eye level. Regular patient (man in his 40s, athletic wear) sitting up from quick maintenance adjustment, casual fist-bump with chiropractor, both smiling, relaxed energy. Warm diffused light from camera right, 4500K, soft quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Clean clinical background. Quick, easy, routine. | Slow Pull Out |
 
-**Vibe Motion:** Red "MYTH" stamp, green "TRUTH" reveal
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scaling from 3x to 1x with slight rotation (damping: 8, stiffness: 200), text "Once pain is gone, you're done" sliding in 6 frames after stamp. Hold 2s silence. "TRUTH" stamp in teal (#0d9488) same animation, text "Pain is the last to show and first to leave." Bold Georgia 56px stamps, Nunito Sans 36px supporting text, white on dark (#1a1a2e). High contrast, full safe-zone width.
 
 ---
 
@@ -1560,11 +1616,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Close-up of chiropractic adjustment with visible reaction from patient (surprised but smiling), clinical setting | Quick Snap Zoom |
-| 2 | 3s | Anatomical visualization of joint space, gas bubbles releasing during movement, teal fluid dynamics, dark background | Slow Orbit Right |
-| 3 | 2s | Patient laughing after adjustment, relaxed, "that was it?" expression | Slow Pull Out |
+| 1 | 3s | Close-up, eye level. Chiropractor's hands performing cervical adjustment, patient's face visible with wide-eyed surprised-but-smiling reaction at the sound, clean white clinical background. Hard overhead light, 5000K, crisp quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Shallow DOF on patient's expression, hands sharp. Dramatic, playful, demystifying. | Quick Snap Zoom |
+| 2 | 3s | Extreme close-up. Anatomical cross-section of synovial joint, translucent joint capsule with teal (#0d9488) fluid, tiny gas bubbles forming and releasing as joint space expands, fluid dynamics rendered in slow motion. Cool rim light from camera left, 5600K, hard edge. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Black background, joint fills frame. Scientific, mesmerizing, educational. | Slow Orbit Right |
+| 3 | 2s | Medium shot, eye level. Patient (woman in her 30s, casual clothing) sitting up on table laughing, "that was it?" expression, chiropractor smiling beside her. Warm diffused light from camera right, 4500K, soft quality. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Subject centered, open framing. Light-hearted, relieved, fun. | Slow Pull Out |
 
-**Vibe Motion:** Red "MYTH" stamp, green "TRUTH" reveal
+**Vibe Motion:** MythTruthReveal: "MYTH" stamp in red (#e53e3e) scaling from 3x to 1x with rotation (damping: 8, stiffness: 200), text "That's your bones cracking" sliding in 6 frames after stamp. Hold 2s silence. "TRUTH" stamp in teal (#0d9488) same animation, text "It's just gas bubbles releasing." Bold Georgia 56px stamps, Nunito Sans 36px supporting text, white on dark (#1a1a2e). SectionCard after truth: "Same as cracking your knuckles" Nunito Sans 32px, two-stage fade (damping: 200).
 
 ---
 
@@ -1583,9 +1639,11 @@ Every video below is production-ready. Record the voiceover script, generate the
 
 | Shot | Duration | Prompt | Camera Movement |
 |------|----------|--------|-----------------|
-| 1 | 3s | Chiropractor speaking directly and honestly, eye contact with camera feeling, clean clinical background | Slow Push In |
-| 2 | 3s | Visualization of nervous system and spine with "function restoration" concept, clear and focused, teal on dark | Slow Orbit Right |
-| 3 | 2s | Chiropractor and patient shaking hands, trust and respect visible | Slow Pull Out |
+| 1 | 3s | Medium close-up, eye level. Chiropractor (mid-30s, warm expression, professional white coat) speaking directly to camera with honest, open body language, hands slightly raised in candid gesture, clean clinical room with minimal backdrop. Warm diffused key light from camera right, 4500K, soft quality. ARRI Alexa, Cooke, 35mm. Shallow DOF, subject centered with negative space above. Honest, direct, trust-building. | Slow Push In |
+| 2 | 3s | Wide anatomical shot. Full spine with nervous system visualization, teal (#0d9488) signals flowing cleanly from brain through spinal cord to all extremities, labeled zone reading "FUNCTION RESTORATION" in clean typography. Cool rim light from above, 5600K, hard edge. RED V-RAPTOR, Zeiss Ultra Prime, 50mm. Black background, spine centered, clear and focused. Scientific, purposeful, defined. | Slow Orbit Right |
+| 3 | 2s | Medium shot, eye level. Chiropractor and patient (woman in her 40s) standing, genuine handshake at consultation room door, mutual respect visible in expressions, warm wood-toned doorframe. Golden warm light from hallway behind, 3800K, soft diffused. ARRI Alexa, Cooke, 35mm. Both subjects in frame, shallow background. Trustworthy, genuine, professional. | Slow Pull Out |
+
+**Vibe Motion:** TitleCard: "What We Don't Treat" sliding down from -60px (damping: 200), subtitle "And why that matters" delayed 8 frames. White text Georgia 48px on dark (#1a1a2e), Nunito Sans 32px subtitle. SectionCard at "our lane" beat: label "OUR SCOPE" in teal (#0d9488) caps 28px, body text "Restore function. Let the body heal." Nunito Sans 36px, two-stage fade (damping: 200). Hold 4s.
 
 ---
 

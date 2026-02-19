@@ -70,7 +70,8 @@ This section documents the actual Remotion project at `packages/remotion-studio/
 - Animations use `useCurrentFrame()` + `spring()` + `interpolate()` only. No CSS animations or transitions.
 - Sequencing uses `<Series>` for sequential scenes.
 - Props use `type` declarations, not `interface`.
-- All compositions are registered in `src/Root.tsx` inside a `<Folder name="Content-Formats">`.
+- Full-format compositions are in `<Folder name="Content-Formats">` in `src/Root.tsx`.
+- Per-component shot compositions are in `<Folder name="Shots">` in `src/Root.tsx`.
 
 ### Theme System
 
@@ -101,8 +102,12 @@ All components live in `src/components/` and accept a `theme: Theme` prop.
 | `HookText` | `text`, `theme` | scale 1.2 to 1 + slide 20px (damping: 15, stiffness: 200) |
 | `SectionCard` | `label`, `text`, `theme` | two-stage fade: label then text (damping: 200, text delayed 6 frames) |
 | `FrequencyCard` | `frequency`, `keyCue`, `theme` | key cue slide 40px (damping: 200), badge scale pop (damping: 12, delay: 8) |
+| `ChartCard` | `title?`, `bars` (label/value/color?), `maxValue?`, `theme` | staggered bars via spring (5-frame delay), labels fade with bars, title slide down |
+| `QuoteCard` | `quote`, `attribution`, `role?`, `theme` | quotation mark scale 1.5 to 1 (damping: 12), text slide up delayed 8f, attribution slide from right delayed 15f |
 
 ### Composition Schemas
+
+**Full-format compositions** (render a complete video format, 15-45s):
 
 | Composition | ID | Duration | Unique Fields |
 |-------------|-----|----------|---------------|
@@ -112,6 +117,36 @@ All components live in `src/components/` and accept a `theme: Theme` prop.
 | MythBuster (D) | `MythBuster` | 15s | `mythText`, `truthText`, `explanationText`, `ctaText` (NO title or hookText) |
 | Walkthrough (E) | `Walkthrough` | 45s | `title`, `hookText`, `steps` (2-8, each with stepNumber/label/description), `reassuranceText`, `ctaText` |
 
+**Shot compositions** (render a single component clip, 2-15s):
+
+| Composition | ID | Props |
+|-------------|-----|-------|
+| Shot-TitleCard | `Shot-TitleCard` | `title`, `subtitle?`, `durationInSeconds`, `theme` |
+| Shot-StatCard | `Shot-StatCard` | `value`, `label`, `durationInSeconds`, `theme` |
+| Shot-SectionCard | `Shot-SectionCard` | `label`, `text`, `durationInSeconds`, `theme` |
+| Shot-HookText | `Shot-HookText` | `text`, `durationInSeconds`, `theme` |
+| Shot-Checklist | `Shot-Checklist` | `items` (1-7, number/label/description), `durationInSeconds`, `theme` |
+| Shot-MythTruth | `Shot-MythTruth` | `text`, `type` ("myth"/"truth"), `durationInSeconds`, `theme` |
+| Shot-StepIndicator | `Shot-StepIndicator` | `stepNumber`, `totalSteps`, `label`, `description`, `durationInSeconds`, `theme` |
+| Shot-FrequencyCard | `Shot-FrequencyCard` | `frequency`, `keyCue`, `durationInSeconds`, `theme` |
+| Shot-CTA | `Shot-CTA` | `text`, `durationInSeconds`, `theme` |
+| Shot-ChartCard | `Shot-ChartCard` | `title?`, `bars` (1-8, label/value/color?), `maxValue?`, `durationInSeconds`, `theme` |
+| Shot-QuoteCard | `Shot-QuoteCard` | `quote`, `attribution`, `role?`, `durationInSeconds`, `theme` |
+
+Shot compositions use `calculateMetadata` to dynamically set duration from `durationInSeconds` prop. Each is wrapped in a `ShotWrapper` that handles entrance (15 frames fade+scale) and exit (15 frames fade out).
+
+### Visual Quality Patterns
+
+All components use these visual techniques for professional output:
+
+- **Radial gradient backgrounds**: `radial-gradient(ellipse at center, ${theme.darkBackground} 0%, #0f0f1e 100%)` instead of flat colors
+- **Glow effects**: Large blurred circles (300-500px, 5-8% opacity) behind focal elements using `theme.primaryColor`
+- **Accent lines**: 3-4px teal lines that animate in (scale or width interpolation) for visual separation
+- **Text shadows**: `0 2px 20px rgba(0,0,0,0.3)` on headings for depth
+- **Pulse animations**: `Math.sin(frame * rate) * amplitude` for subtle living effects on glows and borders
+- **Screen shake**: `Math.sin(frame * frequency) * decay` for impact moments (MythTruthReveal stamp)
+- **Color wash flash**: Brief full-screen color overlay that fades quickly for dramatic reveals
+
 ### File Structure
 
 ```
@@ -119,6 +154,7 @@ packages/remotion-studio/src/
   Root.tsx                    # Composition registration + default props
   schemas/
     theme.ts                  # ThemeSchema (7 fields) + defaultTheme
+    shot.ts                   # 11 shot schemas (ShotTitleCardSchema, etc.)
     explainer.ts              # ExplainerSchema
     checklist.ts              # ChecklistSchema
     demo.ts                   # DemoSchema
@@ -130,7 +166,20 @@ packages/remotion-studio/src/
     Demo.tsx                  # Format C composition
     MythBuster.tsx            # Format D composition
     Walkthrough.tsx           # Format E composition
+    shots/
+      ShotTitleCard.tsx       # Single TitleCard clip
+      ShotStatCard.tsx        # Single StatCard clip
+      ShotSectionCard.tsx     # Single SectionCard clip
+      ShotHookText.tsx        # Single HookText clip
+      ShotChecklist.tsx       # Checklist items clip (uses Series)
+      ShotMythTruth.tsx       # Myth or Truth stamp clip
+      ShotStepIndicator.tsx   # Single step clip
+      ShotFrequencyCard.tsx   # Frequency/key cue clip
+      ShotCallToAction.tsx    # CTA clip
+      ShotChartCard.tsx      # Chart/graph clip
+      ShotQuoteCard.tsx      # Quote/testimonial clip
   components/
+    ShotWrapper.tsx           # Entrance/exit animation wrapper
     TitleCard.tsx
     StatCard.tsx
     ChecklistOverlay.tsx
@@ -140,4 +189,31 @@ packages/remotion-studio/src/
     HookText.tsx
     SectionCard.tsx
     FrequencyCard.tsx
+    ChartCard.tsx             # Animated bar chart
+    QuoteCard.tsx             # Quote/testimonial with attribution
 ```
+
+### Dashboard Render API
+
+The dashboard at `packages/dashboard/` provides per-component rendering:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/renders/:code` | GET | Get render jobs for a video |
+| `/api/renders/:code` | POST | Render full-format composition |
+| `/api/renders/:code/shots` | GET | Get parsed Vibe Motion components + shot jobs |
+| `/api/renders/:code/shot/:shotId` | POST | Render a single component clip |
+| `/api/renders/:code/all-shots` | POST | Render all component clips for a video |
+| `/api/renders/:code/composer` | POST | Render user-edited components from the Composer |
+
+The Vibe Motion parser (`server/parsers/vibe-motion.ts`) extracts component references from content library Vibe Motion text and maps them to shot composition props. Supports 11 component types: TitleCard, StatCard, SectionCard, HookText, ChecklistOverlay, MythTruthReveal, StepIndicator, FrequencyCard, CallToAction, ChartCard, QuoteCard.
+
+### Composer
+
+The dashboard includes a full-page Composer view (`components/composer/`) for interactive editing of motion graphics. It embeds `@remotion/player` for live preview and provides:
+
+- **Component registry** (`component-registry.ts`): Maps all 11 component types to their React components, default props, and editable field definitions
+- **Live Player preview**: Real-time rendering of selected component at 9:16 / 30fps using `@remotion/player`
+- **Prop editor**: Dynamic form generation based on field definitions (text, number, select, array, color)
+- **Component list**: Drag-and-drop reorderable list with add/remove capabilities using `@dnd-kit`
+- **Render integration**: Renders edited components through the `/api/renders/:code/composer` endpoint

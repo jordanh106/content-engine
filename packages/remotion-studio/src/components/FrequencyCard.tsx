@@ -33,10 +33,14 @@ export const FrequencyCard: React.FC<FrequencyCardProps> = ({
   const y = interpolate(enterProgress, [0, 1], [40, 0]);
   const badgeScale = interpolate(badgeProgress, [0, 1], [0.5, 1]);
 
+  // Subtle pulsing border on badge
+  const pulsePhase = Math.sin(frame * 0.1) * 0.3 + 0.7;
+  const borderOpacity = interpolate(badgeProgress, [0, 1], [0, pulsePhase]);
+
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: theme.darkBackground,
+        background: `radial-gradient(ellipse at center, ${theme.darkBackground} 0%, #0f0f1e 100%)`,
         justifyContent: "center",
         alignItems: "center",
         padding: 60,
@@ -51,6 +55,8 @@ export const FrequencyCard: React.FC<FrequencyCardProps> = ({
           transform: `scale(${badgeScale})`,
           opacity: badgeProgress,
           marginBottom: 32,
+          boxShadow: `0 8px 32px ${theme.primaryColor}40`,
+          border: `2px solid rgba(255,255,255,${borderOpacity * 0.2})`,
         }}
       >
         <div

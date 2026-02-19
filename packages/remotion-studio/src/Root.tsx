@@ -1,14 +1,52 @@
 import { Composition, Folder } from "remotion";
+import type { CalculateMetadataFunction } from "remotion";
 import { Explainer } from "./compositions/Explainer";
 import { Checklist } from "./compositions/Checklist";
 import { Demo } from "./compositions/Demo";
 import { MythBuster } from "./compositions/MythBuster";
 import { Walkthrough } from "./compositions/Walkthrough";
+import { ShotTitleCard } from "./compositions/shots/ShotTitleCard";
+import { ShotStatCard } from "./compositions/shots/ShotStatCard";
+import { ShotSectionCard } from "./compositions/shots/ShotSectionCard";
+import { ShotHookText } from "./compositions/shots/ShotHookText";
+import { ShotChecklist } from "./compositions/shots/ShotChecklist";
+import { ShotMythTruth } from "./compositions/shots/ShotMythTruth";
+import { ShotStepIndicator } from "./compositions/shots/ShotStepIndicator";
+import { ShotFrequencyCard } from "./compositions/shots/ShotFrequencyCard";
+import { ShotCallToAction } from "./compositions/shots/ShotCallToAction";
+import { ShotChartCard } from "./compositions/shots/ShotChartCard";
+import { ShotQuoteCard } from "./compositions/shots/ShotQuoteCard";
 import { ExplainerSchema } from "./schemas/explainer";
 import { ChecklistSchema } from "./schemas/checklist";
 import { DemoSchema } from "./schemas/demo";
 import { MythBusterSchema } from "./schemas/myth-buster";
 import { WalkthroughSchema } from "./schemas/walkthrough";
+import {
+  ShotTitleCardSchema,
+  ShotStatCardSchema,
+  ShotSectionCardSchema,
+  ShotHookTextSchema,
+  ShotChecklistSchema,
+  ShotMythTruthSchema,
+  ShotStepIndicatorSchema,
+  ShotFrequencyCardSchema,
+  ShotCTASchema,
+  ShotChartCardSchema,
+  ShotQuoteCardSchema,
+} from "./schemas/shot";
+import type {
+  ShotTitleCardProps,
+  ShotStatCardProps,
+  ShotSectionCardProps,
+  ShotHookTextProps,
+  ShotChecklistProps,
+  ShotMythTruthProps,
+  ShotStepIndicatorProps,
+  ShotFrequencyCardProps,
+  ShotCTAProps,
+  ShotChartCardProps,
+  ShotQuoteCardProps,
+} from "./schemas/shot";
 import { defaultTheme } from "./schemas/theme";
 import type { ExplainerProps } from "./schemas/explainer";
 import type { ChecklistProps } from "./schemas/checklist";
@@ -20,6 +58,15 @@ import type { WalkthroughProps } from "./schemas/walkthrough";
 const WIDTH = 1080;
 const HEIGHT = 1920;
 const FPS = 30;
+
+// Dynamic duration calculator for shot compositions
+const calcShotMetadata = <T extends { durationInSeconds: number }>(): CalculateMetadataFunction<T> => {
+  return async ({ props }) => {
+    return {
+      durationInFrames: Math.round(props.durationInSeconds * FPS),
+    };
+  };
+};
 
 const explainerDefaults: ExplainerProps = {
   title: "What Is Tech Neck?",
@@ -145,59 +192,274 @@ const walkthroughDefaults: WalkthroughProps = {
   theme: defaultTheme,
 };
 
+// Shot composition defaults
+const shotTitleCardDefaults: ShotTitleCardProps = {
+  title: "Why Back Pain Gets Worse in the Third Trimester",
+  subtitle: "And what helps",
+  durationInSeconds: 3,
+  theme: defaultTheme,
+};
+
+const shotStatCardDefaults: ShotStatCardProps = {
+  value: "60 lbs",
+  label: "of extra pressure on your spine",
+  durationInSeconds: 4,
+  theme: defaultTheme,
+};
+
+const shotSectionCardDefaults: ShotSectionCardProps = {
+  label: "THE ANATOMY",
+  text: "Your center of gravity shifts forward 2-3 inches during pregnancy",
+  durationInSeconds: 4,
+  theme: defaultTheme,
+};
+
+const shotHookTextDefaults: ShotHookTextProps = {
+  text: "That neck pain you feel after scrolling? It has a name.",
+  durationInSeconds: 3,
+  theme: defaultTheme,
+};
+
+const shotChecklistDefaults: ShotChecklistProps = {
+  items: [
+    { number: 1, label: "Head tilted one way", description: "May indicate torticollis" },
+    { number: 2, label: "Trouble latching", description: "Neck tension affects feeding" },
+    { number: 3, label: "Arching back", description: "May signal spinal discomfort" },
+  ],
+  durationInSeconds: 6,
+  theme: defaultTheme,
+};
+
+const shotMythTruthDefaults: ShotMythTruthProps = {
+  text: "Cracking your knuckles causes arthritis.",
+  type: "myth",
+  durationInSeconds: 4,
+  theme: defaultTheme,
+};
+
+const shotStepIndicatorDefaults: ShotStepIndicatorProps = {
+  stepNumber: 1,
+  totalSteps: 3,
+  label: "Assessment",
+  description: "We check your posture and range of motion.",
+  durationInSeconds: 5,
+  theme: defaultTheme,
+};
+
+const shotFrequencyCardDefaults: ShotFrequencyCardProps = {
+  frequency: "3 sets of 10, twice daily",
+  keyCue: "Keep your eyes level throughout the movement.",
+  durationInSeconds: 4,
+  theme: defaultTheme,
+};
+
+const shotCTADefaults: ShotCTAProps = {
+  text: "Save this and share it with someone who needs it.",
+  durationInSeconds: 3,
+  theme: defaultTheme,
+};
+
+const shotChartCardDefaults: ShotChartCardProps = {
+  title: "Patient Improvement Over 6 Weeks",
+  bars: [
+    { label: "Week 1", value: 20 },
+    { label: "Week 2", value: 35 },
+    { label: "Week 3", value: 55 },
+    { label: "Week 4", value: 70 },
+    { label: "Week 5", value: 82 },
+    { label: "Week 6", value: 94 },
+  ],
+  durationInSeconds: 5,
+  theme: defaultTheme,
+};
+
+const shotQuoteCardDefaults: ShotQuoteCardProps = {
+  quote: "I wish I had come in sooner. After three visits, I could finally sleep through the night.",
+  attribution: "Sarah M.",
+  role: "Patient, 8 months postpartum",
+  durationInSeconds: 5,
+  theme: defaultTheme,
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
-    <Folder name="Content-Formats">
-      <Composition
-        id="Explainer"
-        component={Explainer}
-        schema={ExplainerSchema}
-        defaultProps={explainerDefaults}
-        durationInFrames={30 * FPS}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-      <Composition
-        id="Checklist"
-        component={Checklist}
-        schema={ChecklistSchema}
-        defaultProps={checklistDefaults}
-        durationInFrames={35 * FPS}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-      <Composition
-        id="Demo"
-        component={Demo}
-        schema={DemoSchema}
-        defaultProps={demoDefaults}
-        durationInFrames={40 * FPS}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-      <Composition
-        id="MythBuster"
-        component={MythBuster}
-        schema={MythBusterSchema}
-        defaultProps={mythBusterDefaults}
-        durationInFrames={15 * FPS}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-      <Composition
-        id="Walkthrough"
-        component={Walkthrough}
-        schema={WalkthroughSchema}
-        defaultProps={walkthroughDefaults}
-        durationInFrames={45 * FPS}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-    </Folder>
+    <>
+      <Folder name="Content-Formats">
+        <Composition
+          id="Explainer"
+          component={Explainer}
+          schema={ExplainerSchema}
+          defaultProps={explainerDefaults}
+          durationInFrames={30 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Checklist"
+          component={Checklist}
+          schema={ChecklistSchema}
+          defaultProps={checklistDefaults}
+          durationInFrames={35 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Demo"
+          component={Demo}
+          schema={DemoSchema}
+          defaultProps={demoDefaults}
+          durationInFrames={40 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="MythBuster"
+          component={MythBuster}
+          schema={MythBusterSchema}
+          defaultProps={mythBusterDefaults}
+          durationInFrames={15 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Walkthrough"
+          component={Walkthrough}
+          schema={WalkthroughSchema}
+          defaultProps={walkthroughDefaults}
+          durationInFrames={45 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      </Folder>
+
+      <Folder name="Shots">
+        <Composition
+          id="Shot-TitleCard"
+          component={ShotTitleCard}
+          schema={ShotTitleCardSchema}
+          defaultProps={shotTitleCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotTitleCardProps>()}
+          durationInFrames={3 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-StatCard"
+          component={ShotStatCard}
+          schema={ShotStatCardSchema}
+          defaultProps={shotStatCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotStatCardProps>()}
+          durationInFrames={4 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-SectionCard"
+          component={ShotSectionCard}
+          schema={ShotSectionCardSchema}
+          defaultProps={shotSectionCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotSectionCardProps>()}
+          durationInFrames={4 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-HookText"
+          component={ShotHookText}
+          schema={ShotHookTextSchema}
+          defaultProps={shotHookTextDefaults}
+          calculateMetadata={calcShotMetadata<ShotHookTextProps>()}
+          durationInFrames={3 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-Checklist"
+          component={ShotChecklist}
+          schema={ShotChecklistSchema}
+          defaultProps={shotChecklistDefaults}
+          calculateMetadata={calcShotMetadata<ShotChecklistProps>()}
+          durationInFrames={6 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-MythTruth"
+          component={ShotMythTruth}
+          schema={ShotMythTruthSchema}
+          defaultProps={shotMythTruthDefaults}
+          calculateMetadata={calcShotMetadata<ShotMythTruthProps>()}
+          durationInFrames={4 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-StepIndicator"
+          component={ShotStepIndicator}
+          schema={ShotStepIndicatorSchema}
+          defaultProps={shotStepIndicatorDefaults}
+          calculateMetadata={calcShotMetadata<ShotStepIndicatorProps>()}
+          durationInFrames={5 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-FrequencyCard"
+          component={ShotFrequencyCard}
+          schema={ShotFrequencyCardSchema}
+          defaultProps={shotFrequencyCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotFrequencyCardProps>()}
+          durationInFrames={4 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-CTA"
+          component={ShotCallToAction}
+          schema={ShotCTASchema}
+          defaultProps={shotCTADefaults}
+          calculateMetadata={calcShotMetadata<ShotCTAProps>()}
+          durationInFrames={3 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-ChartCard"
+          component={ShotChartCard}
+          schema={ShotChartCardSchema}
+          defaultProps={shotChartCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotChartCardProps>()}
+          durationInFrames={5 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-QuoteCard"
+          component={ShotQuoteCard}
+          schema={ShotQuoteCardSchema}
+          defaultProps={shotQuoteCardDefaults}
+          calculateMetadata={calcShotMetadata<ShotQuoteCardProps>()}
+          durationInFrames={5 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      </Folder>
+    </>
   );
 };

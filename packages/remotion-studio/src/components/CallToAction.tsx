@@ -31,11 +31,13 @@ export const CallToAction: React.FC<CallToActionProps> = ({ text, theme }) => {
 
   const scale = interpolate(scaleProgress, [0, 1], [0.8, 1]);
   const glowOpacity = interpolate(glowProgress, [0, 1], [0, 0.3]);
+  // Subtle floating glow pulse
+  const pulsePhase = Math.sin(frame * 0.08) * 0.05;
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: theme.darkBackground,
+        background: `radial-gradient(ellipse at center, ${theme.darkBackground} 0%, #0f0f1e 100%)`,
         justifyContent: "center",
         alignItems: "center",
         padding: 60,
@@ -49,7 +51,7 @@ export const CallToAction: React.FC<CallToActionProps> = ({ text, theme }) => {
           height: 400,
           borderRadius: 200,
           backgroundColor: theme.primaryColor,
-          opacity: glowOpacity,
+          opacity: glowOpacity + pulsePhase,
           filter: "blur(80px)",
         }}
       />
@@ -65,6 +67,7 @@ export const CallToAction: React.FC<CallToActionProps> = ({ text, theme }) => {
           maxWidth: 800,
           transform: `scale(${scale})`,
           opacity: scaleProgress,
+          textShadow: "0 2px 20px rgba(0,0,0,0.3)",
         }}
       >
         {text}
