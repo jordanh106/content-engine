@@ -24,9 +24,35 @@
 
 ## Vibe Motion Graphics
 
-- Step number overlays ("Step 1: Assessment")
-- Gentle, reassuring typography (no harsh colors)
-- Closing card: "Questions? We're here to help"
+### Animation Pacing
+
+**Energy:** Gentle, reassuring. Calm and steady. This format reduces anxiety, so animations should feel smooth and unhurried. Longer holds, softer entrances, no snappy or bouncy springs.
+
+### Scene Flow
+
+| Scene | Duration | Component | Animation | Spring Config |
+|-------|----------|-----------|-----------|---------------|
+| Hook | 0-5s (0-150f) | `HookText` | Scale 1.2 to 1 + slide up 20px | damping: 15, stiffness: 200 |
+| Title | 5-8s (150-240f) | `TitleCard` | Slide down from -60px, subtitle delayed 8 frames | damping: 200 |
+| Steps | ~10-12s each | `StepIndicator` (per step) | Slide up 50px, description delayed 8 frames | damping: 200 |
+| Reassurance | 5s | `SectionCard` | Two-stage fade: label then text | damping: 200 |
+| CTA | Final 5s | `CallToAction` | Scale 0.8 to 1, glow delayed 10 frames | damping: 12, stiffness: 180 |
+
+### Step Sequencing
+
+Steps play sequentially via `<Series>`. Each step gets generous screen time (10-12 seconds) because this format prioritizes comprehension over speed. For 3 steps across ~35 seconds, allocate 11-12 seconds (330-360 frames) per step: 10 frames entrance, ~300 frames hold, 20 frames exit. The step number and label enter together as a unit, description follows 8 frames later. Use smooth (damping: 200) springs throughout. No bouncy or snappy animations.
+
+### Cinema Studio Shot Direction
+
+- **Hook (0-5s):** Warm, inviting medium shot. Soft lighting with fill. Subject speaks directly to camera with an empathetic, reassuring tone. Shallow depth of field. Slow push-in (0.25x speed).
+- **Title (5-8s):** Can hold the same warm shot while the title card overlays.
+- **Steps (8-45s):** Show the actual environment and process. For "Assessment," show the consultation space. For "The Service," show gentle, non-threatening angles of the service being performed. For "After," show the patient/client leaving relaxed. Use Cooke lenses for warm bokeh. Slow, smooth camera movements only. Each cut aligns with a new StepIndicator entrance.
+- **Reassurance:** Close-up on subject's face, warm and genuine. Direct address.
+- **CTA:** Pull back to medium shot. Open, welcoming framing. Headroom for text overlay.
+
+### Text Overlay Placement
+
+StepIndicator overlays sit in the upper third to keep the visual scene visible below. Use gentle colors from the theme (avoid red, harsh contrast). Step numbers use the heading font at 48px. Descriptions use the body font at 36px. Reassurance text centers mid-screen. All within the 9:16 safe zone (120px sides, 250px top, 420px bottom).
 
 ## Voiceover Template
 

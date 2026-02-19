@@ -23,9 +23,35 @@
 
 ## Vibe Motion Graphics
 
-- Red "MYTH" stamp on screen, then green "TRUTH" reveal
-- Split-screen possible: myth on left, truth on right
-- Bold typography, high contrast
+### Animation Pacing
+
+**Energy:** Fast, punchy, dramatic. This is the shortest format. Every animation hits hard and fast. The myth-to-truth reveal is the centerpiece moment.
+
+### Scene Flow
+
+| Scene | Duration | Component | Animation | Spring Config |
+|-------|----------|-----------|-----------|---------------|
+| Myth | 0-5s (0-150f) | `MythTruthReveal` (type: "myth") | Stamp scale 3 to 1 + rotation, text slide delayed 6 frames | damping: 8, stiffness: 200 |
+| Pause | 5-7s (150-210f) | Hold | Myth text holds on screen. No new animation. Let it sit. | N/A |
+| Truth | 7-15s (210-450f) | `MythTruthReveal` (type: "truth") | Stamp scale 3 to 1 + rotation, text slide delayed 6 frames | damping: 8, stiffness: 200 |
+| Explanation | 15-22s (450-660f) | `SectionCard` | Two-stage fade | damping: 200 |
+| CTA | Final 3-5s | `CallToAction` | Scale 0.8 to 1, glow delayed 10 frames | damping: 12, stiffness: 180 |
+
+### Reveal Timing
+
+The `MythTruthReveal` stamp animation is the signature moment. The stamp scales from 3x to 1x with a slight rotation, creating a dramatic "stamped" effect. The bouncy spring (damping: 8) gives it visible overshoot. The text slides in 6 frames after the stamp lands. Hold the myth for at least 2 seconds of silence before the truth reveal to build tension.
+
+### Cinema Studio Shot Direction
+
+- **Myth (0-5s):** Dramatic angle. Low key lighting, slightly desaturated. Subject delivers the myth with confidence. Tight framing, eye-level or slightly below. A single hard light source creates mood. Static camera.
+- **Pause (5-7s):** Same shot holds. Silence. Let the myth sit.
+- **Truth (7-15s):** Lighting shifts warmer. Cut to a different angle, slightly wider. The energy lifts. Subject breaks into the truth with authority.
+- **Explanation (15-22s):** Cut to detail shot or B-roll that supports the explanation. Or hold on the subject for direct address.
+- **CTA:** Medium shot, warm lighting, open framing. Inviting the viewer to comment.
+
+### Text Overlay Placement
+
+Myth and Truth stamps center-screen with maximum visual impact. Use the full safe zone width. Bold typography at 56px minimum for stamp text, 42px for supporting text. High contrast: myth uses red-tinted overlay, truth uses green/teal. All within the 9:16 safe zone (120px sides, 250px top, 420px bottom).
 
 ## Voiceover Template
 

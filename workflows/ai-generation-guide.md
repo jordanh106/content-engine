@@ -60,5 +60,6 @@ For stat cards, title cards, checklist overlays, and other text-based graphics:
 
 ## See Also
 
+- Prompt writing quick-reference: `workflows/cinema-studio-prompt-template.md`
 - Industry-specific camera rigs: `industries/<industry>/cinema-defaults.md`
 - Full Cinema Studio reference: `industries/<industry>/production-guides/cinema-studio-guide.md`
