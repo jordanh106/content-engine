@@ -8,16 +8,20 @@ type FilterBarProps = {
   audiences: Audience[];
   selectedAudience: string | null;
   selectedFormat: FormatId | null;
+  remotionOnly: boolean;
   onAudienceChange: (audience: string | null) => void;
   onFormatChange: (format: FormatId | null) => void;
+  onRemotionOnlyChange: (value: boolean) => void;
 };
 
 export const FilterBar: React.FC<FilterBarProps> = ({
   audiences,
   selectedAudience,
   selectedFormat,
+  remotionOnly,
   onAudienceChange,
   onFormatChange,
+  onRemotionOnlyChange,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row gap-3">
@@ -55,6 +59,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
           );
         })}
+        <button
+          onClick={() => onRemotionOnlyChange(!remotionOnly)}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-colors min-h-[36px]",
+            remotionOnly
+              ? "bg-teal-50 text-teal-700 border-teal-200"
+              : "bg-white text-slate-500 border-slate-200 hover:border-slate-300",
+          )}
+        >
+          Remotion Required
+        </button>
       </div>
     </div>
   );

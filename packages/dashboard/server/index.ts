@@ -4,6 +4,7 @@ import ViteExpress from "vite-express";
 import chokidar from "chokidar";
 import { createVideosRouter } from "./routes/videos.js";
 import { createPipelineRouter } from "./routes/pipeline.js";
+import { createRendersRouter } from "./routes/renders.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 
@@ -18,10 +19,13 @@ const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
 const industryDir = path.join(repoRoot, "industries", "chiropractic");
 const contentLibraryPath = path.join(industryDir, "content-library.md");
 const configPath = path.join(industryDir, "config.json");
+const renderOutputDir = path.join(repoRoot, "packages", "dashboard", "data", "renders");
 
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
+app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, renderOutputDir));
+app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
 const watcher = chokidar.watch(

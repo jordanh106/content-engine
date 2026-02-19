@@ -100,12 +100,16 @@ export type VideoSummary = {
   tags: string[];
   status: ProductionStatus;
   scriptPreview: string;
+  remotionGraphicsRequired: boolean;
+  remotionGraphicsNotes: string | null;
 };
 
 export type VideoDetailResponse = ParsedVideo & {
   status: ProductionStatus;
   statusUpdatedAt: string | null;
   notes: string | null;
+  remotionGraphicsRequired: boolean;
+  remotionGraphicsNotes: string | null;
 };
 
 // ============================================
@@ -121,3 +125,44 @@ export const DASHBOARD_VIEWS = [
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
+
+// ============================================
+// Pipeline API Response Types
+// ============================================
+
+export type PipelineVideo = {
+  code: string;
+  title: string;
+  format: FormatId;
+  audience: string;
+  audienceLabel: string;
+  daysInStage: number;
+};
+
+export type PipelineResponse = {
+  stages: Record<ProductionStatus, PipelineVideo[]>;
+  summary: Record<ProductionStatus, number>;
+  total: number;
+};
+
+// ============================================
+// Remotion Render Job Types
+// ============================================
+
+export type RenderJobStatus = "queued" | "running" | "completed" | "failed";
+
+export type RenderJob = {
+  id: string;
+  videoCode: string;
+  compositionId: string;
+  status: RenderJobStatus;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  outputUrl: string | null;
+  error: string | null;
+};
+
+export type RenderJobsResponse = {
+  jobs: RenderJob[];
+};

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles } from "lucide-react";
-import type { VideoDetailResponse } from "../shared/types.js";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert } from "lucide-react";
+import type {
+  VideoDetailResponse,
+  RenderJob,
+  RenderJobsResponse,
+} from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
@@ -17,10 +21,53 @@ type Tab = "script" | "shots" | "info";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
+  const queryClient = useQueryClient();
 
   const { data: video, isLoading } = useQuery<VideoDetailResponse>({
     queryKey: ["video", code],
     queryFn: () => fetch(`/api/videos/${code}`).then((r) => r.json()),
+  });
+
+  const { data: renderJobs } = useQuery<RenderJobsResponse>({
+    queryKey: ["render-jobs", code],
+    queryFn: () => fetch(`/api/renders/${code}`).then((r) => r.json()),
+    refetchInterval: (query) => {
+      const jobs = query.state.data?.jobs ?? [];
+      const hasActive = jobs.some((job) => job.status === "queued" || job.status === "running");
+      return hasActive ? 2000 : false;
+    },
+  });
+
+  const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
+  const isRendering = latestJob ? latestJob.status === "queued" || latestJob.status === "running" : false;
+
+  const renderMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/renders/${code}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get("content-type") || "";
+        if (response.status === 404) {
+          throw new Error("Render API not available. Restart dashboard server.");
+        }
+        if (contentType.includes("application/json")) {
+          const error = await response.json().catch(() => ({ error: "Failed to start render" }));
+          throw new Error(error.error || "Failed to start render");
+        }
+        const text = await response.text().catch(() => "");
+        throw new Error(text.includes("Cannot POST")
+          ? "Render API not available. Restart dashboard server."
+          : "Failed to start render");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["render-jobs", code] });
+    },
   });
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -72,6 +119,96 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
           >
             <X size={20} />
           </button>
+        </div>
+
+        {/* Render panel */}
+        <div className="px-4 md:px-6 py-4 border-b border-slate-200 bg-teal-50/40">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-1">
+                Remotion Graphics
+              </p>
+              <p className="text-xs text-slate-600">
+                Generate the format-matched composition for this video.
+              </p>
+            </div>
+            <button
+              onClick={() => renderMutation.mutate()}
+              disabled={renderMutation.isPending || isRendering}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[40px]",
+                renderMutation.isPending || isRendering
+                  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                  : "bg-teal-600 text-white hover:bg-teal-700",
+              )}
+            >
+              {renderMutation.isPending || isRendering ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  Rendering
+                </>
+              ) : (
+                <>
+                  <Wand2 size={12} />
+                  Render MP4
+                </>
+              )}
+            </button>
+          </div>
+
+          {(renderMutation.error as Error | null)?.message && (
+            <p className="text-xs text-rose-600 mt-2">
+              {(renderMutation.error as Error).message}
+            </p>
+          )}
+
+          {latestJob && (
+            <div className="mt-3 p-3 rounded-xl border border-slate-200 bg-white">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-slate-600">
+                  Latest: <span className="font-mono text-slate-800">{latestJob.id.slice(0, 8)}</span>
+                </p>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full",
+                    latestJob.status === "completed" && "bg-emerald-100 text-emerald-700",
+                    latestJob.status === "failed" && "bg-rose-100 text-rose-700",
+                    (latestJob.status === "queued" || latestJob.status === "running") &&
+                      "bg-amber-100 text-amber-700",
+                  )}
+                >
+                  {latestJob.status}
+                </span>
+              </div>
+
+              {latestJob.outputUrl && (
+                <div className="mt-2 flex gap-2">
+                  <a
+                    href={latestJob.outputUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold text-teal-700 hover:text-teal-800"
+                  >
+                    Open MP4
+                  </a>
+                  <a
+                    href={latestJob.outputUrl}
+                    download
+                    className="text-xs font-semibold text-slate-600 hover:text-slate-800"
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
+
+              {latestJob.error && (
+                <div className="mt-2 flex items-start gap-1.5 text-rose-700">
+                  <CircleAlert size={13} className="mt-0.5" />
+                  <p className="text-xs whitespace-pre-wrap">{latestJob.error}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -211,12 +348,12 @@ const ShotsTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
         ))}
       </div>
 
-      {video.vibeMotion && (
+      {video.remotionGraphicsNotes && (
         <div className="mt-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">
-            Vibe Motion Graphics
+            Remotion Graphics Notes
           </p>
-          <p className="text-sm text-violet-800">{video.vibeMotion}</p>
+          <p className="text-sm text-violet-800">{video.remotionGraphicsNotes}</p>
         </div>
       )}
     </div>

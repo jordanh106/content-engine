@@ -15,6 +15,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
   const [search, setSearch] = useState("");
   const [audienceFilter, setAudienceFilter] = useState<string | null>(null);
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
+  const [remotionOnly, setRemotionOnly] = useState(false);
 
   const { data: videos = [], isLoading: videosLoading } = useQuery<VideoSummary[]>({
     queryKey: ["videos"],
@@ -45,9 +46,12 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
           v.scriptPreview.toLowerCase().includes(q),
       );
     }
+    if (remotionOnly) {
+      result = result.filter((v) => v.remotionGraphicsRequired);
+    }
 
     return result;
-  }, [videos, audienceFilter, formatFilter, search]);
+  }, [videos, audienceFilter, formatFilter, search, remotionOnly]);
 
   // Group by audience for section headers
   const grouped = useMemo(() => {
@@ -80,8 +84,10 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
           audiences={config?.audiences || []}
           selectedAudience={audienceFilter}
           selectedFormat={formatFilter}
+          remotionOnly={remotionOnly}
           onAudienceChange={setAudienceFilter}
           onFormatChange={setFormatFilter}
+          onRemotionOnlyChange={setRemotionOnly}
         />
       </div>
 

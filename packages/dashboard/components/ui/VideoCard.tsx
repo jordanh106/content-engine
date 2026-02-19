@@ -1,4 +1,5 @@
 import React from "react";
+import { Sparkles } from "lucide-react";
 import type { VideoSummary } from "../../shared/types.js";
 import { FormatBadge } from "./FormatBadge.js";
 import { AudienceBadge } from "./AudienceBadge.js";
@@ -30,6 +31,12 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
       <div className="flex flex-wrap gap-1.5">
         <FormatBadge format={video.format} />
         <AudienceBadge audience={video.audience} label={video.audienceLabel} />
+        {video.remotionGraphicsRequired && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-wider">
+            <Sparkles size={11} />
+            Remotion
+          </span>
+        )}
       </div>
     </button>
   );

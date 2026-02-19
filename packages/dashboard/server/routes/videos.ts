@@ -39,6 +39,8 @@ export function createVideosRouter(
         status: (statusRecord?.currentStatus as ProductionStatus) || "SCRIPTED",
         scriptPreview:
           v.script.split("\n").find((l) => l.trim() && !l.startsWith("["))?.slice(0, 120) || "",
+        remotionGraphicsRequired: Boolean(v.vibeMotion),
+        remotionGraphicsNotes: v.vibeMotion,
       };
     });
 
@@ -90,6 +92,8 @@ export function createVideosRouter(
       status: (statusRecord?.currentStatus as ProductionStatus) || "SCRIPTED",
       statusUpdatedAt: statusRecord?.statusUpdatedAt || null,
       notes: statusRecord?.notes || null,
+      remotionGraphicsRequired: Boolean(video.vibeMotion),
+      remotionGraphicsNotes: video.vibeMotion,
     });
   });
 
