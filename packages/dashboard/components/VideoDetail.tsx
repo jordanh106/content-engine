@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
   RenderJobsResponse,
   ShotsResponse,
   VibeMotionComponent,
+  TimelineResponse,
 } from "../shared/types.js";
+import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
@@ -20,7 +22,7 @@ type VideoDetailProps = {
   onOpenComposer?: (code: string) => void;
 };
 
-type Tab = "script" | "shots" | "info";
+type Tab = "script" | "shots" | "info" | "timeline";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -49,6 +51,12 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
       const hasActive = jobs.some((j) => j.status === "queued" || j.status === "running");
       return hasActive ? 2000 : false;
     },
+  });
+
+  const { data: timelineData } = useQuery<TimelineResponse>({
+    queryKey: ["timeline", code],
+    queryFn: () => fetch(`/api/videos/${code}/timeline`).then((r) => r.json()),
+    enabled: activeTab === "timeline",
   });
 
   const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
@@ -126,6 +134,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "script", label: "Script", icon: <FileText size={16} /> },
     { id: "shots", label: "Shots", icon: <Camera size={16} /> },
+    { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
 
@@ -328,6 +337,16 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
             <>
               {activeTab === "script" && <ScriptTab video={video} />}
               {activeTab === "shots" && <ShotsTab video={video} />}
+              {activeTab === "timeline" && timelineData && (
+                <TimelineView
+                  items={timelineData.items}
+                  formatTiming={timelineData.formatTiming}
+                  totalDuration={timelineData.totalDuration}
+                />
+              )}
+              {activeTab === "timeline" && !timelineData && (
+                <div className="text-center py-12 text-slate-400">Loading timeline...</div>
+              )}
               {activeTab === "info" && <InfoTab video={video} />}
             </>
           )}

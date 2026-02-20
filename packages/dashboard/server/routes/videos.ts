@@ -4,11 +4,15 @@ import { db } from "../db.js";
 import { videoStatus } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
+import { loadAllFormatTimings } from "../parsers/format-timing.js";
+import { parseVibeMotion } from "../parsers/vibe-motion.js";
+import { buildTimeline } from "../parsers/timeline-builder.js";
 import type { VideoSummary, ProductionStatus, FormatId } from "../../shared/types.js";
 
 export function createVideosRouter(
   contentLibraryPath: string,
   configPath: string,
+  formatsDir: string,
 ) {
   const router = Router();
 
@@ -94,6 +98,37 @@ export function createVideosRouter(
       notes: statusRecord?.notes || null,
       remotionGraphicsRequired: Boolean(video.vibeMotion),
       remotionGraphicsNotes: video.vibeMotion,
+    });
+  });
+
+  // GET /api/videos/:code/timeline - unified timeline
+  router.get("/:code/timeline", (req, res) => {
+    const { code: videoCode } = req.params;
+    const videos = parseContentLibrary(contentLibraryPath);
+    const video = videos.find(
+      (v) => v.code.toLowerCase() === videoCode.toLowerCase(),
+    );
+
+    if (!video) {
+      res.status(404).json({ error: "Video not found" });
+      return;
+    }
+
+    const formatTimings = loadAllFormatTimings(formatsDir);
+    const formatTiming = formatTimings.get(video.format);
+
+    if (!formatTiming) {
+      res.status(404).json({ error: `No timing data for format ${video.format}` });
+      return;
+    }
+
+    const components = parseVibeMotion(video.vibeMotion ?? "", video);
+    const items = buildTimeline(video, components, formatTiming);
+
+    res.json({
+      items,
+      formatTiming,
+      totalDuration: video.duration,
     });
   });
 

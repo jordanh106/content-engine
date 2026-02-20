@@ -38,9 +38,10 @@ const industryDir = path.join(repoRoot, "industries", "chiropractic");
 const contentLibraryPath = path.join(industryDir, "content-library.md");
 const configPath = path.join(industryDir, "config.json");
 const renderOutputDir = path.join(repoRoot, "packages", "dashboard", "data", "renders");
+const formatsDir = path.join(repoRoot, "formats");
 
 // API routes
-app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath));
+app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
 app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, renderOutputDir));
 app.use("/api/composer", createComposerAiRouter(contentLibraryPath));

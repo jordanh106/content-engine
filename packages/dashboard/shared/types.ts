@@ -189,6 +189,44 @@ export type ShotsResponse = {
 };
 
 // ============================================
+// Timeline Types
+// ============================================
+
+export type SceneFlowEntry = {
+  scene: string;
+  startTime: number;
+  endTime: number | null;
+  duration: number | null;
+  componentType: string;
+  isRepeating: boolean;
+  repeatingNote: string | null;
+};
+
+export type FormatTimingData = {
+  formatId: FormatId;
+  formatName: string;
+  scenes: SceneFlowEntry[];
+  totalDuration: [number, number];
+};
+
+export type TimelineItem = {
+  id: string;
+  type: "cinema-shot" | "motion-graphic" | "scene-marker";
+  startTime: number;
+  duration: number;
+  label: string;
+  sceneName: string | null;
+  shot?: ShotPrompt;
+  component?: VibeMotionComponent;
+};
+
+export type TimelineResponse = {
+  items: TimelineItem[];
+  formatTiming: FormatTimingData;
+  totalDuration: number;
+};
+
+// ============================================
 // AI Composer Types
 // ============================================
 
