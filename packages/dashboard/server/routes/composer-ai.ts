@@ -3,6 +3,7 @@ import { Router } from "express";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { db } from "../db.js";
 import { sql } from "drizzle-orm";
+import { DEFAULT_THEME } from "../../shared/theme-defaults.js";
 import type {
   ComposerAiRequest,
   ComposerAiResponse,
@@ -87,15 +88,6 @@ Each component has a \`componentType\`, a matching \`compositionId\` (format: "S
 - Default duration: 5s
 `;
 
-const DEFAULT_THEME = {
-  primaryColor: "#0d9488",
-  accentColor: "#faf5ef",
-  darkBackground: "#1a1a2e",
-  lightBackground: "#faf5ef",
-  textColor: "#ffffff",
-  headingFont: "Georgia",
-  bodyFont: "Nunito Sans",
-};
 
 // ============================================
 // Format patterns from formats/*.md Scene Flow tables

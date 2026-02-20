@@ -12,6 +12,7 @@ import type {
   RenderJobStatus,
   VibeMotionComponent,
 } from "../../shared/types.js";
+import { DEFAULT_THEME } from "../../shared/theme-defaults.js";
 
 type RenderJobInternal = RenderJob & {
   outputPath: string;
@@ -35,15 +36,6 @@ const TARGET_SECONDS_BY_FORMAT: Record<FormatId, number> = {
   E: 16,
 };
 
-const DEFAULT_THEME = {
-  primaryColor: "#0d9488",
-  accentColor: "#faf5ef",
-  darkBackground: "#1a1a2e",
-  lightBackground: "#faf5ef",
-  textColor: "#ffffff",
-  headingFont: "Georgia",
-  bodyFont: "Nunito Sans",
-};
 
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "but", "if", "to", "for", "of", "in", "on",

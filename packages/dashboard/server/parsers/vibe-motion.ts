@@ -1,4 +1,5 @@
 import type { ParsedVideo } from "../../shared/types.js";
+import { DEFAULT_THEME } from "../../shared/theme-defaults.js";
 
 // ============================================
 // Types
@@ -13,15 +14,6 @@ export type VibeMotionComponent = {
   label: string;
 };
 
-const DEFAULT_THEME = {
-  primaryColor: "#0d9488",
-  accentColor: "#faf5ef",
-  darkBackground: "#1a1a2e",
-  lightBackground: "#faf5ef",
-  textColor: "#ffffff",
-  headingFont: "Georgia",
-  bodyFont: "Nunito Sans",
-};
 
 // Component name to composition ID mapping
 const COMP_MAP: Record<string, string> = {

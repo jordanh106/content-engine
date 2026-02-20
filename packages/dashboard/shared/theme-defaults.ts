@@ -1,6 +1,9 @@
-import type { Theme } from "../schemas/theme";
-
-export const collectiveFamily: Theme = {
+/**
+ * Default theme used across the dashboard.
+ * Single source of truth - previously duplicated in 4 files.
+ * Matches the collectiveFamily preset from remotion-studio.
+ */
+export const DEFAULT_THEME = {
   primaryColor: "#0d9488",
   accentColor: "#faf5ef",
   darkBackground: "#1a1a2e",
@@ -16,8 +19,4 @@ export const collectiveFamily: Theme = {
   noiseOpacity: 0.03,
   glassBlur: 20,
   glassOpacity: 0.08,
-};
-
-export const presets: Record<string, Theme> = {
-  "collective-family": collectiveFamily,
-};
+} as const;

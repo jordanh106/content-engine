@@ -1,4 +1,5 @@
 import React from "react";
+import { DEFAULT_THEME } from "../../shared/theme-defaults.js";
 
 // ============================================
 // Field definitions for the prop editor
@@ -31,19 +32,6 @@ export type ComponentRegistryEntry = {
   fields: FieldDefinition[];
 };
 
-// ============================================
-// Default theme (shared across all components)
-// ============================================
-
-const DEFAULT_THEME = {
-  primaryColor: "#0d9488",
-  accentColor: "#faf5ef",
-  darkBackground: "#1a1a2e",
-  lightBackground: "#faf5ef",
-  textColor: "#ffffff",
-  headingFont: "Georgia",
-  bodyFont: "Nunito Sans",
-};
 
 // ============================================
 // Lazy component imports from remotion-studio
