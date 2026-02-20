@@ -204,10 +204,16 @@ export type ComponentOperation =
   | { action: "remove"; index: number }
   | { action: "reorder"; order: number[] };
 
+export type ConversationMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export type ComposerAiRequest = {
   prompt: string;
   components: VibeMotionComponent[];
   selectedIndex: number | null;
+  conversationHistory?: ConversationMessage[];
   videoContext: {
     code: string;
     title: string;

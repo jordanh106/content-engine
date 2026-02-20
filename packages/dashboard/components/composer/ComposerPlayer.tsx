@@ -1,18 +1,24 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { ComposerComposition } from "./ComposerComposition.js";
+import { ComposerSequenceComposition } from "./ComposerSequenceComposition.js";
 import {
   Play,
   Pause,
   SkipBack,
   SkipForward,
   RotateCcw,
+  Layers,
+  Square,
 } from "lucide-react";
+import { cn } from "../../utils/cn.js";
+import type { VibeMotionComponent } from "../../shared/types.js";
 
 type ComposerPlayerProps = {
   componentType: string;
   componentProps: Record<string, unknown>;
   durationInSeconds: number;
+  allComponents?: VibeMotionComponent[];
 };
 
 const FPS = 30;
@@ -21,12 +27,20 @@ export const ComposerPlayer: React.FC<ComposerPlayerProps> = ({
   componentType,
   componentProps,
   durationInSeconds,
+  allComponents,
 }) => {
   const playerRef = useRef<PlayerRef>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [sequenceMode, setSequenceMode] = useState(false);
 
-  const totalFrames = Math.round(durationInSeconds * FPS);
+  const canShowSequence = allComponents && allComponents.length > 1;
+  const sequenceDuration = allComponents
+    ? allComponents.reduce((sum, c) => sum + c.durationInSeconds, 0)
+    : 0;
+
+  const activeDuration = sequenceMode ? sequenceDuration : durationInSeconds;
+  const totalFrames = Math.round(activeDuration * FPS);
 
   const handlePlayPause = useCallback(() => {
     const player = playerRef.current;
@@ -63,11 +77,12 @@ export const ComposerPlayer: React.FC<ComposerPlayerProps> = ({
         <Player
           ref={playerRef}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          component={ComposerComposition as any}
-          inputProps={{
-            componentType,
-            componentProps,
-          }}
+          component={(sequenceMode ? ComposerSequenceComposition : ComposerComposition) as any}
+          inputProps={
+            sequenceMode
+              ? { components: allComponents || [] }
+              : { componentType, componentProps }
+          }
           durationInFrames={Math.max(1, totalFrames)}
           fps={FPS}
           compositionWidth={1080}
@@ -126,8 +141,23 @@ export const ComposerPlayer: React.FC<ComposerPlayerProps> = ({
         </button>
 
         <span className="text-xs text-slate-400 font-mono ml-2">
-          {durationInSeconds}s ({totalFrames}f)
+          {activeDuration}s ({totalFrames}f)
         </span>
+
+        {canShowSequence && (
+          <button
+            onClick={() => setSequenceMode((v) => !v)}
+            title={sequenceMode ? "Single component" : "Preview all"}
+            className={cn(
+              "ml-2 p-2 rounded-lg transition-colors",
+              sequenceMode
+                ? "bg-violet-100 text-violet-700"
+                : "hover:bg-slate-100 text-slate-600",
+            )}
+          >
+            {sequenceMode ? <Square size={16} /> : <Layers size={16} />}
+          </button>
+        )}
       </div>
     </div>
   );

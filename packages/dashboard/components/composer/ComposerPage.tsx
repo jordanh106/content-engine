@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -6,6 +6,8 @@ import {
   Loader2,
   Layers,
   Play,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import type {
   VideoDetailResponse,
@@ -14,6 +16,7 @@ import type {
   ComposerAiRequest,
   ComposerAiResponse,
   ComponentOperation,
+  ConversationMessage,
 } from "../../shared/types.js";
 import { COMPONENT_REGISTRY } from "./component-registry.js";
 import { ComposerPlayer } from "./ComposerPlayer.js";
@@ -21,7 +24,23 @@ import { ComponentList } from "./ComponentList.js";
 import { PropEditor } from "./PropEditor.js";
 import { AddComponentModal } from "./AddComponentModal.js";
 import { AiChatPanel } from "./AiChatPanel.js";
+import { DurationBar } from "./DurationBar.js";
+import { OperationsPreview } from "./OperationsPreview.js";
 import { cn } from "../../utils/cn.js";
+
+// Duration target ranges per format letter
+const FORMAT_DURATION_RANGE: Record<string, [number, number]> = {
+  A: [30, 45],
+  B: [30, 45],
+  C: [30, 60],
+  D: [15, 30],
+  E: [45, 60],
+};
+
+type ComposerSnapshot = {
+  components: VibeMotionComponent[];
+  selectedIndex: number | null;
+};
 
 type ComposerPageProps = {
   videoCode: string;
@@ -56,17 +75,115 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [undoStack, setUndoStack] = useState<ComposerSnapshot[]>([]);
+  const [redoStack, setRedoStack] = useState<ComposerSnapshot[]>([]);
+  const [pendingOps, setPendingOps] = useState<{
+    operations: ComponentOperation[];
+    message: string;
+  } | null>(null);
 
-  // Initialize components from API data
+  // Derived state
+  const videoReady = !!video && !!shotsData;
+  const formatLetter = video?.format || "";
+  const targetRange = FORMAT_DURATION_RANGE[formatLetter] || null;
+  const totalDuration = components.reduce(
+    (sum, c) => sum + c.durationInSeconds,
+    0,
+  );
+
+  // Push current state to undo stack before mutations
+  const pushUndo = useCallback(() => {
+    setUndoStack((prev) => [
+      ...prev.slice(-29), // Keep max 30 snapshots
+      { components, selectedIndex },
+    ]);
+    setRedoStack([]);
+  }, [components, selectedIndex]);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setRedoStack((r) => [...r, { components, selectedIndex }]);
+    setUndoStack((u) => u.slice(0, -1));
+    setComponents(prev.components);
+    setSelectedIndex(prev.selectedIndex);
+  }, [undoStack, components, selectedIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setUndoStack((u) => [...u, { components, selectedIndex }]);
+    setRedoStack((r) => r.slice(0, -1));
+    setComponents(next.components);
+    setSelectedIndex(next.selectedIndex);
+  }, [redoStack, components, selectedIndex]);
+
+  // Keyboard shortcuts for undo/redo
   useEffect(() => {
-    if (shotsData?.components && !initialized) {
-      setComponents(shotsData.components);
-      if (shotsData.components.length > 0) {
-        setSelectedIndex(0);
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
       }
-      setInitialized(true);
-    }
-  }, [shotsData, initialized]);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo]);
+
+  // Load saved composition or initialize from API data
+  const loadAttempted = useRef(false);
+  useEffect(() => {
+    if (!shotsData?.components || initialized || loadAttempted.current) return;
+    loadAttempted.current = true;
+
+    // Try loading saved composition first
+    fetch(`/api/composer/load/${videoCode}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.components && Array.isArray(data.components) && data.components.length > 0) {
+          setComponents(data.components);
+          setSelectedIndex(0);
+        } else {
+          // Fall back to API data
+          setComponents(shotsData.components);
+          if (shotsData.components.length > 0) {
+            setSelectedIndex(0);
+          }
+        }
+        setInitialized(true);
+      })
+      .catch(() => {
+        // Fall back to API data on error
+        setComponents(shotsData.components);
+        if (shotsData.components.length > 0) {
+          setSelectedIndex(0);
+        }
+        setInitialized(true);
+      });
+  }, [shotsData, initialized, videoCode]);
+
+  // Auto-save composition (debounced 2s after changes)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!initialized) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      fetch(`/api/composer/save/${videoCode}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ components }),
+      }).catch(() => {
+        // Silent fail for auto-save
+      });
+    }, 2000);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [components, initialized, videoCode]);
 
   // ==========================================
   // Mutations
@@ -129,12 +246,17 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
     setSelectedIndex(index);
   }, []);
 
-  const handleReorder = useCallback((newComponents: VibeMotionComponent[]) => {
-    setComponents(newComponents);
-  }, []);
+  const handleReorder = useCallback(
+    (newComponents: VibeMotionComponent[]) => {
+      pushUndo();
+      setComponents(newComponents);
+    },
+    [pushUndo],
+  );
 
   const handleRemove = useCallback(
     (index: number) => {
+      pushUndo();
       const newComponents = components.filter((_, i) => i !== index);
       setComponents(newComponents);
 
@@ -148,7 +270,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
         setSelectedIndex(selectedIndex - 1);
       }
     },
-    [components, selectedIndex],
+    [components, selectedIndex, pushUndo],
   );
 
   const handleAddComponent = useCallback(
@@ -156,6 +278,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
       const entry = COMPONENT_REGISTRY[componentType];
       if (!entry) return;
 
+      pushUndo();
       const newComponent: VibeMotionComponent = {
         id: `${componentType.toLowerCase()}-${Date.now()}`,
         componentType: entry.type,
@@ -170,7 +293,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
       setComponents(newComponents);
       setSelectedIndex(newComponents.length - 1);
     },
-    [components],
+    [components, pushUndo],
   );
 
   const handlePropsChange = useCallback(
@@ -214,13 +337,17 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
   // ==========================================
 
   const handleAiPrompt = useCallback(
-    async (prompt: string): Promise<string | null> => {
+    async (
+      prompt: string,
+      history: ConversationMessage[],
+    ): Promise<string | null> => {
       setAiLoading(true);
       try {
         const requestBody: ComposerAiRequest = {
           prompt,
           components,
           selectedIndex,
+          conversationHistory: history,
           videoContext: {
             code: videoCode,
             title: video?.title || "",
@@ -241,24 +368,29 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
           const errorData = await response
             .json()
             .catch(() => ({ error: "AI request failed" }));
-          return `Error: ${errorData.error || "Something went wrong"}`;
+          return `Error: ${errorToUserMessage(response.status, errorData.error)}`;
         }
 
         const data: ComposerAiResponse = await response.json();
 
-        // Apply operations
-        applyOperations(data.operations);
+        // Store operations for preview instead of applying immediately
+        if (data.operations.length > 0) {
+          setPendingOps({
+            operations: data.operations,
+            message: data.message,
+          });
+        }
 
         return data.message;
       } catch (error) {
         const msg =
           error instanceof Error ? error.message : "AI request failed";
-        return `Error: ${msg}`;
+        return `Error: ${errorToUserMessage(0, msg)}`;
       } finally {
         setAiLoading(false);
       }
     },
-    [components, selectedIndex, videoCode, video],
+    [components, selectedIndex, videoCode, video, pushUndo],
   );
 
   const applyOperations = useCallback(
@@ -321,8 +453,15 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
             }
             break;
 
-          case "reorder":
-            if (op.order && op.order.length === updatedComponents.length) {
+          case "reorder": {
+            // Validate reorder array: must contain all indices 0..n exactly once
+            const n = updatedComponents.length;
+            if (
+              op.order &&
+              op.order.length === n &&
+              new Set(op.order).size === n &&
+              op.order.every((i) => i >= 0 && i < n)
+            ) {
               const reordered = op.order.map((i) => updatedComponents[i]);
               updatedComponents = reordered;
               newSelectedIndex =
@@ -331,6 +470,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
                   : null;
             }
             break;
+          }
         }
       }
 
@@ -339,6 +479,19 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
     },
     [components, selectedIndex],
   );
+
+  const handleApplyPending = useCallback(
+    (ops: ComponentOperation[]) => {
+      pushUndo();
+      applyOperations(ops);
+      setPendingOps(null);
+    },
+    [pushUndo, applyOperations],
+  );
+
+  const handleRejectPending = useCallback(() => {
+    setPendingOps(null);
+  }, []);
 
   // ==========================================
   // Render
@@ -387,6 +540,35 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
               {(renderAllMutation.error as Error).message}
             </span>
           )}
+
+          <button
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            title="Undo (Cmd+Z)"
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              undoStack.length > 0
+                ? "text-slate-600 hover:bg-slate-100"
+                : "text-slate-300 cursor-not-allowed",
+            )}
+          >
+            <Undo2 size={16} />
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            title="Redo (Cmd+Shift+Z)"
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              redoStack.length > 0
+                ? "text-slate-600 hover:bg-slate-100"
+                : "text-slate-300 cursor-not-allowed",
+            )}
+          >
+            <Redo2 size={16} />
+          </button>
+
+          <div className="w-px h-6 bg-slate-200 mx-1" />
 
           <button
             onClick={() => renderSelectedMutation.mutate()}
@@ -440,6 +622,7 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
                 componentType={selectedComponent.componentType}
                 componentProps={selectedComponent.props}
                 durationInSeconds={selectedComponent.durationInSeconds}
+                allComponents={components}
               />
             </div>
           ) : (
@@ -454,6 +637,13 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
 
         {/* Right: Component list + Prop editor */}
         <div className="flex-[2] bg-white border-l border-slate-200 flex flex-col overflow-hidden min-w-[320px] max-w-[440px]">
+          {/* Duration bar */}
+          <DurationBar
+            totalDuration={totalDuration}
+            targetRange={targetRange}
+            formatName={video?.formatName || ""}
+          />
+
           {/* Component list */}
           <div className="border-b border-slate-200 flex-shrink-0">
             <div className="flex items-center justify-between px-4 py-3">
@@ -481,8 +671,26 @@ export const ComposerPage: React.FC<ComposerPageProps> = ({
 
           {/* AI Chat panel */}
           <div className="border-b border-slate-200 h-[240px] flex-shrink-0">
-            <AiChatPanel onSubmit={handleAiPrompt} isLoading={aiLoading} />
+            <AiChatPanel
+              onSubmit={handleAiPrompt}
+              isLoading={aiLoading}
+              disabled={!videoReady}
+              components={components}
+              format={video?.formatName || ""}
+            />
           </div>
+
+          {/* Operations preview (Delegative UI) */}
+          {pendingOps && (
+            <div className="border-b border-slate-200 flex-shrink-0 py-2">
+              <OperationsPreview
+                operations={pendingOps.operations}
+                message={pendingOps.message}
+                onApply={handleApplyPending}
+                onReject={handleRejectPending}
+              />
+            </div>
+          )}
 
           {/* Prop editor */}
           <div className="flex-1 overflow-auto px-4 py-4">
@@ -538,4 +746,18 @@ function inferLabel(
 
   if (text.length > 40) return `${text.slice(0, 37)}...`;
   return text || COMPONENT_REGISTRY[componentType]?.label || componentType;
+}
+
+// ==========================================
+// Helper: user-friendly error messages
+// ==========================================
+
+function errorToUserMessage(status: number, raw: string): string {
+  if (status === 429) return "AI is busy. Wait a moment and try again.";
+  if (status === 413) return "Too much context. Try removing some components first.";
+  if (status >= 500) return "AI service is temporarily unavailable. Try again shortly.";
+  if (raw.includes("JSON")) return "AI returned an unexpected format. Try rephrasing your request.";
+  if (raw.includes("fetch") || raw.includes("network") || raw.includes("ECONNREFUSED"))
+    return "Network error. Check your connection and try again.";
+  return raw;
 }

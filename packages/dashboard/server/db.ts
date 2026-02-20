@@ -89,4 +89,12 @@ sqlite.exec(`
     watch_time_seconds INTEGER,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS composer_compositions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT NOT NULL UNIQUE,
+    components_json TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
 `);
