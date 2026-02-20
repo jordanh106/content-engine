@@ -28,6 +28,7 @@ const COMP_MAP: Record<string, string> = {
   CallToAction: "Shot-CTA",
   ChartCard: "Shot-ChartCard",
   QuoteCard: "Shot-QuoteCard",
+  KineticText: "Shot-KineticText",
 };
 
 const COMPONENT_NAMES = Object.keys(COMP_MAP);
@@ -458,6 +459,40 @@ function parseQuoteCard(
   };
 }
 
+function parseKineticText(
+  text: string,
+  video: ParsedVideo,
+  index: number,
+): VibeMotionComponent {
+  const quoted = extractQuoted(text);
+  const sentence = quoted[0] || video.title;
+  const wordTexts = sentence.split(/\s+/).filter((w) => w.length > 0);
+  const words = wordTexts.map((w, i) => ({
+    text: w,
+    delay: i * 4,
+    scale: undefined as number | undefined,
+    color: undefined as string | undefined,
+  }));
+  // Emphasize the last word
+  if (words.length > 0) {
+    words[words.length - 1].scale = 1.3;
+  }
+  const duration = extractHoldDuration(text) || Math.max(3, Math.ceil(wordTexts.length / 3) + 1);
+
+  return {
+    id: `kinetic-${index}`,
+    componentType: "KineticText",
+    compositionId: "Shot-KineticText",
+    durationInSeconds: duration,
+    props: {
+      words,
+      durationInSeconds: duration,
+      theme: DEFAULT_THEME,
+    },
+    label: sentence.length > 40 ? `${sentence.slice(0, 37)}...` : sentence,
+  };
+}
+
 // ============================================
 // Main parser
 // ============================================
@@ -538,6 +573,9 @@ export function parseVibeMotion(
         break;
       case "QuoteCard":
         components.push(parseQuoteCard(seg.text, video, componentIndex));
+        break;
+      case "KineticText":
+        components.push(parseKineticText(seg.text, video, componentIndex));
         break;
     }
   }
@@ -639,6 +677,46 @@ function buildDefaultComponents(video: ParsedVideo): VibeMotionComponent[] {
         },
         label: "Truth",
       });
+      break;
+
+    case "F": { // Quick Tip
+      const tipWords = scriptLines.slice(0, 6).map((line, i) => ({
+        text: line.slice(0, 20),
+        delay: i * 4,
+      }));
+      if (tipWords.length > 0) {
+        components.push({
+          id: "kinetic-default",
+          componentType: "KineticText",
+          compositionId: "Shot-KineticText",
+          durationInSeconds: Math.max(3, Math.ceil(tipWords.length / 3) + 1),
+          props: {
+            words: tipWords,
+            durationInSeconds: Math.max(3, Math.ceil(tipWords.length / 3) + 1),
+            theme: DEFAULT_THEME,
+          },
+          label: "Quick tip text",
+        });
+      }
+      break;
+    }
+
+    case "G": // Patient Story
+      if (scriptLines[1]) {
+        components.push({
+          id: "quote-default",
+          componentType: "QuoteCard",
+          compositionId: "Shot-QuoteCard",
+          durationInSeconds: 5,
+          props: {
+            quote: scriptLines[1].slice(0, 80),
+            attribution: "Patient",
+            durationInSeconds: 5,
+            theme: DEFAULT_THEME,
+          },
+          label: scriptLines[1].slice(0, 40),
+        });
+      }
       break;
 
     case "C": // Demo

@@ -23,6 +23,7 @@ const COMPONENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: 
   CallToAction:     { bg: "bg-orange-100",  text: "text-orange-700",  border: "border-orange-200" },
   ChartCard:        { bg: "bg-sky-100",     text: "text-sky-700",     border: "border-sky-200" },
   QuoteCard:        { bg: "bg-pink-100",    text: "text-pink-700",    border: "border-pink-200" },
+  KineticText:      { bg: "bg-fuchsia-100", text: "text-fuchsia-700", border: "border-fuchsia-200" },
 };
 
 const DEFAULT_COLORS = { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-200" };

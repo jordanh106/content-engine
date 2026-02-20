@@ -17,7 +17,7 @@ export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
 // Video Formats
 // ============================================
 
-export const FORMAT_IDS = ["A", "B", "C", "D", "E"] as const;
+export const FORMAT_IDS = ["A", "B", "C", "D", "E", "F", "G"] as const;
 export type FormatId = (typeof FORMAT_IDS)[number];
 
 export type FormatInfo = {
@@ -32,6 +32,8 @@ export const FORMATS: Record<FormatId, FormatInfo> = {
   C: { id: "C", name: "Demo", shortName: "Demo" },
   D: { id: "D", name: "Myth Buster", shortName: "Myth Buster" },
   E: { id: "E", name: "Walkthrough", shortName: "Walkthrough" },
+  F: { id: "F", name: "Quick Tip", shortName: "Quick Tip" },
+  G: { id: "G", name: "Patient Story", shortName: "Patient Story" },
 };
 
 // ============================================

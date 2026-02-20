@@ -7,3 +7,4 @@ export { CallToAction } from "./CallToAction";
 export { HookText } from "./HookText";
 export { SectionCard } from "./SectionCard";
 export { FrequencyCard } from "./FrequencyCard";
+export { KineticText } from "./KineticText";

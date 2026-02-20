@@ -36,6 +36,7 @@ const COMPONENT_TYPE_COLORS: Record<string, string> = {
   CallToAction: "bg-orange-100 text-orange-700",
   ChartCard: "bg-sky-100 text-sky-700",
   QuoteCard: "bg-pink-100 text-pink-700",
+  KineticText: "bg-fuchsia-100 text-fuchsia-700",
 };
 
 // ============================================

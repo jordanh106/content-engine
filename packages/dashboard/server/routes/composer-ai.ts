@@ -86,6 +86,13 @@ Each component has a \`componentType\`, a matching \`compositionId\` (format: "S
 - Purpose: Testimonial or quote with attribution. Use for patient/client quotes or expert statements.
 - Props: quote (string, required), attribution (string, required - who said it), role (string, optional - their title)
 - Default duration: 5s
+
+### 12. KineticText
+- compositionId: "Shot-KineticText"
+- Purpose: Word-by-word animated text reveal with staggered springs. Use for punchy statements, quick tips, or emphasis text where each word lands with impact.
+- Props: words (array of {text: string, delay: number (0-90 frames), scale?: number (0.5-3), color?: string (hex)}, required, 1-20 words)
+- Default duration: Calculate as 1s per 3 words + 1s buffer
+- Note: delay is in frames (30fps). Space words 3-5 frames apart for fast energy, 6-10 for dramatic. Use scale > 1 and color to emphasize key words.
 `;
 
 
@@ -132,6 +139,20 @@ const FORMAT_PATTERNS: Record<
       "Calm, reassuring, informative. Longest format. Guide the viewer through a process step by step.",
     flow: "HookText → TitleCard → StepIndicator(s) → SectionCard(s) → CallToAction",
   },
+  F: {
+    name: "Quick Tip",
+    duration: "6-15s",
+    energy:
+      "Ultra-fast, punchy. Every frame counts. Kinetic text fires rapidly. Hook must land within 2 seconds. No dead time.",
+    flow: "HookText → KineticText → CallToAction",
+  },
+  G: {
+    name: "Patient Story",
+    duration: "15-30s",
+    energy:
+      "Warm, personal, building. Slower springs. Let the quote breathe. Stat adds credibility before CTA.",
+    flow: "HookText → QuoteCard → StatCard (optional) → CallToAction",
+  },
 };
 
 // Duration target ranges (in seconds) per format
@@ -141,6 +162,8 @@ const FORMAT_DURATION_RANGE: Record<string, [number, number]> = {
   C: [30, 60],
   D: [15, 30],
   E: [45, 60],
+  F: [6, 15],
+  G: [15, 30],
 };
 
 function buildSystemPrompt(format?: string): string {

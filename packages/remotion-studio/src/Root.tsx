@@ -5,6 +5,8 @@ import { Checklist } from "./compositions/Checklist";
 import { Demo } from "./compositions/Demo";
 import { MythBuster } from "./compositions/MythBuster";
 import { Walkthrough } from "./compositions/Walkthrough";
+import { QuickTip } from "./compositions/QuickTip";
+import { PatientStory } from "./compositions/PatientStory";
 import { ShotTitleCard } from "./compositions/shots/ShotTitleCard";
 import { ShotStatCard } from "./compositions/shots/ShotStatCard";
 import { ShotSectionCard } from "./compositions/shots/ShotSectionCard";
@@ -16,11 +18,14 @@ import { ShotFrequencyCard } from "./compositions/shots/ShotFrequencyCard";
 import { ShotCallToAction } from "./compositions/shots/ShotCallToAction";
 import { ShotChartCard } from "./compositions/shots/ShotChartCard";
 import { ShotQuoteCard } from "./compositions/shots/ShotQuoteCard";
+import { ShotKineticText } from "./compositions/shots/ShotKineticText";
 import { ExplainerSchema } from "./schemas/explainer";
 import { ChecklistSchema } from "./schemas/checklist";
 import { DemoSchema } from "./schemas/demo";
 import { MythBusterSchema } from "./schemas/myth-buster";
 import { WalkthroughSchema } from "./schemas/walkthrough";
+import { QuickTipSchema } from "./schemas/quick-tip";
+import { PatientStorySchema } from "./schemas/patient-story";
 import {
   ShotTitleCardSchema,
   ShotStatCardSchema,
@@ -33,6 +38,7 @@ import {
   ShotCTASchema,
   ShotChartCardSchema,
   ShotQuoteCardSchema,
+  ShotKineticTextSchema,
 } from "./schemas/shot";
 import type {
   ShotTitleCardProps,
@@ -46,6 +52,7 @@ import type {
   ShotCTAProps,
   ShotChartCardProps,
   ShotQuoteCardProps,
+  ShotKineticTextProps,
 } from "./schemas/shot";
 import { defaultTheme } from "./schemas/theme";
 import type { ExplainerProps } from "./schemas/explainer";
@@ -53,6 +60,8 @@ import type { ChecklistProps } from "./schemas/checklist";
 import type { DemoProps } from "./schemas/demo";
 import type { MythBusterProps } from "./schemas/myth-buster";
 import type { WalkthroughProps } from "./schemas/walkthrough";
+import type { QuickTipProps } from "./schemas/quick-tip";
+import type { PatientStoryProps } from "./schemas/patient-story";
 
 // 9:16 vertical video (short-form)
 const WIDTH = 1080;
@@ -281,6 +290,43 @@ const shotQuoteCardDefaults: ShotQuoteCardProps = {
   theme: defaultTheme,
 };
 
+const quickTipDefaults: QuickTipProps = {
+  hookText: "Stop doing this to your neck.",
+  tipWords: [
+    { text: "Your", delay: 0 },
+    { text: "phone", delay: 4 },
+    { text: "adds", delay: 8 },
+    { text: "60 lbs", delay: 12, scale: 1.4, color: "#0d9488" },
+    { text: "of pressure", delay: 18 },
+    { text: "to your", delay: 22 },
+    { text: "spine.", delay: 26, scale: 1.2 },
+  ],
+  ctaText: "Save this. Your neck will thank you.",
+  theme: defaultTheme,
+};
+
+const patientStoryDefaults: PatientStoryProps = {
+  hookText: "She almost canceled her first appointment.",
+  quote:
+    "I wish I had come in sooner. After three visits, I could finally sleep through the night.",
+  attribution: "Sarah M.",
+  role: "Patient, 8 months postpartum",
+  stat: { value: "89%", label: "of patients report improvement within 6 visits" },
+  ctaText: "Your story could be next. Book your first visit.",
+  theme: defaultTheme,
+};
+
+const shotKineticTextDefaults: ShotKineticTextProps = {
+  words: [
+    { text: "Your", delay: 0 },
+    { text: "spine", delay: 5, scale: 1.3, color: "#0d9488" },
+    { text: "controls", delay: 10 },
+    { text: "everything.", delay: 15, scale: 1.2 },
+  ],
+  durationInSeconds: 4,
+  theme: defaultTheme,
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -331,6 +377,26 @@ export const RemotionRoot: React.FC = () => {
           schema={WalkthroughSchema}
           defaultProps={walkthroughDefaults}
           durationInFrames={45 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="QuickTip"
+          component={QuickTip}
+          schema={QuickTipSchema}
+          defaultProps={quickTipDefaults}
+          durationInFrames={15 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="PatientStory"
+          component={PatientStory}
+          schema={PatientStorySchema}
+          defaultProps={patientStoryDefaults}
+          durationInFrames={25 * FPS}
           fps={FPS}
           width={WIDTH}
           height={HEIGHT}
@@ -455,6 +521,17 @@ export const RemotionRoot: React.FC = () => {
           defaultProps={shotQuoteCardDefaults}
           calculateMetadata={calcShotMetadata<ShotQuoteCardProps>()}
           durationInFrames={5 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+        <Composition
+          id="Shot-KineticText"
+          component={ShotKineticText}
+          schema={ShotKineticTextSchema}
+          defaultProps={shotKineticTextDefaults}
+          calculateMetadata={calcShotMetadata<ShotKineticTextProps>()}
+          durationInFrames={4 * FPS}
           fps={FPS}
           width={WIDTH}
           height={HEIGHT}

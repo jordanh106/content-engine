@@ -80,6 +80,9 @@ const ChartCard = React.lazy(() =>
 const QuoteCard = React.lazy(() =>
   import("@remotion-studio/components/QuoteCard").then((m) => ({ default: m.QuoteCard })),
 );
+const KineticText = React.lazy(() =>
+  import("@remotion-studio/components/KineticText").then((m) => ({ default: m.KineticText })),
+);
 
 // ============================================
 // Registry
@@ -306,6 +309,36 @@ export const COMPONENT_REGISTRY: Record<string, ComponentRegistryEntry> = {
       { name: "quote", label: "Quote", type: "textarea" },
       { name: "attribution", label: "Attribution", type: "text" },
       { name: "role", label: "Role/Title", type: "text", optional: true },
+    ],
+  },
+  KineticText: {
+    type: "KineticText",
+    label: "Kinetic Text",
+    description: "Word-by-word animated text reveal with staggered springs",
+    compositionId: "Shot-KineticText",
+    component: KineticText,
+    defaultProps: {
+      words: [
+        { text: "Your", delay: 0 },
+        { text: "spine", delay: 5, scale: 1.3, color: "#0d9488" },
+        { text: "controls", delay: 10 },
+        { text: "everything.", delay: 15, scale: 1.2 },
+      ],
+      durationInSeconds: 4,
+      theme: DEFAULT_THEME,
+    },
+    fields: [
+      {
+        name: "words",
+        label: "Words",
+        type: "array",
+        arrayFields: [
+          { name: "text", label: "Word", type: "text" },
+          { name: "delay", label: "Delay (frames)", type: "number", min: 0, max: 90 },
+          { name: "scale", label: "Scale", type: "number", min: 0.5, max: 3, optional: true },
+          { name: "color", label: "Color", type: "color", optional: true },
+        ],
+      },
     ],
   },
 };

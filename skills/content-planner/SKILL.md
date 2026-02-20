@@ -25,7 +25,7 @@ Transform trending topic research into a structured weekly content calendar.
 3. Cross-references trending topics against the existing content library
 4. Produces a weekly content plan with:
    - Topic assignments for each posting slot
-   - Format assignments (A-E) for each video
+   - Format assignments (A-G) for each video
    - Platform targeting (which format goes where)
    - Priority scoring based on trend strength and content gaps
 
@@ -85,6 +85,8 @@ For each content opportunity, assign the best format:
 | Practical exercise or technique | C (Demo) |
 | Common misconception | D (Myth Buster) |
 | Service/procedure walkthrough | E (Walkthrough) |
+| Quick tip, "did you know", single fact | F (Quick Tip) |
+| Patient testimonial, journey, social proof | G (Patient Story) |
 
 ### Step 4: Build the Calendar
 

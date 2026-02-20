@@ -6,11 +6,11 @@ Industry-agnostic content creation toolkit. Claude skills, reusable video format
 
 ```
 skills/              Claude Code skills (symlinked to ~/.claude/skills/)
-formats/             5 reusable video format templates (industry-agnostic)
+formats/             7 reusable video format templates (industry-agnostic)
 workflows/           Production process documentation (industry-agnostic)
 industries/          Pluggable industry content packs
 packages/
-  remotion-studio/   Programmatic motion graphics (5 compositions)
+  remotion-studio/   Programmatic motion graphics (7 compositions)
   dashboard/         Production management dashboard (React + Express + SQLite)
 scripts/             Repo utilities (install, scaffold)
 ```
@@ -18,7 +18,7 @@ scripts/             Repo utilities (install, scaffold)
 ## Active Industry
 
 **Chiropractic** (Collective Family Chiropractic)
-- Config: `industries/chiropractic/config.json` (7 audiences, 65 conditions, 3 platforms)
+- Config: `industries/chiropractic/config.json` (7 audiences, 65 conditions, 4 platforms)
 - Brand: `industries/chiropractic/brand.md` and `skills/brand-factory/presets/collective-family.md`
 - Content: `industries/chiropractic/content-library.md` (57 production-ready videos)
 - Calendar: `industries/chiropractic/calendar.md` (4-week rolling plan)
@@ -43,7 +43,7 @@ scripts/             Repo utilities (install, scaffold)
 
 ## Video Formats
 
-Five reusable templates in `formats/`. Swap the topic, keep the structure:
+Seven reusable templates in `formats/`. Swap the topic, keep the structure:
 
 | Format | Name | Duration | Best For |
 |--------|------|----------|----------|
@@ -52,6 +52,8 @@ Five reusable templates in `formats/`. Swap the topic, keep the structure:
 | C | Demo ("The Exercise/Tutorial") | 30-60s | Actionable value |
 | D | Myth Buster ("Myth vs. Truth") | 15-30s | Engagement, comments |
 | E | Walkthrough ("What Happens During [X]") | 45-60s | New patient/customer conversion |
+| F | Quick Tip ("Did You Know?") | 6-15s | TikTok micro-content, quick facts |
+| G | Patient Story ("This Changed Everything") | 15-30s | Social proof, testimonials |
 
 ## Remotion Project
 
@@ -70,6 +72,8 @@ Each composition accepts parametrized input via Zod schemas. Brand colors come f
 | Demo | C | 40s |
 | MythBuster | D | 15s |
 | Walkthrough | E | 45s |
+| QuickTip | F | 15s |
+| PatientStory | G | 25s |
 
 All render at **1080x1920 (9:16)** at **30 fps**.
 
@@ -79,7 +83,8 @@ All render at **1080x1920 (9:16)** at **30 fps**.
 - Sequencing uses `<Series>` for sequential scenes.
 - Zod must be exactly `3.22.3`.
 - Props use `type` declarations, not `interface`.
-- Shared components: `TitleCard`, `StatCard`, `ChecklistOverlay`, `MythTruthReveal`, `StepIndicator`, `CallToAction`, `HookText`, `SectionCard`, `FrequencyCard`.
+- Shared components: `TitleCard`, `StatCard`, `ChecklistOverlay`, `MythTruthReveal`, `StepIndicator`, `CallToAction`, `HookText`, `SectionCard`, `FrequencyCard`, `KineticText`, `ChartCard`, `QuoteCard`.
+- Effects: `GrainOverlay`, `GradientBackground`, `VhsOverlay` (retro aesthetic, enabled via `theme.vhsOverlay`).
 
 ## Dashboard
 
@@ -146,7 +151,7 @@ SQLite DB           ──query──→   Status, dates, calendar, sessions, me
 - **Buttons**: `rounded-full text-[10px] font-black uppercase tracking-widest`
 - **Colors**: Teal-600 primary, slate neutrals
 - **Typography**: Serif headings, sans-serif body
-- **Format colors**: A=teal, B=emerald, C=sky, D=rose, E=violet
+- **Format colors**: A=teal, B=emerald, C=sky, D=rose, E=violet, F=orange, G=pink
 - **Responsive**: Mobile-first. `md:` breakpoint switches from bottom tabs to sidebar, single column to multi-column grids.
 
 ## Higgsfield AI Production
@@ -257,6 +262,7 @@ Per video: ~20-30 min total. Per month (8 sessions): 24-40 videos. Entire 57-vid
 ### Platform Optimization
 
 - **Instagram Reels**: 15-30s, 9:16, hook in first 1-2s, slower cuts outperform rapid cuts. 4-5/week.
+- **TikTok**: 6-15s micro-content (Format F), text-heavy overlays, trending sounds. 3-5/week.
 - **YouTube Shorts**: Up to 60s, slightly longer and more educational. 2-3/week.
 - **YouTube Long-form**: 3-10 min, pattern: you speaking (real)  > Remotion graphic > B-roll (AI/enhanced) > back to you. 1/week.
 
@@ -282,7 +288,7 @@ bash scripts/new-industry.sh dental
 Then edit:
 1. `industries/dental/config.json` - Audiences, conditions, platforms
 2. `industries/dental/brand.md` - Voice, tone, content rules
-3. `industries/dental/content-library.md` - Video scripts using formats A-E
+3. `industries/dental/content-library.md` - Video scripts using formats A-G
 4. `skills/brand-factory/presets/dental.md` - Brand colors, typography, design tokens
 
 ## Git

@@ -74,6 +74,14 @@ Input schema fields:
 - `ctaText` (string) - "Did you believe this?"
 - `theme` (object) - Brand colors and fonts
 
+## Platform Versions
+
+| Platform | Aspect | Resolution |
+|----------|--------|------------|
+| TikTok / Reels / Shorts | 9:16 | 1080x1920 |
+| Instagram Feed | 4:5 | 1080x1350 |
+| YouTube / Website | 16:9 | 1920x1080 |
+
 ## Platform Notes
 
 - **Instagram Reels:** This is the shortest format. Fast, punchy, highly shareable. Comment engagement is the primary metric.

@@ -77,6 +77,14 @@ Input schema fields:
 - `ctaText` (string) - Call to action text
 - `theme` (object) - Brand colors and fonts
 
+## Platform Versions
+
+| Platform | Aspect | Resolution |
+|----------|--------|------------|
+| TikTok / Reels / Shorts | 9:16 | 1080x1920 |
+| Instagram Feed | 4:5 | 1080x1350 |
+| YouTube / Website | 16:9 | 1920x1080 |
+
 ## Platform Notes
 
 - **Instagram Reels:** Add trending audio if it fits. First frame needs text overlay.

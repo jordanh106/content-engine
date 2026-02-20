@@ -91,3 +91,18 @@ export const ShotQuoteCardSchema = ShotBase.extend({
   role: z.string().optional(),
 });
 export type ShotQuoteCardProps = z.infer<typeof ShotQuoteCardSchema>;
+
+export const ShotKineticTextSchema = ShotBase.extend({
+  words: z
+    .array(
+      z.object({
+        text: z.string(),
+        delay: z.number().min(0).max(90),
+        scale: z.number().min(0.5).max(3).optional(),
+        color: z.string().optional(),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+export type ShotKineticTextProps = z.infer<typeof ShotKineticTextSchema>;

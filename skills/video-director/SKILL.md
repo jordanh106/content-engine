@@ -359,7 +359,8 @@ For each Remotion component in the composition, specify animation behavior that 
 | StatCard, CallToAction | `damping: 12, stiffness: 200` | Satisfying snap with tiny bounce |
 | MythTruthReveal | `damping: 8, stiffness: 200` | Dramatic stamp with visible bounce |
 | ChecklistOverlay items | `damping: 200` + 3-frame stagger | Clean cascade |
-| HookText | `damping: 15, stiffness: 200` | Scale 1.2 to 1, attention-grabbing |
+| HookText | `damping: 10, stiffness: 280` | Scale 1.4 to 1, attention-grabbing |
+| KineticText | `damping: 10, stiffness: 180` | Per-word stagger, emphasis glow |
 | FrequencyCard badge | `damping: 12, stiffness: 180` | Pop-in scale effect |
 
 #### Format-Specific Animation Pacing
@@ -371,6 +372,8 @@ For each Remotion component in the composition, specify animation behavior that 
 | Demo (C) | Clear, instructional | Slow-medium (12-frame entrances) | Hold instructions longer for reading |
 | MythBuster (D) | Fast, punchy | Fast (6-frame entrances) | Myth stamp is dramatic, truth is quick |
 | Walkthrough (E) | Gentle, reassuring | Slow (12-frame entrances) | Progress dots add continuity |
+| Quick Tip (F) | Ultra-fast, punchy | Very fast (4-frame entrances) | KineticText word-by-word reveal |
+| Patient Story (G) | Warm, personal | Slow-medium (10-frame entrances) | Hold QuoteCard longer for impact |
 
 #### 9:16 Safe Zones for Text Overlays
 
@@ -401,6 +404,61 @@ For each Remotion scene in the production plan, note:
 - Sync text reveals to voiceover cadence, not arbitrary timing.
 - Keep minimum 4.5:1 contrast ratio between text and background.
 - Use bold sans-serif at 42px minimum for mobile readability.
+
+---
+
+#### Format F: Quick Tip
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `hookText` | string | Required |
+| `tipWords` | array | 1-20 items. Each: `{ text, delay, scale?, color? }` |
+| `ctaText` | string | Required |
+| `theme` | Theme | Required |
+
+Duration rule: 1s per 3 words + 1s buffer. Target 6-15s total.
+
+```json
+{
+  "hookText": "Did you know this about your spine?",
+  "tipWords": [
+    { "text": "Your", "delay": 0 },
+    { "text": "spine", "delay": 5, "scale": 1.3, "color": "#0d9488" },
+    { "text": "controls", "delay": 10 },
+    { "text": "everything.", "delay": 15, "scale": 1.2 }
+  ],
+  "ctaText": "Follow for more quick tips.",
+  "theme": { "primaryColor": "#0d9488", "accentColor": "#faf5ef", "darkBackground": "#1a1a2e", "lightBackground": "#faf5ef", "textColor": "#ffffff", "headingFont": "Georgia", "bodyFont": "Nunito Sans" }
+}
+```
+
+---
+
+#### Format G: Patient Story
+
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `hookText` | string | Required |
+| `quote` | string | Required |
+| `attribution` | string | Required |
+| `role` | string | Optional |
+| `stat` | object | Optional. `{ value, label }` |
+| `ctaText` | string | Required |
+| `theme` | Theme | Required |
+
+```json
+{
+  "hookText": "This mom's story changed how we think about pediatric care.",
+  "quote": "After three visits, my daughter was sleeping through the night for the first time in months.",
+  "attribution": "Sarah M.",
+  "role": "Mom of 2",
+  "stat": { "value": "3 visits", "label": "to better sleep" },
+  "ctaText": "Every family has a story. What's yours?",
+  "theme": { "primaryColor": "#0d9488", "accentColor": "#faf5ef", "darkBackground": "#1a1a2e", "lightBackground": "#faf5ef", "textColor": "#ffffff", "headingFont": "Georgia", "bodyFont": "Nunito Sans" }
+}
+```
+
+---
 
 ### Step 6: Write Assembly Instructions
 

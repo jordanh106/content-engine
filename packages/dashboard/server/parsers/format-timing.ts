@@ -12,6 +12,8 @@ const FORMAT_FILES: Record<FormatId, string> = {
   C: "demo.md",
   D: "myth-buster.md",
   E: "walkthrough.md",
+  F: "quick-tip.md",
+  G: "patient-story.md",
 };
 
 const FORMAT_NAMES: Record<FormatId, string> = {
@@ -20,6 +22,8 @@ const FORMAT_NAMES: Record<FormatId, string> = {
   C: "Demo",
   D: "Myth Buster",
   E: "Walkthrough",
+  F: "Quick Tip",
+  G: "Patient Story",
 };
 
 // ============================================

@@ -62,7 +62,7 @@
     { "id": "falls-prevention", "audience": "senior", "label": "Falls Prevention" },
     { "id": "never-too-late", "audience": "senior", "label": "It's Never Too Late" }
   ],
-  "platforms": ["instagram_reels", "youtube_shorts", "youtube_long"],
+  "platforms": ["instagram_reels", "youtube_shorts", "youtube_long", "tiktok"],
   "content_mix": {
     "filmed": 0.5,
     "ai_generated": 0.5
@@ -71,6 +71,7 @@
     "instagram_reels": "4-5 per week",
     "youtube_shorts": "2-3 per week",
     "youtube_long": "1 per week",
+    "tiktok": "3-5 per week",
     "instagram_stories": "daily"
   }
 }

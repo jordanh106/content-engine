@@ -25,6 +25,8 @@ Post-production through platform delivery.
 | C (Demo) | Hard cuts between exercise steps (active energy) |
 | D (Myth Buster) | Dramatic cut between myth and truth |
 | E (Walkthrough) | Gentle dissolves (reassuring flow) |
+| F (Quick Tip) | Single hard cut or no cut (6-15s micro-content) |
+| G (Patient Story) | Warm dissolves, hold on quote cards longer |
 
 ## Distribution
 
@@ -35,6 +37,7 @@ Post-production through platform delivery.
 | Instagram Reels | 4-5/week | B (Checklist), D (Myth Buster) |
 | YouTube Shorts | 2-3/week | A (Explainer), C (Demo) |
 | YouTube Long-form | 1/week | Extended versions, compilations |
+| TikTok | 3-5/week | F (Quick Tip), D (Myth Buster) |
 | Instagram Stories | Daily | Behind the scenes, polls, Q&A |
 
 ### Platform Optimization
@@ -52,6 +55,21 @@ Post-production through platform delivery.
 - Descriptions matter for search (include topic keywords + common questions)
 - First frame auto-selected as thumbnail
 
+**TikTok:**
+- 6-15 second sweet spot for micro-content (Format F)
+- Text-heavy overlays outperform minimal text
+- Hook in first 1-2 seconds is critical (5.96% avg engagement rate)
+- Use trending sounds when appropriate
+- Cross-post top-performing Reels
+
+### Multi-Platform Export
+
+| Platform | Aspect | Resolution |
+|----------|--------|------------|
+| TikTok / Reels / Shorts | 9:16 | 1080x1920 |
+| Instagram Feed | 4:5 | 1080x1350 |
+| YouTube / Website | 16:9 | 1920x1080 |
+
 ### Caption Templates
 
 **Explainers:** `[Hook from script] [1-2 sentence summary] Share this with someone who needs it.`
@@ -63,6 +81,10 @@ Post-production through platform delivery.
 **Myth Busters:** `Did you believe this? Be honest. Drop your answer in the comments.`
 
 **Walkthroughs:** `This is exactly what happens. No surprises. Share with someone thinking about it.`
+
+**Quick Tips:** `Did you know this? Save it. Share it.`
+
+**Patient Stories:** `This is why we do what we do. Tag someone who needs to hear this.`
 
 ## Dual-Purpose Delivery
 

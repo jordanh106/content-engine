@@ -532,6 +532,7 @@ const COMPONENT_TYPE_COLORS: Record<string, string> = {
   StepIndicator: "bg-indigo-100 text-indigo-700",
   FrequencyCard: "bg-cyan-100 text-cyan-700",
   CallToAction: "bg-orange-100 text-orange-700",
+  KineticText: "bg-fuchsia-100 text-fuchsia-700",
 };
 
 function findJobForShot(jobs: RenderJob[], shotId: string): RenderJob | null {

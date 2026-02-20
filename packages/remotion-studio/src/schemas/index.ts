@@ -16,6 +16,12 @@ export type { MythBusterProps } from "./myth-buster";
 export { WalkthroughSchema } from "./walkthrough";
 export type { WalkthroughProps } from "./walkthrough";
 
+export { QuickTipSchema } from "./quick-tip";
+export type { QuickTipProps } from "./quick-tip";
+
+export { PatientStorySchema } from "./patient-story";
+export type { PatientStoryProps } from "./patient-story";
+
 export {
   ShotTitleCardSchema,
   ShotStatCardSchema,
@@ -26,6 +32,9 @@ export {
   ShotStepIndicatorSchema,
   ShotFrequencyCardSchema,
   ShotCTASchema,
+  ShotChartCardSchema,
+  ShotQuoteCardSchema,
+  ShotKineticTextSchema,
 } from "./shot";
 export type {
   ShotTitleCardProps,
@@ -37,4 +46,7 @@ export type {
   ShotStepIndicatorProps,
   ShotFrequencyCardProps,
   ShotCTAProps,
+  ShotChartCardProps,
+  ShotQuoteCardProps,
+  ShotKineticTextProps,
 } from "./shot";

@@ -19,6 +19,7 @@ export const ThemeSchema = z.object({
   noiseOpacity: z.number().min(0).max(1).optional(),
   glassBlur: z.number().min(0).max(40).optional(),
   glassOpacity: z.number().min(0).max(1).optional(),
+  vhsOverlay: z.boolean().optional(),
 });
 
 export type Theme = z.infer<typeof ThemeSchema>;

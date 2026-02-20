@@ -26,6 +26,8 @@ const COMPOSITION_BY_FORMAT: Record<FormatId, string> = {
   C: "Demo",
   D: "MythBuster",
   E: "Walkthrough",
+  F: "QuickTip",
+  G: "PatientStory",
 };
 
 const TARGET_SECONDS_BY_FORMAT: Record<FormatId, number> = {
@@ -34,6 +36,8 @@ const TARGET_SECONDS_BY_FORMAT: Record<FormatId, number> = {
   C: 16,
   D: 12,
   E: 16,
+  F: 10,
+  G: 18,
 };
 
 

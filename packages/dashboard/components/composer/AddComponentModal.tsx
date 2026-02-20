@@ -15,6 +15,7 @@ const COMPONENT_TYPE_COLORS: Record<string, string> = {
   CallToAction: "border-orange-200 hover:bg-orange-50",
   ChartCard: "border-sky-200 hover:bg-sky-50",
   QuoteCard: "border-pink-200 hover:bg-pink-50",
+  KineticText: "border-fuchsia-200 hover:bg-fuchsia-50",
 };
 
 type AddComponentModalProps = {

@@ -24,7 +24,7 @@ export const HookText: React.FC<HookTextProps> = ({ text, theme }) => {
   const progress = spring({
     frame,
     fps,
-    config: { damping: 15, stiffness: 200 },
+    config: { damping: 10, stiffness: 280 },
   });
   const glowProgress = spring({
     frame,
@@ -33,12 +33,12 @@ export const HookText: React.FC<HookTextProps> = ({ text, theme }) => {
     delay: 8,
   });
 
-  const scale = interpolate(progress, [0, 1], [1.15, 1]);
-  const y = interpolate(progress, [0, 1], [20, 0]);
+  const scale = interpolate(progress, [0, 1], [1.4, 1]);
+  const y = interpolate(progress, [0, 1], [40, 0]);
   const glowOpacity = interpolate(glowProgress, [0, 1], [0, 0.12]);
 
   // Text reveal via clip-path expanding from center
-  const revealProgress = interpolate(frame, [0, 15], [0, 1], {
+  const revealProgress = interpolate(frame, [0, 10], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
