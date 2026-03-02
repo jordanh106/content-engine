@@ -25,6 +25,7 @@ import { createRendersRouter } from "./routes/renders.js";
 import { createComposerAiRouter } from "./routes/composer-ai.js";
 import { createMetricsRouter } from "./routes/metrics.js";
 import { createIdeasRouter } from "./routes/ideas.js";
+import { createIdeasAiRouter } from "./routes/ideas-ai.js";
 import { createWatchlistRouter } from "./routes/watchlist.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
@@ -52,6 +53,7 @@ app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, render
 app.use("/api/composer", createComposerAiRouter(contentLibraryPath));
 app.use("/api/metrics", createMetricsRouter(contentLibraryPath));
 app.use("/api/ideas", createIdeasRouter(contentLibraryPath));
+app.use("/api/ideas-ai", createIdeasAiRouter(contentLibraryPath));
 app.use("/api/watchlist", createWatchlistRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 

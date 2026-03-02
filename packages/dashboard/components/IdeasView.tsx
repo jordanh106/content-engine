@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw } from "lucide-react";
 import type { Idea, IdeaCategory } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
+import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
@@ -28,6 +29,7 @@ export const IdeasView: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
+  const [generatorOpen, setGeneratorOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: summary } = useQuery<SummaryResponse>({
@@ -62,38 +64,47 @@ export const IdeasView: React.FC = () => {
             <p className="text-xs text-teal-600 mt-1.5">{syncMessage}</p>
           )}
         </div>
-        <button
-          onClick={async () => {
-            setSyncing(true);
-            setSyncMessage(null);
-            try {
-              const res = await fetch("/api/ideas/sync-n8n", { method: "POST" });
-              const data = await res.json();
-              if (!res.ok) {
-                setSyncMessage(`Sync failed: ${data.error}`);
-              } else if (data.synced > 0) {
-                setSyncMessage(`Synced ${data.synced} new idea${data.synced > 1 ? "s" : ""} from n8n`);
-                queryClient.invalidateQueries({ queryKey: ["ideas"] });
-                queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
-              } else {
-                setSyncMessage(data.message || "No new ideas to sync");
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setGeneratorOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+          >
+            <Sparkles size={14} />
+            Generate
+          </button>
+          <button
+            onClick={async () => {
+              setSyncing(true);
+              setSyncMessage(null);
+              try {
+                const res = await fetch("/api/ideas/sync-n8n", { method: "POST" });
+                const data = await res.json();
+                if (!res.ok) {
+                  setSyncMessage(`Sync failed: ${data.error}`);
+                } else if (data.synced > 0) {
+                  setSyncMessage(`Synced ${data.synced} new idea${data.synced > 1 ? "s" : ""} from n8n`);
+                  queryClient.invalidateQueries({ queryKey: ["ideas"] });
+                  queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+                } else {
+                  setSyncMessage(data.message || "No new ideas to sync");
+                }
+              } catch {
+                setSyncMessage("Failed to connect to server");
               }
-            } catch {
-              setSyncMessage("Failed to connect to server");
-            }
-            setSyncing(false);
-          }}
-          disabled={syncing}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0",
-            syncing
-              ? "bg-slate-100 text-slate-400 cursor-wait"
-              : "bg-teal-600 text-white hover:bg-teal-700",
-          )}
-        >
-          <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-          {syncing ? "Syncing..." : "Sync n8n"}
-        </button>
+              setSyncing(false);
+            }}
+            disabled={syncing}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
+              syncing
+                ? "bg-slate-100 text-slate-400 cursor-wait"
+                : "bg-teal-600 text-white hover:bg-teal-700",
+            )}
+          >
+            <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+            {syncing ? "Syncing..." : "Sync n8n"}
+          </button>
+        </div>
       </div>
 
       {/* Category Filter Chips */}
@@ -160,6 +171,11 @@ export const IdeasView: React.FC = () => {
           onClose={() => setSelectedIdea(null)}
           onUpdated={() => setSelectedIdea(null)}
         />
+      )}
+
+      {/* Generator Modal */}
+      {generatorOpen && (
+        <IdeaGeneratorModal onClose={() => setGeneratorOpen(false)} />
       )}
     </div>
   );

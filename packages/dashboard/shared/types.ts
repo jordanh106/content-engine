@@ -290,6 +290,50 @@ export type Idea = {
 };
 
 // ============================================
+// Idea Generator AI Types
+// ============================================
+
+export type IdeaGenerateRequest = {
+  prompt: string;
+  conversationHistory: ConversationMessage[];
+  existingTopics: string[];
+};
+
+export type GeneratedIdea = {
+  topic: string;
+  suggestedFormat: string;
+  hookAngle: string;
+  priority: "High" | "Medium" | "Low";
+  category: IdeaCategory;
+};
+
+export type IdeaGenerateResponse = {
+  ideas: GeneratedIdea[];
+  message: string;
+};
+
+// ============================================
+// Caption Generator Types
+// ============================================
+
+export type CaptionRequest = {
+  prompt: string;
+  conversationHistory: ConversationMessage[];
+  context: {
+    topic: string;
+    hookAngle?: string;
+    suggestedFormat?: string;
+    category?: string;
+    script?: string;
+  };
+};
+
+export type CaptionResponse = {
+  captions: { platform: string; caption: string }[];
+  message: string;
+};
+
+// ============================================
 // Watchlist Types
 // ============================================
 

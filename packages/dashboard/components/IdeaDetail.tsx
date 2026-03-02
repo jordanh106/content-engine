@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
@@ -11,8 +11,10 @@ import {
   Sparkles,
   Check,
   Copy,
+  MessageCircle,
+  Send,
 } from "lucide-react";
-import type { Idea, IdeaCategory, FormatId } from "../shared/types.js";
+import type { Idea, IdeaCategory, FormatId, ConversationMessage } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -42,7 +44,20 @@ const FORMAT_OPTIONS: { id: FormatId; label: string }[] = Object.entries(FORMATS
   ([id, info]) => ({ id: id as FormatId, label: `${id} (${info.shortName})` }),
 );
 
-type Tab = "context" | "script";
+type Tab = "context" | "script" | "caption";
+
+type CaptionMessage = {
+  role: "user" | "assistant";
+  content: string;
+  captions?: { platform: string; caption: string }[];
+  isError?: boolean;
+};
+
+const PLATFORM_STYLES: Record<string, { accent: string; bg: string; border: string }> = {
+  Instagram: { accent: "text-pink-700", bg: "bg-pink-50", border: "border-pink-200" },
+  TikTok: { accent: "text-slate-900", bg: "bg-slate-50", border: "border-slate-300" },
+  YouTube: { accent: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
+};
 
 export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated }) => {
   const queryClient = useQueryClient();
@@ -53,6 +68,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [scriptCopied, setScriptCopied] = useState(false);
 
+  const [captionMessages, setCaptionMessages] = useState<CaptionMessage[]>([]);
+  const [captionInput, setCaptionInput] = useState("");
+  const [captionLoading, setCaptionLoading] = useState(false);
+  const [customScript, setCustomScript] = useState("");
+  const [copiedCaption, setCopiedCaption] = useState<string | null>(null);
+  const captionScrollRef = useRef<HTMLDivElement>(null);
+  const captionInputRef = useRef<HTMLTextAreaElement>(null);
+
   const hasChanges = editedPriority !== idea.priority || editedFormat !== idea.suggestedFormat;
   const hasDigest = idea.source?.toLowerCase().includes("n8n") && idea.dateAdded;
 
@@ -62,7 +85,17 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
     setEditedFormat(idea.suggestedFormat);
     setActiveTab("context");
     setConfirmArchive(false);
+    setCaptionMessages([]);
+    setCustomScript("");
+    setCaptionInput("");
   }, [idea.topic, idea.priority, idea.suggestedFormat]);
+
+  // Auto-scroll caption messages
+  useEffect(() => {
+    if (captionScrollRef.current) {
+      captionScrollRef.current.scrollTop = captionScrollRef.current.scrollHeight;
+    }
+  }, [captionMessages, captionLoading]);
 
   // Fetch digest content
   const { data: digestData } = useQuery<{ markdown: string; date: string }>({
@@ -137,7 +170,93 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "context", label: "Context", icon: <Sparkles size={16} /> },
     { id: "script", label: "Script", icon: <FileText size={16} /> },
+    { id: "caption", label: "Caption", icon: <MessageCircle size={16} /> },
   ];
+
+  const getCaptionHistory = useCallback((): ConversationMessage[] => {
+    return captionMessages
+      .filter((m) => !m.isError)
+      .map((m) => ({
+        role: m.role,
+        content: m.captions
+          ? `${m.content}\n\nCaptions: ${m.captions.map((c) => `${c.platform}: ${c.caption}`).join("\n")}`
+          : m.content,
+      }));
+  }, [captionMessages]);
+
+  const handleCaptionSend = useCallback(
+    async (text?: string) => {
+      const prompt = (text || captionInput).trim();
+      if (!prompt || captionLoading) return;
+
+      setCaptionInput("");
+      setCaptionMessages((prev) => [...prev, { role: "user", content: prompt }]);
+      setCaptionLoading(true);
+
+      try {
+        const scriptContext =
+          customScript.trim() ||
+          developMutation.data?.script ||
+          "";
+
+        const res = await fetch("/api/ideas-ai/caption", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            conversationHistory: getCaptionHistory().slice(-20),
+            context: {
+              topic: idea.topic,
+              hookAngle: idea.hookAngle,
+              suggestedFormat: editedFormat || idea.suggestedFormat,
+              category: idea.category,
+              script: scriptContext || undefined,
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || `Error ${res.status}`);
+        }
+
+        const data = await res.json();
+        setCaptionMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.message,
+            captions: data.captions,
+          },
+        ]);
+      } catch (e) {
+        setCaptionMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: e instanceof Error ? e.message : "Something went wrong",
+            isError: true,
+          },
+        ]);
+      } finally {
+        setCaptionLoading(false);
+      }
+    },
+    [captionInput, captionLoading, customScript, developMutation.data, getCaptionHistory, idea, editedFormat],
+  );
+
+  const handleCaptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleCaptionSend();
+    }
+  };
+
+  const handleCopyCaption = async (text: string, platform: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedCaption(platform);
+    setTimeout(() => setCopiedCaption(null), 2000);
+  };
 
   const handleCopyScript = async () => {
     if (developMutation.data?.script) {
@@ -406,6 +525,155 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === "caption" && (
+            <div className="flex flex-col h-full">
+              {/* Script context area */}
+              <div className="px-4 md:px-6 pt-4 pb-2">
+                {developMutation.data?.script && !customScript.trim() && (
+                  <div className="bg-teal-50/50 border border-teal-100 rounded-lg px-3 py-2 mb-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-1">
+                      Using generated script as context
+                    </p>
+                    <p className="text-[10px] text-teal-700 line-clamp-2">
+                      {developMutation.data.script.slice(0, 150)}...
+                    </p>
+                  </div>
+                )}
+                <textarea
+                  value={customScript}
+                  onChange={(e) => setCustomScript(e.target.value)}
+                  placeholder="Paste your own script or notes here (optional)..."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* Caption chat messages */}
+              <div
+                ref={captionScrollRef}
+                className="flex-1 overflow-y-auto px-4 md:px-6 py-2 space-y-3 min-h-[200px]"
+              >
+                {captionMessages.length === 0 && !captionLoading && (
+                  <div className="text-center py-6">
+                    <MessageCircle size={24} className="text-slate-300 mx-auto mb-2" />
+                    <p className="text-xs text-slate-500">
+                      Generate captions for Instagram, TikTok, and YouTube
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 justify-center mt-3">
+                      {[
+                        "Generate captions for all platforms",
+                        "Write a viral TikTok caption",
+                        "Instagram caption with hashtags",
+                      ].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => handleCaptionSend(s)}
+                          className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {captionMessages.map((msg, i) => (
+                  <div key={i}>
+                    <div
+                      className={cn(
+                        "text-xs rounded-lg px-3 py-2 max-w-[90%]",
+                        msg.role === "user"
+                          ? "bg-teal-50 text-teal-900 ml-auto"
+                          : msg.isError
+                            ? "bg-rose-50 text-rose-800 border border-rose-200"
+                            : "bg-violet-50 text-violet-900",
+                      )}
+                    >
+                      {msg.content}
+                    </div>
+
+                    {msg.captions && msg.captions.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {msg.captions.map((cap, j) => {
+                          const style = PLATFORM_STYLES[cap.platform] ?? PLATFORM_STYLES.Instagram;
+                          return (
+                            <div
+                              key={`${i}-${j}`}
+                              className={cn("border rounded-xl p-3", style.bg, style.border)}
+                            >
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-black uppercase tracking-[0.2em]",
+                                    style.accent,
+                                  )}
+                                >
+                                  {cap.platform}
+                                </span>
+                                <button
+                                  onClick={() => handleCopyCaption(cap.caption, cap.platform)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors",
+                                    copiedCaption === cap.platform
+                                      ? "bg-emerald-50 text-emerald-700"
+                                      : "bg-white/70 text-slate-500 hover:bg-white",
+                                  )}
+                                >
+                                  {copiedCaption === cap.platform ? (
+                                    <Check size={10} />
+                                  ) : (
+                                    <Copy size={10} />
+                                  )}
+                                  {copiedCaption === cap.platform ? "Copied" : "Copy"}
+                                </button>
+                              </div>
+                              <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                {cap.caption}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {captionLoading && (
+                  <div className="flex items-center gap-2 text-xs text-violet-500 py-1">
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>Writing captions...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Caption input */}
+              <div className="flex items-end gap-2 px-4 md:px-6 pb-3 pt-2 border-t border-slate-100">
+                <textarea
+                  ref={captionInputRef}
+                  value={captionInput}
+                  onChange={(e) => setCaptionInput(e.target.value)}
+                  onKeyDown={handleCaptionKeyDown}
+                  placeholder="Generate captions or refine..."
+                  rows={1}
+                  disabled={captionLoading}
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 disabled:opacity-50 placeholder:text-slate-400"
+                />
+                <button
+                  onClick={() => handleCaptionSend()}
+                  disabled={!captionInput.trim() || captionLoading}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors flex-shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center",
+                    captionInput.trim() && !captionLoading
+                      ? "bg-violet-600 text-white hover:bg-violet-700"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed",
+                  )}
+                >
+                  <Send size={14} />
+                </button>
+              </div>
             </div>
           )}
         </div>
