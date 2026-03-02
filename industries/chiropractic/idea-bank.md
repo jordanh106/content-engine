@@ -12,7 +12,9 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 
 | Topic | Suggested Format | Hook Angle | Priority | Source | Date Added |
 |-------|-----------------|------------|----------|--------|------------|
-| | | | | | |
+| Tech Neck Prevention Guide | A (Explainer) | Your phone is aging your spine | High | n8n Content Intelligence | 2026-03-02 |
+| Pregnancy Pain Relief | C (Demo) | Safe adjustments for each trimester | High | n8n Content Intelligence | 2026-03-02 |
+| Desk Worker Revival | F (Quick Tip) | 60-second posture fixes | High | n8n Content Intelligence | 2026-03-02 |
 
 ---
 
@@ -37,6 +39,8 @@ Always relevant, not time-sensitive. Good for filling calendar gaps.
 | Why babies arch their back | A (Explainer) | Emotional: "It's not just colic" | Medium | Infant | 2026-03-02 |
 | First chiropractic visit nerves | E (Walkthrough) | Question: "Nervous about your first visit?" | Medium | General | 2026-03-02 |
 | Tech neck exercises for teens | C (Demo) | Statistic: "Teens spend 7+ hours on screens daily" | Medium | Kids | 2026-03-02 |
+| Sleep Position Masterclass | B (Checklist) | Fix your sleep in 3 steps | Medium | n8n Content Intelligence | 2026-03-02 |
+
 
 ---
 
@@ -46,7 +50,8 @@ Ideas from patient questions, DMs, comments, or in-office conversations.
 
 | Topic | Suggested Format | Hook Angle | Priority | Request Source | Date Added |
 |-------|-----------------|------------|----------|----------------|------------|
-| | | | | | |
+| Athletic Performance Series | G (Patient Story) | From injured to PR | High | n8n Content Intelligence | 2026-03-02 |
+| Senior Mobility Guide | E (Walkthrough) | Age-proof your spine | Medium | n8n Content Intelligence | 2026-03-02 |
 
 ---
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw } from "lucide-react";
 import type { Idea, IdeaCategory } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -24,6 +24,9 @@ type SummaryResponse = { counts: Record<string, number>; total: number };
 
 export const IdeasView: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<IdeaCategory | "all">("all");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: summary } = useQuery<SummaryResponse>({
     queryKey: ["ideas-summary"],
@@ -44,14 +47,51 @@ export const IdeasView: React.FC = () => {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Lightbulb size={20} className="text-amber-500" />
-          <h2 className="text-lg font-serif font-bold text-slate-900">Idea Bank</h2>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Lightbulb size={20} className="text-amber-500" />
+            <h2 className="text-lg font-serif font-bold text-slate-900">Idea Bank</h2>
+          </div>
+          <p className="text-sm text-slate-500">
+            Content ideas staged for future planning. Run <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/content-planner</code> to promote ideas to the calendar.
+          </p>
+          {syncMessage && (
+            <p className="text-xs text-teal-600 mt-1.5">{syncMessage}</p>
+          )}
         </div>
-        <p className="text-sm text-slate-500">
-          Content ideas staged for future planning. Run <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/content-planner</code> to promote ideas to the calendar.
-        </p>
+        <button
+          onClick={async () => {
+            setSyncing(true);
+            setSyncMessage(null);
+            try {
+              const res = await fetch("/api/ideas/sync-n8n", { method: "POST" });
+              const data = await res.json();
+              if (!res.ok) {
+                setSyncMessage(`Sync failed: ${data.error}`);
+              } else if (data.synced > 0) {
+                setSyncMessage(`Synced ${data.synced} new idea${data.synced > 1 ? "s" : ""} from n8n`);
+                queryClient.invalidateQueries({ queryKey: ["ideas"] });
+                queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+              } else {
+                setSyncMessage(data.message || "No new ideas to sync");
+              }
+            } catch {
+              setSyncMessage("Failed to connect to server");
+            }
+            setSyncing(false);
+          }}
+          disabled={syncing}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0",
+            syncing
+              ? "bg-slate-100 text-slate-400 cursor-wait"
+              : "bg-teal-600 text-white hover:bg-teal-700",
+          )}
+        >
+          <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+          {syncing ? "Syncing..." : "Sync n8n"}
+        </button>
       </div>
 
       {/* Category Filter Chips */}
