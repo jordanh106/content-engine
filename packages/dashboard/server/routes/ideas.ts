@@ -1,6 +1,7 @@
 import fs from "fs";
 import { Router } from "express";
 import path from "path";
+import Anthropic from "@anthropic-ai/sdk";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
 import type { IdeaCategory } from "../../shared/types.js";
 
@@ -92,6 +93,97 @@ function appendIdeasToFile(filePath: string, ideas: IngestIdea[]): number {
   fs.writeFileSync(filePath, lines.join("\n"));
   return added;
 }
+
+function findIdeaRow(lines: string[], topic: string): number {
+  const normalized = topic.toLowerCase().trim();
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith("|")) continue;
+    if (lines[i].includes("---") || lines[i].toLowerCase().includes("| topic")) continue;
+    const cells = lines[i].split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+    if (cells[0]?.toLowerCase().trim() === normalized) return i;
+  }
+  return -1;
+}
+
+function updateIdeaInFile(filePath: string, topic: string, updates: { priority?: string; suggestedFormat?: string }): boolean {
+  if (!fs.existsSync(filePath)) return false;
+  const content = fs.readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
+  const rowIdx = findIdeaRow(lines, topic);
+  if (rowIdx === -1) return false;
+
+  const cells = lines[rowIdx].split("|").map((c) => c.trim());
+  // cells[0] is empty (before first |), cells[1]=Topic, [2]=Format, [3]=Hook, [4]=Priority, [5]=Source, [6]=Date, [7] empty
+  if (updates.suggestedFormat !== undefined) cells[2] = ` ${updates.suggestedFormat} `;
+  if (updates.priority !== undefined) cells[4] = ` ${updates.priority} `;
+
+  // Rebuild with proper spacing
+  const rebuilt = cells.map((c, i) => (i === 0 || i === cells.length - 1) ? "" : ` ${c.trim()} `);
+  lines[rowIdx] = "|" + rebuilt.slice(1, -1).join("|") + "|";
+
+  fs.writeFileSync(filePath, lines.join("\n"));
+  return true;
+}
+
+function archiveIdeaInFile(filePath: string, topic: string): boolean {
+  if (!fs.existsSync(filePath)) return false;
+  const content = fs.readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
+  const rowIdx = findIdeaRow(lines, topic);
+  if (rowIdx === -1) return false;
+
+  // Parse the row before removing
+  const cells = lines[rowIdx].split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+  const ideaTopic = cells[0] || "";
+  const format = cells[1] || "";
+  const today = new Date().toISOString().split("T")[0];
+
+  // Remove from current location
+  lines.splice(rowIdx, 1);
+
+  // Find the Archived section separator
+  const archiveHeader = "## Archived (Scheduled)";
+  const archiveIdx = lines.findIndex((l) => l.trim() === archiveHeader);
+  if (archiveIdx === -1) return false;
+
+  let sepIdx = -1;
+  for (let i = archiveIdx + 1; i < lines.length; i++) {
+    if (lines[i].includes("|") && lines[i].includes("---")) {
+      sepIdx = i;
+      break;
+    }
+  }
+  if (sepIdx === -1) return false;
+
+  // Remove empty placeholder after separator
+  const afterSep = sepIdx + 1;
+  if (afterSep < lines.length) {
+    const archivedCells = lines[afterSep].split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+    if (lines[afterSep].startsWith("|") && archivedCells.length === 0) {
+      lines.splice(afterSep, 1);
+    }
+  }
+
+  // Insert after last archived row
+  let insertIdx = sepIdx + 1;
+  while (insertIdx < lines.length && lines[insertIdx].startsWith("|")) {
+    insertIdx++;
+  }
+
+  lines.splice(insertIdx, 0, `| ${ideaTopic} | ${format} | ${today} | |`);
+  fs.writeFileSync(filePath, lines.join("\n"));
+  return true;
+}
+
+const FORMAT_FILE_MAP: Record<string, string> = {
+  A: "explainer.md",
+  B: "checklist.md",
+  C: "demo.md",
+  D: "myth-buster.md",
+  E: "walkthrough.md",
+  F: "quick-tip.md",
+  G: "patient-story.md",
+};
 
 export function createIdeasRouter(contentLibraryPath: string) {
   const router = Router();
@@ -219,6 +311,159 @@ export function createIdeasRouter(contentLibraryPath: string) {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to sync from n8n";
       console.error("[ideas-sync-n8n] Error:", message);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // GET /api/ideas/digest/:date - serve digest markdown for a given date
+  router.get("/digest/:date", (_req, res) => {
+    const { date } = _req.params;
+    const insightsDir = path.join(industryDir, "viral-insights");
+    const digestPath = path.join(insightsDir, `intel-${date}.md`);
+    if (!fs.existsSync(digestPath)) {
+      res.status(404).json({ error: "No digest found for this date" });
+      return;
+    }
+    const markdown = fs.readFileSync(digestPath, "utf-8");
+    res.json({ markdown, date });
+  });
+
+  // PUT /api/ideas/update - update an idea's priority or format
+  router.put("/update", (req, res) => {
+    const { topic, priority, suggestedFormat } = req.body as {
+      topic?: string;
+      priority?: string;
+      suggestedFormat?: string;
+    };
+
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    const updated = updateIdeaInFile(ideaBankPath, topic, { priority, suggestedFormat });
+    if (!updated) {
+      res.status(404).json({ error: "Idea not found" });
+      return;
+    }
+    invalidateIdeaCache();
+    res.json({ updated: true });
+  });
+
+  // POST /api/ideas/archive - move an idea to the archived section
+  router.post("/archive", (req, res) => {
+    const { topic } = req.body as { topic?: string };
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    const archived = archiveIdeaInFile(ideaBankPath, topic);
+    if (!archived) {
+      res.status(404).json({ error: "Idea not found" });
+      return;
+    }
+    invalidateIdeaCache();
+    res.json({ archived: true });
+  });
+
+  // POST /api/ideas/develop - AI-powered script generation from an idea
+  router.post("/develop", async (req, res) => {
+    const { topic, suggestedFormat, hookAngle, priority, category } = req.body as {
+      topic?: string;
+      suggestedFormat?: string;
+      hookAngle?: string;
+      priority?: string;
+      category?: string;
+    };
+
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: "ANTHROPIC_API_KEY must be set in .env" });
+      return;
+    }
+
+    try {
+      // Read brand voice
+      const brandPath = path.join(industryDir, "brand.md");
+      const brandVoice = fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8") : "";
+
+      // Read format template
+      const formatCode = suggestedFormat?.match(/^([A-G])/)?.[1] || "A";
+      const formatFile = FORMAT_FILE_MAP[formatCode] || "explainer.md";
+      const formatsDir = path.resolve(industryDir, "../../formats");
+      const formatPath = path.join(formatsDir, formatFile);
+      const formatTemplate = fs.existsSync(formatPath) ? fs.readFileSync(formatPath, "utf-8") : "";
+
+      const client = new Anthropic({ apiKey });
+
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        messages: [
+          {
+            role: "user",
+            content: `You are a content scriptwriter for a chiropractic practice's short-form video content.
+
+BRAND VOICE:
+${brandVoice}
+
+FORMAT TEMPLATE:
+${formatTemplate}
+
+Write a production-ready script for this content idea:
+
+Topic: ${topic}
+Format: ${suggestedFormat || "A (Explainer)"}
+Hook Angle: ${hookAngle || "Use your best judgment"}
+Priority: ${priority || "Medium"}
+Category: ${category || "general"}
+
+Requirements:
+- Follow the format template structure exactly (hook, body segments, CTA)
+- Include delivery cues in brackets like [Warm, empathetic] or [Direct to camera]
+- Match the brand voice: warm, educational, empowering, never clinical
+- No emdashes. Use commas, periods, or restructure.
+- Include a strong hook in the first 3 seconds
+- End with an engaging CTA
+- Target 30-45 seconds for most formats, 6-15s for Quick Tips
+
+Return the script in this exact format:
+
+HOOK:
+[The opening hook line with delivery cue]
+
+BODY:
+[The main content sections with delivery cues]
+
+CTA:
+[The call to action with delivery cue]
+
+DELIVERY CUES:
+- [List each unique delivery cue used]
+
+DURATION: [estimated seconds]`,
+          },
+        ],
+      });
+
+      const scriptText = message.content[0].type === "text" ? message.content[0].text : "";
+
+      // Parse delivery cues from the response
+      const cuesMatch = scriptText.match(/DELIVERY CUES:\n([\s\S]*?)(?:\n\nDURATION|\n*$)/);
+      const deliveryCues = cuesMatch
+        ? cuesMatch[1].split("\n").map((l) => l.replace(/^-\s*/, "").trim()).filter(Boolean)
+        : [];
+
+      res.json({ script: scriptText, deliveryCues });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate script";
+      console.error("[ideas-develop] Error:", message);
       res.status(500).json({ error: message });
     }
   });

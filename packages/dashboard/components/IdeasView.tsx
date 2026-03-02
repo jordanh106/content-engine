@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw } from "lucide-react";
 import type { Idea, IdeaCategory } from "../shared/types.js";
+import { IdeaDetail } from "./IdeaDetail.js";
 import { cn } from "../utils/cn.js";
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
@@ -26,6 +27,7 @@ export const IdeasView: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<IdeaCategory | "all">("all");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const queryClient = useQueryClient();
 
   const { data: summary } = useQuery<SummaryResponse>({
@@ -54,7 +56,7 @@ export const IdeasView: React.FC = () => {
             <h2 className="text-lg font-serif font-bold text-slate-900">Idea Bank</h2>
           </div>
           <p className="text-sm text-slate-500">
-            Content ideas staged for future planning. Run <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/content-planner</code> to promote ideas to the calendar.
+            Content ideas staged for future planning. Click an idea to develop, edit, or archive it.
           </p>
           {syncMessage && (
             <p className="text-xs text-teal-600 mt-1.5">{syncMessage}</p>
@@ -142,18 +144,34 @@ export const IdeasView: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {ideas.map((idea) => (
-            <IdeaCard key={idea.id} idea={idea} />
+            <IdeaCard
+              key={idea.id}
+              idea={idea}
+              onClick={() => setSelectedIdea(idea)}
+            />
           ))}
         </div>
+      )}
+
+      {/* Detail Panel */}
+      {selectedIdea && (
+        <IdeaDetail
+          idea={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          onUpdated={() => setSelectedIdea(null)}
+        />
       )}
     </div>
   );
 };
 
-const IdeaCard: React.FC<{ idea: Idea }> = ({ idea }) => {
+const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick }) => {
   const meta = CATEGORY_META[idea.category];
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-slate-300 transition-colors">
+    <div
+      onClick={onClick}
+      className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900 text-sm">{idea.topic}</p>
