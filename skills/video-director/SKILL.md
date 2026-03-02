@@ -60,6 +60,7 @@ Read these files (paths relative to content-engine repo root):
 - `industries/<industry>/brand.md` - Voice, tone, humor rules
 - `industries/<industry>/cinema-defaults.md` - Default camera rigs
 - `industries/<industry>/config.json` - Audience segments and conditions
+- `industries/<industry>/hook-patterns.md` - Proven hook patterns by type and platform
 
 If a library code was given (e.g., "D1"), also read:
 - `industries/<industry>/content-library.md` - Find the existing entry
@@ -81,6 +82,52 @@ Follow the format template's voiceover structure. Apply the brand voice from bra
 - Use "you/your" language, not clinical third-person
 - No emdashes. Use commas, periods, or restructure.
 - End with a clear CTA that matches the format's style
+- Select the primary hook from `hook-patterns.md` based on topic type and target platform
+
+### Step 3b: Generate Hook Variations
+
+For every video, output 3 hook alternatives so the creator can A/B test or pick the strongest:
+
+```
+## Hook Variations
+
+**Primary (best match for format + platform):**
+"[hook text]"
+Pattern: [pattern type from hook-patterns.md]
+
+**Variation A (Question):**
+"[question-based hook]"
+Pattern: Question Hook
+
+**Variation B (Statistic/Contrarian):**
+"[stat or myth-based hook]"
+Pattern: [Statistic Hook or Myth Hook]
+```
+
+Tag each variation with its hook pattern type for performance tracking.
+
+### Step 3c: Platform-Specific Hook Optimization
+
+Adjust the hook based on the target platform:
+
+**TikTok hooks (Format F, D primarily):**
+- Text overlay on first frame is mandatory (many watch muted)
+- Get to the point in 1-2 seconds max
+- Controversial or curiosity hooks outperform educational hooks
+- Pattern interrupts get the most shares
+- Keep total hook to under 8 words for text overlay
+
+**Instagram Reels hooks (all formats):**
+- Visual-first: start with movement, face close-up, or before/after
+- Saves-optimized CTAs ("save this") outperform likes
+- Slightly longer setup acceptable (2-3s)
+- Carousel-style info hooks work well with checklists
+
+**YouTube Shorts hooks (Format A, C, E primarily):**
+- Educational/question hooks get the best retention
+- Longer setup acceptable (3-5s)
+- First frame becomes auto-thumbnail (design accordingly)
+- "Part 1 of X" series hooks drive subscriptions
 
 ### Step 4: Build the Shot List
 
@@ -470,8 +517,9 @@ Specify:
 
 ### Step 7: Add Platform Notes
 
-- **Instagram Reels:** Suggested hashtags, caption text, audio notes
-- **YouTube Shorts:** Description with search keywords, title suggestion
+- **Instagram Reels:** Suggested hashtags, caption text, audio notes, saves-optimized CTA
+- **TikTok:** Text overlay copy for first frame, trending sound suggestion, comment-driving CTA
+- **YouTube Shorts:** Description with search keywords, title suggestion, thumbnail-worthy first frame note
 - **Patient/Customer Resource:** Tags for the resource library
 
 ## Output Format
@@ -483,12 +531,68 @@ industries/<industry>/production-plans/<video-code>-<slug>.md
 
 Example: `industries/chiropractic/production-plans/D1-tech-neck.md`
 
+## Transcript Analysis Mode
+
+Analyze an external video transcript to extract reusable patterns.
+
+### Usage
+```
+/video-director --analyze-transcript
+```
+
+Then paste any transcript (from YouTube auto-captions, TikTok, etc.).
+
+### What It Analyzes
+
+1. **Hook** (first 1-3 seconds): What type of hook? How many words? What pattern from `hook-patterns.md` does it match?
+2. **Structure**: Which format (A-G) does this video most resemble?
+3. **Pacing**: Words per second, number of pauses, sentence length variation
+4. **CTA style**: How does it close? What action does it request?
+5. **Tone**: Educational, conversational, controversial, emotional?
+6. **What makes it effective**: 2-3 specific reasons this video works
+
+### Output
+
+```markdown
+## Transcript Analysis
+
+**Source:** [video URL or description]
+**Duration estimate:** [based on word count / 2.5 words per second]
+**Format match:** [A-G]
+
+### Hook Analysis
+- **Hook text:** "[first 1-3 seconds]"
+- **Hook pattern:** [type from hook-patterns.md]
+- **Word count:** [number]
+- **Effectiveness:** [why it works]
+
+### Structure Breakdown
+| Segment | Duration | Content | Our Component |
+|---------|----------|---------|---------------|
+
+### Pacing
+- Words per second: [number]
+- Pause count: [number]
+- Sentence length: [avg words]
+
+### Steal This
+1. **Hook adaptation:** "[rewritten in our brand voice]"
+2. **Structure idea:** [how to apply this structure]
+3. **CTA adaptation:** "[rewritten CTA]"
+
+### Add to Libraries?
+- Hook pattern: [yes/no - if new, suggest adding to hook-patterns.md]
+- Content idea: [yes/no - if relevant, suggest adding to idea-bank.md]
+```
+
 ## Integration with Other Skills
 
 ```
-/last30days [topic]     → Research
-/content-planner        → Calendar with format assignments
-/video-director         → THIS SKILL produces the production plan
-remotion-best-practices → Auto-loaded when generating Remotion data
-brand-factory           → Auto-loaded when applying brand voice
+/last30days [topic]       → Topic research
+/viral-scout [niche]      → Viral pattern discovery
+/creator-analysis         → Competitor deep-dives
+/content-planner          → Calendar with format assignments
+/video-director           → THIS SKILL produces the production plan
+remotion-best-practices   → Auto-loaded when generating Remotion data
+brand-factory             → Auto-loaded when applying brand voice
 ```

@@ -1,0 +1,148 @@
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive } from "lucide-react";
+import type { Idea, IdeaCategory } from "../shared/types.js";
+import { cn } from "../utils/cn.js";
+
+const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
+  trending: { label: "Trending", icon: <Flame size={14} />, color: "text-orange-600 bg-orange-50" },
+  competitor: { label: "Competitor", icon: <Users size={14} />, color: "text-violet-600 bg-violet-50" },
+  evergreen: { label: "Evergreen", icon: <Leaf size={14} />, color: "text-emerald-600 bg-emerald-50" },
+  audience: { label: "Audience", icon: <MessageCircle size={14} />, color: "text-sky-600 bg-sky-50" },
+  personal: { label: "Personal", icon: <Sparkles size={14} />, color: "text-pink-600 bg-pink-50" },
+  archived: { label: "Archived", icon: <Archive size={14} />, color: "text-slate-500 bg-slate-100" },
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  High: "bg-rose-100 text-rose-700",
+  Medium: "bg-amber-100 text-amber-700",
+  Low: "bg-slate-100 text-slate-600",
+};
+
+type IdeasResponse = { ideas: Idea[]; total: number };
+type SummaryResponse = { counts: Record<string, number>; total: number };
+
+export const IdeasView: React.FC = () => {
+  const [activeCategory, setActiveCategory] = useState<IdeaCategory | "all">("all");
+
+  const { data: summary } = useQuery<SummaryResponse>({
+    queryKey: ["ideas-summary"],
+    queryFn: () => fetch("/api/ideas/summary").then((r) => r.json()),
+  });
+
+  const { data, isLoading } = useQuery<IdeasResponse>({
+    queryKey: ["ideas", activeCategory],
+    queryFn: () => {
+      const params = activeCategory !== "all" ? `?category=${activeCategory}` : "";
+      return fetch(`/api/ideas${params}`).then((r) => r.json());
+    },
+  });
+
+  const ideas = data?.ideas ?? [];
+  const categories: (IdeaCategory | "all")[] = ["all", "trending", "competitor", "evergreen", "audience", "personal", "archived"];
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Lightbulb size={20} className="text-amber-500" />
+          <h2 className="text-lg font-serif font-bold text-slate-900">Idea Bank</h2>
+        </div>
+        <p className="text-sm text-slate-500">
+          Content ideas staged for future planning. Run <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/content-planner</code> to promote ideas to the calendar.
+        </p>
+      </div>
+
+      {/* Category Filter Chips */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((cat) => {
+          const count = cat === "all"
+            ? (summary?.total ?? 0)
+            : (summary?.counts[cat] ?? 0);
+          const meta = cat === "all" ? null : CATEGORY_META[cat];
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors",
+                activeCategory === cat
+                  ? "bg-teal-600 text-white"
+                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300",
+              )}
+            >
+              {meta?.icon}
+              {cat === "all" ? "All" : meta?.label}
+              {count > 0 && (
+                <span className={cn(
+                  "ml-1 px-1.5 py-0.5 rounded-full text-[10px]",
+                  activeCategory === cat ? "bg-teal-700" : "bg-slate-100",
+                )}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Ideas List */}
+      {isLoading ? (
+        <div className="text-center py-12 text-slate-400 text-sm">Loading ideas...</div>
+      ) : ideas.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+          <Lightbulb size={32} className="text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">
+            {activeCategory === "all"
+              ? "No ideas yet. Run /viral-scout or /last30days to discover content ideas."
+              : `No ${CATEGORY_META[activeCategory as IdeaCategory]?.label.toLowerCase()} ideas yet.`}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {ideas.map((idea) => (
+            <IdeaCard key={idea.id} idea={idea} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const IdeaCard: React.FC<{ idea: Idea }> = ({ idea }) => {
+  const meta = CATEGORY_META[idea.category];
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-slate-300 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-slate-900 text-sm">{idea.topic}</p>
+          {idea.hookAngle && (
+            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{idea.hookAngle}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            {idea.suggestedFormat && (
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                {idea.suggestedFormat}
+              </span>
+            )}
+            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", meta.color)}>
+              {meta.label}
+            </span>
+            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", PRIORITY_COLORS[idea.priority] ?? PRIORITY_COLORS.Medium)}>
+              {idea.priority}
+            </span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          {idea.dateAdded && (
+            <p className="text-[10px] text-slate-400">{idea.dateAdded}</p>
+          )}
+          {idea.source && (
+            <p className="text-[10px] text-slate-400 mt-0.5 max-w-[120px] truncate">{idea.source}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

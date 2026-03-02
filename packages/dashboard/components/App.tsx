@@ -6,6 +6,9 @@ import { PipelineBoard } from "./PipelineBoard.js";
 import { ContentLibrary } from "./ContentLibrary.js";
 import { VideoDetail } from "./VideoDetail.js";
 import { ComposerPage } from "./composer/ComposerPage.js";
+import { MetricsView } from "./MetricsView.js";
+import { IdeasView } from "./IdeasView.js";
+import { WatchlistView } from "./WatchlistView.js";
 
 export const App: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -72,6 +75,9 @@ export const App: React.FC = () => {
           <p className="text-sm mt-2">Coming in Phase 3</p>
         </div>
       )}
+      {view === "IDEAS" && <IdeasView />}
+      {view === "WATCHLIST" && <WatchlistView />}
+      {view === "METRICS" && <MetricsView />}
 
       {selectedVideoCode && (
         <VideoDetail

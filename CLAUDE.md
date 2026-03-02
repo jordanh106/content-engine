@@ -24,21 +24,32 @@ scripts/             Repo utilities (install, scaffold)
 - Calendar: `industries/chiropractic/calendar.md` (4-week rolling plan)
 - Production guides: `industries/chiropractic/production-guides/` (5 detailed guides)
 - Cinema defaults: `industries/chiropractic/cinema-defaults.md`
+- Hook patterns: `industries/chiropractic/hook-patterns.md` (6 hook categories, CTA patterns, platform rules)
+- Idea bank: `industries/chiropractic/idea-bank.md` (content ideas staging area)
+- Watchlist: `industries/chiropractic/watchlist.md` (competitor/inspiration creator tracking)
+- Viral insights: `industries/chiropractic/viral-insights/` (scout reports and cumulative patterns)
+- Creator insights: `industries/chiropractic/creator-insights/` (per-creator analysis profiles)
 
 ## Skills
 
 | Skill | Invocation | Purpose |
 |-------|-----------|---------|
 | last30days | `/last30days [topic]` | Research trending topics on Reddit + X + Web from last 30 days |
+| viral-scout | `/viral-scout [niche]` | Find top-performing niche content across platforms, extract patterns |
+| creator-analysis | `/creator-analysis @handle` | Deep-dive on a specific creator's patterns, hooks, and formats |
+| competitor-research | `/competitor-research [niche]` | Broad competitive landscape analysis and positioning |
+| content-planner | `/content-planner` | Research output to weekly content calendar (uses hook patterns, idea bank, viral insights) |
+| video-director | `/video-director` | Calendar entry to full production plan (hook variations, platform optimization, transcript analysis) |
 | remotion-best-practices | Auto-loaded when working with Remotion | Domain knowledge for Remotion video creation |
 | brand-factory | Auto-loaded when applying brand | Industry-specific brand colors, typography, voice |
 | theme-factory | `/theme-factory` | 11 pre-set styling themes for artifacts |
-| content-planner | `/content-planner` | Research output to weekly content calendar |
-| video-director | `/video-director` | Calendar entry to full production plan |
 
 ### Skill Pipeline
 ```
-/last30days → /content-planner → /video-director → Remotion (primary graphics) + Cinema Studio (footage) → Assembly
+/last30days ─┐
+/viral-scout ─┼→ /content-planner → /video-director → Remotion + Cinema Studio → Assembly
+/creator-analysis ─┘         ↑                ↑
+                     idea-bank.md      hook-patterns.md
 ```
 
 ## Video Formats
@@ -98,6 +109,7 @@ Internal production management tool for tracking content through the production 
 |-------|-----------|
 | Frontend | React 19, Vite 6, TailwindCSS 4 |
 | State | TanStack React Query v5 |
+| Charts | Recharts |
 | Backend | Express 5, TypeScript, tsx (dev server) |
 | Database | SQLite via better-sqlite3 + Drizzle ORM |
 | Icons | lucide-react |
@@ -117,11 +129,20 @@ No auth. Localhost only. Solo internal tool accessed from desktop and phone.
 - Layout: sidebar nav on desktop, bottom tabs on mobile
 - SQLite database auto-creates tables on startup
 
-**Phases 2-5 PENDING**:
-- Phase 2: Pipeline Board (kanban with @dnd-kit drag-to-advance, DashboardHome with StatCards, Tonight's Session recommendation)
+**Phase 2 COMPLETE**: Pipeline Board + DashboardHome
+- PipelineBoard: kanban with drag-to-advance status
+- DashboardHome: stat cards, tonight's session recommendation
+
+**Phase 5 COMPLETE**: Metrics + Ideas + Watchlist
+- MetricsView: manual metric entry (views/likes/saves/shares/comments per video per platform), top performers table, bar charts (avg views by format, engagement/save rate by format), pie chart (views by platform)
+- IdeasView: reads `idea-bank.md`, category filter chips (trending/competitor/evergreen/audience/personal/archived), idea cards with priority and format tags
+- WatchlistView: reads `watchlist.md`, creator cards with platform badges, last-analyzed status, quick action commands
+- API routes: `/api/metrics`, `/api/ideas`, `/api/watchlist`
+- Parsers: `idea-bank.ts`, `watchlist.ts` with file-watching cache invalidation
+
+**Phases 3-4 PENDING**:
 - Phase 3: Session Planner (batch production checklist with timer, auto-advance status on completion)
-- Phase 4: Calendar (week/month views across IG Reels / YT Shorts / YT Long, gap detection, drag-to-reschedule)
-- Phase 5: Metrics (manual metric entry, Recharts charts, top performers)
+- Phase 4: Calendar (week/month views across IG Reels / YT Shorts / TikTok / YT Long, gap detection, drag-to-reschedule)
 
 ### Dashboard Architecture
 
@@ -129,6 +150,8 @@ No auth. Localhost only. Solo internal tool accessed from desktop and phone.
 content-library.md  ──parser──→  Video data (scripts, shots, tags, format)
 config.json         ──parser──→  Audiences, conditions, platforms
 production-plans/   ──parser──→  Generated production plans
+idea-bank.md        ──parser──→  Content ideas (staged for planning)
+watchlist.md        ──parser──→  Tracked creators
                                          ↓
                                Express API enriches with:
                                          ↓
@@ -290,6 +313,16 @@ Then edit:
 2. `industries/dental/brand.md` - Voice, tone, content rules
 3. `industries/dental/content-library.md` - Video scripts using formats A-G
 4. `skills/brand-factory/presets/dental.md` - Brand colors, typography, design tokens
+
+## n8n Automation
+
+Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
+
+| Workflow | ID | Trigger | Purpose |
+|----------|----|---------|---------|
+| Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
+
+The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
 
 ## Git
 

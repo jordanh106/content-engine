@@ -57,22 +57,30 @@ Read these files (paths relative to the content-engine repo root):
 - `industries/<industry>/config.json` - Audiences, conditions, platforms, posting cadence
 - `industries/<industry>/content-library.md` - Existing video scripts (to avoid duplication)
 - `industries/<industry>/brand.md` - Voice and content rules
+- `industries/<industry>/hook-patterns.md` - Proven hook patterns by type and platform
+- `industries/<industry>/idea-bank.md` - Staged content ideas awaiting scheduling
 - `formats/*.md` - Available format templates
 
-Check for recent last30days output:
+Check for optional intelligence sources:
 ```bash
 cat ~/.local/share/last30days/out/last30days.context.md 2>/dev/null
+ls industries/<industry>/viral-insights/scout-*.md 2>/dev/null | tail -1
+ls industries/<industry>/viral-insights/patterns.md 2>/dev/null
 ```
 
-If no recent research exists, suggest running `/last30days [industry] content trends` first, or proceed with evergreen content planning.
+If recent `/last30days` output exists, use it. If recent `/viral-scout` output exists, cross-reference patterns. If neither exists, suggest running `/last30days` or `/viral-scout` first, or proceed with evergreen content planning from the idea bank.
 
 ### Step 2: Identify Content Opportunities
 
-Cross-reference:
-- **Trending topics** from last30days research (if available)
-- **Content gaps** - conditions/topics in config.json that don't have videos in content-library.md yet
-- **Seasonal relevance** - time-of-year appropriate topics
-- **Platform balance** - ensure the week covers all target platforms
+Cross-reference these sources in priority order:
+
+1. **Idea bank** - Check `idea-bank.md` for high-priority staged ideas first
+2. **Viral patterns** - Check `viral-insights/patterns.md` for trending patterns to ride
+3. **Trending topics** - From `/last30days` research (if available)
+4. **Content gaps** - Conditions/topics in config.json that don't have videos in content-library.md yet
+5. **Seasonal relevance** - Time-of-year appropriate topics
+6. **Platform balance** - Ensure the week covers all target platforms (including TikTok)
+7. **Performance data** - If `performance-log.md` exists, prioritize formats and hook types that historically perform well
 
 ### Step 3: Assign Formats
 
@@ -90,7 +98,7 @@ For each content opportunity, assign the best format:
 
 ### Step 4: Build the Calendar
 
-Output a structured weekly plan:
+Output a structured weekly plan. Each entry should reference a hook pattern from `hook-patterns.md`:
 
 ```
 ## Week of [Date]
@@ -100,24 +108,41 @@ Output a structured weekly plan:
 **Format:** B (Checklist)
 **Audience:** [Target audience from config]
 **Hook:** [Suggested hook line]
+**Hook pattern:** [Pattern type from hook-patterns.md, e.g., "Question Hook: Why does your..."]
 **Trending signal:** [What from the research supports this topic]
+**Source:** [idea-bank / viral-scout / last30days / content-gap / evergreen]
 
-### Tuesday - Real Footage Day
-**Topic:** [Behind the scenes / patient interaction / personality content]
-**Notes:** [Filming notes]
+### Tuesday - TikTok
+**Topic:** [Quick tip or myth buster]
+**Format:** F (Quick Tip) or D (Myth Buster)
+**Hook:** [Text-heavy hook optimized for TikTok]
+**Hook pattern:** [Pattern type]
 
 ### Wednesday - YouTube Shorts
 **Topic:** [Topic name]
 **Format:** A (Explainer)
+**Hook:** [Educational/question hook]
+**Hook pattern:** [Pattern type]
 ...
 ```
 
+**Platform distribution target per week:**
+- Instagram Reels: 4-5 posts
+- TikTok: 3-5 posts (primarily Format F and D)
+- YouTube Shorts: 2-3 posts
+- YouTube Long-form: 1 post
+- Instagram Stories: Daily (not in calendar, organic)
+
 ### Step 5: Offer Next Steps
 
-After presenting the calendar, ask:
-1. "Want me to generate a full production plan for any of these?" (→ `/video-director`)
-2. "Want to swap any topics or formats?"
-3. "Should I research a specific topic deeper?" (→ `/last30days [topic] --deep`)
+After presenting the calendar:
+
+1. Move any idea-bank items that were scheduled to the "Archived" section of `idea-bank.md`
+2. Ask:
+   - "Want me to generate a full production plan for any of these?" (-> `/video-director`)
+   - "Want to swap any topics or formats?"
+   - "Should I research a specific topic deeper?" (-> `/last30days [topic] --deep`)
+   - "Want me to scout for viral content in any of these topics?" (-> `/viral-scout`)
 
 ## Output Format
 
@@ -129,7 +154,10 @@ industries/<industry>/calendar-week-YYYY-MM-DD.md
 ## Integration with Other Skills
 
 ```
-/last30days [topic]     → Research feeds into this skill
-/content-planner        → THIS SKILL produces the calendar
-/video-director         → Takes individual calendar entries and produces full production plans
+/last30days [topic]       → Topic research feeds into this skill
+/viral-scout [niche]      → Viral pattern research feeds into this skill
+/creator-analysis         → Competitor insights feed into this skill
+/competitor-research      → Landscape analysis informs positioning
+/content-planner          → THIS SKILL produces the calendar
+/video-director           → Takes individual calendar entries and produces full production plans
 ```

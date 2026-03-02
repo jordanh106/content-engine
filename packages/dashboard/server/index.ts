@@ -23,8 +23,13 @@ import { createVideosRouter } from "./routes/videos.js";
 import { createPipelineRouter } from "./routes/pipeline.js";
 import { createRendersRouter } from "./routes/renders.js";
 import { createComposerAiRouter } from "./routes/composer-ai.js";
+import { createMetricsRouter } from "./routes/metrics.js";
+import { createIdeasRouter } from "./routes/ideas.js";
+import { createWatchlistRouter } from "./routes/watchlist.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
+import { invalidateIdeaCache } from "./parsers/idea-bank.js";
+import { invalidateWatchlistCache } from "./parsers/watchlist.js";
 
 // Initialize database (creates tables on import)
 import "./db.js";
@@ -45,11 +50,17 @@ app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, format
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
 app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, renderOutputDir));
 app.use("/api/composer", createComposerAiRouter(contentLibraryPath));
+app.use("/api/metrics", createMetricsRouter(contentLibraryPath));
+app.use("/api/ideas", createIdeasRouter(contentLibraryPath));
+app.use("/api/watchlist", createWatchlistRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
+const ideaBankPath = path.join(industryDir, "idea-bank.md");
+const watchlistPath = path.join(industryDir, "watchlist.md");
+
 const watcher = chokidar.watch(
-  [contentLibraryPath, configPath, path.join(industryDir, "production-plans")],
+  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, path.join(industryDir, "production-plans")],
   { ignoreInitial: true },
 );
 
@@ -60,6 +71,12 @@ watcher.on("change", (filePath) => {
   }
   if (filePath.includes("config.json")) {
     invalidateConfigCache();
+  }
+  if (filePath.includes("idea-bank")) {
+    invalidateIdeaCache();
+  }
+  if (filePath.includes("watchlist")) {
+    invalidateWatchlistCache();
   }
 });
 

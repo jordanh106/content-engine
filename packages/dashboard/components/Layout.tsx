@@ -3,8 +3,11 @@ import {
   LayoutDashboard,
   Columns3,
   Library,
+  Lightbulb,
+  Eye,
   Calendar,
   Timer,
+  TrendingUp,
 } from "lucide-react";
 import type { DashboardView } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
@@ -19,8 +22,11 @@ const navItems: NavItem[] = [
   { view: "HOME", label: "Home", icon: <LayoutDashboard size={20} /> },
   { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={20} /> },
   { view: "LIBRARY", label: "Library", icon: <Library size={20} /> },
+  { view: "IDEAS", label: "Ideas", icon: <Lightbulb size={20} /> },
+  { view: "WATCHLIST", label: "Watchlist", icon: <Eye size={20} /> },
   { view: "CALENDAR", label: "Calendar", icon: <Calendar size={20} /> },
   { view: "SESSION", label: "Session", icon: <Timer size={20} /> },
+  { view: "METRICS", label: "Metrics", icon: <TrendingUp size={20} /> },
 ];
 
 type LayoutProps = {

@@ -122,9 +122,12 @@ export const DASHBOARD_VIEWS = [
   "HOME",
   "PIPELINE",
   "LIBRARY",
+  "IDEAS",
+  "WATCHLIST",
   "CALENDAR",
   "SESSION",
   "COMPOSER",
+  "METRICS",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -267,4 +270,35 @@ export type ComposerAiRequest = {
 export type ComposerAiResponse = {
   operations: ComponentOperation[];
   message: string;
+};
+
+// ============================================
+// Idea Bank Types
+// ============================================
+
+export type IdeaCategory = "trending" | "competitor" | "evergreen" | "audience" | "personal" | "archived";
+
+export type Idea = {
+  id: number;
+  topic: string;
+  suggestedFormat: string;
+  hookAngle: string;
+  priority: "High" | "Medium" | "Low";
+  source: string;
+  dateAdded: string;
+  category: IdeaCategory;
+};
+
+// ============================================
+// Watchlist Types
+// ============================================
+
+export type WatchlistCreator = {
+  handle: string;
+  platform: string;
+  followers: string;
+  whyTracking: string;
+  contentStyle: string;
+  frequency: string;
+  lastAnalyzed: string;
 };
