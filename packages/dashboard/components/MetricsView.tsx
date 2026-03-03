@@ -39,6 +39,7 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -47,6 +48,12 @@ import type {
   IntelDigest,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
 
 type TopPerformer = {
   videoCode: string;
@@ -181,32 +188,32 @@ export const MetricsView: React.FC = () => {
   const [showPerformance, setShowPerformance] = useState(false);
 
   // Intelligence data
-  const { data: intelData } = useQuery<IntelligenceResponse>({
+  const { data: intelData, isLoading: intelLoading, isError: intelError } = useQuery<IntelligenceResponse>({
     queryKey: ["metrics", "intelligence"],
-    queryFn: () => fetch("/api/metrics/intelligence").then((r) => r.json()),
+    queryFn: () => fetchJson<IntelligenceResponse>("/api/metrics/intelligence"),
   });
 
   // Performance data
   const { data: topPerformers } = useQuery<{ topPerformers: TopPerformer[] }>({
     queryKey: ["metrics", "top-performers"],
-    queryFn: () => fetch("/api/metrics/top-performers").then((r) => r.json()),
+    queryFn: () => fetchJson<{ topPerformers: TopPerformer[] }>("/api/metrics/top-performers"),
   });
 
   const { data: byFormat } = useQuery<{ byFormat: FormatMetric[] }>({
     queryKey: ["metrics", "by-format"],
-    queryFn: () => fetch("/api/metrics/by-format").then((r) => r.json()),
+    queryFn: () => fetchJson<{ byFormat: FormatMetric[] }>("/api/metrics/by-format"),
   });
 
   const { data: byPlatform } = useQuery<{ byPlatform: PlatformMetric[] }>({
     queryKey: ["metrics", "by-platform"],
-    queryFn: () => fetch("/api/metrics/by-platform").then((r) => r.json()),
+    queryFn: () => fetchJson<{ byPlatform: PlatformMetric[] }>("/api/metrics/by-platform"),
   });
 
   const { data: trendsData } = useQuery<{ trends: TrendPoint[] }>({
     queryKey: ["metrics", "trends", trendPlatform],
     queryFn: () => {
       const params = trendPlatform !== "all" ? `?platform=${trendPlatform}&days=60` : "?days=60";
-      return fetch(`/api/metrics/trends${params}`).then((r) => r.json());
+      return fetchJson<{ trends: TrendPoint[] }>(`/api/metrics/trends${params}`);
     },
   });
 
@@ -243,18 +250,15 @@ export const MetricsView: React.FC = () => {
     setSyncing(true);
     setSyncMessage(null);
     try {
-      const res = await fetch("/api/metrics/sync-n8n", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setSyncMessage(`Sync failed: ${data.error}`);
-      } else if (data.synced > 0) {
+      const data = await fetchJson<{ synced?: number; skipped?: number; message?: string; error?: string }>("/api/metrics/sync-n8n", { method: "POST" });
+      if (data.synced && data.synced > 0) {
         setSyncMessage(`Synced ${data.synced} metric${data.synced > 1 ? "s" : ""} from n8n`);
         queryClient.invalidateQueries({ queryKey: ["metrics"] });
       } else {
         setSyncMessage(data.message || "No new metrics to sync");
       }
-    } catch {
-      setSyncMessage("Failed to connect to server");
+    } catch (e) {
+      setSyncMessage(e instanceof Error ? e.message : "Failed to connect to server");
     }
     setSyncing(false);
   };
@@ -263,12 +267,7 @@ export const MetricsView: React.FC = () => {
     setInsightsLoading(true);
     setInsightsError(null);
     try {
-      const res = await fetch("/api/metrics-ai/insights", { method: "POST" });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || `Error ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await fetchJson<InsightsResponse>("/api/metrics-ai/insights", { method: "POST" });
       setInsightsData(data);
     } catch (e) {
       setInsightsError(e instanceof Error ? e.message : "Failed to analyze");
@@ -324,7 +323,20 @@ export const MetricsView: React.FC = () => {
       </header>
 
       {/* Intelligence Cards */}
-      {intel ? (
+      {intelLoading ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
+          <Loader2 size={32} className="text-teal-500 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Loading market intelligence...</p>
+        </div>
+      ) : intelError ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-3">
+          <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Failed to load intelligence data</p>
+            <p className="text-xs text-amber-600 mt-1">Check that the server is running. The page will retry automatically.</p>
+          </div>
+        </div>
+      ) : intel ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Trending Topics */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
