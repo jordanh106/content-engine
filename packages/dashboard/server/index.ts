@@ -32,6 +32,7 @@ import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
 import { invalidateWatchlistCache } from "./parsers/watchlist.js";
+import { invalidateIntelCache } from "./parsers/viral-insights.js";
 
 // Initialize database (creates tables on import)
 import "./db.js";
@@ -63,8 +64,10 @@ app.use("/rendered", express.static(renderOutputDir));
 const ideaBankPath = path.join(industryDir, "idea-bank.md");
 const watchlistPath = path.join(industryDir, "watchlist.md");
 
+const viralInsightsDir = path.join(industryDir, "viral-insights");
+
 const watcher = chokidar.watch(
-  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, path.join(industryDir, "production-plans")],
+  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, path.join(industryDir, "production-plans"), viralInsightsDir],
   { ignoreInitial: true },
 );
 
@@ -81,6 +84,9 @@ watcher.on("change", (filePath) => {
   }
   if (filePath.includes("watchlist")) {
     invalidateWatchlistCache();
+  }
+  if (filePath.includes("viral-insights")) {
+    invalidateIntelCache();
   }
 });
 

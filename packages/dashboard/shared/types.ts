@@ -348,6 +348,46 @@ export type WatchlistCreator = {
 };
 
 // ============================================
+// Content Intelligence Types
+// ============================================
+
+export type TrendingTopic = {
+  topic: string;
+  platforms: string[];
+  context: string;
+  engagementRange: string;
+};
+
+export type HookPattern = {
+  type: string;
+  text: string;
+  platform: string;
+  priority: string;
+};
+
+export type FormatTrend = {
+  format: string;
+  trend: string;
+  platforms: string;
+};
+
+export type ContentGap = {
+  area: string;
+  description: string;
+};
+
+export type IntelDigest = {
+  date: string;
+  trendingTopics: TrendingTopic[];
+  hookPatterns: HookPattern[];
+  formatTrends: FormatTrend[];
+  creatorHighlights: string[];
+  contentGaps: ContentGap[];
+  recommendedIdeas: string[];
+  nextActions: string[];
+};
+
+// ============================================
 // Metrics Intelligence Types
 // ============================================
 

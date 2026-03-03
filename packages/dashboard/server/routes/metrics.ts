@@ -1,12 +1,16 @@
 import { Router } from "express";
+import path from "path";
 import { db } from "../db.js";
 import { performanceMetrics } from "../../shared/schema.js";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
+import { parseViralInsights, listDigestDates } from "../parsers/viral-insights.js";
 import type { MetricsSyncEntry } from "../../shared/types.js";
 
 export function createMetricsRouter(contentLibraryPath: string) {
   const router = Router();
+  const industryDir = path.dirname(contentLibraryPath);
+  const viralInsightsDir = path.join(industryDir, "viral-insights");
 
   // GET /api/metrics - List all metrics, optionally filtered by video code or platform
   router.get("/", (_req, res) => {
@@ -152,6 +156,20 @@ export function createMetricsRouter(contentLibraryPath: string) {
     }));
 
     res.json({ byPlatform: result });
+  });
+
+  // GET /api/metrics/intelligence - Content intelligence from viral insights digests
+  router.get("/intelligence", (_req, res) => {
+    const { date } = _req.query;
+    const latest = parseViralInsights(viralInsightsDir, typeof date === "string" ? date : undefined);
+    const availableDates = listDigestDates(viralInsightsDir);
+
+    if (!latest) {
+      res.json({ latest: null, availableDates: [] });
+      return;
+    }
+
+    res.json({ latest, availableDates });
   });
 
   // DELETE /api/metrics/entry/:id - Delete a specific metrics entry
