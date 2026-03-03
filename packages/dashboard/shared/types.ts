@@ -346,3 +346,43 @@ export type WatchlistCreator = {
   frequency: string;
   lastAnalyzed: string;
 };
+
+// ============================================
+// Metrics Intelligence Types
+// ============================================
+
+export type MetricsSyncEntry = {
+  videoCode?: string;
+  postTitle?: string;
+  platformPostId?: string;
+  platform: string;
+  views: number;
+  likes: number;
+  saves: number;
+  shares: number;
+  comments: number;
+  watchTimeSeconds?: number;
+  recordedAt: string;
+};
+
+export type MetricsInsight = {
+  type: "win" | "opportunity" | "trend" | "recommendation";
+  title: string;
+  detail: string;
+  relatedFormat?: string;
+  relatedPlatform?: string;
+};
+
+export type ContentRecommendation = {
+  ideaTopic: string;
+  reason: string;
+  suggestedFormat: string;
+  suggestedPlatform: string;
+  confidenceScore: "high" | "medium" | "low";
+};
+
+export type MetricsInsightsResponse = {
+  insights: MetricsInsight[];
+  summary: string;
+  recommendations: ContentRecommendation[];
+};

@@ -27,6 +27,7 @@ import { createMetricsRouter } from "./routes/metrics.js";
 import { createIdeasRouter } from "./routes/ideas.js";
 import { createIdeasAiRouter } from "./routes/ideas-ai.js";
 import { createWatchlistRouter } from "./routes/watchlist.js";
+import { createMetricsAiRouter } from "./routes/metrics-ai.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -55,6 +56,7 @@ app.use("/api/metrics", createMetricsRouter(contentLibraryPath));
 app.use("/api/ideas", createIdeasRouter(contentLibraryPath));
 app.use("/api/ideas-ai", createIdeasAiRouter(contentLibraryPath));
 app.use("/api/watchlist", createWatchlistRouter(contentLibraryPath));
+app.use("/api/metrics-ai", createMetricsAiRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
