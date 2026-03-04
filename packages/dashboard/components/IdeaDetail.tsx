@@ -13,6 +13,7 @@ import {
   Copy,
   MessageCircle,
   Send,
+  Rocket,
 } from "lucide-react";
 import type { Idea, IdeaCategory, FormatId, ConversationMessage } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
@@ -142,6 +143,30 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
       queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
       onUpdated();
       onClose();
+    },
+  });
+
+  // Start production mutation
+  const startProductionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/ideas/start-production", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: idea.topic,
+          format: editedFormat || idea.suggestedFormat,
+          hookAngle: idea.hookAngle,
+          source: idea.source || "Idea Bank",
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      return res.json() as Promise<{ videoCode: string; success: boolean }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
   });
 
@@ -679,59 +704,92 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
         </div>
 
         {/* Action Bar */}
-        <div className="border-t border-slate-200 p-4 md:px-6 flex items-center gap-3">
-          <button
-            onClick={() => developMutation.mutate()}
-            disabled={developMutation.isPending}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
-              developMutation.isPending
-                ? "bg-slate-100 text-slate-400 cursor-wait"
-                : "bg-teal-600 text-white hover:bg-teal-700",
-            )}
-          >
-            {developMutation.isPending ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Wand2 size={14} />
-            )}
-            {developMutation.isPending
-              ? "Generating..."
-              : developMutation.data
-                ? "Regenerate Script"
-                : "Develop Script"}
-          </button>
-
-          {!confirmArchive ? (
-            <button
-              onClick={() => setConfirmArchive(true)}
-              className="flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-colors"
-            >
-              <Archive size={14} />
-              Archive
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => archiveMutation.mutate()}
-                disabled={archiveMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-3 rounded-full text-xs font-bold uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors"
-              >
-                {archiveMutation.isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Archive size={14} />
-                )}
-                Confirm
-              </button>
-              <button
-                onClick={() => setConfirmArchive(false)}
-                className="px-3 py-3 rounded-full text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Cancel
-              </button>
+        <div className="border-t border-slate-200 p-4 md:px-6 space-y-3">
+          {startProductionMutation.isSuccess && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <p className="text-sm text-emerald-700 font-medium">
+                Video {startProductionMutation.data.videoCode} created in content library
+              </p>
+              <p className="text-xs text-emerald-600 mt-0.5">
+                Find it in Pipeline (SCRIPTED) or Library. Idea has been archived.
+              </p>
             </div>
           )}
+
+          <div className="flex items-center gap-3">
+            {!startProductionMutation.isSuccess && (
+              <button
+                onClick={() => startProductionMutation.mutate()}
+                disabled={startProductionMutation.isPending}
+                className={cn(
+                  "flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
+                  startProductionMutation.isPending
+                    ? "bg-slate-100 text-slate-400 cursor-wait"
+                    : "bg-violet-600 text-white hover:bg-violet-700",
+                )}
+              >
+                {startProductionMutation.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Rocket size={14} />
+                )}
+                {startProductionMutation.isPending ? "Creating..." : "Start Production"}
+              </button>
+            )}
+
+            <button
+              onClick={() => developMutation.mutate()}
+              disabled={developMutation.isPending}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
+                developMutation.isPending
+                  ? "bg-slate-100 text-slate-400 cursor-wait"
+                  : "bg-teal-600 text-white hover:bg-teal-700",
+              )}
+            >
+              {developMutation.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Wand2 size={14} />
+              )}
+              {developMutation.isPending
+                ? "Generating..."
+                : developMutation.data
+                  ? "Regenerate Script"
+                  : "Develop Script"}
+            </button>
+
+            {!confirmArchive ? (
+              <button
+                onClick={() => setConfirmArchive(true)}
+                className="flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-colors"
+              >
+                <Archive size={14} />
+                Archive
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => archiveMutation.mutate()}
+                  disabled={archiveMutation.isPending}
+                  className="flex items-center gap-1.5 px-3 py-3 rounded-full text-xs font-bold uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors"
+                >
+                  {archiveMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Archive size={14} />
+                  )}
+                  Confirm
+                </button>
+                <button
+                  onClick={() => setConfirmArchive(false)}
+                  className="px-3 py-3 rounded-full text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

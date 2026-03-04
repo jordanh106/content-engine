@@ -32,6 +32,7 @@ import {
   Radio,
   Users,
   BarChart3,
+  Rocket,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -283,6 +284,8 @@ const OpportunityDetail: React.FC<{
 }> = ({ opportunity, onBack }) => {
   const queryClient = useQueryClient();
   const [added, setAdded] = useState(false);
+  const [produced, setProduced] = useState(false);
+  const [producedCode, setProducedCode] = useState<string | null>(null);
 
   const addToIdeasMutation = useMutation({
     mutationFn: () =>
@@ -301,6 +304,26 @@ const OpportunityDetail: React.FC<{
       setAdded(true);
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
       queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+    },
+  });
+
+  const startProductionMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/ideas/start-production", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: opportunity.topic,
+          format: opportunity.suggestedFormat,
+          hookAngle: opportunity.suggestedHook.example,
+          source: "Opportunities AI",
+        }),
+      }).then((r) => r.json()),
+    onSuccess: (data) => {
+      setProduced(true);
+      setProducedCode(data.videoCode);
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
     },
   });
 
@@ -501,34 +524,72 @@ const OpportunityDetail: React.FC<{
               </div>
             </div>
 
-            {/* Add to Idea Bank */}
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <button
-                onClick={() => addToIdeasMutation.mutate()}
-                disabled={added || addToIdeasMutation.isPending}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-colors",
-                  added
-                    ? "bg-emerald-100 text-emerald-700 cursor-default"
-                    : addToIdeasMutation.isPending
-                      ? "bg-slate-100 text-slate-400 cursor-wait"
-                      : "bg-teal-600 text-white hover:bg-teal-700",
-                )}
-              >
-                {added ? (
-                  <>
-                    <Check size={14} /> Added to Idea Bank
-                  </>
-                ) : addToIdeasMutation.isPending ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" /> Adding...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={14} /> Add to Idea Bank
-                  </>
-                )}
-              </button>
+            {/* Actions */}
+            <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+              {produced && producedCode && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                  <p className="text-sm text-emerald-700 font-medium">
+                    Video {producedCode} created in content library
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-0.5">
+                    Find it in Pipeline (SCRIPTED) or Library.
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => startProductionMutation.mutate()}
+                  disabled={produced || startProductionMutation.isPending}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-colors",
+                    produced
+                      ? "bg-emerald-100 text-emerald-700 cursor-default"
+                      : startProductionMutation.isPending
+                        ? "bg-slate-100 text-slate-400 cursor-wait"
+                        : "bg-violet-600 text-white hover:bg-violet-700",
+                  )}
+                >
+                  {produced ? (
+                    <>
+                      <Check size={14} /> Production Started
+                    </>
+                  ) : startProductionMutation.isPending ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket size={14} /> Start Production
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => addToIdeasMutation.mutate()}
+                  disabled={added || addToIdeasMutation.isPending}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-colors",
+                    added
+                      ? "bg-emerald-100 text-emerald-700 cursor-default"
+                      : addToIdeasMutation.isPending
+                        ? "bg-slate-100 text-slate-400 cursor-wait"
+                        : "bg-teal-600 text-white hover:bg-teal-700",
+                  )}
+                >
+                  {added ? (
+                    <>
+                      <Check size={14} /> Added to Idea Bank
+                    </>
+                  ) : addToIdeasMutation.isPending ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} /> Add to Idea Bank
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -599,6 +660,28 @@ const OpportunityDetail: React.FC<{
               Quick Actions
             </h3>
             <div className="space-y-2">
+              <button
+                onClick={() => startProductionMutation.mutate()}
+                disabled={produced || startProductionMutation.isPending}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
+                  produced
+                    ? "bg-emerald-100 text-emerald-700"
+                    : startProductionMutation.isPending
+                      ? "bg-slate-100 text-slate-400"
+                      : "bg-violet-600 text-white hover:bg-violet-700",
+                )}
+              >
+                {produced ? (
+                  <>
+                    <Check size={12} /> {producedCode}
+                  </>
+                ) : (
+                  <>
+                    <Rocket size={12} /> Start Production
+                  </>
+                )}
+              </button>
               <button
                 onClick={() => addToIdeasMutation.mutate()}
                 disabled={added || addToIdeasMutation.isPending}
@@ -793,6 +876,7 @@ export const OpportunitiesView: React.FC = () => {
   const [sortBy, setSortBy] = useState("overallScore");
   const [filterFormat, setFilterFormat] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<string | null>(null);
+  const [filterAudience, setFilterAudience] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<OpportunitiesResponse>({
     queryKey: ["opportunities"],
@@ -831,12 +915,26 @@ export const OpportunitiesView: React.FC = () => {
   const filtered = sorted.filter((opp) => {
     if (filterFormat && opp.suggestedFormat !== filterFormat) return false;
     if (filterPlatform && opp.targetPlatform !== filterPlatform) return false;
+    if (filterAudience && opp.targetAudience !== filterAudience) return false;
     return true;
   });
 
   // Unique values for filters
   const uniqueFormats = [...new Set(opportunities.map((o) => o.suggestedFormat))];
   const uniquePlatforms = [...new Set(opportunities.map((o) => o.targetPlatform))];
+  const uniqueAudiences = [...new Set(opportunities.map((o) => o.targetAudience))];
+
+  // Time since generation
+  const generatedAgo = data?.generatedAt
+    ? (() => {
+        const mins = Math.round((Date.now() - new Date(data.generatedAt).getTime()) / 60000);
+        if (mins < 1) return "just now";
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.round(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.round(hrs / 24)}d ago`;
+      })()
+    : null;
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -846,6 +944,9 @@ export const OpportunitiesView: React.FC = () => {
           <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">Opportunities</h1>
           <p className="text-xs text-slate-500 mt-1">
             AI-scored content opportunities ranked by potential impact
+            {generatedAgo && (
+              <span className="text-slate-400 ml-2">Generated {generatedAgo}</span>
+            )}
           </p>
         </div>
         <button
@@ -1010,6 +1111,27 @@ export const OpportunitiesView: React.FC = () => {
                   )}
                 >
                   {formatPlatformName(p)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Audience filter */}
+          {uniqueAudiences.length > 1 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400 font-medium">Audience:</span>
+              {uniqueAudiences.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setFilterAudience(filterAudience === a ? null : a)}
+                  className={cn(
+                    "text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors",
+                    filterAudience === a
+                      ? "bg-sky-600 text-white"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                  )}
+                >
+                  {a}
                 </button>
               ))}
             </div>

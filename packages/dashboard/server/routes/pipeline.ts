@@ -109,5 +109,71 @@ export function createPipelineRouter(contentLibraryPath: string) {
     res.json({ code, previousStatus, currentStatus: status });
   });
 
+  // PUT /api/pipeline/bulk-status - update multiple videos at once
+  router.put("/bulk-status", (req, res) => {
+    const { codes, status, notes } = req.body as {
+      codes: string[];
+      status: ProductionStatus;
+      notes?: string;
+    };
+
+    if (!Array.isArray(codes) || codes.length === 0) {
+      res.status(400).json({ error: "codes array is required" });
+      return;
+    }
+
+    if (!PRODUCTION_STATUSES.includes(status)) {
+      res.status(400).json({ error: "Invalid status" });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const results: Array<{ code: string; previousStatus: string; currentStatus: string }> = [];
+
+    for (const code of codes) {
+      const record = db
+        .select()
+        .from(videoStatus)
+        .where(eq(videoStatus.videoCode, code))
+        .get();
+
+      const previousStatus = record?.currentStatus || "SCRIPTED";
+
+      if (record) {
+        db.update(videoStatus)
+          .set({
+            currentStatus: status,
+            statusUpdatedAt: now,
+            updatedAt: now,
+            ...(notes !== undefined && { notes }),
+          })
+          .where(eq(videoStatus.videoCode, code))
+          .run();
+      } else {
+        db.insert(videoStatus)
+          .values({
+            videoCode: code,
+            currentStatus: status,
+            statusUpdatedAt: now,
+            ...(notes !== undefined && { notes }),
+          })
+          .run();
+      }
+
+      db.insert(statusHistory)
+        .values({
+          videoCode: code,
+          fromStatus: previousStatus,
+          toStatus: status,
+          notes: notes || null,
+        })
+        .run();
+
+      results.push({ code, previousStatus, currentStatus: status });
+    }
+
+    res.json({ updated: results.length, results });
+  });
+
   return router;
 }

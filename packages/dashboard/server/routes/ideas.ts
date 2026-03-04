@@ -3,7 +3,11 @@ import { Router } from "express";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
-import type { IdeaCategory } from "../../shared/types.js";
+import { parseContentLibrary, invalidateCache as invalidateContentCache } from "../parsers/content-library.js";
+import { db } from "../db.js";
+import { videoStatus, statusHistory } from "../../shared/schema.js";
+import type { IdeaCategory, FormatId } from "../../shared/types.js";
+import { FORMATS } from "../../shared/types.js";
 
 const VALID_CATEGORIES: IdeaCategory[] = ["trending", "competitor", "evergreen", "audience", "personal"];
 
@@ -464,6 +468,132 @@ DURATION: [estimated seconds]`,
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate script";
       console.error("[ideas-develop] Error:", message);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // POST /api/ideas/start-production - create a video entry from an idea and start production
+  router.post("/start-production", (req, res) => {
+    const { topic, format, audience, hookAngle, source } = req.body as {
+      topic?: string;
+      format?: string;
+      audience?: string;
+      hookAngle?: string;
+      source?: string;
+    };
+
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    try {
+      // Determine format letter
+      const formatLetter = (format?.match(/^([A-G])/)?.[1] || "A") as FormatId;
+      const formatInfo = FORMATS[formatLetter];
+
+      // Find next available code for this format
+      const videos = parseContentLibrary(contentLibraryPath);
+      const existingNums = videos
+        .filter((v) => v.code.startsWith(formatLetter))
+        .map((v) => parseInt(v.code.slice(1), 10))
+        .filter((n) => !isNaN(n));
+      const nextNum = existingNums.length > 0 ? Math.max(...existingNums) + 1 : 1;
+      const newCode = `${formatLetter}${nextNum}`;
+
+      // Map audience ID to section name for content-library.md
+      const AUDIENCE_ID_TO_SECTION: Record<string, string> = {
+        prenatal: "Pregnancy & Postpartum",
+        infant: "Babies & Infants",
+        kids: "Kids & Teens",
+        athlete: "Active Adults & Athletes",
+        adult: "Adults & Daily Life",
+        senior: "Seniors & Aging Well",
+        general: "Whole Family & General",
+      };
+
+      const audienceId = audience || "general";
+      const sectionName = AUDIENCE_ID_TO_SECTION[audienceId] || "Whole Family & General";
+
+      // Default duration by format
+      const defaultDurations: Record<string, number> = {
+        A: 35, B: 35, C: 45, D: 20, E: 50, F: 10, G: 20,
+      };
+      const duration = defaultDurations[formatLetter] || 30;
+
+      // Build the video entry
+      const entry = [
+        "",
+        `#### ${newCode}: ${topic}`,
+        "",
+        `**Format:** ${formatLetter} (${formatInfo.name}) | **Duration:** ${duration}s | **Tags:** draft, new`,
+        "",
+        "**Voiceover Script:**",
+        "",
+        `> [Direct to camera] ${hookAngle || "Script to be developed in Composer."}`,
+        "",
+      ].join("\n");
+
+      // Find the audience section and insert at the end of it
+      const content = fs.readFileSync(contentLibraryPath, "utf-8");
+      const lines = content.split("\n");
+
+      // Find the section header
+      let sectionIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/^###\s+/) && lines[i].includes(sectionName)) {
+          sectionIdx = i;
+          break;
+        }
+      }
+
+      if (sectionIdx === -1) {
+        // Fallback: append at the end of the "Whole Family & General" section or end of file
+        sectionIdx = lines.length - 1;
+      }
+
+      // Find the end of this section (before next ### header or end of file)
+      let insertIdx = sectionIdx + 1;
+      while (insertIdx < lines.length) {
+        if (lines[insertIdx].match(/^###\s+/) && !lines[insertIdx].startsWith("####")) {
+          break;
+        }
+        insertIdx++;
+      }
+
+      // Insert before the next section header (or at end)
+      lines.splice(insertIdx, 0, entry);
+      fs.writeFileSync(contentLibraryPath, lines.join("\n"));
+      invalidateContentCache();
+
+      // Create status record in SQLite
+      const now = new Date().toISOString();
+      db.insert(videoStatus)
+        .values({
+          videoCode: newCode,
+          currentStatus: "SCRIPTED",
+          statusUpdatedAt: now,
+          notes: source ? `Created from: ${source}` : "Created from idea bank",
+        })
+        .run();
+
+      db.insert(statusHistory)
+        .values({
+          videoCode: newCode,
+          fromStatus: null,
+          toStatus: "SCRIPTED",
+          notes: `Started production: ${topic}`,
+        })
+        .run();
+
+      // Archive the idea if it exists
+      archiveIdeaInFile(ideaBankPath, topic);
+      invalidateIdeaCache();
+
+      res.status(201).json({ videoCode: newCode, topic, format: formatLetter, success: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start production";
+      console.error("[ideas-start-production] Error:", message);
       res.status(500).json({ error: message });
     }
   });

@@ -1,9 +1,20 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowDownAZ, ArrowUpDown } from "lucide-react";
 import type { VideoSummary, FormatId, Audience } from "../shared/types.js";
 import { VideoCard } from "./ui/VideoCard.js";
 import { SearchInput } from "./ui/SearchInput.js";
 import { FilterBar } from "./ui/FilterBar.js";
+import { cn } from "../utils/cn.js";
+
+type SortOption = "default" | "alpha" | "format" | "duration";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "default", label: "By Audience" },
+  { value: "alpha", label: "A-Z" },
+  { value: "format", label: "By Format" },
+  { value: "duration", label: "By Duration" },
+];
 
 type ContentLibraryProps = {
   onSelectVideo: (code: string) => void;
@@ -16,6 +27,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
   const [audienceFilter, setAudienceFilter] = useState<string | null>(null);
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
   const [remotionOnly, setRemotionOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("default");
 
   const { data: videos = [], isLoading: videosLoading } = useQuery<VideoSummary[]>({
     queryKey: ["videos"],
@@ -50,11 +62,23 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
       result = result.filter((v) => v.remotionGraphicsRequired);
     }
 
-    return result;
-  }, [videos, audienceFilter, formatFilter, search, remotionOnly]);
+    if (sortBy === "alpha") {
+      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === "format") {
+      result = [...result].sort((a, b) => a.format.localeCompare(b.format) || a.code.localeCompare(b.code));
+    } else if (sortBy === "duration") {
+      result = [...result].sort((a, b) => b.duration - a.duration);
+    }
 
-  // Group by audience for section headers
+    return result;
+  }, [videos, audienceFilter, formatFilter, search, remotionOnly, sortBy]);
+
+  // Group by audience for section headers (or flat when sorting)
   const grouped = useMemo(() => {
+    if (sortBy !== "default") {
+      // Flat list when sorting by something other than audience
+      return [["all", { label: `All Videos`, videos: filteredVideos }]] as [string, { label: string; videos: VideoSummary[] }][];
+    }
     const groups: Record<string, { label: string; videos: VideoSummary[] }> = {};
     for (const v of filteredVideos) {
       if (!groups[v.audience]) {
@@ -63,7 +87,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
       groups[v.audience].videos.push(v);
     }
     return Object.entries(groups);
-  }, [filteredVideos]);
+  }, [filteredVideos, sortBy]);
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
@@ -91,11 +115,25 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
         />
       </div>
 
-      {/* Results count */}
-      <div className="mb-4">
+      {/* Results count + Sort */}
+      <div className="flex items-center justify-between mb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
           {filteredVideos.length} of {videos.length} videos
         </p>
+        <div className="flex items-center gap-1.5">
+          <ArrowUpDown size={12} className="text-slate-400" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Video grid */}

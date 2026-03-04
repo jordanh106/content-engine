@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -12,13 +12,14 @@ import {
   closestCorners,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Filter, CheckSquare, Square, ArrowRight } from "lucide-react";
 import type {
   PipelineResponse,
   PipelineVideo,
   ProductionStatus,
+  FormatId,
 } from "../shared/types.js";
-import { PRODUCTION_STATUSES } from "../shared/types.js";
+import { PRODUCTION_STATUSES, FORMAT_IDS } from "../shared/types.js";
 import { statusColors } from "../utils/format-colors.js";
 import { cn } from "../utils/cn.js";
 import { PipelineCard } from "./ui/PipelineCard.js";
@@ -180,10 +181,68 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<ProductionStatus | null>("SCRIPTED");
+  const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
+  const [audienceFilter, setAudienceFilter] = useState<string | null>(null);
+  const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
+  const [bulkTarget, setBulkTarget] = useState<ProductionStatus | null>(null);
 
   const { data, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
     queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
+  });
+
+  // Compute unique audiences from pipeline data
+  const audiences = useMemo(() => {
+    if (!data) return [];
+    const set = new Map<string, string>();
+    for (const status of PRODUCTION_STATUSES) {
+      for (const v of data.stages[status]) {
+        set.set(v.audience, v.audienceLabel);
+      }
+    }
+    return Array.from(set.entries()).map(([id, label]) => ({ id, label }));
+  }, [data]);
+
+  // Filter stages
+  const filteredStages = useMemo(() => {
+    if (!data) return null;
+    const result: Record<string, PipelineVideo[]> = {};
+    for (const status of PRODUCTION_STATUSES) {
+      result[status] = data.stages[status].filter((v) => {
+        if (formatFilter && v.format !== formatFilter) return false;
+        if (audienceFilter && v.audience !== audienceFilter) return false;
+        return true;
+      });
+    }
+    return result;
+  }, [data, formatFilter, audienceFilter]);
+
+  const toggleSelect = (code: string) => {
+    setSelectedCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedCodes(new Set());
+    setBulkTarget(null);
+  };
+
+  const bulkMoveMutation = useMutation({
+    mutationFn: ({ codes, status }: { codes: string[]; status: ProductionStatus }) =>
+      fetch("/api/pipeline/bulk-status", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codes, status }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      clearSelection();
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+    },
   });
 
   const sensors = useSensors(
@@ -321,7 +380,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   return (
     <div className="p-4 md:p-6">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
           Pipeline
         </h1>
@@ -329,6 +388,100 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           {data.total} videos across {PRODUCTION_STATUSES.length} stages
         </p>
       </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <Filter size={14} className="text-slate-400" />
+        <button
+          onClick={() => { setFormatFilter(null); setAudienceFilter(null); }}
+          className={cn(
+            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
+            !formatFilter && !audienceFilter
+              ? "bg-teal-600 text-white"
+              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+          )}
+        >
+          All
+        </button>
+        {FORMAT_IDS.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFormatFilter(formatFilter === f ? null : f)}
+            className={cn(
+              "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
+              formatFilter === f
+                ? "bg-teal-600 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+            )}
+          >
+            {f}
+          </button>
+        ))}
+        {audiences.length > 1 && (
+          <>
+            <span className="w-px h-4 bg-slate-200" />
+            {audiences.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => setAudienceFilter(audienceFilter === a.id ? null : a.id)}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors truncate max-w-[120px]",
+                  audienceFilter === a.id
+                    ? "bg-teal-600 text-white"
+                    : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+                )}
+              >
+                {a.label}
+              </button>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedCodes.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 p-3 bg-violet-50 border border-violet-200 rounded-xl">
+          <span className="text-xs font-bold text-violet-700">
+            {selectedCodes.size} selected
+          </span>
+          <ArrowRight size={14} className="text-violet-400" />
+          <select
+            value={bulkTarget ?? ""}
+            onChange={(e) => setBulkTarget(e.target.value as ProductionStatus)}
+            className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5"
+          >
+            <option value="">Move to...</option>
+            {PRODUCTION_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => {
+              if (bulkTarget) {
+                bulkMoveMutation.mutate({
+                  codes: Array.from(selectedCodes),
+                  status: bulkTarget,
+                });
+              }
+            }}
+            disabled={!bulkTarget || bulkMoveMutation.isPending}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
+              bulkTarget
+                ? "bg-violet-600 text-white hover:bg-violet-700"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed",
+            )}
+          >
+            {bulkMoveMutation.isPending ? "Moving..." : "Move"}
+          </button>
+          <button
+            onClick={clearSelection}
+            className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       {/* Desktop: horizontal kanban */}
       <div className="hidden md:block">
@@ -339,26 +492,40 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           onDragEnd={handleDragEnd}
         >
           <div className="flex gap-3 overflow-x-auto pb-4">
-            {PRODUCTION_STATUSES.map((status) => (
-              <DroppableColumn
-                key={status}
-                status={status}
-                count={data.stages[status].length}
-              >
-                {data.stages[status].map((video) => (
-                  <DraggableCard
-                    key={video.code}
-                    video={video}
-                    onClick={() => onSelectVideo(video.code)}
-                  />
-                ))}
-                {data.stages[status].length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-4">
-                    Empty
-                  </p>
-                )}
-              </DroppableColumn>
-            ))}
+            {PRODUCTION_STATUSES.map((status) => {
+              const stageVideos = filteredStages?.[status] ?? [];
+              return (
+                <DroppableColumn
+                  key={status}
+                  status={status}
+                  count={stageVideos.length}
+                >
+                  {stageVideos.map((video) => (
+                    <div key={video.code} className="relative">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(video.code); }}
+                        className="absolute top-2 right-2 z-10 p-0.5 rounded hover:bg-slate-100 transition-colors"
+                      >
+                        {selectedCodes.has(video.code) ? (
+                          <CheckSquare size={14} className="text-violet-600" />
+                        ) : (
+                          <Square size={14} className="text-slate-300" />
+                        )}
+                      </button>
+                      <DraggableCard
+                        video={video}
+                        onClick={() => onSelectVideo(video.code)}
+                      />
+                    </div>
+                  ))}
+                  {stageVideos.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-4">
+                      Empty
+                    </p>
+                  )}
+                </DroppableColumn>
+              );
+            })}
           </div>
 
           <DragOverlay>
@@ -382,11 +549,12 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
             idx < PRODUCTION_STATUSES.length - 1
               ? PRODUCTION_STATUSES[idx + 1]
               : null;
+          const stageVideos = filteredStages?.[status] ?? [];
           return (
             <AccordionSection
               key={status}
               status={status}
-              videos={data.stages[status]}
+              videos={stageVideos}
               isOpen={openSection === status}
               onToggle={() =>
                 setOpenSection(openSection === status ? null : status)
