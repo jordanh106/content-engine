@@ -7,6 +7,8 @@ import { parseConfig } from "../parsers/config.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
 import { parseVibeMotion } from "../parsers/vibe-motion.js";
 import { buildTimeline } from "../parsers/timeline-builder.js";
+import { parseProductionPlans } from "../parsers/production-plans.js";
+import path from "path";
 import type { VideoSummary, ProductionStatus, FormatId } from "../../shared/types.js";
 
 export function createVideosRouter(
@@ -136,6 +138,20 @@ export function createVideosRouter(
   router.get("/config/industry", (_req, res) => {
     const config = parseConfig(configPath);
     res.json(config);
+  });
+
+  // GET /api/videos/:code/production-plan - Get production plan if available
+  router.get("/:code/production-plan", (req, res) => {
+    const { code } = req.params;
+    const productionPlansDir = path.join(path.dirname(contentLibraryPath), "production-plans");
+    const plans = parseProductionPlans(productionPlansDir);
+    const plan = plans.get(code);
+
+    if (plan) {
+      res.json({ available: true, plan });
+    } else {
+      res.json({ available: false, plan: null });
+    }
   });
 
   return router;

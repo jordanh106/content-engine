@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -8,12 +8,14 @@ import type {
   ShotsResponse,
   VibeMotionComponent,
   TimelineResponse,
+  ProductionPlan,
 } from "../shared/types.js";
 import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
 import { CopyButton } from "./ui/CopyButton.js";
+import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 
 type VideoDetailProps = {
@@ -22,7 +24,7 @@ type VideoDetailProps = {
   onOpenComposer?: (code: string) => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline";
+type Tab = "script" | "shots" | "info" | "timeline" | "production";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -57,6 +59,12 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
     queryKey: ["timeline", code],
     queryFn: () => fetch(`/api/videos/${code}/timeline`).then((r) => r.json()),
     enabled: activeTab === "timeline",
+  });
+
+  const { data: productionPlanData } = useQuery<{ available: boolean; plan: ProductionPlan | null }>({
+    queryKey: ["production-plan", code],
+    queryFn: () => fetch(`/api/videos/${code}/production-plan`).then((r) => r.json()),
+    enabled: activeTab === "production",
   });
 
   const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
@@ -135,6 +143,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
     { id: "script", label: "Script", icon: <FileText size={16} /> },
     { id: "shots", label: "Shots", icon: <Camera size={16} /> },
     { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
+    { id: "production", label: "Production", icon: <ListChecks size={16} /> },
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
 
@@ -347,6 +356,9 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
               {activeTab === "timeline" && !timelineData && (
                 <div className="text-center py-12 text-slate-400">Loading timeline...</div>
               )}
+              {activeTab === "production" && (
+                <ProductionTab code={code} plan={productionPlanData?.plan ?? null} isLoading={!productionPlanData} />
+              )}
               {activeTab === "info" && <InfoTab video={video} />}
             </>
           )}
@@ -514,6 +526,89 @@ const InfoTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
           <p className="text-sm text-slate-700">{video.notes}</p>
         </div>
       )}
+    </div>
+  );
+};
+
+// ============================================
+// Production Tab
+// ============================================
+
+const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoading: boolean }> = ({ code, plan, isLoading }) => {
+  if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
+
+  if (!plan) {
+    return (
+      <div className="text-center py-12">
+        <ListChecks size={32} className="text-slate-300 mx-auto mb-3" />
+        <p className="text-sm text-slate-500 mb-1">No production plan yet.</p>
+        <p className="text-xs text-slate-400 mb-4">Generate one with the video-director skill.</p>
+        <SkillButton skill="/video-director" args={code} label="Generate Plan" icon={<Wand2 size={12} />} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {plan.hookVariations.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+            Hook Variations ({plan.hookVariations.length})
+          </p>
+          <div className="space-y-2">
+            {plan.hookVariations.map((hook, i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
+                <p className="text-sm text-slate-700">{hook}</p>
+                <CopyButton text={hook} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Object.keys(plan.platformOptimization).length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+            Platform Optimization
+          </p>
+          <div className="grid gap-2">
+            {Object.entries(plan.platformOptimization).map(([platform, notes]) => (
+              <div key={platform} className="bg-white border border-slate-200 rounded-xl p-3">
+                <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">{platform}</p>
+                <p className="text-sm text-slate-600">{notes}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {plan.shotList.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Shot List ({plan.shotList.length})
+            </p>
+            <CopyButton text={plan.shotList.join("\n")} label="Copy All" />
+          </div>
+          <div className="space-y-2">
+            {plan.shotList.map((shot, i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="w-6 h-6 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm text-slate-700">{shot}</p>
+                </div>
+                <CopyButton text={shot} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-slate-400 text-center">
+        Generated {plan.generatedAt}
+      </p>
     </div>
   );
 };

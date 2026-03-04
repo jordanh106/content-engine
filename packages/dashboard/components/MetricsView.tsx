@@ -44,12 +44,18 @@ import {
   Hash,
   ExternalLink,
   Radio,
+  Activity,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
   MetricsInsight,
   ContentRecommendation,
   UnifiedIntelligenceResponse,
+  VelocityResponse,
+  ContentMixResponse,
+  CadenceResponse,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -223,6 +229,22 @@ export const MetricsView: React.FC = () => {
       const params = trendPlatform !== "all" ? `?platform=${trendPlatform}&days=60` : "?days=60";
       return fetchJson<{ trends: TrendPoint[] }>(`/api/metrics/trends${params}`);
     },
+  });
+
+  // Analytics queries
+  const { data: velocityData } = useQuery<VelocityResponse>({
+    queryKey: ["analytics-velocity"],
+    queryFn: () => fetchJson<VelocityResponse>("/api/analytics/velocity"),
+  });
+
+  const { data: contentMixData } = useQuery<ContentMixResponse>({
+    queryKey: ["analytics-content-mix"],
+    queryFn: () => fetchJson<ContentMixResponse>("/api/analytics/content-mix"),
+  });
+
+  const { data: cadenceData } = useQuery<CadenceResponse>({
+    queryKey: ["analytics-cadence"],
+    queryFn: () => fetchJson<CadenceResponse>("/api/analytics/cadence?weeks=4"),
   });
 
   const handleSubmitMetric = (e: React.FormEvent) => {
@@ -1081,6 +1103,162 @@ export const MetricsView: React.FC = () => {
                 </ResponsiveContainer>
               </section>
             )}
+
+            {/* Production Velocity */}
+            {velocityData && velocityData.transitions.length > 0 && (
+              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Production Velocity
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {velocityData.completedVideos > 0 && (
+                      <span className="text-xs text-emerald-600 font-bold">{velocityData.completedVideos} published</span>
+                    )}
+                    {velocityData.avgDaysTotal > 0 && (
+                      <span className="text-xs text-slate-500">{velocityData.avgDaysTotal}d avg total</span>
+                    )}
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={velocityData.transitions} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} unit="d" />
+                    <YAxis
+                      type="category"
+                      dataKey="fromStatus"
+                      tick={{ fontSize: 10, fill: "#64748b" }}
+                      width={90}
+                      tickFormatter={(v: string) => `${v.slice(0, 4)}...`}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
+                      formatter={(value: number | undefined) => [`${value ?? 0}d`, "Avg Days"]}
+                      labelFormatter={(label: unknown) => {
+                        const labelStr = String(label);
+                        const t = velocityData.transitions.find((tr) => tr.fromStatus === labelStr);
+                        return t ? `${t.fromStatus} to ${t.toStatus}` : labelStr;
+                      }}
+                    />
+                    <Bar dataKey="avgDays" radius={[0, 6, 6, 0]}>
+                      {velocityData.transitions.map((t) => (
+                        <Cell
+                          key={`${t.fromStatus}-${t.toStatus}`}
+                          fill={velocityData.bottleneck?.stage === `${t.fromStatus}→${t.toStatus}` ? "#e11d48" : "#0d9488"}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                {velocityData.bottleneck && (
+                  <p className="text-xs text-rose-600 mt-2">
+                    <AlertTriangle size={12} className="inline mr-1" />
+                    Bottleneck: {velocityData.bottleneck.stage} ({velocityData.bottleneck.avgDays}d avg)
+                  </p>
+                )}
+              </section>
+            )}
+
+            {/* Content Mix + Platform Cadence */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Content Mix Compliance */}
+              {contentMixData && contentMixData.totalPublished > 0 && (
+                <section className="bg-white border border-slate-200 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                      Content Mix
+                    </p>
+                    {contentMixData.compliant ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                        <CheckCircle2 size={12} /> On Target
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                        <AlertTriangle size={12} /> Off Target
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {Object.entries(contentMixData.targets).map(([type, target]) => {
+                      const actual = contentMixData.actual[type] ?? 0;
+                      const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <div key={type}>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="font-medium text-slate-700">{label}</span>
+                            <span className="text-slate-500">
+                              {Math.round(actual * 100)}% / {Math.round(target * 100)}%
+                            </span>
+                          </div>
+                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all",
+                                Math.abs(actual - target) > 0.1 ? "bg-amber-400" : "bg-emerald-500",
+                              )}
+                              style={{ width: `${Math.min(actual * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <p className="text-[10px] text-slate-400 mt-2">{contentMixData.totalPublished} published videos</p>
+                  </div>
+                </section>
+              )}
+
+              {/* Platform Cadence */}
+              {cadenceData && cadenceData.overall.length > 0 && (
+                <section className="bg-white border border-slate-200 rounded-2xl p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+                    Platform Cadence
+                  </p>
+                  <div className="space-y-2.5">
+                    {cadenceData.overall.map((p) => {
+                      const label = p.platform.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <div key={p.platform} className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-slate-700 w-32 truncate">{label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs tabular-nums text-slate-500">
+                              {p.avgPerWeek}/{p.target} per week
+                            </span>
+                            {p.onTrack ? (
+                              <CheckCircle2 size={14} className="text-emerald-500" />
+                            ) : (
+                              <XCircle size={14} className="text-rose-400" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {cadenceData.weeks.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 mb-2">Last 4 Weeks</p>
+                      <div className="grid grid-cols-4 gap-1 text-[10px]">
+                        {cadenceData.weeks.map((w) => (
+                          <div key={w.weekStart} className="text-center">
+                            <p className="text-slate-400 truncate">{w.weekLabel.split(" - ")[0]}</p>
+                            {w.platforms.map((p) => (
+                              <div
+                                key={p.platform}
+                                className={cn(
+                                  "rounded px-1 py-0.5 mt-0.5 font-bold",
+                                  p.onTrack ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600",
+                                )}
+                              >
+                                {p.actual}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -600,6 +600,7 @@ export type ContentOpportunity = {
   competitionCheck: CompetitionCheck;
   communitySignals: CommunitySignals;
   ideaBankMatch: string | null;
+  similarTopPerformer?: string | null;
 };
 
 export type DataSourceSummary = {
@@ -617,4 +618,137 @@ export type OpportunitiesResponse = {
   generatedAt: string;
   dataSourceSummary: DataSourceSummary;
   staleWarnings: string[];
+};
+
+// ============================================
+// Analytics Types (Production Velocity, Content Mix, Cadence)
+// ============================================
+
+export type StageTransition = {
+  fromStatus: string;
+  toStatus: string;
+  avgDays: number;
+  medianDays: number;
+  count: number;
+};
+
+export type VelocityResponse = {
+  transitions: StageTransition[];
+  bottleneck: { stage: string; avgDays: number } | null;
+  avgDaysTotal: number;
+  completedVideos: number;
+};
+
+export type ContentMixResponse = {
+  targets: Record<string, number>;
+  actual: Record<string, number>;
+  totalPublished: number;
+  compliant: boolean;
+  deviations: Array<{ type: string; target: number; actual: number; delta: number }>;
+};
+
+export type CadenceWeek = {
+  weekLabel: string;
+  weekStart: string;
+  platforms: Array<{ platform: string; target: number; actual: number; onTrack: boolean }>;
+};
+
+export type CadenceResponse = {
+  weeks: CadenceWeek[];
+  overall: Array<{ platform: string; avgPerWeek: number; target: number; onTrack: boolean }>;
+};
+
+// ============================================
+// Session Planner Types
+// ============================================
+
+export type SessionType = "voiceover" | "generation" | "assembly";
+
+export type SessionItem = {
+  videoCode: string;
+  title: string;
+  format: FormatId;
+  completed: boolean;
+  completedAt: string | null;
+  orderIndex: number;
+};
+
+export type ProductionSession = {
+  id: number;
+  sessionType: SessionType;
+  audienceCategory: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  durationMinutes: number | null;
+  videoCodes: string[];
+  items: SessionItem[];
+};
+
+export type AvailableVideosResponse = {
+  videos: Array<{
+    code: string;
+    title: string;
+    format: FormatId;
+    audience: string;
+    audienceLabel: string;
+  }>;
+  sessionType: SessionType;
+};
+
+// ============================================
+// Calendar Types
+// ============================================
+
+export type CalendarEntry = {
+  id: number;
+  date: string;
+  platform: string;
+  videoCode: string | null;
+  slotLabel: string | null;
+  status: string;
+  notes: string | null;
+  videoTitle?: string;
+  videoFormat?: FormatId;
+};
+
+export type CalendarResponse = {
+  entries: CalendarEntry[];
+  platforms: string[];
+};
+
+export type CalendarGap = {
+  platform: string;
+  week: string;
+  target: number;
+  actual: number;
+  deficit: number;
+};
+
+// ============================================
+// Creator Insights Types
+// ============================================
+
+export type CreatorInsight = {
+  handle: string;
+  analyzedAt: string;
+  contentPatterns: string[];
+  hookStyles: string[];
+  postingFrequency: string;
+  topPerformingFormats: string[];
+  keyTakeaways: string[];
+  rawMarkdown: string;
+};
+
+// ============================================
+// Production Plan Types
+// ============================================
+
+export type ProductionPlan = {
+  videoCode: string;
+  title: string;
+  generatedAt: string;
+  hookVariations: string[];
+  platformOptimization: Record<string, string>;
+  shotList: string[];
+  rawMarkdown: string;
 };

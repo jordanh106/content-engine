@@ -33,6 +33,7 @@ import {
   Users,
   BarChart3,
   Rocket,
+  Trophy,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -758,6 +759,14 @@ const OpportunityDetail: React.FC<{
                   {opportunity.suggestedHook.category}
                 </span>
               </div>
+              {opportunity.similarTopPerformer && (
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 font-bold">
+                    <Trophy size={10} />
+                    Similar to top performer: {opportunity.similarTopPerformer}
+                  </span>
+                </div>
+              )}
               {opportunity.ideaBankMatch && (
                 <div className="pt-2 border-t border-slate-100">
                   <span className="text-[10px] text-violet-600 font-bold">

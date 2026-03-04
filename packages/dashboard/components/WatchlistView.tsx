@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink } from "lucide-react";
-import type { WatchlistCreator } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight } from "../shared/types.js";
+import { SkillButton } from "./ui/SkillButton.js";
+import { cn } from "../utils/cn.js";
 
-type WatchlistResponse = { creators: WatchlistCreator[]; total: number };
+type EnrichedCreator = WatchlistCreator & { hasInsight?: boolean };
+type WatchlistResponse = { creators: EnrichedCreator[]; total: number };
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
@@ -19,6 +22,7 @@ export const WatchlistView: React.FC = () => {
     queryFn: () => fetch("/api/watchlist").then((r) => r.json()),
   });
 
+  const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
   const creators = data?.creators ?? [];
 
   return (
@@ -30,7 +34,7 @@ export const WatchlistView: React.FC = () => {
           <h2 className="text-lg font-serif font-bold text-slate-900">Creator Watchlist</h2>
         </div>
         <p className="text-sm text-slate-500">
-          Track competitors and inspiration creators. Run <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/creator-analysis @handle</code> to analyze a creator's content patterns.
+          Track competitors and inspiration creators. Analyze their patterns directly from here.
         </p>
       </div>
 
@@ -44,13 +48,18 @@ export const WatchlistView: React.FC = () => {
             No creators on your watchlist yet.
           </p>
           <p className="text-slate-400 text-xs">
-            Add creators to <code className="bg-slate-100 px-1 py-0.5 rounded">industries/chiropractic/watchlist.md</code> or run <code className="bg-slate-100 px-1 py-0.5 rounded">/creator-analysis</code> to start tracking.
+            Add creators to <code className="bg-slate-100 px-1 py-0.5 rounded">watchlist.md</code>
           </p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {creators.map((creator) => (
-            <CreatorCard key={creator.handle} creator={creator} />
+            <CreatorCard
+              key={creator.handle}
+              creator={creator}
+              isExpanded={expandedHandle === creator.handle}
+              onToggle={() => setExpandedHandle(expandedHandle === creator.handle ? null : creator.handle)}
+            />
           ))}
         </div>
       )}
@@ -60,30 +69,22 @@ export const WatchlistView: React.FC = () => {
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
           Quick Actions
         </p>
-        <div className="space-y-2 text-sm text-slate-600">
-          <p>
-            <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">/creator-analysis @handle</code>{" "}
-            <span className="text-slate-400">- Deep-dive on a single creator</span>
-          </p>
-          <p>
-            <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">/creator-analysis --watchlist</code>{" "}
-            <span className="text-slate-400">- Analyze all tracked creators</span>
-          </p>
-          <p>
-            <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">/competitor-research chiropractic</code>{" "}
-            <span className="text-slate-400">- Broad landscape analysis</span>
-          </p>
-          <p>
-            <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">/viral-scout chiropractic</code>{" "}
-            <span className="text-slate-400">- Find top-performing niche content</span>
-          </p>
+        <div className="flex flex-wrap gap-2">
+          <SkillButton skill="/competitor-research" args="chiropractic" label="Competitor Research" icon={<Radar size={14} />} />
+          <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
         </div>
       </div>
     </div>
   );
 };
 
-const CreatorCard: React.FC<{ creator: WatchlistCreator }> = ({ creator }) => {
+type CreatorCardProps = {
+  creator: EnrichedCreator;
+  isExpanded: boolean;
+  onToggle: () => void;
+};
+
+const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle }) => {
   const platformColor = PLATFORM_COLORS[creator.platform] ?? "bg-slate-200 text-slate-700";
   const isStale = !creator.lastAnalyzed || creator.lastAnalyzed.trim() === "";
 
@@ -122,13 +123,86 @@ const CreatorCard: React.FC<{ creator: WatchlistCreator }> = ({ creator }) => {
       </div>
 
       <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-          Last Analyzed
-        </p>
-        <p className={`text-xs ${isStale ? "text-amber-500 font-medium" : "text-slate-500"}`}>
-          {isStale ? "Never" : creator.lastAnalyzed}
+        <div className="flex items-center gap-2">
+          <SkillButton
+            skill="/creator-analysis"
+            args={creator.handle}
+            label="Analyze"
+            icon={<Radar size={12} />}
+            variant="secondary"
+          />
+          {creator.hasInsight && (
+            <button
+              onClick={onToggle}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700"
+            >
+              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              {isExpanded ? "Hide" : "View"} Analysis
+            </button>
+          )}
+        </div>
+        <p className={cn("text-xs", isStale ? "text-amber-500 font-medium" : "text-slate-500")}>
+          {isStale ? "Never analyzed" : creator.lastAnalyzed}
         </p>
       </div>
+
+      {/* Expanded Insight Panel */}
+      {isExpanded && creator.hasInsight && (
+        <CreatorInsightPanel handle={creator.handle} />
+      )}
+    </div>
+  );
+};
+
+const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
+  const cleanHandle = handle.replace("@", "").toLowerCase();
+  const { data, isLoading } = useQuery<{ available: boolean; insight: CreatorInsight | null }>({
+    queryKey: ["creator-insight", cleanHandle],
+    queryFn: () => fetch(`/api/watchlist/${cleanHandle}/insights`).then((r) => r.json()),
+  });
+
+  if (isLoading) return <div className="mt-3 text-xs text-slate-400">Loading analysis...</div>;
+  if (!data?.insight) return null;
+
+  const insight = data.insight;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+      {insight.keyTakeaways.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Key Takeaways</p>
+          <ul className="space-y-1">
+            {insight.keyTakeaways.map((t, i) => (
+              <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                <span className="text-teal-500 mt-0.5">-</span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {insight.contentPatterns.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Content Patterns</p>
+          <div className="flex flex-wrap gap-1">
+            {insight.contentPatterns.slice(0, 6).map((p, i) => (
+              <span key={i} className="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded-full">{p}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {insight.hookStyles.length > 0 && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Hook Styles</p>
+          <div className="flex flex-wrap gap-1">
+            {insight.hookStyles.slice(0, 6).map((h, i) => (
+              <span key={i} className="bg-violet-50 text-violet-700 text-[10px] px-2 py-0.5 rounded-full">{h}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

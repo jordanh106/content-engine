@@ -10,6 +10,8 @@ import { MetricsView } from "./MetricsView.js";
 import { IdeasView } from "./IdeasView.js";
 import { WatchlistView } from "./WatchlistView.js";
 import { OpportunitiesView } from "./OpportunitiesView.js";
+import { SessionView } from "./SessionView.js";
+import { CalendarView } from "./CalendarView.js";
 
 export const App: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -59,23 +61,13 @@ export const App: React.FC = () => {
         <ContentLibrary onSelectVideo={handleSelectVideo} />
       )}
       {view === "HOME" && (
-        <DashboardHome onSelectVideo={handleSelectVideo} />
+        <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={setView} />
       )}
       {view === "PIPELINE" && (
         <PipelineBoard onSelectVideo={handleSelectVideo} />
       )}
-      {view === "CALENDAR" && (
-        <div className="p-6 text-slate-500 text-center">
-          <p className="text-lg font-serif">Calendar</p>
-          <p className="text-sm mt-2">Coming in Phase 4</p>
-        </div>
-      )}
-      {view === "SESSION" && (
-        <div className="p-6 text-slate-500 text-center">
-          <p className="text-lg font-serif">Session Planner</p>
-          <p className="text-sm mt-2">Coming in Phase 3</p>
-        </div>
-      )}
+      {view === "CALENDAR" && <CalendarView />}
+      {view === "SESSION" && <SessionView />}
       {view === "IDEAS" && <IdeasView />}
       {view === "OPPORTUNITIES" && <OpportunitiesView />}
       {view === "WATCHLIST" && <WatchlistView />}

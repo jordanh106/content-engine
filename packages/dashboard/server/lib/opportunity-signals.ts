@@ -6,7 +6,17 @@ import type {
   HookPatternCategory,
   IndustryConfig,
   DataSourceSummary,
+  FormatId,
 } from "../../shared/types.js";
+
+export type TopPerformerInfo = {
+  videoCode: string;
+  title: string;
+  format: FormatId;
+  audience: string;
+  totalViews: number;
+  totalEngagement: number;
+};
 
 export type PreComputedSignals = {
   // Coverage analysis
@@ -25,6 +35,10 @@ export type PreComputedSignals = {
   // Performance baselines (from existing videos)
   avgViewsByFormat: Record<string, number>;
   avgEngagementByFormat: Record<string, number>;
+
+  // Top performers for feedback loop
+  topPerformers: TopPerformerInfo[];
+  performanceSummary: string;
 
   // Data source summary
   dataSourceSummary: DataSourceSummary;
@@ -131,6 +145,9 @@ export function computeSignals(
   const ideaSummary = buildIdeaSummary(ideas);
   const librarySummary = buildLibrarySummary(videos, coverageByAudience, coverageByFormat);
 
+  // Top performers for feedback loop
+  const { topPerformers, performanceSummary } = buildPerformanceSummary(videos, performanceData);
+
   return {
     coveredTopics,
     coverageByAudience,
@@ -141,6 +158,8 @@ export function computeSignals(
     publishedByPlatform: {},
     avgViewsByFormat,
     avgEngagementByFormat,
+    topPerformers,
+    performanceSummary,
     dataSourceSummary,
     staleWarnings,
     researchSummary,
@@ -245,6 +264,47 @@ function buildIdeaSummary(ideas: Idea[]): string {
     parts.push(`- "${i.topic}" (${i.category}, Format ${i.suggestedFormat}, ${i.priority} priority)`);
   }
   return parts.join("\n");
+}
+
+function buildPerformanceSummary(
+  videos: ParsedVideo[],
+  performanceData: Array<{ videoCode: string; views: number; likes: number; saves: number; shares: number; comments: number }>,
+): { topPerformers: TopPerformerInfo[]; performanceSummary: string } {
+  if (performanceData.length === 0) {
+    return { topPerformers: [], performanceSummary: "" };
+  }
+
+  const videoMap = new Map(videos.map((v) => [v.code, v]));
+  const ranked = performanceData
+    .map((p) => {
+      const video = videoMap.get(p.videoCode);
+      if (!video) return null;
+      const totalEngagement = p.likes + p.saves + p.shares + p.comments;
+      return {
+        videoCode: p.videoCode,
+        title: video.title,
+        format: video.format,
+        audience: video.audienceLabel,
+        totalViews: p.views,
+        totalEngagement,
+      };
+    })
+    .filter((x): x is TopPerformerInfo => x !== null)
+    .sort((a, b) => b.totalViews + b.totalEngagement - (a.totalViews + a.totalEngagement))
+    .slice(0, 10);
+
+  if (ranked.length === 0) {
+    return { topPerformers: [], performanceSummary: "" };
+  }
+
+  const parts = ["TOP PERFORMING VIDEOS (use these as success signals for similar content):"];
+  for (let i = 0; i < ranked.length; i++) {
+    const r = ranked[i];
+    parts.push(`${i + 1}. ${r.videoCode}: "${r.title}" (Format ${r.format}, ${r.audience}, ${r.totalViews.toLocaleString()} views, ${r.totalEngagement.toLocaleString()} engagements)`);
+  }
+  parts.push("\nWhen an opportunity topic closely matches a top performer, set similarTopPerformer to that video's code and title (e.g., \"D2: Tech Neck Fix (9,200 views)\").");
+
+  return { topPerformers: ranked, performanceSummary: parts.join("\n") };
 }
 
 function buildLibrarySummary(

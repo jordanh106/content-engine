@@ -29,6 +29,9 @@ import { createIdeasAiRouter } from "./routes/ideas-ai.js";
 import { createWatchlistRouter } from "./routes/watchlist.js";
 import { createMetricsAiRouter } from "./routes/metrics-ai.js";
 import { createOpportunitiesRouter } from "./routes/opportunities.js";
+import { createAnalyticsRouter } from "./routes/analytics.js";
+import { createSessionsRouter } from "./routes/sessions.js";
+import { createCalendarRouter } from "./routes/calendar.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -36,6 +39,8 @@ import { invalidateWatchlistCache } from "./parsers/watchlist.js";
 import { invalidateIntelCache } from "./parsers/viral-insights.js";
 import { invalidateHookCache } from "./parsers/hook-patterns.js";
 import { invalidateResearchCache, getReportPath } from "./parsers/last30days.js";
+import { invalidateCreatorInsightsCache } from "./parsers/creator-insights.js";
+import { invalidateProductionPlanCache } from "./parsers/production-plans.js";
 
 // Initialize database (creates tables on import)
 import "./db.js";
@@ -62,6 +67,9 @@ app.use("/api/ideas-ai", createIdeasAiRouter(contentLibraryPath));
 app.use("/api/watchlist", createWatchlistRouter(contentLibraryPath));
 app.use("/api/metrics-ai", createMetricsAiRouter(contentLibraryPath));
 app.use("/api/opportunities", createOpportunitiesRouter(contentLibraryPath));
+app.use("/api/analytics", createAnalyticsRouter(contentLibraryPath));
+app.use("/api/sessions", createSessionsRouter(contentLibraryPath));
+app.use("/api/calendar", createCalendarRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
@@ -71,8 +79,11 @@ const watchlistPath = path.join(industryDir, "watchlist.md");
 const viralInsightsDir = path.join(industryDir, "viral-insights");
 const hookPatternsPath = path.join(industryDir, "hook-patterns.md");
 
+const creatorInsightsDir = path.join(industryDir, "creator-insights");
+const productionPlansDir = path.join(industryDir, "production-plans");
+
 const watcher = chokidar.watch(
-  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, path.join(industryDir, "production-plans"), viralInsightsDir],
+  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, productionPlansDir, viralInsightsDir, creatorInsightsDir],
   { ignoreInitial: true },
 );
 
@@ -95,6 +106,12 @@ watcher.on("change", (filePath) => {
   }
   if (filePath.includes("hook-patterns")) {
     invalidateHookCache();
+  }
+  if (filePath.includes("creator-insights")) {
+    invalidateCreatorInsightsCache();
+  }
+  if (filePath.includes("production-plans")) {
+    invalidateProductionPlanCache();
   }
 });
 

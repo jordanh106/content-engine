@@ -193,6 +193,8 @@ ${signals.librarySummary}
 
 ${Object.keys(signals.avgViewsByFormat).length > 0 ? `PERFORMANCE BASELINES:\n${Object.entries(signals.avgViewsByFormat).map(([f, v]) => `Format ${f}: avg ${v} views, avg ${signals.avgEngagementByFormat[f] ?? 0} engagements`).join("\n")}` : ""}
 
+${signals.performanceSummary}
+
 SCORING DIMENSIONS (score each 0-100):
 1. Audience Demand (25%): How actively people discuss this topic online. High Reddit/X engagement = high score.
 2. Competition Gap (20%): Topic demand vs our content library coverage. High demand + low/no coverage = high score.
@@ -246,7 +248,8 @@ Return a JSON array of 10-15 ContentOpportunity objects:
         "topXScore": 92,
         "webArticles": 2
       },
-      "ideaBankMatch": "Matching idea topic or null"
+      "ideaBankMatch": "Matching idea topic or null",
+      "similarTopPerformer": "D2: Tech Neck Fix (9,200 views) or null"
     }
   ]
 }

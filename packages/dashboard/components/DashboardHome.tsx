@@ -8,17 +8,29 @@ import {
   CalendarCheck,
   CircleCheck,
   Zap,
+  AlertTriangle,
+  TrendingUp,
+  ArrowRight,
+  Radar,
+  Calendar,
+  Search,
+  Activity,
 } from "lucide-react";
 import type {
   PipelineResponse,
   PipelineVideo,
   ProductionStatus,
+  DashboardView,
+  OpportunitiesResponse,
+  VelocityResponse,
 } from "../shared/types.js";
 import { PRODUCTION_STATUSES } from "../shared/types.js";
 import { StatCard } from "./ui/StatCard.js";
+import { SkillButton } from "./ui/SkillButton.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
+  onNavigate?: (view: DashboardView) => void;
 };
 
 // Status -> icon, bg, text color
@@ -66,7 +78,6 @@ function generateRecommendation(
     const videos = stages[status];
     if (!videos || videos.length === 0) continue;
 
-    // Group by audience, pick largest batch
     const byAudience = new Map<string, PipelineVideo[]>();
     for (const v of videos) {
       const group = byAudience.get(v.audience) || [];
@@ -97,10 +108,21 @@ function generateRecommendation(
 
 export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
+  onNavigate,
 }) => {
   const { data, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
     queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
+  });
+
+  const { data: opportunitiesData } = useQuery<OpportunitiesResponse>({
+    queryKey: ["opportunities"],
+    queryFn: () => fetch("/api/opportunities").then((r) => r.json()),
+  });
+
+  const { data: velocityData } = useQuery<VelocityResponse>({
+    queryKey: ["analytics-velocity"],
+    queryFn: () => fetch("/api/analytics/velocity").then((r) => r.json()).catch(() => null),
   });
 
   if (isLoading || !data) {
@@ -113,6 +135,28 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const progressPct =
     data.total > 0 ? Math.round((publishedCount / data.total) * 100) : 0;
   const recommendation = generateRecommendation(data.stages);
+
+  // Intelligence data
+  const topOpportunity = opportunitiesData?.opportunities?.[0] ?? null;
+  const staleWarnings = opportunitiesData?.staleWarnings ?? [];
+  const hasStaleWarnings = staleWarnings.length > 0 && opportunitiesData?.opportunities?.length !== 0;
+
+  // Pipeline bottleneck
+  const bottleneckStage = (() => {
+    let maxCount = 0;
+    let maxStage: ProductionStatus | null = null;
+    for (const status of PRODUCTION_STATUSES) {
+      if (status === "PUBLISHED") continue;
+      const count = data.stages[status]?.length ?? 0;
+      if (count > maxCount) {
+        maxCount = count;
+        maxStage = status;
+      }
+    }
+    if (!maxStage || maxCount === 0) return null;
+    const avgDays = data.stages[maxStage].reduce((s, v) => s + v.daysInStage, 0) / maxCount;
+    return { stage: maxStage, count: maxCount, avgDays: Math.round(avgDays) };
+  })();
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
@@ -127,7 +171,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {PRODUCTION_STATUSES.map((status) => {
           const meta = STATUS_META[status];
           return (
@@ -142,6 +186,101 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           );
         })}
       </div>
+
+      {/* Intelligence Cards */}
+      <section className="mb-6">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+          Intelligence
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Stale Data / Data Health */}
+          <div className={`border rounded-2xl p-4 ${hasStaleWarnings ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle size={14} className={hasStaleWarnings ? "text-amber-600" : "text-emerald-600"} />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Data Health</span>
+            </div>
+            {hasStaleWarnings ? (
+              <ul className="space-y-1">
+                {staleWarnings.slice(0, 2).map((w, i) => (
+                  <li key={i} className="text-xs text-amber-700">{w}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-emerald-700 font-medium">All data sources fresh</p>
+            )}
+          </div>
+
+          {/* Top Opportunity */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Radar size={14} className="text-teal-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Top Opportunity</span>
+            </div>
+            {topOpportunity ? (
+              <div>
+                <p className="text-xs font-semibold text-slate-900 line-clamp-2 mb-1">{topOpportunity.topic}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-teal-600">Score: {topOpportunity.overallScore}</span>
+                  {onNavigate && (
+                    <button
+                      onClick={() => onNavigate("OPPORTUNITIES")}
+                      className="text-[10px] font-bold text-teal-600 hover:text-teal-700 inline-flex items-center gap-0.5"
+                    >
+                      View <ArrowRight size={10} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">Generate opportunities to see top picks</p>
+            )}
+          </div>
+
+          {/* Pipeline Bottleneck */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp size={14} className="text-slate-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Bottleneck</span>
+            </div>
+            {bottleneckStage ? (
+              <div>
+                <p className="text-xs font-semibold text-slate-900">{bottleneckStage.count} videos in {bottleneckStage.stage}</p>
+                <p className="text-[10px] text-slate-500">{bottleneckStage.avgDays}d avg time in stage</p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">No bottlenecks detected</p>
+            )}
+          </div>
+
+          {/* Content Velocity */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity size={14} className="text-violet-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Velocity</span>
+            </div>
+            {velocityData && velocityData.completedVideos > 0 ? (
+              <div>
+                <p className="text-xs font-semibold text-slate-900">{velocityData.avgDaysTotal}d avg to publish</p>
+                <p className="text-[10px] text-slate-500">{velocityData.completedVideos} videos completed</p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400">Move videos through pipeline to see velocity</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Actions */}
+      <section className="mb-6">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+          Quick Actions
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
+          <SkillButton skill="/content-planner" label="Content Planner" icon={<Calendar size={14} />} />
+          <SkillButton skill="/last30days" args="chiropractic" label="Research" icon={<Search size={14} />} />
+        </div>
+      </section>
 
       {/* Tonight's Session */}
       {recommendation && (
