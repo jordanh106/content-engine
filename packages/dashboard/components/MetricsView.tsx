@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart,
@@ -40,12 +40,16 @@ import {
   ChevronUp,
   Calendar,
   AlertTriangle,
+  Globe,
+  Hash,
+  ExternalLink,
+  Radio,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
   MetricsInsight,
   ContentRecommendation,
-  IntelDigest,
+  UnifiedIntelligenceResponse,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -109,9 +113,9 @@ type InsightsResponse = {
   recommendations: ContentRecommendation[];
 };
 
-type IntelligenceResponse = {
-  latest: IntelDigest | null;
-  availableDates: string[];
+type ResearchStatus = {
+  running: boolean;
+  report: { topic: string; generated_at: string; from_cache?: boolean } | null;
 };
 
 const FORMAT_COLORS: Record<string, string> = {
@@ -186,11 +190,15 @@ export const MetricsView: React.FC = () => {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
+  const [researchTopic, setResearchTopic] = useState("chiropractic content marketing");
+  const [researchRunning, setResearchRunning] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Intelligence data
-  const { data: intelData, isLoading: intelLoading, isError: intelError } = useQuery<IntelligenceResponse>({
+  // Intelligence data (unified response)
+  const { data: intelData, isLoading: intelLoading, isError: intelError } = useQuery<UnifiedIntelligenceResponse>({
     queryKey: ["metrics", "intelligence"],
-    queryFn: () => fetchJson<IntelligenceResponse>("/api/metrics/intelligence"),
+    queryFn: () => fetchJson<UnifiedIntelligenceResponse>("/api/metrics/intelligence"),
   });
 
   // Performance data
@@ -275,7 +283,47 @@ export const MetricsView: React.FC = () => {
     setInsightsLoading(false);
   };
 
-  const intel = intelData?.latest ?? null;
+  const handleRunResearch = async () => {
+    if (!researchTopic.trim()) return;
+    setResearchRunning(true);
+    setResearchError(null);
+    try {
+      await fetchJson("/api/metrics/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: researchTopic }),
+      });
+      // Poll for completion
+      pollRef.current = setInterval(async () => {
+        try {
+          const status = await fetchJson<ResearchStatus>("/api/metrics/research/status");
+          if (!status.running) {
+            if (pollRef.current) clearInterval(pollRef.current);
+            pollRef.current = null;
+            setResearchRunning(false);
+            queryClient.invalidateQueries({ queryKey: ["metrics", "intelligence"] });
+          }
+        } catch {
+          // Keep polling
+        }
+      }, 5000);
+    } catch (e) {
+      setResearchRunning(false);
+      setResearchError(e instanceof Error ? e.message : "Failed to start research");
+    }
+  };
+
+  // Cleanup poll on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const intel = intelData?.digest ?? null;
+  const research = intelData?.research ?? null;
+  const hookLibrary = intelData?.hookLibrary ?? [];
+  const counts = intelData?.counts ?? { redditThreads: 0, xPosts: 0, webResults: 0, hookPatterns: 0 };
   const performers = topPerformers?.topPerformers ?? [];
   const formats = byFormat?.byFormat ?? [];
   const platforms = byPlatform?.byPlatform ?? [];
@@ -289,7 +337,7 @@ export const MetricsView: React.FC = () => {
       {/* ================================================================ */}
 
       {/* Header */}
-      <header>
+      <header className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -303,8 +351,28 @@ export const MetricsView: React.FC = () => {
               )}
             </div>
             <p className="text-sm text-slate-500">
-              Market trends, hook patterns, and strategic opportunities for your niche.
+              Market trends, social signals, hook patterns, and strategic opportunities.
             </p>
+            {/* Data source counts */}
+            {!intelLoading && !intelError && (
+              <div className="flex items-center gap-3 mt-2">
+                {counts.redditThreads > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-orange-600">
+                    <Hash size={10} /> {counts.redditThreads} Reddit
+                  </span>
+                )}
+                {counts.xPosts > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
+                    <Hash size={10} /> {counts.xPosts} X posts
+                  </span>
+                )}
+                {counts.hookPatterns > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-violet-600">
+                    <MessageSquareQuote size={10} /> {counts.hookPatterns} hooks
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={handleAnalyze}
@@ -319,6 +387,48 @@ export const MetricsView: React.FC = () => {
             {insightsLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {insightsLoading ? "Analyzing..." : "Analyze Strategy"}
           </button>
+        </div>
+
+        {/* Research Trigger */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Radio size={14} className="text-teal-600" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Research
+            </p>
+            {research && (
+              <span className="text-[10px] text-slate-400 ml-auto">
+                Last: "{research.topic}" ({new Date(research.generated_at).toLocaleDateString()})
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={researchTopic}
+              onChange={(e) => setResearchTopic(e.target.value)}
+              placeholder="Topic to research (e.g. chiropractic content marketing)"
+              className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              disabled={researchRunning}
+            />
+            <button
+              onClick={handleRunResearch}
+              disabled={researchRunning || !researchTopic.trim()}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0",
+                researchRunning
+                  ? "bg-teal-100 text-teal-400 cursor-wait"
+                  : "bg-teal-600 text-white hover:bg-teal-700",
+              )}
+            >
+              {researchRunning ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
+              {researchRunning ? "Researching..." : "Run Research"}
+            </button>
+          </div>
+          {researchError && <p className="text-xs text-rose-600 mt-2">{researchError}</p>}
+          {researchRunning && (
+            <p className="text-xs text-teal-600 mt-2">Searching Reddit, X, and web for "{researchTopic}". This may take 30-60 seconds.</p>
+          )}
         </div>
       </header>
 
@@ -447,9 +557,156 @@ export const MetricsView: React.FC = () => {
           <Search size={48} className="text-slate-300 mx-auto mb-4" />
           <p className="text-lg font-serif text-slate-700">No intelligence data yet</p>
           <p className="text-sm text-slate-500 mt-2">
-            Run the Content Intelligence n8n workflow to generate market insights and trending data.
+            Run the Content Intelligence workflow or use Research above to gather market data.
           </p>
         </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* SOCIAL SIGNALS SECTION                                           */}
+      {/* ================================================================ */}
+
+      {research && (research.reddit.length > 0 || research.x.length > 0 || research.web.length > 0) && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Globe size={14} className="text-teal-500" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Social Signals
+            </p>
+            <span className="text-[10px] text-slate-400 ml-2">
+              "{research.topic}" ({research.range.from} to {research.range.to})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Reddit Signals */}
+            {research.reddit.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Hash size={14} className="text-orange-500" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Reddit ({research.reddit.length})
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {research.reddit.slice(0, 6).map((thread) => (
+                    <div key={thread.id} className="group">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-bold text-orange-600">r/{thread.subreddit}</span>
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                              thread.score >= 70 ? "bg-emerald-100 text-emerald-700"
+                                : thread.score >= 40 ? "bg-amber-100 text-amber-700"
+                                : "bg-slate-100 text-slate-600",
+                            )}>
+                              {thread.score}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-900 leading-tight">{thread.title}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{thread.why_relevant}</p>
+                          {thread.comment_insights.length > 0 && (
+                            <p className="text-xs text-teal-600 mt-1 italic">
+                              "{thread.comment_insights[0]}"
+                            </p>
+                          )}
+                        </div>
+                        <a href={thread.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* X Signals */}
+            {research.x.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[14px] font-black text-slate-700">X</span>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Posts ({research.x.length})
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {research.x.slice(0, 6).map((post) => (
+                    <div key={post.id} className="group">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-bold text-slate-600">@{post.author_handle}</span>
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                              post.score >= 70 ? "bg-emerald-100 text-emerald-700"
+                                : post.score >= 40 ? "bg-amber-100 text-amber-700"
+                                : "bg-slate-100 text-slate-600",
+                            )}>
+                              {post.score}
+                            </span>
+                            {post.engagement && (
+                              <span className="text-[9px] text-slate-400">
+                                {post.engagement.likes ? `${post.engagement.likes} likes` : ""}
+                                {post.engagement.reposts ? ` ${post.engagement.reposts} reposts` : ""}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-900 leading-tight">{post.text.slice(0, 150)}{post.text.length > 150 ? "..." : ""}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{post.why_relevant}</p>
+                        </div>
+                        <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Web Results (if no Reddit/X but web exists) */}
+            {research.reddit.length === 0 && research.x.length === 0 && research.web.length > 0 && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 md:col-span-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe size={14} className="text-sky-500" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Web Results ({research.web.length})
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {research.web.slice(0, 6).map((result) => (
+                    <div key={result.id} className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[9px] font-bold text-sky-600">{result.source_domain}</span>
+                        </div>
+                        <p className="text-sm text-slate-900 leading-tight">{result.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{result.snippet.slice(0, 120)}</p>
+                      </div>
+                      <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Research errors */}
+          {(research.reddit_error || research.x_error) && (
+            <div className="mt-2 flex gap-4">
+              {research.reddit_error && (
+                <p className="text-[10px] text-amber-500">Reddit: {research.reddit_error.slice(0, 80)}</p>
+              )}
+              {research.x_error && (
+                <p className="text-[10px] text-amber-500">X: {research.x_error.slice(0, 80)}</p>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {/* AI Strategy Panel */}

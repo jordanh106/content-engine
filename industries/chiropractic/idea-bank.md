@@ -18,6 +18,7 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | Desk Worker's Daily Mobility Routine | C (Demo) | 3 Minutes to Better Posture | High | n8n Content Intelligence | 2026-03-03 |
 | Stress-Pain Connection | D (Myth Buster) | This Is Why You're Always Tense | High | n8n Content Intelligence | 2026-03-03 |
 | 5-Minute Office Recovery | F (Quick Tip) | Instant Desk Relief | High | n8n Content Intelligence | 2026-03-03 |
+| Chair Exercises for Spinal Decompression | C | Is sitting all day destroying your spine? | High | Opportunities AI | 2026-03-04 |
 
 ---
 

@@ -1,16 +1,25 @@
 import { Router } from "express";
 import path from "path";
+import { spawn } from "child_process";
 import { db } from "../db.js";
 import { performanceMetrics } from "../../shared/schema.js";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseViralInsights, listDigestDates } from "../parsers/viral-insights.js";
+import { parseResearchReport } from "../parsers/last30days.js";
+import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import type { MetricsSyncEntry } from "../../shared/types.js";
+
+// Track running research process
+let researchProcess: ReturnType<typeof spawn> | null = null;
 
 export function createMetricsRouter(contentLibraryPath: string) {
   const router = Router();
   const industryDir = path.dirname(contentLibraryPath);
   const viralInsightsDir = path.join(industryDir, "viral-insights");
+  const hookPatternsPath = path.join(industryDir, "hook-patterns.md");
+  const repoRoot = path.resolve(industryDir, "..", "..");
+  const last30daysScript = path.join(repoRoot, "skills", "last30days", "scripts", "last30days.py");
 
   // GET /api/metrics - List all metrics, optionally filtered by video code or platform
   router.get("/", (_req, res) => {
@@ -158,18 +167,82 @@ export function createMetricsRouter(contentLibraryPath: string) {
     res.json({ byPlatform: result });
   });
 
-  // GET /api/metrics/intelligence - Content intelligence from viral insights digests
+  // GET /api/metrics/intelligence - Unified intelligence (digest + research + hooks)
   router.get("/intelligence", (_req, res) => {
     const { date } = _req.query;
-    const latest = parseViralInsights(viralInsightsDir, typeof date === "string" ? date : undefined);
+    const digest = parseViralInsights(viralInsightsDir, typeof date === "string" ? date : undefined);
     const availableDates = listDigestDates(viralInsightsDir);
+    const research = parseResearchReport();
+    const hookLibrary = parseHookPatterns(hookPatternsPath);
 
-    if (!latest) {
-      res.json({ latest: null, availableDates: [] });
+    res.json({
+      digest,
+      availableDates,
+      research,
+      hookLibrary,
+      counts: {
+        redditThreads: research?.reddit?.length ?? 0,
+        xPosts: research?.x?.length ?? 0,
+        webResults: research?.web?.length ?? 0,
+        hookPatterns: hookLibrary.reduce((n, c) => n + c.patterns.length, 0),
+      },
+    });
+  });
+
+  // POST /api/metrics/research - Trigger /last30days research
+  router.post("/research", (req, res) => {
+    const { topic } = req.body;
+    if (!topic || typeof topic !== "string") {
+      res.status(400).json({ error: "topic is required" });
       return;
     }
 
-    res.json({ latest, availableDates });
+    if (researchProcess) {
+      res.status(409).json({ error: "Research already running" });
+      return;
+    }
+
+    const child = spawn("python3", [last30daysScript, topic, "--emit=json"], {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        SSL_CERT_FILE: process.env.SSL_CERT_FILE || "/Users/jordanharper/Library/Python/3.11/lib/python/site-packages/certifi/cacert.pem",
+      },
+    });
+
+    researchProcess = child;
+    let stderr = "";
+
+    child.stderr.on("data", (data: Buffer) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      researchProcess = null;
+      if (code !== 0) {
+        console.error(`[research] last30days exited with code ${code}: ${stderr.slice(0, 500)}`);
+      } else {
+        console.log(`[research] Completed for topic: ${topic}`);
+      }
+    });
+
+    child.on("error", (err) => {
+      researchProcess = null;
+      console.error(`[research] Failed to spawn: ${err.message}`);
+    });
+
+    res.json({ status: "started", topic });
+  });
+
+  // GET /api/metrics/research/status - Check research status
+  router.get("/research/status", (_req, res) => {
+    const report = parseResearchReport();
+    res.json({
+      running: researchProcess !== null,
+      report: report
+        ? { topic: report.topic, generated_at: report.generated_at, from_cache: report.from_cache }
+        : null,
+    });
   });
 
   // DELETE /api/metrics/entry/:id - Delete a specific metrics entry

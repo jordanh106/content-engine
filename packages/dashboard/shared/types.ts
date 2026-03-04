@@ -123,6 +123,7 @@ export const DASHBOARD_VIEWS = [
   "PIPELINE",
   "LIBRARY",
   "IDEAS",
+  "OPPORTUNITIES",
   "WATCHLIST",
   "CALENDAR",
   "SESSION",
@@ -388,6 +389,110 @@ export type IntelDigest = {
 };
 
 // ============================================
+// Research Report Types (from /last30days skill)
+// ============================================
+
+export type ResearchEngagement = {
+  // Reddit fields
+  score?: number;
+  num_comments?: number;
+  upvote_ratio?: number;
+  // X fields
+  likes?: number;
+  reposts?: number;
+  replies?: number;
+  quotes?: number;
+};
+
+export type RedditThread = {
+  id: string;
+  title: string;
+  url: string;
+  subreddit: string;
+  date: string | null;
+  engagement: ResearchEngagement | null;
+  comment_insights: string[];
+  relevance: number;
+  why_relevant: string;
+  score: number;
+};
+
+export type XPost = {
+  id: string;
+  text: string;
+  url: string;
+  author_handle: string;
+  date: string | null;
+  engagement: ResearchEngagement | null;
+  relevance: number;
+  why_relevant: string;
+  score: number;
+};
+
+export type WebResult = {
+  id: string;
+  title: string;
+  url: string;
+  source_domain: string;
+  snippet: string;
+  date: string | null;
+  relevance: number;
+  why_relevant: string;
+  score: number;
+};
+
+export type ResearchReport = {
+  topic: string;
+  range: { from: string; to: string };
+  generated_at: string;
+  mode: string;
+  reddit: RedditThread[];
+  x: XPost[];
+  web: WebResult[];
+  best_practices: string[];
+  reddit_error?: string;
+  x_error?: string;
+  web_error?: string;
+  from_cache?: boolean;
+  cache_age_hours?: number;
+};
+
+// ============================================
+// Hook Patterns Library (from hook-patterns.md)
+// ============================================
+
+export type HookPatternEntry = {
+  pattern: string;
+  example: string;
+  bestFormat: string;
+  platform: string;
+  optimizes: string;
+};
+
+export type HookPatternCategory = {
+  name: string;
+  description: string;
+  patterns: HookPatternEntry[];
+};
+
+// ============================================
+// Unified Intelligence Response
+// ============================================
+
+export type UnifiedIntelligenceResponse = {
+  digest: IntelDigest | null;
+  availableDates: string[];
+  research: ResearchReport | null;
+  hookLibrary: HookPatternCategory[];
+  counts: {
+    redditThreads: number;
+    xPosts: number;
+    webResults: number;
+    hookPatterns: number;
+  };
+};
+
+// ============================================
 // Metrics Intelligence Types
 // ============================================
 
@@ -425,4 +530,91 @@ export type MetricsInsightsResponse = {
   insights: MetricsInsight[];
   summary: string;
   recommendations: ContentRecommendation[];
+};
+
+// ============================================
+// Content Opportunity Aggregator Types
+// ============================================
+
+export const OPPORTUNITY_DIMENSIONS = [
+  "audienceDemand",
+  "competitionGap",
+  "trendMomentum",
+  "formatFit",
+  "hookAvailability",
+  "platformAlignment",
+  "engagementPotential",
+] as const;
+
+export type OpportunityDimension = (typeof OPPORTUNITY_DIMENSIONS)[number];
+
+export type DimensionScore = {
+  dimension: OpportunityDimension;
+  score: number;
+  rationale: string;
+};
+
+export type OpportunityEvidence = {
+  type: "reddit" | "x" | "web" | "viral-digest" | "performance";
+  title: string;
+  detail: string;
+  url?: string;
+  engagement?: { score?: number; upvotes?: number; comments?: number };
+};
+
+export type SuggestedHook = {
+  pattern: string;
+  example: string;
+  category: string;
+  optimizes: string;
+};
+
+export type CompetitionCheck = {
+  coveredVideos: string[];
+  gapDescription: string;
+  coverageLevel: "none" | "partial" | "saturated";
+};
+
+export type CommunitySignals = {
+  redditThreads: number;
+  topRedditTitle: string | null;
+  topRedditScore: number;
+  xPosts: number;
+  topXPreview: string | null;
+  topXScore: number;
+  webArticles: number;
+};
+
+export type ContentOpportunity = {
+  id: string;
+  topic: string;
+  overallScore: number;
+  dimensions: DimensionScore[];
+  suggestedFormat: FormatId;
+  formatRationale: string;
+  suggestedHook: SuggestedHook;
+  targetPlatform: string;
+  targetAudience: string;
+  evidence: OpportunityEvidence[];
+  whyNow: string;
+  competitionCheck: CompetitionCheck;
+  communitySignals: CommunitySignals;
+  ideaBankMatch: string | null;
+};
+
+export type DataSourceSummary = {
+  redditThreads: number;
+  xPosts: number;
+  webResults: number;
+  hookPatterns: number;
+  existingVideos: number;
+  ideasInBank: number;
+  hasDigest: boolean;
+};
+
+export type OpportunitiesResponse = {
+  opportunities: ContentOpportunity[];
+  generatedAt: string;
+  dataSourceSummary: DataSourceSummary;
+  staleWarnings: string[];
 };

@@ -9,6 +9,7 @@ import { ComposerPage } from "./composer/ComposerPage.js";
 import { MetricsView } from "./MetricsView.js";
 import { IdeasView } from "./IdeasView.js";
 import { WatchlistView } from "./WatchlistView.js";
+import { OpportunitiesView } from "./OpportunitiesView.js";
 
 export const App: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -76,6 +77,7 @@ export const App: React.FC = () => {
         </div>
       )}
       {view === "IDEAS" && <IdeasView />}
+      {view === "OPPORTUNITIES" && <OpportunitiesView />}
       {view === "WATCHLIST" && <WatchlistView />}
       {view === "METRICS" && <MetricsView />}
 
