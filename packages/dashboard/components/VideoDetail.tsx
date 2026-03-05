@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -15,7 +15,7 @@ import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
 import { CopyButton } from "./ui/CopyButton.js";
-import { SkillButton } from "./ui/SkillButton.js";
+
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { FEATURE_HINTS } from "../shared/help-content.js";
 import { cn } from "../utils/cn.js";
@@ -539,6 +539,24 @@ const InfoTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 // ============================================
 
 const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoading: boolean }> = ({ code, plan, isLoading }) => {
+  const queryClient = useQueryClient();
+  const generateMutation = useMutation({
+    mutationFn: async (videoCode: string) => {
+      const r = await fetch(`/api/video-director/${videoCode}/generate-plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
+        throw new Error(d.error || "Generation failed");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["production-plan", code] });
+    },
+  });
+
   if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
 
   if (!plan) {
@@ -546,8 +564,21 @@ const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoa
       <div className="text-center py-12">
         <ListChecks size={32} className="text-slate-300 mx-auto mb-3" />
         <p className="text-sm text-slate-500 mb-1">No production plan yet.</p>
-        <p className="text-xs text-slate-400 mb-4">Generate one with the video-director skill.</p>
-        <SkillButton skill="/video-director" args={code} label="Generate Plan" icon={<Wand2 size={12} />} />
+        <p className="text-xs text-slate-400 mb-4">Generate hook variations, platform notes, and a shot list.</p>
+        <button
+          onClick={() => generateMutation.mutate(code)}
+          disabled={generateMutation.isPending}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        >
+          {generateMutation.isPending ? (
+            <><Loader2 size={12} className="animate-spin" /> Generating...</>
+          ) : (
+            <><Wand2 size={12} /> Generate Plan</>
+          )}
+        </button>
+        {generateMutation.isError && (
+          <p className="text-xs text-rose-500 mt-3">{(generateMutation.error as Error)?.message}</p>
+        )}
       </div>
     );
   }
@@ -610,9 +641,20 @@ const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoa
         </div>
       )}
 
-      <p className="text-xs text-slate-400 text-center">
-        Generated {plan.generatedAt}
-      </p>
+      <div className="flex items-center justify-center gap-3">
+        <p className="text-xs text-slate-400">Generated {plan.generatedAt}</p>
+        <button
+          onClick={() => generateMutation.mutate(code)}
+          disabled={generateMutation.isPending}
+          className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <RefreshCw size={12} className={generateMutation.isPending ? "animate-spin" : ""} />
+          Regenerate
+        </button>
+      </div>
+      {generateMutation.isError && (
+        <p className="text-xs text-rose-500 text-center mt-1">{(generateMutation.error as Error)?.message}</p>
+      )}
     </div>
   );
 };

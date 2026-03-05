@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
@@ -30,6 +30,7 @@ import {
   Trophy,
   Lightbulb,
   ArrowUpRight,
+  Check,
   Target,
   Zap,
   Flame,
@@ -198,6 +199,31 @@ export const MetricsView: React.FC = () => {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
+  const [addedRecIndex, setAddedRecIndex] = useState<number | null>(null);
+  const addRecMutation = useMutation({
+    mutationFn: async (rec: ContentRecommendation) => {
+      const r = await fetch("/api/ideas/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ideas: [{
+            topic: rec.ideaTopic,
+            suggestedFormat: `${rec.suggestedFormat} (${FORMATS[rec.suggestedFormat as keyof typeof FORMATS]?.name || rec.suggestedFormat})`,
+            hookAngle: rec.reason,
+            priority: rec.confidenceScore === "high" ? "High" : rec.confidenceScore === "medium" ? "Medium" : "Low",
+            source: "AI Strategy Recommendation",
+            category: "trending",
+          }],
+        }),
+      });
+      if (!r.ok) throw new Error("Failed to add idea");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+    },
+  });
   const [researchTopic, setResearchTopic] = useState("chiropractic content marketing");
   const [researchRunning, setResearchRunning] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
@@ -289,8 +315,10 @@ export const MetricsView: React.FC = () => {
       } else {
         setSyncMessage(data.message || "No new metrics to sync");
       }
+      setTimeout(() => setSyncMessage(null), 5000);
     } catch (e) {
       setSyncMessage(e instanceof Error ? e.message : "Failed to connect to server");
+      setTimeout(() => setSyncMessage(null), 5000);
     }
     setSyncing(false);
   };
@@ -812,7 +840,18 @@ export const MetricsView: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                        <ArrowUpRight size={16} className="text-slate-300 shrink-0 mt-1" />
+                        <button
+                          onClick={() => {
+                            addRecMutation.mutate(rec);
+                            setAddedRecIndex(i);
+                            setTimeout(() => setAddedRecIndex(null), 2000);
+                          }}
+                          disabled={addRecMutation.isPending}
+                          className="shrink-0 mt-1 hover:text-teal-600 transition-colors"
+                          title="Add to Idea Bank"
+                        >
+                          {addedRecIndex === i ? <Check size={16} className="text-teal-500" /> : <ArrowUpRight size={16} className="text-slate-300" />}
+                        </button>
                       </div>
                     ))}
                   </div>

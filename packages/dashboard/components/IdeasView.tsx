@@ -92,8 +92,10 @@ export const IdeasView: React.FC = () => {
                 } else {
                   setSyncMessage(data.message || "No new ideas to sync");
                 }
+                setTimeout(() => setSyncMessage(null), 5000);
               } catch {
                 setSyncMessage("Failed to connect to server");
+                setTimeout(() => setSyncMessage(null), 5000);
               }
               setSyncing(false);
             }}

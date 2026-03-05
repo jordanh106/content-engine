@@ -1,14 +1,24 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2 } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP } from "../shared/help-content.js";
 
+function getCreatorProfileUrl(handle: string, platform: string): string {
+  const cleanHandle = handle.replace(/^@/, "");
+  const primaryPlatform = platform.split(",")[0].trim().toLowerCase();
+  if (primaryPlatform.includes("tiktok")) return `https://tiktok.com/@${cleanHandle}`;
+  if (primaryPlatform.includes("youtube")) return `https://youtube.com/@${cleanHandle}`;
+  if (primaryPlatform.includes("instagram")) return `https://instagram.com/${cleanHandle}`;
+  if (primaryPlatform.includes("twitter") || primaryPlatform === "x") return `https://x.com/${cleanHandle}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(handle)}+${encodeURIComponent(platform)}`;
+}
+
 type EnrichedCreator = WatchlistCreator & { hasInsight?: boolean };
-type WatchlistResponse = { creators: EnrichedCreator[]; total: number };
+type WatchlistResponse = { creators: EnrichedCreator[]; total: number; sections?: string[] };
 type IntelResponse = {
   date: string | null;
   ideas: WatchlistIntelIdea[];
@@ -51,24 +61,106 @@ export const WatchlistView: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ["watchlist-intel"] });
         queryClient.invalidateQueries({ queryKey: ["ideas"] });
       }
+      setTimeout(() => syncMutation.reset(), 5000);
+    },
+    onError: () => {
+      setTimeout(() => syncMutation.reset(), 5000);
+    },
+  });
+
+  const [addedIdea, setAddedIdea] = useState<string | null>(null);
+  const addIdeaMutation = useMutation({
+    mutationFn: async (idea: WatchlistIntelIdea) => {
+      const r = await fetch("/api/ideas/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ideas: [{
+            topic: idea.topic,
+            suggestedFormat: idea.suggestedFormat,
+            hookAngle: idea.hookAngle,
+            priority: idea.priority,
+            source: idea.source || "Watchlist Intelligence",
+            category: (idea.category || "competitor") as IdeaCategory,
+          }],
+        }),
+      });
+      if (!r.ok) throw new Error("Failed to add idea");
+      return r.json();
+    },
+    onSuccess: (_data, idea) => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+      setAddedIdea(idea.topic);
+      setTimeout(() => setAddedIdea(null), 2000);
     },
   });
 
   const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const creators = data?.creators ?? [];
+  const sections = data?.sections ?? [];
+
+  const addCreatorMutation = useMutation({
+    mutationFn: async (body: WatchlistCreator & { section?: string }) => {
+      const r = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) { const d = await r.json(); throw new Error(d.error || "Failed to add"); }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      setShowAddForm(false);
+    },
+  });
+
+  const deleteCreatorMutation = useMutation({
+    mutationFn: async (handle: string) => {
+      const clean = handle.replace("@", "").toLowerCase();
+      const r = await fetch(`/api/watchlist/${clean}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Failed to delete");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Eye size={20} className="text-violet-500" />
-          <h2 className="text-lg font-serif font-bold text-slate-900">Creator Watchlist</h2>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Eye size={20} className="text-violet-500" />
+            <h2 className="text-lg font-serif font-bold text-slate-900">Creator Watchlist</h2>
+          </div>
+          <p className="text-sm text-slate-500">
+            Track competitors and inspiration creators. Analyze their patterns directly from here.
+          </p>
         </div>
-        <p className="text-sm text-slate-500">
-          Track competitors and inspiration creators. Analyze their patterns directly from here.
-        </p>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+        >
+          <Plus size={12} />
+          Add Creator
+        </button>
       </div>
+
+      {/* Add Creator Form */}
+      {showAddForm && (
+        <AddCreatorForm
+          sections={sections}
+          onSubmit={(data) => addCreatorMutation.mutate(data)}
+          onCancel={() => setShowAddForm(false)}
+          isPending={addCreatorMutation.isPending}
+          error={addCreatorMutation.isError ? (addCreatorMutation.error as Error).message : null}
+        />
+      )}
 
       {/* Creator Cards */}
       {isLoading ? (
@@ -91,6 +183,8 @@ export const WatchlistView: React.FC = () => {
               creator={creator}
               isExpanded={expandedHandle === creator.handle}
               onToggle={() => setExpandedHandle(expandedHandle === creator.handle ? null : creator.handle)}
+              onDelete={() => deleteCreatorMutation.mutate(creator.handle)}
+              isDeleting={deleteCreatorMutation.isPending}
             />
           ))}
         </div>
@@ -147,12 +241,28 @@ export const WatchlistView: React.FC = () => {
                     <div key={i} className="bg-slate-50 rounded-xl p-3">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <p className="text-sm font-medium text-slate-900">{idea.topic}</p>
-                        <span className={cn(
-                          "px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0",
-                          idea.priority === "High" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600",
-                        )}>
-                          {idea.priority}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                            idea.priority === "High" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600",
+                          )}>
+                            {idea.priority}
+                          </span>
+                          <button
+                            onClick={() => addIdeaMutation.mutate(idea)}
+                            disabled={addIdeaMutation.isPending || addedIdea === idea.topic}
+                            className={cn(
+                              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
+                              addedIdea === idea.topic
+                                ? "bg-teal-100 text-teal-700"
+                                : "bg-teal-50 text-teal-600 hover:bg-teal-100",
+                            )}
+                            title="Add to Idea Bank"
+                          >
+                            {addedIdea === idea.topic ? <Check size={10} /> : <Plus size={10} />}
+                            {addedIdea === idea.topic ? "Added" : "Ideas"}
+                          </button>
+                        </div>
                       </div>
                       <p className="text-xs text-slate-500 mb-1">{idea.whyNonObvious}</p>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
@@ -252,9 +362,36 @@ type CreatorCardProps = {
   creator: EnrichedCreator;
   isExpanded: boolean;
   onToggle: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
 };
 
-const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle }) => {
+const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle, onDelete, isDeleting }) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const queryClient = useQueryClient();
+  const cleanHandle = creator.handle.replace("@", "").toLowerCase();
+
+  const analyzeMutation = useMutation({
+    mutationFn: async (handle: string) => {
+      const clean = handle.replace("@", "").toLowerCase();
+      const r = await fetch(`/api/creator-analysis/${clean}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
+        throw new Error(d.error || "Analysis failed");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      queryClient.invalidateQueries({ queryKey: ["creator-insight", cleanHandle] });
+      // Auto-expand to show the analysis
+      if (!isExpanded) onToggle();
+    },
+  });
+
   const platformColor = PLATFORM_COLORS[creator.platform] ?? "bg-slate-200 text-slate-700";
   const isStale = !creator.lastAnalyzed || creator.lastAnalyzed.trim() === "";
 
@@ -262,10 +399,15 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
     <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 transition-colors">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <p className="font-medium text-slate-900 text-sm flex items-center gap-1.5">
+          <a
+            href={getCreatorProfileUrl(creator.handle, creator.platform)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-900 text-sm flex items-center gap-1.5 hover:text-teal-700 transition-colors"
+          >
             {creator.handle}
             <ExternalLink size={12} className="text-slate-400" />
-          </p>
+          </a>
           {creator.followers && (
             <p className="text-xs text-slate-500 mt-0.5">{creator.followers} followers</p>
           )}
@@ -294,13 +436,25 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
 
       <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SkillButton
-            skill="/creator-analysis"
-            args={creator.handle}
-            label="Analyze"
-            icon={<Radar size={12} />}
-            variant="secondary"
-          />
+          <button
+            onClick={() => analyzeMutation.mutate(creator.handle)}
+            disabled={analyzeMutation.isPending}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all",
+              analyzeMutation.isPending
+                ? "bg-violet-100 text-violet-500"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+            )}
+          >
+            {analyzeMutation.isPending ? (
+              <><Loader2 size={12} className="animate-spin" /> Analyzing...</>
+            ) : (
+              <><Radar size={12} /> Analyze</>
+            )}
+          </button>
+          {analyzeMutation.isError && (
+            <span className="text-[10px] text-rose-500">{(analyzeMutation.error as Error)?.message}</span>
+          )}
           {creator.hasInsight && (
             <button
               onClick={onToggle}
@@ -311,15 +465,169 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
             </button>
           )}
         </div>
-        <p className={cn("text-xs", isStale ? "text-amber-500 font-medium" : "text-slate-500")}>
-          {isStale ? "Never analyzed" : creator.lastAnalyzed}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className={cn("text-xs", isStale ? "text-amber-500 font-medium" : "text-slate-500")}>
+            {isStale ? "Never analyzed" : creator.lastAnalyzed}
+          </p>
+          {confirmDelete ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => { onDelete(); setConfirmDelete(false); }}
+                disabled={isDeleting}
+                className="text-[9px] font-bold text-rose-600 hover:text-rose-700"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-[9px] font-bold text-slate-400 hover:text-slate-600"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-slate-300 hover:text-rose-500 transition-colors"
+              title="Remove creator"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Expanded Insight Panel */}
       {isExpanded && creator.hasInsight && (
         <CreatorInsightPanel handle={creator.handle} />
       )}
+    </div>
+  );
+};
+
+type AddCreatorFormProps = {
+  sections: string[];
+  onSubmit: (data: WatchlistCreator & { section?: string }) => void;
+  onCancel: () => void;
+  isPending: boolean;
+  error: string | null;
+};
+
+const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onCancel, isPending, error }) => {
+  const [handle, setHandle] = useState("");
+  const [platform, setPlatform] = useState("Instagram");
+  const [followers, setFollowers] = useState("");
+  const [whyTracking, setWhyTracking] = useState("");
+  const [contentStyle, setContentStyle] = useState("");
+  const [frequency, setFrequency] = useState("");
+  const [section, setSection] = useState(sections[0] || "");
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Add Creator</p>
+        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+          <X size={16} />
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Handle *</label>
+          <input
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="@creator_handle"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Platform *</label>
+          <select
+            value={platform}
+            onChange={(e) => setPlatform(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-white"
+          >
+            <option>Instagram</option>
+            <option>TikTok</option>
+            <option>YouTube</option>
+            <option>TikTok, Instagram</option>
+            <option>TikTok, IG</option>
+            <option>X</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Followers</label>
+          <input
+            value={followers}
+            onChange={(e) => setFollowers(e.target.value)}
+            placeholder="e.g. ~50K"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Section</label>
+          <select
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-white"
+          >
+            {sections.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Why Tracking</label>
+          <input
+            value={whyTracking}
+            onChange={(e) => setWhyTracking(e.target.value)}
+            placeholder="What makes this creator worth watching?"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Content Style</label>
+          <input
+            value={contentStyle}
+            onChange={(e) => setContentStyle(e.target.value)}
+            placeholder="e.g. Educational, humor-driven"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
+          <input
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value)}
+            placeholder="e.g. 3-4x/week"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+          />
+        </div>
+      </div>
+      {error && <p className="text-xs text-rose-500 mt-2">{error}</p>}
+      <div className="flex justify-end gap-2 mt-4">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onSubmit({
+            handle: handle.startsWith("@") ? handle : `@${handle}`,
+            platform,
+            followers,
+            whyTracking,
+            contentStyle,
+            frequency,
+            lastAnalyzed: "-",
+            section: section || undefined,
+          })}
+          disabled={isPending || !handle.trim()}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+        >
+          {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+          Add to Watchlist
+        </button>
+      </div>
     </div>
   );
 };
