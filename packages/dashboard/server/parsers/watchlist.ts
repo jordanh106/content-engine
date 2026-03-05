@@ -18,23 +18,11 @@ export function parseWatchlist(filePath: string): WatchlistCreator[] {
   const content = fs.readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
   const creators: WatchlistCreator[] = [];
-  let inActiveSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Detect the Active Watchlist section
-    if (line.match(/^##\s+Active Watchlist/)) {
-      inActiveSection = true;
-      continue;
-    }
-    // Any other ## section ends the active section
-    if (line.match(/^##\s+/) && inActiveSection) {
-      inActiveSection = false;
-      continue;
-    }
-
-    if (!inActiveSection) continue;
+    // Parse any markdown table row that starts with | and has a @ handle
     if (!line.startsWith("|")) continue;
     if (line.includes("---")) continue;
     if (line.toLowerCase().includes("| handle")) continue;
@@ -45,7 +33,7 @@ export function parseWatchlist(filePath: string): WatchlistCreator[] {
       .filter((c) => c.length > 0);
 
     // Handle, Platform, Followers, Why Tracking, Content Style, Frequency, Last Analyzed
-    if (cells.length >= 2 && cells[0]) {
+    if (cells.length >= 2 && cells[0].startsWith("@")) {
       creators.push({
         handle: cells[0],
         platform: cells[1] || "",
