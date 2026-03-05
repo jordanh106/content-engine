@@ -38,10 +38,19 @@ export const WatchlistView: React.FC = () => {
 
   const queryClient = useQueryClient();
   const syncMutation = useMutation({
-    mutationFn: () => fetch("/api/watchlist-intel/sync-n8n", { method: "POST" }).then((r) => r.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist-intel"] });
-      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    mutationFn: async () => {
+      const r = await fetch("/api/watchlist-intel/sync-n8n", { method: "POST" });
+      if (!r.ok) {
+        const body = await r.text();
+        try { const json = JSON.parse(body); throw new Error(json.error || `Sync failed: ${r.status}`); } catch (e) { if (e instanceof SyntaxError) throw new Error(`Server error: ${r.status}`); throw e; }
+      }
+      return r.json();
+    },
+    onSuccess: (data) => {
+      if (data?.synced) {
+        queryClient.invalidateQueries({ queryKey: ["watchlist-intel"] });
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      }
     },
   });
 
@@ -213,7 +222,7 @@ export const WatchlistView: React.FC = () => {
             <p className="text-xs text-slate-500 mt-2">{(syncMutation.data as { message?: string })?.message || "No data found"}</p>
           )}
           {syncMutation.isError && (
-            <p className="text-xs text-rose-500 mt-2">Sync failed. Check n8n connection.</p>
+            <p className="text-xs text-rose-500 mt-2">{(syncMutation.error as Error)?.message || "Sync failed. Check n8n connection."}</p>
           )}
           {!syncMutation.isPending && !syncMutation.isSuccess && (
             <p className="text-xs text-slate-400 mt-2">
