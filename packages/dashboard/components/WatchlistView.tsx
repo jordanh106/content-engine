@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
@@ -9,6 +9,13 @@ import { VIEW_HELP } from "../shared/help-content.js";
 
 type EnrichedCreator = WatchlistCreator & { hasInsight?: boolean };
 type WatchlistResponse = { creators: EnrichedCreator[]; total: number };
+type IntelResponse = {
+  date: string | null;
+  ideas: WatchlistIntelIdea[];
+  risingCreators: RisingCreator[];
+  selfImprovementNotes: { bestQueries: string[]; mostActionableCreators: string[]; nextScanFocus: string } | null;
+  previousTopics: string[];
+};
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
@@ -22,6 +29,11 @@ export const WatchlistView: React.FC = () => {
   const { data, isLoading } = useQuery<WatchlistResponse>({
     queryKey: ["watchlist"],
     queryFn: () => fetch("/api/watchlist").then((r) => r.json()),
+  });
+
+  const { data: intelData } = useQuery<IntelResponse>({
+    queryKey: ["watchlist-intel"],
+    queryFn: () => fetch("/api/watchlist-intel/latest").then((r) => r.json()),
   });
 
   const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
@@ -63,6 +75,102 @@ export const WatchlistView: React.FC = () => {
               onToggle={() => setExpandedHandle(expandedHandle === creator.handle ? null : creator.handle)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Latest Intelligence */}
+      {intelData?.date && (
+        <div className="space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-amber-500" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Watchlist Intelligence
+                </p>
+              </div>
+              <span className="text-[10px] text-slate-400">{intelData.date}</span>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-slate-900">{intelData.ideas?.length || 0}</p>
+                <p className="text-[10px] text-slate-500 font-medium">Ideas Found</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-slate-900">{intelData.risingCreators?.length || 0}</p>
+                <p className="text-[10px] text-slate-500 font-medium">Rising Creators</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-slate-900">{intelData.previousTopics?.length || 0}</p>
+                <p className="text-[10px] text-slate-500 font-medium">Topics Tracked</p>
+              </div>
+            </div>
+
+            {/* Non-Obvious Ideas */}
+            {intelData.ideas?.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                  Non-Obvious Opportunities
+                </p>
+                <div className="space-y-2">
+                  {intelData.ideas.slice(0, 5).map((idea, i) => (
+                    <div key={i} className="bg-slate-50 rounded-xl p-3">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-sm font-medium text-slate-900">{idea.topic}</p>
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0",
+                          idea.priority === "High" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600",
+                        )}>
+                          {idea.priority}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mb-1">{idea.whyNonObvious}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                        {idea.suggestedFormat && <span className="font-mono">{idea.suggestedFormat}</span>}
+                        {idea.inspiredBy && <span>via {idea.inspiredBy}</span>}
+                        {idea.targetAudience && <span>{idea.targetAudience}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rising Creators */}
+            {intelData.risingCreators?.length > 0 && (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                  Rising Creators
+                </p>
+                <div className="space-y-2">
+                  {intelData.risingCreators.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <UserPlus size={12} className="text-teal-500" />
+                        <span className="text-sm font-medium text-slate-900">{c.handle}</span>
+                        <span className="text-[10px] text-slate-400">{c.platform}</span>
+                        {c.followers && <span className="text-[10px] text-slate-400">{c.followers}</span>}
+                      </div>
+                      <span className="text-xs text-slate-500 text-right max-w-[200px] truncate">{c.whyWatch}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Self-Improvement Focus */}
+            {intelData.selfImprovementNotes?.nextScanFocus && (
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingUp size={12} className="text-teal-500" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Next Scan Focus</p>
+                </div>
+                <p className="text-xs text-slate-500">{intelData.selfImprovementNotes.nextScanFocus}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

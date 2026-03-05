@@ -32,6 +32,7 @@ import { createOpportunitiesRouter } from "./routes/opportunities.js";
 import { createAnalyticsRouter } from "./routes/analytics.js";
 import { createSessionsRouter } from "./routes/sessions.js";
 import { createCalendarRouter } from "./routes/calendar.js";
+import { createWatchlistIntelRouter } from "./routes/watchlist-intel.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -41,6 +42,7 @@ import { invalidateHookCache } from "./parsers/hook-patterns.js";
 import { invalidateResearchCache, getReportPath } from "./parsers/last30days.js";
 import { invalidateCreatorInsightsCache } from "./parsers/creator-insights.js";
 import { invalidateProductionPlanCache } from "./parsers/production-plans.js";
+import { invalidateWatchlistIntelCache } from "./parsers/watchlist-insights.js";
 
 // Initialize database (creates tables on import)
 import "./db.js";
@@ -70,6 +72,7 @@ app.use("/api/opportunities", createOpportunitiesRouter(contentLibraryPath));
 app.use("/api/analytics", createAnalyticsRouter(contentLibraryPath));
 app.use("/api/sessions", createSessionsRouter(contentLibraryPath));
 app.use("/api/calendar", createCalendarRouter(contentLibraryPath));
+app.use("/api/watchlist-intel", createWatchlistIntelRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
@@ -81,9 +84,10 @@ const hookPatternsPath = path.join(industryDir, "hook-patterns.md");
 
 const creatorInsightsDir = path.join(industryDir, "creator-insights");
 const productionPlansDir = path.join(industryDir, "production-plans");
+const watchlistIntelDir = path.join(industryDir, "watchlist-insights");
 
 const watcher = chokidar.watch(
-  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, productionPlansDir, viralInsightsDir, creatorInsightsDir],
+  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, productionPlansDir, viralInsightsDir, creatorInsightsDir, watchlistIntelDir],
   { ignoreInitial: true },
 );
 
@@ -112,6 +116,9 @@ watcher.on("change", (filePath) => {
   }
   if (filePath.includes("production-plans")) {
     invalidateProductionPlanCache();
+  }
+  if (filePath.includes("watchlist-insights")) {
+    invalidateWatchlistIntelCache();
   }
 });
 

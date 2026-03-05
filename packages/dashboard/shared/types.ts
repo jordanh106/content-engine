@@ -752,3 +752,41 @@ export type ProductionPlan = {
   shotList: string[];
   rawMarkdown: string;
 };
+
+// ============================================
+// Watchlist Intelligence Types
+// ============================================
+
+export type WatchlistIntelIdea = {
+  topic: string;
+  suggestedFormat: string;
+  hookAngle: string;
+  priority: string;
+  source: string;
+  category: IdeaCategory;
+  inspiredBy: string;
+  whyNonObvious: string;
+  targetAudience: string;
+};
+
+export type RisingCreator = {
+  handle: string;
+  platform: string;
+  followers: string;
+  whyWatch: string;
+};
+
+export type SelfImprovementNotes = {
+  bestQueries: string[];
+  mostActionableCreators: string[];
+  nextScanFocus: string;
+};
+
+export type WatchlistIntelReport = {
+  date: string;
+  markdown: string;
+  ideas: WatchlistIntelIdea[];
+  risingCreators: RisingCreator[];
+  selfImprovementNotes: SelfImprovementNotes;
+  previousTopics: string[];
+};

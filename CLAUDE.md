@@ -29,6 +29,7 @@ scripts/             Repo utilities (install, scaffold)
 - Watchlist: `industries/chiropractic/watchlist.md` (competitor/inspiration creator tracking)
 - Viral insights: `industries/chiropractic/viral-insights/` (scout reports and cumulative patterns)
 - Creator insights: `industries/chiropractic/creator-insights/` (per-creator analysis profiles)
+- Watchlist intelligence: `industries/chiropractic/watchlist-insights/` (weekly competitive intelligence reports)
 
 ## Skills
 
@@ -321,6 +322,7 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 | Workflow | ID | Trigger | Purpose |
 |----------|----|---------|---------|
 | Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
+| Watchlist Intelligence | sQXCCmZ7HspGFJME | Weekly (Wednesday 8am) | Monitors watchlist creators, finds non-obvious opportunities via cross-niche analysis, self-improves by reading previous outputs |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
 

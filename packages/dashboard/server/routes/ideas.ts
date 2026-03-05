@@ -19,7 +19,7 @@ const CATEGORY_HEADERS: Record<string, string> = {
   personal: "## Personal/Creative Ideas",
 };
 
-type IngestIdea = {
+export type IngestIdea = {
   topic: string;
   suggestedFormat?: string;
   hookAngle?: string;
@@ -28,7 +28,7 @@ type IngestIdea = {
   category?: IdeaCategory;
 };
 
-function appendIdeasToFile(filePath: string, ideas: IngestIdea[]): number {
+export function appendIdeasToFile(filePath: string, ideas: IngestIdea[]): number {
   if (!fs.existsSync(filePath)) return 0;
 
   const content = fs.readFileSync(filePath, "utf-8");
