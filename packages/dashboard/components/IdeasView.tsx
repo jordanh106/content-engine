@@ -5,6 +5,9 @@ import type { Idea, IdeaCategory } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
   trending: { label: "Trending", icon: <Flame size={14} />, color: "text-orange-600 bg-orange-50" },
@@ -72,6 +75,7 @@ export const IdeasView: React.FC = () => {
             <Sparkles size={14} />
             Generate
           </button>
+          <FeatureHint id="sync-n8n" content={FEATURE_HINTS["sync-n8n"].content} side="bottom">
           <button
             onClick={async () => {
               setSyncing(true);
@@ -104,6 +108,7 @@ export const IdeasView: React.FC = () => {
             <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
             {syncing ? "Syncing..." : "Sync n8n"}
           </button>
+          </FeatureHint>
         </div>
       </div>
 
@@ -177,6 +182,8 @@ export const IdeasView: React.FC = () => {
       {generatorOpen && (
         <IdeaGeneratorModal onClose={() => setGeneratorOpen(false)} />
       )}
+
+      <ViewHelp {...VIEW_HELP.IDEAS} />
     </div>
   );
 };

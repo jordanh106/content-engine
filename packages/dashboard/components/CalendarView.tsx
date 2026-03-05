@@ -11,6 +11,9 @@ import {
 import type { CalendarEntry, CalendarResponse, CalendarGap, FormatId } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { cn } from "../utils/cn.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -158,10 +161,12 @@ export const CalendarView: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1">
             {entries.length} entries this week
             {totalGaps > 0 && (
-              <span className="text-amber-600 ml-2">
-                <AlertTriangle size={12} className="inline mr-0.5" />
-                {totalGaps} cadence gaps
-              </span>
+              <FeatureHint id="calendar-gaps" content={FEATURE_HINTS["calendar-gaps"].content} side="bottom">
+                <span className="text-amber-600 ml-2">
+                  <AlertTriangle size={12} className="inline mr-0.5" />
+                  {totalGaps} cadence gaps
+                </span>
+              </FeatureHint>
             )}
           </p>
         </div>
@@ -314,6 +319,8 @@ export const CalendarView: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ViewHelp {...VIEW_HELP.CALENDAR} />
     </div>
   );
 };

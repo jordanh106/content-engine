@@ -4,6 +4,8 @@ import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar } from "lucide-
 import type { WatchlistCreator, CreatorInsight } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP } from "../shared/help-content.js";
 
 type EnrichedCreator = WatchlistCreator & { hasInsight?: boolean };
 type WatchlistResponse = { creators: EnrichedCreator[]; total: number };
@@ -74,6 +76,8 @@ export const WatchlistView: React.FC = () => {
           <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
         </div>
       </div>
+
+      <ViewHelp {...VIEW_HELP.WATCHLIST} />
     </div>
   );
 };

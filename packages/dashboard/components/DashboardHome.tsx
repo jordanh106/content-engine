@@ -27,6 +27,9 @@ import type {
 import { PRODUCTION_STATUSES } from "../shared/types.js";
 import { StatCard } from "./ui/StatCard.js";
 import { SkillButton } from "./ui/SkillButton.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
@@ -189,9 +192,11 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* Intelligence Cards */}
       <section className="mb-6">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
-          Intelligence
-        </h2>
+        <FeatureHint id="intelligence-cards" content={FEATURE_HINTS["intelligence-cards"].content} side="bottom">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+            Intelligence
+          </h2>
+        </FeatureHint>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Stale Data / Data Health */}
           <div className={`border rounded-2xl p-4 ${hasStaleWarnings ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}`}>
@@ -276,7 +281,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-2">
-          <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
+          <FeatureHint id="skill-buttons" content={FEATURE_HINTS["skill-buttons"].content} side="bottom">
+            <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
+          </FeatureHint>
           <SkillButton skill="/content-planner" label="Content Planner" icon={<Calendar size={14} />} />
           <SkillButton skill="/last30days" args="chiropractic" label="Research" icon={<Search size={14} />} />
         </div>
@@ -330,6 +337,8 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </section>
       )}
+
+      <ViewHelp {...VIEW_HELP.HOME} />
     </div>
   );
 };

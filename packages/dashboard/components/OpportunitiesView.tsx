@@ -43,6 +43,9 @@ import type {
   FormatId,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 const FORMAT_COLORS: Record<string, string> = {
   A: "#0d9488",
@@ -1054,6 +1057,7 @@ export const OpportunitiesView: React.FC = () => {
       )}
 
       {/* Sort + Filter controls */}
+      {opportunities.length > 0 && !generateMutation.isPending && <FeatureHint id="opportunity-dims" content={FEATURE_HINTS["opportunity-dims"].content} side="bottom"><span className="text-[10px] text-slate-400 mb-1 block">Tap any opportunity to see the full 7-dimension breakdown</span></FeatureHint>}
       {opportunities.length > 0 && !generateMutation.isPending && (
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           {/* Sort */}
@@ -1189,6 +1193,8 @@ export const OpportunitiesView: React.FC = () => {
           Generated {new Date(data.generatedAt).toLocaleString()}
         </p>
       )}
+
+      <ViewHelp {...VIEW_HELP.OPPORTUNITIES} />
     </div>
   );
 };

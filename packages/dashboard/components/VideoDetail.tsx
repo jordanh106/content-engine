@@ -16,6 +16,8 @@ import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
 import { CopyButton } from "./ui/CopyButton.js";
 import { SkillButton } from "./ui/SkillButton.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { FEATURE_HINTS } from "../shared/help-content.js";
 import { cn } from "../utils/cn.js";
 
 type VideoDetailProps = {
@@ -205,13 +207,15 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
             </div>
             <div className="flex gap-2 flex-shrink-0">
               {onOpenComposer && (
-                <button
-                  onClick={() => onOpenComposer(code)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px] bg-violet-600 text-white hover:bg-violet-700"
-                >
-                  <Pencil size={12} />
-                  Composer
-                </button>
+                <FeatureHint id="composer-button" content={FEATURE_HINTS["composer-button"].content} side="left">
+                  <button
+                    onClick={() => onOpenComposer(code)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px] bg-violet-600 text-white hover:bg-violet-700"
+                  >
+                    <Pencil size={12} />
+                    Composer
+                  </button>
+                </FeatureHint>
               )}
               <button
                 onClick={() => renderAllShotsMutation.mutate()}

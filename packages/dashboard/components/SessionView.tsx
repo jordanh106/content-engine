@@ -15,6 +15,9 @@ import type { SessionType, FormatId, ProductionSession } from "../shared/types.j
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { cn } from "../utils/cn.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 type Phase = "setup" | "active" | "complete";
 
@@ -148,9 +151,11 @@ export const SessionView: React.FC = () => {
         <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
           Session Planner
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Batch production sessions with auto-advancing status
-        </p>
+        <FeatureHint id="session-phases" content={FEATURE_HINTS["session-phases"].content} side="bottom">
+          <p className="text-sm text-slate-500 mt-1">
+            Batch production sessions with auto-advancing status
+          </p>
+        </FeatureHint>
       </div>
 
       {/* SETUP PHASE */}
@@ -370,6 +375,8 @@ export const SessionView: React.FC = () => {
           </button>
         </div>
       )}
+
+      <ViewHelp {...VIEW_HELP.SESSION} />
     </div>
   );
 };

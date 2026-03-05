@@ -58,6 +58,8 @@ import type {
   CadenceResponse,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP } from "../shared/help-content.js";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -1262,6 +1264,8 @@ export const MetricsView: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ViewHelp {...VIEW_HELP.METRICS} />
     </div>
   );
 };

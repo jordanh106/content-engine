@@ -23,6 +23,9 @@ import { PRODUCTION_STATUSES, FORMAT_IDS } from "../shared/types.js";
 import { statusColors } from "../utils/format-colors.js";
 import { cn } from "../utils/cn.js";
 import { PipelineCard } from "./ui/PipelineCard.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 type PipelineBoardProps = {
   onSelectVideo: (code: string) => void;
@@ -484,6 +487,9 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       )}
 
       {/* Desktop: horizontal kanban */}
+      <FeatureHint id="pipeline-drag" content={FEATURE_HINTS["pipeline-drag"].content} side="bottom">
+        <p className="hidden md:block text-xs text-slate-400 mb-2">Drag cards to advance</p>
+      </FeatureHint>
       <div className="hidden md:block">
         <DndContext
           sensors={sensors}
@@ -566,6 +572,8 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           );
         })}
       </div>
+
+      <ViewHelp {...VIEW_HELP.PIPELINE} />
     </div>
   );
 };

@@ -6,6 +6,9 @@ import { VideoCard } from "./ui/VideoCard.js";
 import { SearchInput } from "./ui/SearchInput.js";
 import { FilterBar } from "./ui/FilterBar.js";
 import { cn } from "../utils/cn.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 type SortOption = "default" | "alpha" | "format" | "duration";
 
@@ -104,15 +107,17 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
       {/* Search and filters */}
       <div className="flex flex-col gap-3 mb-6">
         <SearchInput value={search} onChange={setSearch} />
-        <FilterBar
-          audiences={config?.audiences || []}
-          selectedAudience={audienceFilter}
-          selectedFormat={formatFilter}
-          remotionOnly={remotionOnly}
-          onAudienceChange={setAudienceFilter}
-          onFormatChange={setFormatFilter}
-          onRemotionOnlyChange={setRemotionOnly}
-        />
+        <FeatureHint id="format-codes" content={FEATURE_HINTS["format-codes"].content} side="bottom">
+          <FilterBar
+            audiences={config?.audiences || []}
+            selectedAudience={audienceFilter}
+            selectedFormat={formatFilter}
+            remotionOnly={remotionOnly}
+            onAudienceChange={setAudienceFilter}
+            onFormatChange={setFormatFilter}
+            onRemotionOnlyChange={setRemotionOnly}
+          />
+        </FeatureHint>
       </div>
 
       {/* Results count + Sort */}
@@ -163,6 +168,8 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
           ))}
         </div>
       )}
+
+      <ViewHelp {...VIEW_HELP.LIBRARY} />
     </div>
   );
 };
