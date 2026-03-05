@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw } from "lucide-react";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
@@ -34,6 +34,15 @@ export const WatchlistView: React.FC = () => {
   const { data: intelData } = useQuery<IntelResponse>({
     queryKey: ["watchlist-intel"],
     queryFn: () => fetch("/api/watchlist-intel/latest").then((r) => r.json()),
+  });
+
+  const queryClient = useQueryClient();
+  const syncMutation = useMutation({
+    mutationFn: () => fetch("/api/watchlist-intel/sync-n8n", { method: "POST" }).then((r) => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist-intel"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+    },
   });
 
   const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
@@ -79,7 +88,7 @@ export const WatchlistView: React.FC = () => {
       )}
 
       {/* Latest Intelligence */}
-      {intelData?.date && (
+      {intelData?.date ? (
         <div className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
@@ -89,7 +98,17 @@ export const WatchlistView: React.FC = () => {
                   Watchlist Intelligence
                 </p>
               </div>
-              <span className="text-[10px] text-slate-400">{intelData.date}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400">{intelData.date}</span>
+                <button
+                  onClick={() => syncMutation.mutate()}
+                  disabled={syncMutation.isPending}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 disabled:opacity-50"
+                  title="Sync latest report from n8n"
+                >
+                  <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
+                </button>
+              </div>
             </div>
 
             {/* Stats */}
@@ -171,6 +190,36 @@ export const WatchlistView: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-slate-300" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                Watchlist Intelligence
+              </p>
+            </div>
+            <button
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-violet-50 text-violet-600 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
+              {syncMutation.isPending ? "Syncing..." : "Sync from n8n"}
+            </button>
+          </div>
+          {syncMutation.isSuccess && (syncMutation.data as { synced: boolean })?.synced === false && (
+            <p className="text-xs text-slate-500 mt-2">{(syncMutation.data as { message?: string })?.message || "No data found"}</p>
+          )}
+          {syncMutation.isError && (
+            <p className="text-xs text-rose-500 mt-2">Sync failed. Check n8n connection.</p>
+          )}
+          {!syncMutation.isPending && !syncMutation.isSuccess && (
+            <p className="text-xs text-slate-400 mt-2">
+              Run the Watchlist Intelligence workflow in n8n, then sync to pull the report.
+            </p>
+          )}
         </div>
       )}
 
