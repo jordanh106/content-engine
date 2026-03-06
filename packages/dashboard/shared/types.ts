@@ -443,6 +443,15 @@ export type WebResult = {
   score: number;
 };
 
+export type PlatformResearchItem = {
+  title: string;
+  url: string;
+  source: string;
+  snippet: string;
+  relevance: number;
+  score: number;
+};
+
 export type ResearchReport = {
   topic: string;
   range: { from: string; to: string };
@@ -451,6 +460,9 @@ export type ResearchReport = {
   reddit: RedditThread[];
   x: XPost[];
   web: WebResult[];
+  instagram: PlatformResearchItem[];
+  tiktok: PlatformResearchItem[];
+  facebook: PlatformResearchItem[];
   best_practices: string[];
   reddit_error?: string;
   x_error?: string;
@@ -545,7 +557,7 @@ export const OPPORTUNITY_DIMENSIONS = [
   "formatFit",
   "hookAvailability",
   "platformAlignment",
-  "engagementPotential",
+  "audienceDiversity",
 ] as const;
 
 export type OpportunityDimension = (typeof OPPORTUNITY_DIMENSIONS)[number];
@@ -609,6 +621,9 @@ export type DataSourceSummary = {
   redditThreads: number;
   xPosts: number;
   webResults: number;
+  instagramResults: number;
+  tiktokResults: number;
+  facebookResults: number;
   hookPatterns: number;
   existingVideos: number;
   ideasInBank: number;

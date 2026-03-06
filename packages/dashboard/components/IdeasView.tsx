@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw } from "lucide-react";
-import type { Idea, IdeaCategory } from "../shared/types.js";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight } from "lucide-react";
+import type { Idea, IdeaCategory, DashboardView } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
@@ -28,7 +28,11 @@ const PRIORITY_COLORS: Record<string, string> = {
 type IdeasResponse = { ideas: Idea[]; total: number };
 type SummaryResponse = { counts: Record<string, number>; total: number };
 
-export const IdeasView: React.FC = () => {
+type IdeasViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
   const [activeCategory, setActiveCategory] = useState<IdeaCategory | "all">("all");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -152,13 +156,29 @@ export const IdeasView: React.FC = () => {
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading ideas...</div>
       ) : ideas.length === 0 ? (
-        <EmptyState
-          icon={<Lightbulb size={24} className="text-slate-400" />}
-          headline="No ideas yet"
-          description={activeCategory === "all"
-            ? "Run /viral-scout or /last30days to discover content ideas, or add them manually."
-            : `No ${CATEGORY_META[activeCategory as IdeaCategory]?.label.toLowerCase()} ideas yet.`}
-        />
+        <div>
+          <EmptyState
+            icon={<Lightbulb size={24} className="text-slate-400" />}
+            headline="No ideas yet"
+            description={activeCategory === "all"
+              ? "Run /viral-scout or /last30days to discover content ideas, or add them manually."
+              : `No ${CATEGORY_META[activeCategory as IdeaCategory]?.label.toLowerCase()} ideas yet.`}
+          />
+          {onNavigate && (
+            <div className="mt-6">
+              <button
+                onClick={() => onNavigate("OPPORTUNITIES")}
+                className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+              >
+                <div>
+                  <span className="text-sm font-semibold text-teal-800">Discover Opportunities</span>
+                  <span className="block text-xs text-teal-600 mt-0.5">Generate opportunities from trending topics</span>
+                </div>
+                <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {ideas.map((idea) => (

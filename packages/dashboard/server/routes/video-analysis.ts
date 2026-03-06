@@ -256,7 +256,7 @@ Write like a real creator with a personality, not a social media manager followi
             { type: "text", text: analysisPrompt },
           ],
         }],
-      }, { timeout: 90_000 });
+      }, { timeout: 180_000 });
       console.log(`[video-analysis] Claude API responded in ${Date.now() - apiStart}ms`);
 
       const textBlock = response.content.find((b) => b.type === "text");
@@ -287,9 +287,12 @@ Write like a real creator with a personality, not a social media manager followi
       console.log(`[video-analysis] Complete in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
       res.json({ analysis });
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Video analysis failed";
+      const isTimeout = error instanceof Error && (error.message.includes("timeout") || error.message.includes("timed out"));
+      const msg = isTimeout
+        ? "AI analysis timed out. Try a shorter video or try again."
+        : error instanceof Error ? error.message : "Video analysis failed";
       console.error("[video-analysis] Error:", error);
-      res.status(500).json({ error: msg });
+      res.status(isTimeout ? 504 : 500).json({ error: msg });
     } finally {
       // Cleanup temp files
       try {

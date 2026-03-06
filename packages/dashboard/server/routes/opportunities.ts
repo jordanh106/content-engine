@@ -96,6 +96,9 @@ export function createOpportunitiesRouter(contentLibraryPath: string) {
         redditThreads: 0,
         xPosts: 0,
         webResults: 0,
+        instagramResults: 0,
+        tiktokResults: 0,
+        facebookResults: 0,
         hookPatterns: 0,
         existingVideos: 0,
         ideasInBank: 0,
@@ -195,14 +198,26 @@ ${Object.keys(signals.avgViewsByFormat).length > 0 ? `PERFORMANCE BASELINES:\n${
 
 ${signals.performanceSummary}
 
+AUDIENCE-SPECIFIC RESEARCH GUIDANCE:
+When evaluating topics, consider the unique needs of each audience beyond what trends on Reddit/X:
+- Prenatal: pregnancy discomfort, Webster technique, birth preparation, postpartum recovery
+- Infant: colic, torticollis, crawling milestones, gentle adjustments
+- Kids: backpack posture, sports injuries, growth plate awareness, screen time effects
+- Athlete: recovery optimization, performance mobility, injury prevention, competition prep
+- Adult: (already well-represented in research data, apply saturation penalty)
+- Senior: balance/fall prevention, arthritis mobility, joint degeneration, independence
+- General: family wellness, preventive care, chiropractic myths, new patient education
+
+Topics for underserved audiences should receive HIGHER Audience Diversity scores even if they have less Reddit/X engagement.
+
 SCORING DIMENSIONS (score each 0-100):
-1. Audience Demand (25%): How actively people discuss this topic online. High Reddit/X engagement = high score.
-2. Competition Gap (20%): Topic demand vs our content library coverage. High demand + low/no coverage = high score.
-3. Trend Momentum (15%): Is this topic growing or fading? Recent spikes, multiple platforms = high score.
+1. Audience Demand (15%): How actively people discuss this topic online. High Reddit/X engagement = high score.
+2. Competition Gap (25%): Topic demand vs our content library coverage. High demand + low/no coverage = high score. Topics overlapping 2+ existing videos in the same audience = score below 30.
+3. Trend Momentum (10%): Is this topic growing or fading? Recent spikes, multiple platforms = high score.
 4. Format Fit (10%): Does a natural format match exist? Clear fit to Format A-G = high score.
 5. Hook Availability (10%): Do we have proven hooks that match? Direct hook match = high score.
 6. Platform Alignment (10%): Does this fill an underserved platform in our cadence? Gap-filling = high score.
-7. Engagement Potential (10%): Based on similar content performance. High baseline = high score.
+7. Audience Diversity (20%): Does this topic serve an UNDERSERVED audience segment? Check the coverage status labels above. Topics for UNDERSERVED audiences (fewer than 5 videos) score 80-100. BALANCED audiences score 40-60. SATURATED audiences (9+ videos) score 0-20.
 
 Return a JSON array of 10-15 ContentOpportunity objects:
 {
@@ -218,7 +233,7 @@ Return a JSON array of 10-15 ContentOpportunity objects:
         { "dimension": "formatFit", "score": 80, "rationale": "..." },
         { "dimension": "hookAvailability", "score": 75, "rationale": "..." },
         { "dimension": "platformAlignment", "score": 60, "rationale": "..." },
-        { "dimension": "engagementPotential", "score": 70, "rationale": "..." }
+        { "dimension": "audienceDiversity", "score": 70, "rationale": "..." }
       ],
       "suggestedFormat": "A",
       "formatRationale": "Why this format fits",
@@ -255,7 +270,9 @@ Return a JSON array of 10-15 ContentOpportunity objects:
 }
 
 RULES:
-- overallScore = weighted average of dimensions (25/20/15/10/10/10/10)
+- overallScore = weighted average of dimensions (15/25/10/10/10/10/20)
+- SATURATION RULE: If a topic closely overlaps with 2+ existing videos in the same audience segment, its Competition Gap score must be below 30 and coverageLevel must be "saturated"
+- DIVERSITY MANDATE: The final list must include opportunities for at least 4 different targetAudience values. No single audience can have more than 4 opportunities.
 - Cross-reference Reddit/X discussions with content library to find what's NOT covered
 - Match hooks from our hook library, using exact patterns where possible
 - Evidence must reference actual data from the sources above

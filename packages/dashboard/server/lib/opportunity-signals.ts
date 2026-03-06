@@ -116,6 +116,9 @@ export function computeSignals(
     redditThreads: research?.reddit?.length ?? 0,
     xPosts: research?.x?.length ?? 0,
     webResults: research?.web?.length ?? 0,
+    instagramResults: research?.instagram?.length ?? 0,
+    tiktokResults: research?.tiktok?.length ?? 0,
+    facebookResults: research?.facebook?.length ?? 0,
     hookPatterns: totalHooks,
     existingVideos: videos.length,
     ideasInBank: ideas.filter((i) => i.category !== "archived").length,
@@ -196,6 +199,27 @@ function buildResearchSummary(research: ResearchReport | null): string {
     parts.push("\nWEB SOURCES:");
     for (const w of research.web.slice(0, 10)) {
       parts.push(`- ${w.source_domain}: "${w.title}" - ${w.snippet.slice(0, 150)}`);
+    }
+  }
+
+  if (research.instagram?.length > 0) {
+    parts.push("\nINSTAGRAM REELS TRENDS:");
+    for (const i of research.instagram.slice(0, 8)) {
+      parts.push(`- "${i.title}" (${i.source}) - ${i.snippet}`);
+    }
+  }
+
+  if (research.tiktok?.length > 0) {
+    parts.push("\nTIKTOK TRENDS:");
+    for (const t of research.tiktok.slice(0, 8)) {
+      parts.push(`- "${t.title}" (${t.source}) - ${t.snippet}`);
+    }
+  }
+
+  if (research.facebook?.length > 0) {
+    parts.push("\nFACEBOOK GROUP DISCUSSIONS:");
+    for (const f of research.facebook.slice(0, 8)) {
+      parts.push(`- "${f.title}" (${f.source}) - ${f.snippet}`);
     }
   }
 
@@ -313,9 +337,10 @@ function buildLibrarySummary(
   byFormat: Record<string, number>,
 ): string {
   const parts = [`EXISTING CONTENT LIBRARY (${videos.length} videos):`];
-  parts.push("\nBy Audience:");
+  parts.push("\nBy Audience (coverage status):");
   for (const [aud, count] of Object.entries(byAudience)) {
-    parts.push(`- ${aud}: ${count} videos`);
+    const label = count >= 9 ? "SATURATED - strongly prefer other audiences" : count >= 5 ? "BALANCED" : "UNDERSERVED - prioritize";
+    parts.push(`- ${aud}: ${count} videos (${label})`);
   }
   parts.push("\nBy Format:");
   for (const [fmt, count] of Object.entries(byFormat)) {

@@ -48,6 +48,7 @@ import {
   Activity,
   CheckCircle2,
   XCircle,
+  ArrowRight,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -57,6 +58,7 @@ import type {
   VelocityResponse,
   ContentMixResponse,
   CadenceResponse,
+  DashboardView,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
@@ -181,7 +183,11 @@ function platformPillClass(platform: string): string {
   return "bg-slate-100 text-slate-600";
 }
 
-export const MetricsView: React.FC = () => {
+type MetricsViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [formCode, setFormCode] = useState("");
@@ -421,6 +427,21 @@ export const MetricsView: React.FC = () => {
                 {counts.hookPatterns > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-violet-600">
                     <MessageSquareQuote size={10} /> {counts.hookPatterns} hooks
+                  </span>
+                )}
+                {(counts as Record<string, number>).instagramResults > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-pink-600">
+                    <Hash size={10} /> {(counts as Record<string, number>).instagramResults} IG
+                  </span>
+                )}
+                {(counts as Record<string, number>).tiktokResults > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-800">
+                    <Hash size={10} /> {(counts as Record<string, number>).tiktokResults} TikTok
+                  </span>
+                )}
+                {(counts as Record<string, number>).facebookResults > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600">
+                    <Hash size={10} /> {(counts as Record<string, number>).facebookResults} FB
                   </span>
                 )}
               </div>
@@ -1303,6 +1324,21 @@ export const MetricsView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {onNavigate && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("OPPORTUNITIES")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Find New Opportunities</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Use your performance data to discover what works</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
+      )}
 
       <ViewHelp {...VIEW_HELP.METRICS} />
     </div>

@@ -7,8 +7,9 @@ import {
   X,
   Trash2,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
-import type { CalendarEntry, CalendarResponse, CalendarGap, FormatId } from "../shared/types.js";
+import type { CalendarEntry, CalendarResponse, CalendarGap, FormatId, DashboardView } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { cn } from "../utils/cn.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
@@ -46,7 +47,11 @@ function formatDate(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
-export const CalendarView: React.FC = () => {
+type CalendarViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [showAddModal, setShowAddModal] = useState<{ date: string; platform: string } | null>(null);
@@ -317,6 +322,21 @@ export const CalendarView: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {onNavigate && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("OPPORTUNITIES")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Need More Content?</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Find trending topics to fill calendar gaps</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
         </div>
       )}
 

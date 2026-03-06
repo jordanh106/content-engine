@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
@@ -36,7 +36,11 @@ const PLATFORM_COLORS: Record<string, string> = {
   X: "bg-slate-900 text-white",
 };
 
-export const WatchlistView: React.FC = () => {
+type WatchlistViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   const { data, isLoading } = useQuery<WatchlistResponse>({
     queryKey: ["watchlist"],
     queryFn: () => fetch("/api/watchlist").then((r) => r.json()),
@@ -566,6 +570,21 @@ export const WatchlistView: React.FC = () => {
 
       {watchlistTab === "videos" && (
         <VideosTab creators={creators} />
+      )}
+
+      {onNavigate && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("OPPORTUNITIES")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Discover Opportunities</span>
+              <span className="block text-xs text-teal-600 mt-0.5">See what's trending in your niche</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
       )}
 
       <ViewHelp {...VIEW_HELP.WATCHLIST} />

@@ -234,6 +234,28 @@ sqlite.exec(`
 try {
   sqlite.exec(`ALTER TABLE script_versions ADD COLUMN idea_topic TEXT`);
 } catch { /* column already exists */ }
+
+// Fix script_versions: video_code must be nullable (SQLite can't ALTER COLUMN, must recreate)
 try {
-  sqlite.exec(`ALTER TABLE script_versions DROP COLUMN video_code_not_null_constraint`);
-} catch { /* no-op */ }
+  const info = sqlite.prepare("PRAGMA table_info(script_versions)").all() as Array<{ name: string; notnull: number }>;
+  const vcCol = info.find((c) => c.name === "video_code");
+  if (vcCol && vcCol.notnull === 1) {
+    sqlite.exec(`
+      CREATE TABLE script_versions_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        video_code TEXT,
+        idea_topic TEXT,
+        version INTEGER NOT NULL DEFAULT 1,
+        script TEXT NOT NULL,
+        hook_id INTEGER,
+        style_id INTEGER,
+        change_note TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
+      INSERT INTO script_versions_new SELECT * FROM script_versions;
+      DROP TABLE script_versions;
+      ALTER TABLE script_versions_new RENAME TO script_versions;
+    `);
+    console.log("[db] Migrated script_versions: video_code is now nullable");
+  }
+} catch (e) { console.warn("[db] script_versions migration:", e); }

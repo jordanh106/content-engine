@@ -18,6 +18,7 @@ import type {
   PipelineVideo,
   ProductionStatus,
   FormatId,
+  DashboardView,
 } from "../shared/types.js";
 import { PRODUCTION_STATUSES, FORMAT_IDS } from "../shared/types.js";
 import { statusColors } from "../utils/format-colors.js";
@@ -30,6 +31,7 @@ import { useOnboarding } from "./OnboardingProvider.js";
 
 type PipelineBoardProps = {
   onSelectVideo: (code: string) => void;
+  onNavigate?: (view: DashboardView) => void;
 };
 
 // ============================================
@@ -181,6 +183,7 @@ const AccordionSection: React.FC<{
 
 export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   onSelectVideo,
+  onNavigate,
 }) => {
   const queryClient = useQueryClient();
   const { trackEvent } = useOnboarding();
@@ -577,6 +580,36 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           );
         })}
       </div>
+
+      {/* Contextual CTAs */}
+      {onNavigate && (filteredStages?.["SCRIPTED"]?.length ?? 0) >= 3 && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("SESSION")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Start Recording Session</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Batch record these scripts in one sitting</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
+      )}
+      {onNavigate && (filteredStages?.["ASSEMBLED"]?.length ?? 0) > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("CALENDAR")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Schedule These Videos</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Your content is ready to publish</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
+      )}
 
       <ViewHelp {...VIEW_HELP.PIPELINE} />
     </div>

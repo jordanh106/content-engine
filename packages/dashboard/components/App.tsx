@@ -13,7 +13,8 @@ import { OpportunitiesView } from "./OpportunitiesView.js";
 import { SessionView } from "./SessionView.js";
 import { CalendarView } from "./CalendarView.js";
 import { CaptionStudio } from "./CaptionStudio.js";
-import { VaultView } from "./VaultView.js";
+import { VaultPanel } from "./VaultPanel.js";
+import { CommandPalette } from "./CommandPalette.js";
 import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
 import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
@@ -24,6 +25,8 @@ const AppInner: React.FC = () => {
   const [previousView, setPreviousView] = useState<DashboardView>("LIBRARY");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
   const [composerVideoCode, setComposerVideoCode] = useState<string | null>(null);
+  const [vaultOpen, setVaultOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const onboarding = useOnboarding();
 
   // Register navigation function with onboarding context
@@ -42,6 +45,23 @@ const AppInner: React.FC = () => {
       onboarding.trackEvent("open-detail");
     }
   }, [selectedVideoCode, onboarding.trackEvent]);
+
+  // Cmd+K keyboard listener for command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const handleNavigate = useCallback((target: DashboardView) => {
+    setView(target);
+    setCommandPaletteOpen(false);
+  }, []);
 
   const handleSelectVideo = (code: string) => {
     setSelectedVideoCode(code);
@@ -69,6 +89,14 @@ const AppInner: React.FC = () => {
     setComposerVideoCode(null);
   }, [previousView, composerVideoCode]);
 
+  const handleOpenVault = useCallback(() => {
+    setVaultOpen(true);
+  }, []);
+
+  const handleCloseVault = useCallback(() => {
+    setVaultOpen(false);
+  }, []);
+
   // Composer is a full-page view - rendered outside Layout
   if (view === "COMPOSER" && composerVideoCode) {
     return (
@@ -81,24 +109,23 @@ const AppInner: React.FC = () => {
 
   return (
     <>
-      <Layout currentView={view} onNavigate={setView}>
+      <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault}>
         {view === "LIBRARY" && (
           <ContentLibrary onSelectVideo={handleSelectVideo} />
         )}
         {view === "HOME" && (
-          <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={setView} />
+          <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
         )}
         {view === "PIPELINE" && (
-          <PipelineBoard onSelectVideo={handleSelectVideo} />
+          <PipelineBoard onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
         )}
-        {view === "CALENDAR" && <CalendarView />}
-        {view === "SESSION" && <SessionView />}
-        {view === "IDEAS" && <IdeasView />}
-        {view === "OPPORTUNITIES" && <OpportunitiesView />}
-        {view === "WATCHLIST" && <WatchlistView />}
-        {view === "CAPTIONS" && <CaptionStudio />}
-        {view === "VAULT" && <VaultView />}
-        {view === "METRICS" && <MetricsView />}
+        {view === "CALENDAR" && <CalendarView onNavigate={handleNavigate} />}
+        {view === "SESSION" && <SessionView onNavigate={handleNavigate} />}
+        {view === "IDEAS" && <IdeasView onNavigate={handleNavigate} />}
+        {view === "OPPORTUNITIES" && <OpportunitiesView onNavigate={handleNavigate} />}
+        {view === "WATCHLIST" && <WatchlistView onNavigate={handleNavigate} />}
+        {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
+        {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
 
         {selectedVideoCode && (
           <VideoDetail
@@ -108,6 +135,17 @@ const AppInner: React.FC = () => {
           />
         )}
       </Layout>
+
+      {/* Vault slide-out panel */}
+      <VaultPanel open={vaultOpen} onClose={handleCloseVault} />
+
+      {/* Command palette */}
+      <CommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        onNavigate={handleNavigate}
+        onOpenVault={handleOpenVault}
+      />
 
       <WelcomeModal />
       <GuidedTour />

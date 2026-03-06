@@ -34,6 +34,7 @@ import {
   BarChart3,
   Rocket,
   Trophy,
+  ArrowRight,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -41,6 +42,7 @@ import type {
   OpportunitiesResponse,
   OpportunityDimension,
   FormatId,
+  DashboardView,
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
@@ -61,13 +63,13 @@ const DIMENSION_META: Record<
   OpportunityDimension,
   { label: string; weight: number; color: string; icon: React.ReactNode }
 > = {
-  audienceDemand: { label: "Audience Demand", weight: 25, color: "#0d9488", icon: <Users size={14} /> },
-  competitionGap: { label: "Competition Gap", weight: 20, color: "#7c3aed", icon: <Target size={14} /> },
-  trendMomentum: { label: "Trend Momentum", weight: 15, color: "#ea580c", icon: <TrendingUp size={14} /> },
+  audienceDemand: { label: "Audience Demand", weight: 15, color: "#0d9488", icon: <Users size={14} /> },
+  competitionGap: { label: "Competition Gap", weight: 25, color: "#7c3aed", icon: <Target size={14} /> },
+  trendMomentum: { label: "Trend Momentum", weight: 10, color: "#ea580c", icon: <TrendingUp size={14} /> },
   formatFit: { label: "Format Fit", weight: 10, color: "#0284c7", icon: <Layers size={14} /> },
   hookAvailability: { label: "Hook Availability", weight: 10, color: "#059669", icon: <Zap size={14} /> },
   platformAlignment: { label: "Platform Alignment", weight: 10, color: "#db2777", icon: <Radio size={14} /> },
-  engagementPotential: { label: "Engagement Potential", weight: 10, color: "#e11d48", icon: <BarChart3 size={14} /> },
+  audienceDiversity: { label: "Audience Diversity", weight: 20, color: "#e11d48", icon: <BarChart3 size={14} /> },
 };
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
@@ -78,7 +80,7 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "formatFit", label: "Format Fit" },
   { value: "hookAvailability", label: "Hook Availability" },
   { value: "platformAlignment", label: "Platform Alignment" },
-  { value: "engagementPotential", label: "Engagement Potential" },
+  { value: "audienceDiversity", label: "Audience Diversity" },
 ];
 
 const EVIDENCE_ICONS: Record<string, React.ReactNode> = {
@@ -146,7 +148,7 @@ const SparkBar: React.FC<{ dimensions: ContentOpportunity["dimensions"] }> = ({ 
     "formatFit",
     "hookAvailability",
     "platformAlignment",
-    "engagementPotential",
+    "audienceDiversity",
   ];
   const dimMap = new Map(dimensions.map((d) => [d.dimension, d.score]));
 
@@ -882,7 +884,11 @@ const OpportunityDetail: React.FC<{
 // Main OpportunitiesView
 // ============================
 
-export const OpportunitiesView: React.FC = () => {
+type OpportunitiesViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const [selectedOpp, setSelectedOpp] = useState<ContentOpportunity | null>(null);
   const [sortBy, setSortBy] = useState("overallScore");
@@ -1004,6 +1010,21 @@ export const OpportunitiesView: React.FC = () => {
           {summary.webResults > 0 && (
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
               {summary.webResults} Web
+            </span>
+          )}
+          {(summary.instagramResults ?? 0) > 0 && (
+            <span className="text-[10px] font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full">
+              {summary.instagramResults} IG
+            </span>
+          )}
+          {(summary.tiktokResults ?? 0) > 0 && (
+            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-full">
+              {summary.tiktokResults} TikTok
+            </span>
+          )}
+          {(summary.facebookResults ?? 0) > 0 && (
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+              {summary.facebookResults} FB
             </span>
           )}
           <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
@@ -1192,6 +1213,22 @@ export const OpportunitiesView: React.FC = () => {
         <p className="text-[10px] text-slate-400 mt-3 text-center">
           Generated {new Date(data.generatedAt).toLocaleString()}
         </p>
+      )}
+
+      {/* Workflow CTA */}
+      {onNavigate && opportunities.length >= 5 && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("CALENDAR")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Plan This Week's Content</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Turn these insights into your content calendar</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
       )}
 
       <ViewHelp {...VIEW_HELP.OPPORTUNITIES} />

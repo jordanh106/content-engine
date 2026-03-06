@@ -17,9 +17,10 @@ import {
   Send,
   Hash,
   Upload,
+  ArrowRight,
 } from "lucide-react";
 import type { ConversationMessage } from "../shared/types.js";
-import type { SavedCaption, FormatId, ProductionStatus } from "../shared/types.js";
+import type { SavedCaption, FormatId, ProductionStatus, DashboardView } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
@@ -237,7 +238,11 @@ type PipelineResponse = {
   stages: Record<ProductionStatus, PipelineVideo[]>;
 };
 
-export const CaptionStudio: React.FC = () => {
+type CaptionStudioProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -461,7 +466,7 @@ export const CaptionStudio: React.FC = () => {
     try {
       setAnalysisStep("Analyzing video... (this may take up to a minute)");
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120_000);
+      const timeoutId = setTimeout(() => controller.abort(), 300_000);
       const r = await fetch("/api/video-analysis/analyze", {
         method: "POST",
         body: formData,
@@ -1323,6 +1328,20 @@ export const CaptionStudio: React.FC = () => {
           )}
         </div>
       </div>
+      {onNavigate && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("CALENDAR")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">Schedule on Calendar</span>
+              <span className="block text-xs text-teal-600 mt-0.5">Add this video to your publishing schedule</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

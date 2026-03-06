@@ -10,8 +10,9 @@ import {
   Clock,
   ChevronRight,
   RotateCcw,
+  ArrowRight,
 } from "lucide-react";
-import type { SessionType, FormatId, ProductionSession } from "../shared/types.js";
+import type { SessionType, FormatId, ProductionSession, DashboardView } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { cn } from "../utils/cn.js";
@@ -44,7 +45,11 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export const SessionView: React.FC = () => {
+type SessionViewProps = {
+  onNavigate?: (view: DashboardView) => void;
+};
+
+export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("setup");
   const [selectedType, setSelectedType] = useState<SessionType | null>(null);
@@ -376,6 +381,21 @@ export const SessionView: React.FC = () => {
           >
             <RotateCcw size={14} />
             Start Another Session
+          </button>
+        </div>
+      )}
+
+      {onNavigate && (
+        <div className="mt-6">
+          <button
+            onClick={() => onNavigate("PIPELINE")}
+            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+          >
+            <div>
+              <span className="text-sm font-semibold text-teal-800">View Updated Pipeline</span>
+              <span className="block text-xs text-teal-600 mt-0.5">See your progress in the pipeline</span>
+            </div>
+            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
           </button>
         </div>
       )}

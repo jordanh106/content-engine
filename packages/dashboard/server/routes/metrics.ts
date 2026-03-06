@@ -1,17 +1,119 @@
+import fs from "fs";
 import { Router } from "express";
 import path from "path";
 import { spawn } from "child_process";
+import Anthropic from "@anthropic-ai/sdk";
 import { db } from "../db.js";
 import { performanceMetrics } from "../../shared/schema.js";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseViralInsights, listDigestDates } from "../parsers/viral-insights.js";
-import { parseResearchReport } from "../parsers/last30days.js";
+import { parseResearchReport, getReportPath, invalidateResearchCache } from "../parsers/last30days.js";
 import { parseHookPatterns } from "../parsers/hook-patterns.js";
-import type { MetricsSyncEntry } from "../../shared/types.js";
+import type { MetricsSyncEntry, PlatformResearchItem } from "../../shared/types.js";
 
 // Track running research process
 let researchProcess: ReturnType<typeof spawn> | null = null;
+// Track platform research phase
+let platformSearchRunning = false;
+
+async function runPlatformResearch(topic: string): Promise<void> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.log("[research] Skipping platform search: no ANTHROPIC_API_KEY");
+    return;
+  }
+
+  platformSearchRunning = true;
+  console.log(`[research] Starting platform-specific web searches for: ${topic}`);
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const platforms = [
+      { name: "instagram", query: `${topic} trending Instagram Reels content creators 2026` },
+      { name: "tiktok", query: `${topic} trending TikTok viral content 2026` },
+      { name: "facebook", query: `${topic} Facebook groups discussions community 2026` },
+    ];
+
+    const results: Record<string, PlatformResearchItem[]> = {
+      instagram: [],
+      tiktok: [],
+      facebook: [],
+    };
+
+    // Run all platform searches in parallel
+    await Promise.all(platforms.map(async (platform) => {
+      try {
+        const response = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2000,
+          tools: [{
+            type: "web_search_20250305" as const,
+            name: "web_search" as const,
+            max_uses: 3,
+          }],
+          messages: [{
+            role: "user",
+            content: `Search for recent ${platform.name === "instagram" ? "Instagram Reels" : platform.name === "tiktok" ? "TikTok" : "Facebook group"} content and trends about "${topic}".
+
+Search query: ${platform.query}
+
+Return a JSON array of 3-8 relevant findings. Each item should have:
+- "title": What the content/trend is about
+- "url": Source URL (the article/post where you found this)
+- "source": Domain name of the source
+- "snippet": 1-2 sentence summary of what's trending and why it matters
+- "relevance": 0-100 how relevant to "${topic}"
+- "score": 0-100 overall quality/usefulness
+
+Focus on: trending formats, popular creators covering this topic, engagement patterns, hashtags, sounds/audio trends (TikTok), content strategies that are working.
+
+Return ONLY valid JSON array, no other text.`,
+          }],
+        }, { timeout: 60_000 });
+
+        const textBlock = response.content.find((b) => b.type === "text");
+        if (textBlock && textBlock.type === "text") {
+          let cleaned = textBlock.text.trim();
+          if (cleaned.startsWith("```")) {
+            cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+          }
+          try {
+            const parsed = JSON.parse(cleaned);
+            const items = Array.isArray(parsed) ? parsed : (parsed.results ?? parsed.items ?? []);
+            results[platform.name] = items.map((item: Record<string, unknown>) => ({
+              title: String(item.title || ""),
+              url: String(item.url || ""),
+              source: String(item.source || ""),
+              snippet: String(item.snippet || ""),
+              relevance: Number(item.relevance) || 0,
+              score: Number(item.score) || 0,
+            }));
+          } catch {
+            console.warn(`[research] Failed to parse ${platform.name} results`);
+          }
+        }
+        console.log(`[research] ${platform.name}: found ${results[platform.name].length} results`);
+      } catch (err) {
+        console.warn(`[research] ${platform.name} search failed:`, err instanceof Error ? err.message : err);
+      }
+    }));
+
+    // Merge results into existing report.json
+    const reportPath = getReportPath();
+    if (fs.existsSync(reportPath)) {
+      const report = JSON.parse(fs.readFileSync(reportPath, "utf-8"));
+      report.instagram = results.instagram;
+      report.tiktok = results.tiktok;
+      report.facebook = results.facebook;
+      fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+      invalidateResearchCache();
+      console.log(`[research] Platform data merged into report.json (IG: ${results.instagram.length}, TT: ${results.tiktok.length}, FB: ${results.facebook.length})`);
+    }
+  } finally {
+    platformSearchRunning = false;
+  }
+}
 
 export function createMetricsRouter(contentLibraryPath: string) {
   const router = Router();
@@ -184,6 +286,9 @@ export function createMetricsRouter(contentLibraryPath: string) {
         redditThreads: research?.reddit?.length ?? 0,
         xPosts: research?.x?.length ?? 0,
         webResults: research?.web?.length ?? 0,
+        instagramResults: research?.instagram?.length ?? 0,
+        tiktokResults: research?.tiktok?.length ?? 0,
+        facebookResults: research?.facebook?.length ?? 0,
         hookPatterns: hookLibrary.reduce((n, c) => n + c.patterns.length, 0),
       },
     });
@@ -223,6 +328,10 @@ export function createMetricsRouter(contentLibraryPath: string) {
         console.error(`[research] last30days exited with code ${code}: ${stderr.slice(0, 500)}`);
       } else {
         console.log(`[research] Completed for topic: ${topic}`);
+        // Run platform-specific web searches as follow-up
+        runPlatformResearch(topic).catch((err) => {
+          console.error("[research] Platform search failed:", err);
+        });
       }
     });
 
@@ -238,7 +347,7 @@ export function createMetricsRouter(contentLibraryPath: string) {
   router.get("/research/status", (_req, res) => {
     const report = parseResearchReport();
     res.json({
-      running: researchProcess !== null,
+      running: researchProcess !== null || platformSearchRunning,
       report: report
         ? { topic: report.topic, generated_at: report.generated_at, from_cache: report.from_cache }
         : null,
@@ -482,6 +591,28 @@ export function createMetricsRouter(contentLibraryPath: string) {
       console.error("[metrics-sync-n8n] Error:", message);
       res.status(500).json({ error: message });
     }
+  });
+
+  // GET /api/metrics/summary - Quick stats for dashboard home
+  router.get("/summary", (_req, res) => {
+    const rows = db
+      .select({
+        videoCode: performanceMetrics.videoCode,
+        totalViews: sql<number>`SUM(${performanceMetrics.views})`,
+      })
+      .from(performanceMetrics)
+      .groupBy(performanceMetrics.videoCode)
+      .all();
+
+    const totalViews = rows.reduce((s, r) => s + (r.totalViews ?? 0), 0);
+    let topPerformer: { code: string; title: string; views: number } | null = null;
+    for (const r of rows) {
+      if (!topPerformer || (r.totalViews ?? 0) > topPerformer.views) {
+        topPerformer = { code: r.videoCode, title: r.videoCode, views: r.totalViews ?? 0 };
+      }
+    }
+
+    res.json({ totalViews, thisWeek: 0, topPerformer });
   });
 
   // GET /api/metrics/:code - Get metrics for a specific video
