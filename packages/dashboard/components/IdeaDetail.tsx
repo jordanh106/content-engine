@@ -14,8 +14,11 @@ import {
   MessageCircle,
   Send,
   Rocket,
+  Bookmark,
+  Palette,
+  History,
 } from "lucide-react";
-import type { Idea, IdeaCategory, FormatId, ConversationMessage } from "../shared/types.js";
+import type { Idea, IdeaCategory, FormatId, ConversationMessage, VaultHook, VaultStyle, ScriptVersion } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -77,6 +80,18 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
   const captionScrollRef = useRef<HTMLDivElement>(null);
   const captionInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Virality score
+  const [viralityScore, setViralityScore] = useState<{ total: number; hook: number; flow: number; platformFit: number; suggestions: string[] } | null>(null);
+
+  // Hook & Style selection
+  const [selectedHookId, setSelectedHookId] = useState<number | null>(null);
+  const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
+  const [filledHook, setFilledHook] = useState<string>("");
+  const [showHookPicker, setShowHookPicker] = useState(false);
+  const [showStylePicker, setShowStylePicker] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [hookVars, setHookVars] = useState<Record<string, string>>({});
+
   const hasChanges = editedPriority !== idea.priority || editedFormat !== idea.suggestedFormat;
   const hasDigest = idea.source?.toLowerCase().includes("n8n") && idea.dateAdded;
 
@@ -103,6 +118,26 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
     queryKey: ["digest", idea.dateAdded],
     queryFn: () => fetch(`/api/ideas/digest/${idea.dateAdded}`).then((r) => r.json()),
     enabled: !!hasDigest && digestExpanded,
+  });
+
+  // Vault hooks
+  const { data: hooksData } = useQuery<{ hooks: VaultHook[] }>({
+    queryKey: ["vault-hooks"],
+    queryFn: () => fetch("/api/vault/hooks").then((r) => r.json()),
+    enabled: showHookPicker,
+  });
+
+  // Vault styles
+  const { data: stylesData } = useQuery<{ styles: VaultStyle[] }>({
+    queryKey: ["vault-styles"],
+    queryFn: () => fetch("/api/vault/styles").then((r) => r.json()),
+    enabled: showStylePicker,
+  });
+
+  // Script versions
+  const { data: versionsData } = useQuery<{ versions: ScriptVersion[] }>({
+    queryKey: ["script-versions", idea.topic],
+    queryFn: () => fetch(`/api/ideas/script-versions/${encodeURIComponent(idea.topic)}`).then((r) => r.json()),
   });
 
   // Update mutation
@@ -182,13 +217,40 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
           hookAngle: idea.hookAngle,
           priority: editedPriority || idea.priority,
           category: idea.category,
+          hookId: selectedHookId && selectedHookId > 0 ? selectedHookId : undefined,
+          styleId: selectedStyleId || undefined,
+          filledHook: filledHook || undefined,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      return res.json() as Promise<{ script: string; deliveryCues: string[] }>;
+      return res.json() as Promise<{ script: string; deliveryCues: string[]; versionId: number; version: number }>;
     },
     onSuccess: () => {
       setActiveTab("script");
+      queryClient.invalidateQueries({ queryKey: ["script-versions", idea.topic] });
+    },
+  });
+
+  // Virality score mutation
+  const viralityMutation = useMutation({
+    mutationFn: async () => {
+      const script = developMutation.data?.script;
+      if (!script) throw new Error("No script to score");
+      const res = await fetch("/api/captions/virality-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          script,
+          hook: filledHook || undefined,
+          platform: "Instagram",
+          format: editedFormat || idea.suggestedFormat,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      return res.json() as Promise<{ total: number; hook: number; flow: number; platformFit: number; suggestions: string[] }>;
+    },
+    onSuccess: (data) => {
+      setViralityScore(data);
     },
   });
 
@@ -451,6 +513,103 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                 </div>
               </div>
 
+              {/* Hook Selector */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                  Opening Hook
+                </p>
+                {selectedHookId ? (
+                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-teal-600">Vault Hook Selected</span>
+                      <button
+                        onClick={() => { setSelectedHookId(null); setFilledHook(""); setHookVars({}); }}
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {filledHook && (
+                      <p className="text-sm text-teal-800 font-medium">"{filledHook}"</p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowHookPicker(!showHookPicker)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700 transition-colors"
+                  >
+                    <Bookmark size={14} />
+                    Select Hook from Vault
+                  </button>
+                )}
+                {showHookPicker && !selectedHookId && (
+                  <HookPickerInline
+                    hooks={hooksData?.hooks ?? []}
+                    onSelect={(hook, filled, vars) => {
+                      setSelectedHookId(hook.id);
+                      setFilledHook(filled);
+                      setHookVars(vars);
+                      setShowHookPicker(false);
+                    }}
+                    onClose={() => setShowHookPicker(false)}
+                  />
+                )}
+              </div>
+
+              {/* Style Selector */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                  Writing Style
+                </p>
+                {selectedStyleId ? (
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-violet-600">Style Applied</span>
+                      <button
+                        onClick={() => setSelectedStyleId(null)}
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <p className="text-sm text-violet-800 font-medium">
+                      {stylesData?.styles?.find((s) => s.id === selectedStyleId)?.name || `Style #${selectedStyleId}`}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowStylePicker(!showStylePicker)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
+                  >
+                    <Palette size={14} />
+                    Apply Writing Style
+                  </button>
+                )}
+                {showStylePicker && !selectedStyleId && (
+                  <div className="mt-2 border border-slate-200 rounded-xl max-h-[200px] overflow-y-auto">
+                    {(stylesData?.styles ?? []).length === 0 ? (
+                      <p className="text-xs text-slate-400 p-3">No styles saved yet. Create styles in the Vault.</p>
+                    ) : (
+                      (stylesData?.styles ?? []).map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => { setSelectedStyleId(style.id); setShowStylePicker(false); }}
+                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-slate-100 last:border-b-0"
+                        >
+                          <p className="text-sm font-medium text-slate-900">{style.name}</p>
+                          {style.description && (
+                            <p className="text-[10px] text-slate-500 mt-0.5">{style.description}</p>
+                          )}
+                          {style.sourceCreator && (
+                            <span className="text-[9px] text-violet-500 font-bold">{style.sourceCreator}</span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Save Changes */}
               {hasChanges && (
                 <button
@@ -539,6 +698,80 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                       </div>
                     </div>
                   )}
+
+                  {/* Virality Score */}
+                  <div>
+                    {viralityScore ? (
+                      <div className="border border-slate-200 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={cn(
+                            "w-14 h-14 rounded-full flex items-center justify-center text-lg font-black border-2",
+                            viralityScore.total >= 75 ? "border-emerald-400 text-emerald-700 bg-emerald-50" :
+                            viralityScore.total >= 50 ? "border-amber-400 text-amber-700 bg-amber-50" :
+                            "border-rose-400 text-rose-700 bg-rose-50",
+                          )}>
+                            {viralityScore.total}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                              Virality Score
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {viralityScore.total >= 75 ? "Strong viral potential" :
+                               viralityScore.total >= 50 ? "Good, room to improve" :
+                               "Needs work before publishing"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          {[
+                            { label: "Hook", value: viralityScore.hook, max: 33 },
+                            { label: "Flow", value: viralityScore.flow, max: 33 },
+                            { label: "Platform Fit", value: viralityScore.platformFit, max: 33 },
+                          ].map((dim) => (
+                            <div key={dim.label} className="text-center">
+                              <div className="relative w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-1">
+                                <div
+                                  className={cn(
+                                    "absolute left-0 top-0 h-full rounded-full",
+                                    dim.value / dim.max >= 0.75 ? "bg-emerald-500" :
+                                    dim.value / dim.max >= 0.5 ? "bg-amber-500" : "bg-rose-500",
+                                  )}
+                                  style={{ width: `${(dim.value / dim.max) * 100}%` }}
+                                />
+                              </div>
+                              <p className="text-[9px] font-bold text-slate-500">{dim.label}</p>
+                              <p className="text-xs font-bold text-slate-700">{dim.value}/{dim.max}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {viralityScore.suggestions.length > 0 && (
+                          <div>
+                            <p className="text-[9px] font-bold uppercase text-slate-400 mb-1">Suggestions</p>
+                            {viralityScore.suggestions.map((s, i) => (
+                              <p key={i} className="text-xs text-slate-600 mb-0.5">- {s}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => viralityMutation.mutate()}
+                        disabled={viralityMutation.isPending}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:border-amber-300 hover:text-amber-700 transition-colors"
+                      >
+                        {viralityMutation.isPending ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={14} />
+                        )}
+                        {viralityMutation.isPending ? "Scoring..." : "Score Virality (0-99)"}
+                      </button>
+                    )}
+                    {viralityMutation.isError && (
+                      <p className="text-xs text-rose-500 mt-1">{(viralityMutation.error as Error).message}</p>
+                    )}
+                  </div>
                 </>
               )}
 
@@ -548,6 +781,40 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   <p className="text-sm text-slate-500">
                     Click "Develop Script" below to generate a draft script for this idea.
                   </p>
+                </div>
+              )}
+
+              {/* Version History */}
+              {(versionsData?.versions ?? []).length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowVersions(!showVersions)}
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    <History size={12} />
+                    Version History ({versionsData!.versions.length})
+                    {showVersions ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                  </button>
+                  {showVersions && (
+                    <div className="mt-2 space-y-2 max-h-[300px] overflow-y-auto">
+                      {versionsData!.versions.map((v) => (
+                        <VersionCard
+                          key={v.id}
+                          version={v}
+                          isCurrent={developMutation.data?.script === v.script}
+                          onLoad={(script) => {
+                            developMutation.reset();
+                            // Trigger a new mutation-like state with this script
+                            Object.assign(developMutation, {
+                              data: { script, deliveryCues: [], versionId: v.id, version: v.version },
+                            });
+                            // Force re-render
+                            setScriptCopied(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -755,7 +1022,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
               {developMutation.isPending
                 ? "Generating..."
                 : developMutation.data
-                  ? "Regenerate Script"
+                  ? "Regenerate"
                   : "Develop Script"}
             </button>
 
@@ -793,5 +1060,161 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
         </div>
       </div>
     </>
+  );
+};
+
+// ─── Hook Picker Inline ─────────────────────────────────────────────────────
+
+type HookPickerProps = {
+  hooks: VaultHook[];
+  onSelect: (hook: VaultHook, filled: string, vars: Record<string, string>) => void;
+  onClose: () => void;
+};
+
+const HookPickerInline: React.FC<HookPickerProps> = ({ hooks, onSelect, onClose }) => {
+  const [selectedHook, setSelectedHook] = useState<VaultHook | null>(null);
+  const [vars, setVars] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+
+  const filtered = hooks.filter((h) =>
+    !search || h.pattern.toLowerCase().includes(search.toLowerCase()) ||
+    (h.category || "").toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const fillPattern = (pattern: string, variables: Record<string, string>) => {
+    let result = pattern;
+    for (const [key, val] of Object.entries(variables)) {
+      if (val.trim()) result = result.replace(`[${key}]`, val);
+    }
+    return result;
+  };
+
+  if (selectedHook) {
+    const hookVarNames = selectedHook.variables || [];
+    const filled = fillPattern(selectedHook.pattern, vars);
+    const allFilled = hookVarNames.every((v) => vars[v]?.trim());
+
+    return (
+      <div className="mt-2 border border-teal-200 rounded-xl p-3 bg-teal-50/50">
+        <p className="text-[10px] font-bold text-teal-600 mb-2">Fill in variables:</p>
+        <p className="text-sm text-slate-700 mb-3 font-medium">{filled}</p>
+        <div className="space-y-2">
+          {hookVarNames.map((v) => (
+            <div key={v}>
+              <label className="text-[9px] font-bold uppercase text-slate-500">{v}</label>
+              <input
+                value={vars[v] || ""}
+                onChange={(e) => setVars({ ...vars, [v]: e.target.value })}
+                placeholder={v.toLowerCase().replace(/_/g, " ")}
+                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm focus:outline-none focus:border-teal-400"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => onSelect(selectedHook, filled, vars)}
+            disabled={!allFilled}
+            className="px-3 py-1.5 rounded-full bg-teal-600 text-white text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
+          >
+            Use Hook
+          </button>
+          <button
+            onClick={() => { setSelectedHook(null); setVars({}); }}
+            className="px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-500 hover:text-slate-700"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden">
+      <div className="p-2 border-b border-slate-100">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search hooks..."
+          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-teal-400"
+        />
+      </div>
+      <div className="max-h-[200px] overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="text-xs text-slate-400 p-3">No hooks found. Create hooks in the Vault.</p>
+        ) : (
+          filtered.slice(0, 20).map((hook) => (
+            <button
+              key={hook.id}
+              onClick={() => {
+                if ((hook.variables || []).length === 0) {
+                  onSelect(hook, hook.pattern, {});
+                } else {
+                  setSelectedHook(hook);
+                }
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-teal-50 transition-colors border-b border-slate-100 last:border-b-0"
+            >
+              <p className="text-sm text-slate-900">{hook.pattern}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
+                  {hook.category}
+                </span>
+                {hook.isLibrary && (
+                  <span className="text-[9px] text-slate-400">Library</span>
+                )}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+      <div className="p-2 border-t border-slate-100">
+        <button onClick={onClose} className="text-[10px] font-bold text-slate-400 hover:text-slate-600">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Version Card ────────────────────────────────────────────────────────────
+
+type VersionCardProps = {
+  version: ScriptVersion;
+  isCurrent: boolean;
+  onLoad: (script: string) => void;
+};
+
+const VersionCard: React.FC<VersionCardProps> = ({ version, isCurrent, onLoad }) => {
+  return (
+    <div className={cn(
+      "border rounded-xl p-3 transition-colors",
+      isCurrent ? "border-teal-200 bg-teal-50/50" : "border-slate-200 hover:border-slate-300",
+    )}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-700">v{version.version}</span>
+          {isCurrent && (
+            <span className="text-[9px] font-bold text-teal-600 bg-teal-100 px-1.5 py-0.5 rounded">Current</span>
+          )}
+        </div>
+        <span className="text-[10px] text-slate-400">
+          {version.createdAt ? new Date(version.createdAt).toLocaleDateString() : ""}
+        </span>
+      </div>
+      {version.changeNote && (
+        <p className="text-[10px] text-slate-500 mt-1">{version.changeNote}</p>
+      )}
+      <p className="text-xs text-slate-600 mt-1 line-clamp-2">{version.script.slice(0, 120)}...</p>
+      {!isCurrent && (
+        <button
+          onClick={() => onLoad(version.script)}
+          className="mt-2 text-[10px] font-bold text-teal-600 hover:text-teal-700"
+        >
+          Load this version
+        </button>
+      )}
+    </div>
   );
 };

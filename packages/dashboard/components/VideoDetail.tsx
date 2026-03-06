@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2 } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -10,6 +10,7 @@ import type {
   TimelineResponse,
   ProductionPlan,
   SavedCaption,
+  WaterfallEntry,
 } from "../shared/types.js";
 import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -27,7 +28,7 @@ type VideoDetailProps = {
   onOpenComposer?: (code: string) => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish";
+type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish" | "waterfall";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -150,6 +151,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
     { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
     { id: "production", label: "Production", icon: <ListChecks size={16} /> },
     ...(showPublishTab ? [{ id: "publish" as Tab, label: "Publish", icon: <Send size={16} /> }] : []),
+    { id: "waterfall", label: "Waterfall", icon: <GitBranch size={16} /> },
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
 
@@ -368,6 +370,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
                 <ProductionTab code={code} plan={productionPlanData?.plan ?? null} isLoading={!productionPlanData} />
               )}
               {activeTab === "publish" && <PublishTab code={code} />}
+              {activeTab === "waterfall" && <WaterfallTab code={code} />}
               {activeTab === "info" && <InfoTab video={video} />}
             </>
           )}
@@ -933,6 +936,235 @@ const ShotCard: React.FC<{
         <div className="mt-1.5 flex items-start gap-1 text-rose-600">
           <CircleAlert size={11} className="mt-0.5 flex-shrink-0" />
           <p className="text-[10px] line-clamp-2">{job.error}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Waterfall Tab ───────────────────────────────────────────────────────────
+
+const TIER_META: Record<string, { label: string; color: string }> = {
+  source: { label: "Source", color: "bg-teal-100 text-teal-700" },
+  cutdown: { label: "Cutdown", color: "bg-sky-100 text-sky-700" },
+  short: { label: "Short", color: "bg-violet-100 text-violet-700" },
+  text: { label: "Text", color: "bg-amber-100 text-amber-700" },
+};
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  idea: { label: "Idea", color: "text-slate-500" },
+  created: { label: "Created", color: "text-sky-600" },
+  published: { label: "Published", color: "text-emerald-600" },
+};
+
+const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
+  const queryClient = useQueryClient();
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTier, setNewTier] = useState("short");
+  const [newPlatform, setNewPlatform] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+
+  const { data, isLoading } = useQuery<{ items: WaterfallEntry[] }>({
+    queryKey: ["waterfall", code],
+    queryFn: () => fetch(`/api/videos/${code}/waterfall`).then((r) => r.json()),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/waterfall`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: newTier, platform: newPlatform || null, description: newDesc || null }),
+      });
+      if (!r.ok) throw new Error("Failed to add");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+      setShowAdd(false);
+      setNewDesc("");
+      setNewPlatform("");
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const r = await fetch(`/api/videos/${code}/waterfall/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!r.ok) throw new Error("Failed to update");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`/api/videos/${code}/waterfall/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Failed to delete");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+    },
+  });
+
+  const items = data?.items ?? [];
+
+  // Group by tier
+  const grouped = {
+    source: items.filter((i) => i.tier === "source"),
+    cutdown: items.filter((i) => i.tier === "cutdown"),
+    short: items.filter((i) => i.tier === "short"),
+    text: items.filter((i) => i.tier === "text"),
+  };
+
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            Content Waterfall
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Track derivative content from this source video
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+        >
+          <Plus size={10} />
+          Add
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="border border-slate-200 rounded-xl p-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[9px] font-bold uppercase text-slate-500">Tier</label>
+              <select
+                value={newTier}
+                onChange={(e) => setNewTier(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs bg-white"
+              >
+                <option value="cutdown">Cutdown (5-10min)</option>
+                <option value="short">Short (15-60s)</option>
+                <option value="text">Text (thread/post)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] font-bold uppercase text-slate-500">Platform</label>
+              <select
+                value={newPlatform}
+                onChange={(e) => setNewPlatform(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs bg-white"
+              >
+                <option value="">Any</option>
+                <option>Instagram</option>
+                <option>TikTok</option>
+                <option>YouTube Shorts</option>
+                <option>X/Twitter</option>
+                <option>LinkedIn</option>
+              </select>
+            </div>
+          </div>
+          <input
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Description..."
+            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => addMutation.mutate()}
+              disabled={addMutation.isPending}
+              className="px-3 py-1 rounded-full bg-teal-600 text-white text-[10px] font-bold disabled:opacity-50"
+            >
+              {addMutation.isPending ? "Adding..." : "Add"}
+            </button>
+            <button
+              onClick={() => setShowAdd(false)}
+              className="px-3 py-1 rounded-full text-[10px] font-bold text-slate-400 hover:text-slate-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="text-center py-8 text-slate-400 text-sm">Loading...</div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-8">
+          <GitBranch size={28} className="text-slate-300 mx-auto mb-2" />
+          <p className="text-sm text-slate-500">No derivatives tracked yet</p>
+          <p className="text-xs text-slate-400 mt-1">
+            Add cutdowns, shorts, and text posts derived from this video
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Source video indicator */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-200 rounded-xl">
+            <div className="w-2 h-2 rounded-full bg-teal-500" />
+            <span className="text-xs font-bold text-teal-700">Source: {code}</span>
+          </div>
+
+          {/* Tier groups */}
+          {(["cutdown", "short", "text"] as const).map((tier) => {
+            const tierItems = grouped[tier];
+            if (tierItems.length === 0) return null;
+            const meta = TIER_META[tier];
+            return (
+              <div key={tier}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="h-px flex-1 bg-slate-100" />
+                  <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", meta.color)}>
+                    {meta.label} ({tierItems.length})
+                  </span>
+                  <div className="h-px flex-1 bg-slate-100" />
+                </div>
+                <div className="space-y-1.5">
+                  {tierItems.map((item) => {
+                    const statusMeta = STATUS_META[item.status] || STATUS_META.idea;
+                    return (
+                      <div key={item.id} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-slate-700 truncate">{item.description || "Untitled derivative"}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {item.platform && (
+                              <span className="text-[9px] font-bold text-slate-400">{item.platform}</span>
+                            )}
+                            <button
+                              onClick={() => {
+                                const next = item.status === "idea" ? "created" : item.status === "created" ? "published" : "idea";
+                                updateStatusMutation.mutate({ id: item.id, status: next });
+                              }}
+                              className={cn("text-[9px] font-bold", statusMeta.color)}
+                            >
+                              {statusMeta.label}
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => deleteMutation.mutate(item.id)}
+                          className="text-slate-300 hover:text-rose-500 transition-colors flex-shrink-0"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

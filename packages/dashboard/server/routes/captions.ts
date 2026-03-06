@@ -610,5 +610,84 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
     });
   });
 
+  // POST /api/captions/virality-score - Score script before publishing
+  router.post("/virality-score", async (req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: "ANTHROPIC_API_KEY must be set" });
+      return;
+    }
+
+    const { script, hook, platform, format, tags } = req.body as {
+      script?: string;
+      hook?: string;
+      platform?: string;
+      format?: string;
+      tags?: string[];
+    };
+
+    if (!script) {
+      res.status(400).json({ error: "script is required" });
+      return;
+    }
+
+    try {
+      const client = new Anthropic({ apiKey });
+
+      // Get calibration data from our own performance metrics
+      const metrics = db.select().from(performanceMetrics)
+        .orderBy(desc(performanceMetrics.recordedAt))
+        .limit(20)
+        .all();
+
+      const calibration = metrics.length > 0
+        ? `\nCALIBRATION DATA (our published video performance):\n${metrics.slice(0, 10).map((m) => `- ${m.platform}: ${m.views} views, ${m.likes} likes, ${m.saves} saves`).join("\n")}\n`
+        : "";
+
+      const message = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        messages: [{
+          role: "user",
+          content: `Score this short-form video script for virality potential (0-99).
+
+SCRIPT:
+${script}
+${hook ? `\nHOOK: "${hook}"` : ""}
+${platform ? `TARGET PLATFORM: ${platform}` : ""}
+${format ? `FORMAT: ${format}` : ""}
+${tags?.length ? `TAGS: ${tags.join(", ")}` : ""}
+${calibration}
+Score on three dimensions (each 0-33):
+
+1. HOOK STRENGTH (0-33): Does it open a curiosity loop? Zeigarnik effect? Pattern interrupt? Would someone stop scrolling?
+2. FLOW (0-33): Does it follow a micro story arc? Mirror (relate) > Friction (tension) > Shift (insight) > Invitation (CTA)? Does pacing feel natural?
+3. PLATFORM FIT (0-33): Is it native to the target platform? Right length, tone, visual format? Does it match what performs well there?
+
+Respond with JSON only:
+{
+  "total": 78,
+  "hook": 28,
+  "flow": 25,
+  "platformFit": 25,
+  "suggestions": ["specific improvement 1", "specific improvement 2"]
+}`,
+        }],
+      });
+
+      const textBlock = message.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+      res.json(parsed);
+    } catch (error) {
+      console.error("[captions] Virality score error:", error);
+      res.status(500).json({ error: "Failed to score script" });
+    }
+  });
+
   return router;
 }

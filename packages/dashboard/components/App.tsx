@@ -13,6 +13,7 @@ import { OpportunitiesView } from "./OpportunitiesView.js";
 import { SessionView } from "./SessionView.js";
 import { CalendarView } from "./CalendarView.js";
 import { CaptionStudio } from "./CaptionStudio.js";
+import { VaultView } from "./VaultView.js";
 import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
 import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
@@ -96,6 +97,7 @@ const AppInner: React.FC = () => {
         {view === "OPPORTUNITIES" && <OpportunitiesView />}
         {view === "WATCHLIST" && <WatchlistView />}
         {view === "CAPTIONS" && <CaptionStudio />}
+        {view === "VAULT" && <VaultView />}
         {view === "METRICS" && <MetricsView />}
 
         {selectedVideoCode && (

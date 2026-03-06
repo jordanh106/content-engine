@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db } from "../db.js";
-import { videoStatus } from "../../shared/schema.js";
+import { videoStatus, contentWaterfall } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
@@ -151,6 +151,75 @@ export function createVideosRouter(
       res.json({ available: true, plan });
     } else {
       res.json({ available: false, plan: null });
+    }
+  });
+
+  // GET /api/videos/:code/waterfall - List waterfall derivatives
+  router.get("/:code/waterfall", (req, res) => {
+    try {
+      const items = db.select().from(contentWaterfall)
+        .where(eq(contentWaterfall.sourceVideoCode, req.params.code))
+        .orderBy(desc(contentWaterfall.createdAt))
+        .all();
+      res.json({ items });
+    } catch (error) {
+      console.error("[videos] Waterfall error:", error);
+      res.status(500).json({ error: "Failed to list waterfall items" });
+    }
+  });
+
+  // POST /api/videos/:code/waterfall - Add waterfall derivative
+  router.post("/:code/waterfall", (req, res) => {
+    try {
+      const { tier, platform, description, status } = req.body;
+      if (!tier) {
+        res.status(400).json({ error: "tier is required" });
+        return;
+      }
+      const result = db.insert(contentWaterfall).values({
+        sourceVideoCode: req.params.code,
+        tier,
+        platform: platform || null,
+        description: description || null,
+        status: status || "idea",
+      }).returning().get();
+      res.json({ item: result });
+    } catch (error) {
+      console.error("[videos] Waterfall add error:", error);
+      res.status(500).json({ error: "Failed to add waterfall item" });
+    }
+  });
+
+  // PUT /api/videos/:code/waterfall/:id - Update waterfall item
+  router.put("/:code/waterfall/:id", (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, performanceNote, description } = req.body;
+      const updates: Record<string, string> = {};
+      if (status) updates.status = status;
+      if (performanceNote !== undefined) updates.performanceNote = performanceNote;
+      if (description !== undefined) updates.description = description;
+
+      db.update(contentWaterfall)
+        .set(updates)
+        .where(eq(contentWaterfall.id, id))
+        .run();
+      res.json({ updated: true });
+    } catch (error) {
+      console.error("[videos] Waterfall update error:", error);
+      res.status(500).json({ error: "Failed to update waterfall item" });
+    }
+  });
+
+  // DELETE /api/videos/:code/waterfall/:id - Remove waterfall item
+  router.delete("/:code/waterfall/:id", (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      db.delete(contentWaterfall).where(eq(contentWaterfall.id, id)).run();
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("[videos] Waterfall delete error:", error);
+      res.status(500).json({ error: "Failed to delete waterfall item" });
     }
   });
 

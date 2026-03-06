@@ -187,6 +187,28 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  VAULT: {
+    title: "The Vault",
+    description:
+      "Save and reuse viral hooks and writing styles. Extract patterns from winning content and apply them to your scripts.",
+    tips: [
+      {
+        label: "Hook Templates",
+        detail:
+          "Hooks are stored as Mad Lib templates with [VARIABLE] placeholders. Fill in the blanks to generate new hooks instantly.",
+      },
+      {
+        label: "Style Extraction",
+        detail:
+          "Paste a creator's transcript and AI extracts concrete writing rules: sentence length, tone, structure, techniques.",
+      },
+      {
+        label: "Library vs Custom",
+        detail:
+          "Blue 'Library' badges are from hook-patterns.md (read-only). Custom hooks you add can be edited and deleted.",
+      },
+    ],
+  },
   METRICS: {
     title: "Performance Metrics",
     description:

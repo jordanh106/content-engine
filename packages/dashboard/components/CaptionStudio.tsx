@@ -257,7 +257,9 @@ export const CaptionStudio: React.FC = () => {
     mood?: string;
     hookSuggestions?: string[];
     captionSuggestions?: Record<string, string>;
+    ctaSuggestion?: string;
     hashtagSuggestions?: string[];
+    waterfallIdeas?: string[];
     keyMoments?: Array<{ timestamp: string; description: string }>;
     transcript?: string;
   };
@@ -457,22 +459,29 @@ export const CaptionStudio: React.FC = () => {
     if (selectedVideo) formData.append("videoCode", selectedVideo);
 
     try {
-      setAnalysisStep("Extracting frames & analyzing...");
+      setAnalysisStep("Analyzing video... (this may take up to a minute)");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120_000);
       const r = await fetch("/api/video-analysis/analyze", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       const data = await r.json();
       if (r.ok) {
         setVideoAnalysis(data.analysis);
         setAnalysisStep("");
       } else {
+        console.error("[video-analysis] API error:", data.error);
         setAnalysisStep(`Error: ${data.error}`);
-        setTimeout(() => setAnalysisStep(""), 5000);
       }
-    } catch {
-      setAnalysisStep("Upload failed. Try again.");
-      setTimeout(() => setAnalysisStep(""), 5000);
+    } catch (err) {
+      console.error("[video-analysis] Upload failed:", err);
+      const msg = err instanceof DOMException && err.name === "AbortError"
+        ? "Analysis timed out. Try a shorter video."
+        : "Upload failed. Try again.";
+      setAnalysisStep(msg);
     }
     setAnalysisLoading(false);
   };
@@ -1203,27 +1212,79 @@ export const CaptionStudio: React.FC = () => {
                 </div>
               ) : null}
 
-              {/* Use These Captions button - only when a video is selected */}
-              {videoAnalysis.captionSuggestions && selectedVideo ? (
-                <button
-                  onClick={() => {
-                    const suggestions = videoAnalysis.captionSuggestions!;
-                    for (const [plat, caption] of Object.entries(suggestions)) {
-                      if (caption && selectedVideo) {
-                        fetch("/api/captions", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ videoCode: selectedVideo, platform: plat, caption, status: "draft" }),
-                        });
-                      }
-                    }
-                    queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
-                    queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
-                  }}
-                  className="px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
-                >
-                  Use These Captions
-                </button>
+              {/* Caption suggestions per platform */}
+              {videoAnalysis.captionSuggestions && Object.keys(videoAnalysis.captionSuggestions).length > 0 ? (
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Caption Suggestions</div>
+                  <div className="space-y-2">
+                    {Object.entries(videoAnalysis.captionSuggestions).map(([plat, caption]) => (
+                      <div key={plat} className={`rounded-xl border p-3 ${PLATFORM_COLORS[plat] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.15em]">{PLATFORM_LABELS[plat] || plat}</span>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(caption); }}
+                            className="text-[9px] font-bold uppercase tracking-wider opacity-60 hover:opacity-100 transition-opacity"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <p className="text-xs leading-relaxed">{caption}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedVideo ? (
+                    <button
+                      onClick={() => {
+                        const suggestions = videoAnalysis.captionSuggestions!;
+                        for (const [plat, cap] of Object.entries(suggestions)) {
+                          if (cap && selectedVideo) {
+                            fetch("/api/captions", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ videoCode: selectedVideo, platform: plat, caption: cap, status: "draft" }),
+                            });
+                          }
+                        }
+                        queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
+                        queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
+                      }}
+                      className="mt-3 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
+                    >
+                      Save as Drafts
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {/* CTA Suggestion */}
+              {videoAnalysis.ctaSuggestion ? (
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Coupled CTA</div>
+                  <div className="rounded-xl border border-teal-200 bg-teal-50 p-3 flex items-start justify-between gap-2">
+                    <p className="text-xs text-teal-800 leading-relaxed">{videoAnalysis.ctaSuggestion}</p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(videoAnalysis.ctaSuggestion!); }}
+                      className="text-[9px] font-bold uppercase tracking-wider text-teal-600 opacity-60 hover:opacity-100 transition-opacity shrink-0"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Waterfall Ideas */}
+              {videoAnalysis.waterfallIdeas && videoAnalysis.waterfallIdeas.length > 0 ? (
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Content Waterfall</div>
+                  <div className="space-y-1.5">
+                    {videoAnalysis.waterfallIdeas.map((idea, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                        <span className="text-slate-400 font-bold shrink-0">{i + 1}.</span>
+                        <span>{idea}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : null}
 
               {/* Transcript */}

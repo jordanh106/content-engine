@@ -24,9 +24,17 @@ const upload = multer({
   },
 });
 
+function getVideoDuration(videoPath: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) return reject(err);
+      resolve(metadata.format.duration || 0);
+    });
+  });
+}
+
 function extractFrames(videoPath: string, outputDir: string, intervalSeconds = 2): Promise<string[]> {
   return new Promise((resolve, reject) => {
-    const frames: string[] = [];
     const outputPattern = path.join(outputDir, "frame_%04d.jpg");
 
     ffmpeg(videoPath)
@@ -36,7 +44,6 @@ function extractFrames(videoPath: string, outputDir: string, intervalSeconds = 2
       ])
       .output(outputPattern)
       .on("end", () => {
-        // Read extracted frames
         const files = fs.readdirSync(outputDir)
           .filter((f) => f.startsWith("frame_") && f.endsWith(".jpg"))
           .sort()
@@ -48,14 +55,38 @@ function extractFrames(videoPath: string, outputDir: string, intervalSeconds = 2
   });
 }
 
+function extractAudio(videoPath: string, outputPath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .outputOptions(["-vn", "-ac", "1", "-ab", "64k", "-f", "mp3"])
+      .output(outputPath)
+      .on("end", () => resolve(outputPath))
+      .on("error", (err) => reject(err))
+      .run();
+  });
+}
+
 async function transcribeAudio(videoPath: string): Promise<string | null> {
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) return null;
 
+  const audioPath = videoPath + ".audio.mp3";
   try {
+    // Extract audio track as small MP3 (mono 64kbps, ~550KB per minute)
+    console.log("[video-analysis] Extracting audio track...");
+    await extractAudio(videoPath, audioPath);
+
+    const audioSize = fs.statSync(audioPath).size;
+    console.log(`[video-analysis] Audio extracted: ${(audioSize / 1024).toFixed(0)}KB`);
+    if (audioSize < 1024) {
+      console.log("[video-analysis] Audio too small, likely silent video");
+      return null;
+    }
+
+    console.log("[video-analysis] Starting Whisper transcription...");
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey: openaiKey });
-    const fileStream = fs.createReadStream(videoPath);
+    const fileStream = fs.createReadStream(audioPath);
     const transcription = await openai.audio.transcriptions.create({
       model: "whisper-1",
       file: fileStream as unknown as File,
@@ -64,6 +95,8 @@ async function transcribeAudio(videoPath: string): Promise<string | null> {
   } catch (err) {
     console.warn("[video-analysis] Whisper transcription failed:", err);
     return null;
+  } finally {
+    try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch { /* cleanup */ }
   }
 }
 
@@ -96,12 +129,27 @@ export function createVideoAnalysisRouter(contentLibraryPath: string) {
 
     try {
       fs.mkdirSync(framesDir, { recursive: true });
+      const startTime = Date.now();
+      console.log(`[video-analysis] File received: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+
+      // Probe duration to pick smart frame interval
+      let interval = 2;
+      try {
+        const duration = await getVideoDuration(file.path);
+        console.log(`[video-analysis] Video duration: ${duration.toFixed(1)}s`);
+        if (duration > 30) interval = Math.ceil(duration / 10); // ~10 frames max
+      } catch { /* use default 2s */ }
 
       // Extract frames + transcribe in parallel
+      console.log(`[video-analysis] Extracting frames (interval=${interval}s)...`);
+      const extractStart = Date.now();
       const [framePaths, transcript] = await Promise.all([
-        extractFrames(file.path, framesDir),
+        extractFrames(file.path, framesDir, interval),
         transcribeAudio(file.path),
       ]);
+      console.log(`[video-analysis] Frames extracted: ${framePaths.length} (${Date.now() - extractStart}ms)`);
+      if (transcript) console.log(`[video-analysis] Transcript: ${transcript.slice(0, 100)}...`);
+      else console.log("[video-analysis] No transcript (Whisper skipped or failed)");
 
       if (framePaths.length === 0) {
         res.status(400).json({ error: "Could not extract frames from video" });
@@ -134,8 +182,10 @@ Script: ${video.script.slice(0, 1000)}`;
         } catch { /* optional context */ }
       }
 
-      // Build Claude vision message with frames as base64 images
-      const imageContent: Anthropic.ImageBlockParam[] = framePaths.slice(0, 20).map((fp) => {
+      // Build Claude vision message with frames as base64 images (max 10)
+      const selectedFrames = framePaths.slice(0, 10);
+      console.log(`[video-analysis] Sending ${selectedFrames.length} frames to Claude Sonnet...`);
+      const imageContent: Anthropic.ImageBlockParam[] = selectedFrames.map((fp) => {
         const data = fs.readFileSync(fp).toString("base64");
         return {
           type: "image" as const,
@@ -151,43 +201,54 @@ Script: ${video.script.slice(0, 1000)}`;
         ? requestedPlatforms.split(",").map((p) => p.trim())
         : ["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"];
 
-      const analysisPrompt = `Analyze this video (shown as ${framePaths.length} extracted frames at ~2s intervals) for social media captioning.
+      const analysisPrompt = `Analyze this video for social media captioning. You have ${selectedFrames.length} extracted frames and ${transcript ? "an audio transcript" : "no audio"}.
 ${practiceContext}
 ${transcript ? `\nAUDIO TRANSCRIPT: "${transcript}"` : "\n(No audio transcript available)"}
 ${videoContext}
 
-IMPORTANT: Describe EXACTLY what you see in the frames. Note:
-- Who appears (gender, clothing, setting)
-- Any visible text on clothing, walls, signs, or equipment
-- The physical environment (office type, medical equipment, decor)
-- Actions being performed
-- Mood and energy conveyed through body language
-Do NOT guess what the video is about from a single detail. Look at ALL frames before forming your description.
+ANALYSIS APPROACH:
+- The transcript is your PRIMARY source for understanding what this video is about, its tone, and purpose
+- Use the frames to identify people, settings, and visual details that support the audio
+- Determine the content type: skit, educational, testimonial, behind-the-scenes, trend, etc.
+- Think about what emotional loop this video opens and how a caption can amplify that
 
 TARGET PLATFORMS: ${platformList.join(", ")}
 
-Respond with a JSON object containing:
+Respond with a JSON object:
 {
-  "visualDescription": "Detailed description of what's happening in the video based on what you actually see",
-  "mood": "One word mood (energetic, calming, educational, humorous, authentic, personal, etc.)",
-  "hookSuggestions": ["3-5 hook ideas based on the visual content"],
+  "visualDescription": "3-4 sentence summary. Focus on the narrative/concept and vibe, not frame-by-frame. Who's in it, where, what's the energy.",
+  "mood": "One word (energetic, calming, educational, humorous, authentic, chaotic, wholesome, etc.)",
+  "hookSuggestions": ["5 hooks that use the ZEIGARNIK EFFECT - open a curiosity loop the viewer MUST resolve by watching. Use incomplete information, unexpected contrast, or imply something happened. NEVER describe or summarize the video. BAD: 'Watch our team react to a box delivery' GOOD: 'She had no idea what was about to hit her.' Keep under 10 words each."],
   "captionSuggestions": {
-    "instagram_reels": "Full caption with hashtags",
-    "tiktok": "Short punchy caption",
-    "youtube_shorts": "SEO-friendly title/caption",
-    "youtube_long": "Longer description with keywords"
+    "instagram_reels": "2-3 lines. Start with a mirror (describe the viewer's world), then the shift (what this video shows). End with a coupled CTA that connects to THIS specific content. Add 3-5 hashtags at end. Voice: warm, real, like texting a friend.",
+    "tiktok": "1 line MAX. Raw, unfiltered, chaotic energy if the video is funny. No hashtags. No explanation. Let the video speak. Think: what would the person in this video actually type?",
+    "youtube_shorts": "Title that's a curiosity gap AND contains searchable keywords. One-line description that mirrors the viewer's situation. Not clickbait - a genuine open loop.",
+    "youtube_long": "3-4 sentences using the micro story arc: Mirror their situation → surface the friction → show the shift this video represents → invite them to engage. Include natural keywords."
   },
-  "hashtagSuggestions": ["8-12 relevant hashtags with # prefix"],
-  "keyMoments": [{"timestamp": "0:05", "description": "What happens"}],
-  "transcript": "the transcript if available, or null"
+  "ctaSuggestion": "ONE call-to-action that is tightly coupled to this specific video's content. It should close the loop the video opens. Never generic like 'follow for more' or 'book now'. Connect it to the actual moment or story in the video.",
+  "hashtagSuggestions": ["10-12 hashtags: 2-3 broad reach (500K+ posts), 3-4 niche community, 2-3 content-type, 2-3 culture/trending"],
+  "waterfallIdeas": ["2-3 specific ideas for repurposing this exact video into other content formats. Be specific: 'Pull the 0:14 reaction as a standalone TikTok with text overlay: ...' not generic advice."],
+  "keyMoments": [{"timestamp": "0:05", "description": "Brief description"}],
+  "transcript": "the transcript text if available, or null"
 }
 
 Only include platforms from the target list. Your response must be valid JSON only.`;
 
+      const apiStart = Date.now();
       const response = await client.messages.create({
-        model: "claude-sonnet-4-6-20250514",
-        max_tokens: 2048,
-        system: "You are a social media content analyst. Describe EXACTLY what you see in the video frames - real people, settings, actions, visible text on clothing, equipment, etc. Do not guess or hallucinate details you cannot see. If unsure about something, say so. Your analysis will be used to write platform-specific captions.",
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        system: `You are a social media strategist who understands storytelling psychology. Key principles you apply:
+
+ZEIGARNIK EFFECT: The brain hates unfinished business. Every hook should open a loop - incomplete information that forces the viewer to watch. Never describe what happens in the video. Instead, imply a story the viewer needs to see resolved.
+
+MICRO STORY ARC: Every caption follows: Mirror (where the viewer is) → Friction (the tension) → Shift (the payoff) → Invitation (coupled CTA). This is NOT a formula to follow literally - it's the emotional rhythm underneath.
+
+COUPLED CTAs: A CTA must close the loop the content opened. "Follow for more" is dead. If the video is about a box hitting someone, the CTA connects to THAT moment, not to booking an appointment.
+
+PLATFORM TRUTH: Each platform has a different native language. TikTok is raw and chaotic. Instagram is curated but real. YouTube is searchable. Never resize the same caption - write natively for each.
+
+Write like a real creator with a personality, not a social media manager following a template. The captions should feel like they were written by the person in the video.`,
         messages: [{
           role: "user",
           content: [
@@ -195,7 +256,8 @@ Only include platforms from the target list. Your response must be valid JSON on
             { type: "text", text: analysisPrompt },
           ],
         }],
-      });
+      }, { timeout: 90_000 });
+      console.log(`[video-analysis] Claude API responded in ${Date.now() - apiStart}ms`);
 
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") {
@@ -209,16 +271,24 @@ Only include platforms from the target list. Your response must be valid JSON on
         cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
       }
 
-      const analysis = JSON.parse(cleaned);
+      let analysis;
+      try {
+        analysis = JSON.parse(cleaned);
+      } catch {
+        console.error("[video-analysis] JSON parse failed. Raw response:", cleaned.slice(0, 500));
+        res.status(500).json({ error: "AI response was incomplete. Try again." });
+        return;
+      }
       // Include transcript in response
       if (transcript && !analysis.transcript) {
         analysis.transcript = transcript;
       }
 
+      console.log(`[video-analysis] Complete in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
       res.json({ analysis });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Video analysis failed";
-      console.error("[video-analysis] Error:", msg);
+      console.error("[video-analysis] Error:", error);
       res.status(500).json({ error: msg });
     } finally {
       // Cleanup temp files

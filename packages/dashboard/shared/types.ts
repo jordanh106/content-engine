@@ -129,6 +129,7 @@ export const DASHBOARD_VIEWS = [
   "SESSION",
   "COMPOSER",
   "CAPTIONS",
+  "VAULT",
   "METRICS",
 ] as const;
 
@@ -891,4 +892,115 @@ export type ChangelogEntry = {
   date: string;
   title: string;
   items: string[];
+};
+
+// ============================================
+// Vault Types (Hooks + Styles)
+// ============================================
+
+export type VaultHook = {
+  id: number;
+  pattern: string;
+  example: string | null;
+  category: string;
+  sourceCreator: string | null;
+  sourceUrl: string | null;
+  bestFormat: string | null;
+  platform: string | null;
+  optimizes: string | null;
+  variables: string[];
+  usageCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+  isLibrary?: boolean;
+};
+
+export type VaultStyle = {
+  id: number;
+  name: string;
+  description: string | null;
+  sourceCreator: string | null;
+  sourceUrl: string | null;
+  sourceTranscript: string | null;
+  styleRules: {
+    sentenceLength: string;
+    tone: string;
+    structure: string;
+    techniques: string[];
+    doNot: string[];
+  };
+  exampleScript: string | null;
+  usageCount: number;
+  createdAt: string;
+};
+
+// ============================================
+// Creator Videos + Outlier Detection Types
+// ============================================
+
+export type CreatorVideo = {
+  id: number;
+  creatorHandle: string;
+  platform: string;
+  videoUrl: string | null;
+  videoTitle: string | null;
+  thumbnailUrl: string | null;
+  publishedAt: string | null;
+  durationSeconds: number | null;
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  outlierScoreX100: number | null;
+  recordedAt: string;
+  createdAt: string;
+};
+
+export type VideoBreakdown = {
+  id: number;
+  creatorVideoId: number | null;
+  creatorHandle: string | null;
+  videoUrl: string | null;
+  topic: string | null;
+  angle: string | null;
+  hookFormat: string | null;
+  storyStyle: string | null;
+  visualFormat: string | null;
+  visuals: string | null;
+  audio: string | null;
+  rawNotes: string | null;
+  createdAt: string;
+};
+
+// ============================================
+// Script Versions Types
+// ============================================
+
+export type ScriptVersion = {
+  id: number;
+  videoCode: string | null;
+  ideaTopic: string | null;
+  version: number;
+  script: string;
+  hookId: number | null;
+  styleId: number | null;
+  changeNote: string | null;
+  createdAt: string;
+};
+
+// ============================================
+// Content Waterfall Types
+// ============================================
+
+export type WaterfallEntry = {
+  id: number;
+  sourceVideoCode: string;
+  derivedVideoCode: string | null;
+  tier: "source" | "cutdown" | "short" | "text";
+  platform: string | null;
+  description: string | null;
+  status: "idea" | "created" | "published";
+  performanceNote: string | null;
+  createdAt: string;
 };

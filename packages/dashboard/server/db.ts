@@ -140,4 +140,100 @@ sqlite.exec(`
     notes TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS vault_hooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL,
+    example TEXT,
+    category TEXT NOT NULL DEFAULT 'custom',
+    source_creator TEXT,
+    source_url TEXT,
+    best_format TEXT,
+    platform TEXT,
+    optimizes TEXT,
+    variables TEXT,
+    usage_count INTEGER DEFAULT 0,
+    last_used_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS vault_styles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    source_creator TEXT,
+    source_url TEXT,
+    source_transcript TEXT,
+    style_rules TEXT NOT NULL,
+    example_script TEXT,
+    usage_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS creator_videos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_handle TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    video_url TEXT,
+    video_title TEXT,
+    thumbnail_url TEXT,
+    published_at TEXT,
+    duration_seconds INTEGER,
+    views INTEGER DEFAULT 0,
+    likes INTEGER DEFAULT 0,
+    comments INTEGER DEFAULT 0,
+    shares INTEGER DEFAULT 0,
+    saves INTEGER DEFAULT 0,
+    outlier_score_x100 INTEGER,
+    recorded_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS video_breakdowns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_video_id INTEGER REFERENCES creator_videos(id) ON DELETE CASCADE,
+    creator_handle TEXT,
+    video_url TEXT,
+    topic TEXT,
+    angle TEXT,
+    hook_format TEXT,
+    story_style TEXT,
+    visual_format TEXT,
+    visuals TEXT,
+    audio TEXT,
+    raw_notes TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS script_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT,
+    idea_topic TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    script TEXT NOT NULL,
+    hook_id INTEGER,
+    style_id INTEGER,
+    change_note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS content_waterfall (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_video_code TEXT NOT NULL,
+    derived_video_code TEXT,
+    tier TEXT NOT NULL,
+    platform TEXT,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'idea',
+    performance_note TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
+
+// Migrations for existing databases
+try {
+  sqlite.exec(`ALTER TABLE script_versions ADD COLUMN idea_topic TEXT`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE script_versions DROP COLUMN video_code_not_null_constraint`);
+} catch { /* no-op */ }

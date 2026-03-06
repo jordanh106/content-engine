@@ -5,7 +5,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
 import { parseContentLibrary, invalidateCache as invalidateContentCache } from "../parsers/content-library.js";
 import { db } from "../db.js";
-import { videoStatus, statusHistory } from "../../shared/schema.js";
+import { eq, desc } from "drizzle-orm";
+import { videoStatus, statusHistory, scriptVersions, vaultHooks, vaultStyles } from "../../shared/schema.js";
 import type { IdeaCategory, FormatId } from "../../shared/types.js";
 import { FORMATS } from "../../shared/types.js";
 
@@ -373,12 +374,15 @@ export function createIdeasRouter(contentLibraryPath: string) {
 
   // POST /api/ideas/develop - AI-powered script generation from an idea
   router.post("/develop", async (req, res) => {
-    const { topic, suggestedFormat, hookAngle, priority, category } = req.body as {
+    const { topic, suggestedFormat, hookAngle, priority, category, hookId, styleId, filledHook } = req.body as {
       topic?: string;
       suggestedFormat?: string;
       hookAngle?: string;
       priority?: string;
       category?: string;
+      hookId?: number;
+      styleId?: number;
+      filledHook?: string;
     };
 
     if (!topic) {
@@ -404,6 +408,34 @@ export function createIdeasRouter(contentLibraryPath: string) {
       const formatPath = path.join(formatsDir, formatFile);
       const formatTemplate = fs.existsSync(formatPath) ? fs.readFileSync(formatPath, "utf-8") : "";
 
+      // Fetch vault hook if provided
+      let hookSection = "";
+      if (filledHook) {
+        hookSection = `\nHOOK TO USE (use this as the opening line of the script):\n"${filledHook}"\n`;
+      } else if (hookId && hookId > 0) {
+        const hook = db.select().from(vaultHooks).where(eq(vaultHooks.id, hookId)).limit(1).all();
+        if (hook.length > 0) {
+          hookSection = `\nHOOK TEMPLATE (adapt this pattern for the opening line):\nPattern: "${hook[0].pattern}"\nExample: "${hook[0].example || ""}"\n`;
+        }
+      }
+
+      // Fetch vault style if provided
+      let styleSection = "";
+      if (styleId) {
+        const style = db.select().from(vaultStyles).where(eq(vaultStyles.id, styleId)).limit(1).all();
+        if (style.length > 0) {
+          const rules = JSON.parse(style[0].styleRules || "{}");
+          styleSection = `\nWRITING STYLE (apply these rules throughout the script):
+Style: "${style[0].name}"
+- Sentence length: ${rules.sentenceLength || "natural"}
+- Tone: ${rules.tone || "natural"}
+- Structure: ${rules.structure || "natural"}
+- Techniques: ${(rules.techniques || []).join(", ") || "none specified"}
+- Do NOT: ${(rules.doNot || []).join(", ") || "no restrictions"}
+${style[0].exampleScript ? `\nExample of this style:\n${style[0].exampleScript.slice(0, 500)}` : ""}\n`;
+        }
+      }
+
       const client = new Anthropic({ apiKey });
 
       const message = await client.messages.create({
@@ -419,7 +451,7 @@ ${brandVoice}
 
 FORMAT TEMPLATE:
 ${formatTemplate}
-
+${hookSection}${styleSection}
 Write a production-ready script for this content idea:
 
 Topic: ${topic}
@@ -433,9 +465,10 @@ Requirements:
 - Include delivery cues in brackets like [Warm, empathetic] or [Direct to camera]
 - Match the brand voice: warm, educational, empowering, never clinical
 - No emdashes. Use commas, periods, or restructure.
-- Include a strong hook in the first 3 seconds
+${filledHook ? `- Use "${filledHook}" as the opening hook line` : "- Include a strong hook in the first 3 seconds"}
 - End with an engaging CTA
 - Target 30-45 seconds for most formats, 6-15s for Quick Tips
+${styleSection ? "- Apply the writing style rules throughout" : ""}
 
 Return the script in this exact format:
 
@@ -464,11 +497,49 @@ DURATION: [estimated seconds]`,
         ? cuesMatch[1].split("\n").map((l) => l.replace(/^-\s*/, "").trim()).filter(Boolean)
         : [];
 
-      res.json({ script: scriptText, deliveryCues });
+      // Auto-save as script version
+      const existing = db.select().from(scriptVersions)
+        .where(eq(scriptVersions.ideaTopic, topic))
+        .orderBy(desc(scriptVersions.version))
+        .limit(1)
+        .all();
+      const nextVersion = existing.length > 0 ? (existing[0].version + 1) : 1;
+
+      const changeNote = [
+        hookId ? `Hook #${hookId}` : null,
+        filledHook ? `Hook: "${filledHook.slice(0, 50)}"` : null,
+        styleId ? `Style #${styleId}` : null,
+      ].filter(Boolean).join(", ") || "Generated script";
+
+      const saved = db.insert(scriptVersions).values({
+        ideaTopic: topic,
+        version: nextVersion,
+        script: scriptText,
+        hookId: hookId || null,
+        styleId: styleId || null,
+        changeNote,
+      }).returning().get();
+
+      res.json({ script: scriptText, deliveryCues, versionId: saved.id, version: nextVersion });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate script";
       console.error("[ideas-develop] Error:", message);
       res.status(500).json({ error: message });
+    }
+  });
+
+  // GET /api/ideas/script-versions/:topic - List all script versions for an idea
+  router.get("/script-versions/:topic", (req, res) => {
+    try {
+      const topic = decodeURIComponent(req.params.topic);
+      const versions = db.select().from(scriptVersions)
+        .where(eq(scriptVersions.ideaTopic, topic))
+        .orderBy(desc(scriptVersions.version))
+        .all();
+      res.json({ versions });
+    } catch (error) {
+      console.error("[ideas] Error listing script versions:", error);
+      res.status(500).json({ error: "Failed to list script versions" });
     }
   });
 

@@ -10,6 +10,7 @@ import {
   Timer,
   TrendingUp,
   MessageSquareText,
+  Bookmark,
 } from "lucide-react";
 import type { DashboardView } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { view: "CALENDAR", label: "Calendar", icon: <Calendar size={20} /> },
   { view: "SESSION", label: "Session", icon: <Timer size={20} /> },
   { view: "CAPTIONS", label: "Captions", icon: <MessageSquareText size={20} /> },
+  { view: "VAULT", label: "Vault", icon: <Bookmark size={20} /> },
   { view: "METRICS", label: "Metrics", icon: <TrendingUp size={20} /> },
 ];
 

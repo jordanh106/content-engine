@@ -118,3 +118,91 @@ export const channelSnapshots = sqliteTable("channel_snapshots", {
   notes: text("notes"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
+
+export const vaultHooks = sqliteTable("vault_hooks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  pattern: text("pattern").notNull(),
+  example: text("example"),
+  category: text("category").notNull().default("custom"),
+  sourceCreator: text("source_creator"),
+  sourceUrl: text("source_url"),
+  bestFormat: text("best_format"),
+  platform: text("platform"),
+  optimizes: text("optimizes"),
+  variables: text("variables"),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: text("last_used_at"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const vaultStyles = sqliteTable("vault_styles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  sourceCreator: text("source_creator"),
+  sourceUrl: text("source_url"),
+  sourceTranscript: text("source_transcript"),
+  styleRules: text("style_rules").notNull(),
+  exampleScript: text("example_script"),
+  usageCount: integer("usage_count").default(0),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const creatorVideos = sqliteTable("creator_videos", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  creatorHandle: text("creator_handle").notNull(),
+  platform: text("platform").notNull(),
+  videoUrl: text("video_url"),
+  videoTitle: text("video_title"),
+  thumbnailUrl: text("thumbnail_url"),
+  publishedAt: text("published_at"),
+  durationSeconds: integer("duration_seconds"),
+  views: integer("views").default(0),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  saves: integer("saves").default(0),
+  outlierScoreX100: integer("outlier_score_x100"),
+  recordedAt: text("recorded_at").notNull(),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const videoBreakdowns = sqliteTable("video_breakdowns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  creatorVideoId: integer("creator_video_id"),
+  creatorHandle: text("creator_handle"),
+  videoUrl: text("video_url"),
+  topic: text("topic"),
+  angle: text("angle"),
+  hookFormat: text("hook_format"),
+  storyStyle: text("story_style"),
+  visualFormat: text("visual_format"),
+  visuals: text("visuals"),
+  audio: text("audio"),
+  rawNotes: text("raw_notes"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const scriptVersions = sqliteTable("script_versions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code"),
+  ideaTopic: text("idea_topic"),
+  version: integer("version").notNull().default(1),
+  script: text("script").notNull(),
+  hookId: integer("hook_id"),
+  styleId: integer("style_id"),
+  changeNote: text("change_note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const contentWaterfall = sqliteTable("content_waterfall", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sourceVideoCode: text("source_video_code").notNull(),
+  derivedVideoCode: text("derived_video_code"),
+  tier: text("tier").notNull(),
+  platform: text("platform"),
+  description: text("description"),
+  status: text("status").notNull().default("idea"),
+  performanceNote: text("performance_note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});

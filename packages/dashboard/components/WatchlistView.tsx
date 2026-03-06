@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
@@ -97,6 +97,7 @@ export const WatchlistView: React.FC = () => {
     },
   });
 
+  const [watchlistTab, setWatchlistTab] = useState<"creators" | "videos">("creators");
   const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showLogMetrics, setShowLogMetrics] = useState<string | null>(null);
@@ -186,6 +187,35 @@ export const WatchlistView: React.FC = () => {
         </button>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setWatchlistTab("creators")}
+          className={cn(
+            "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors",
+            watchlistTab === "creators"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700",
+          )}
+        >
+          <Users size={14} />
+          Creators
+        </button>
+        <button
+          onClick={() => setWatchlistTab("videos")}
+          className={cn(
+            "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors",
+            watchlistTab === "videos"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-700",
+          )}
+        >
+          <Video size={14} />
+          Videos
+        </button>
+      </div>
+
+      {watchlistTab === "creators" && (<>
       {/* Add Creator Form */}
       {showAddForm && (
         <AddCreatorForm
@@ -532,6 +562,11 @@ export const WatchlistView: React.FC = () => {
           <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
         </div>
       </div>
+      </>)}
+
+      {watchlistTab === "videos" && (
+        <VideosTab creators={creators} />
+      )}
 
       <ViewHelp {...VIEW_HELP.WATCHLIST} />
     </div>
@@ -921,6 +956,353 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
               <span key={i} className="bg-violet-50 text-violet-700 text-[10px] px-2 py-0.5 rounded-full">{h}</span>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Videos Tab ──────────────────────────────────────────────────────────────
+
+type VideosTabProps = { creators: EnrichedCreator[] };
+
+const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
+  const queryClient = useQueryClient();
+  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("all");
+  const [minOutlier, setMinOutlier] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<"outlierScore" | "views" | "publishedAt">("outlierScore");
+  const [searchHandle, setSearchHandle] = useState("");
+  const [expandedVideo, setExpandedVideo] = useState<number | null>(null);
+
+  const params = new URLSearchParams();
+  if (searchHandle) params.set("handle", searchHandle);
+  if (minOutlier > 0) params.set("minOutlierScore", String(minOutlier));
+  if (dateRange !== "all") {
+    const d = new Date();
+    if (dateRange === "7d") d.setDate(d.getDate() - 7);
+    else if (dateRange === "30d") d.setDate(d.getDate() - 30);
+    else if (dateRange === "90d") d.setDate(d.getDate() - 90);
+    params.set("dateFrom", d.toISOString().split("T")[0]);
+  }
+  params.set("sort", sortBy);
+
+  const { data, isLoading } = useQuery<{ videos: CreatorVideo[]; total: number }>({
+    queryKey: ["creator-videos", searchHandle, minOutlier, dateRange, sortBy],
+    queryFn: () => fetch(`/api/creator-videos?${params}`).then((r) => r.json()),
+  });
+
+  const scanMutation = useMutation({
+    mutationFn: async ({ handle, platform }: { handle: string; platform: string }) => {
+      const clean = handle.replace(/^@/, "");
+      const r = await fetch(`/api/creator-videos/scan/${clean}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: platform.split(",")[0].trim() }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({ error: `Error ${r.status}` }));
+        throw new Error(d.error || "Scan failed");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["creator-videos"] });
+    },
+  });
+
+  const videos = data?.videos ?? [];
+
+  return (
+    <div className="space-y-4">
+      {/* Scan creators */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          Scan Creator Videos
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {creators.map((c) => (
+            <button
+              key={c.handle}
+              onClick={() => scanMutation.mutate({ handle: c.handle, platform: c.platform })}
+              disabled={scanMutation.isPending}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors",
+                scanMutation.isPending && scanMutation.variables?.handle === c.handle
+                  ? "bg-violet-100 text-violet-500"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+              )}
+            >
+              {scanMutation.isPending && scanMutation.variables?.handle === c.handle
+                ? <Loader2 size={10} className="animate-spin" />
+                : <Zap size={10} />}
+              {c.handle}
+            </button>
+          ))}
+        </div>
+        {scanMutation.isSuccess && (
+          <p className="text-xs text-teal-600 mt-2">
+            Scanned {(scanMutation.data as { handle: string }).handle}: {(scanMutation.data as { videosFound: number }).videosFound} videos found
+          </p>
+        )}
+        {scanMutation.isError && (
+          <p className="text-xs text-rose-500 mt-2">{(scanMutation.error as Error).message}</p>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+          {(["all", "7d", "30d", "90d"] as const).map((range) => (
+            <button
+              key={range}
+              onClick={() => setDateRange(range)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors",
+                dateRange === range
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700",
+              )}
+            >
+              {range === "all" ? "All" : range}
+            </button>
+          ))}
+        </div>
+
+        <select
+          value={minOutlier}
+          onChange={(e) => setMinOutlier(parseInt(e.target.value))}
+          className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 bg-white"
+        >
+          <option value={0}>All Scores</option>
+          <option value={100}>1x+</option>
+          <option value={150}>1.5x+</option>
+          <option value={200}>2x+</option>
+          <option value={300}>3x+</option>
+          <option value={500}>5x+</option>
+          <option value={1000}>10x+</option>
+        </select>
+
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as "outlierScore" | "views" | "publishedAt")}
+          className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 bg-white"
+        >
+          <option value="outlierScore">Outlier Score</option>
+          <option value="views">Views</option>
+          <option value="publishedAt">Recent</option>
+        </select>
+
+        <div className="relative flex-1 min-w-[120px] max-w-[200px]">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchHandle}
+            onChange={(e) => setSearchHandle(e.target.value)}
+            placeholder="Filter by handle..."
+            className="w-full pl-7 pr-2 py-1 rounded-lg border border-slate-200 text-[10px] font-medium text-slate-600 focus:outline-none focus:border-teal-400"
+          />
+        </div>
+      </div>
+
+      {/* Video grid */}
+      {isLoading ? (
+        <div className="text-center py-12 text-slate-400 text-sm">Loading videos...</div>
+      ) : videos.length === 0 ? (
+        <EmptyState
+          icon={<Video size={24} className="text-slate-400" />}
+          headline="No videos tracked yet"
+          description="Use the Scan buttons above to find recent videos from your watchlist creators."
+        />
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-slate-400">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              video={video}
+              isExpanded={expandedVideo === video.id}
+              onToggle={() => setExpandedVideo(expandedVideo === video.id ? null : video.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Video Card ──────────────────────────────────────────────────────────────
+
+type VideoCardProps = {
+  video: CreatorVideo;
+  isExpanded: boolean;
+  onToggle: () => void;
+};
+
+const outlierLabel = (score: number) => `${(score / 100).toFixed(1)}x`;
+
+const outlierColor = (score: number) => {
+  if (score >= 300) return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (score >= 150) return "bg-amber-100 text-amber-700 border-amber-200";
+  return "bg-slate-100 text-slate-600 border-slate-200";
+};
+
+const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) => {
+  const queryClient = useQueryClient();
+  const platformColor = PLATFORM_COLORS[video.platform] ?? "bg-slate-200 text-slate-700";
+
+  const breakdownQuery = useQuery<{ breakdown: { topic: string; angle: string; hookFormat: string; storyStyle: string; visualFormat: string; visuals: string; audio: string } | null }>({
+    queryKey: ["video-breakdown", video.id],
+    queryFn: () => fetch(`/api/creator-videos/${video.id}/breakdown`).then((r) => r.json()),
+    enabled: isExpanded,
+  });
+
+  const analyzeMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/creator-videos/${video.id}/breakdown`, { method: "POST" });
+      if (!r.ok) throw new Error("Analysis failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video-breakdown", video.id] });
+    },
+  });
+
+  const saveHookMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/creator-videos/${video.id}/save-hook`, { method: "POST" });
+      if (!r.ok) throw new Error("Failed to save hook");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vault-hooks"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/creator-videos/${video.id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Failed to delete");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["creator-videos"] });
+    },
+  });
+
+  const breakdown = breakdownQuery.data?.breakdown;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-slate-300 transition-colors">
+      <div className="flex items-start gap-3">
+        {/* Outlier badge */}
+        {video.outlierScoreX100 != null && (
+          <div className={cn(
+            "flex-shrink-0 w-14 h-14 rounded-xl border flex flex-col items-center justify-center",
+            outlierColor(video.outlierScoreX100),
+          )}>
+            <span className="text-sm font-black">{outlierLabel(video.outlierScoreX100)}</span>
+            <span className="text-[8px] font-bold uppercase">Outlier</span>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-slate-900 line-clamp-2">
+            {video.videoTitle || "Untitled Video"}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-slate-500">{video.creatorHandle}</span>
+            <span className={`px-1.5 py-0 rounded-full text-[9px] font-bold ${platformColor}`}>
+              {video.platform}
+            </span>
+            {video.publishedAt && (
+              <span className="text-[10px] text-slate-400">{video.publishedAt}</span>
+            )}
+          </div>
+
+          {/* Metrics row */}
+          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-slate-500">
+            <span>{(video.views || 0).toLocaleString()} views</span>
+            {(video.likes ?? 0) > 0 && <span>{(video.likes ?? 0).toLocaleString()} likes</span>}
+            {(video.comments ?? 0) > 0 && <span>{(video.comments ?? 0).toLocaleString()} comments</span>}
+            {(video.shares ?? 0) > 0 && <span>{(video.shares ?? 0).toLocaleString()} shares</span>}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={onToggle}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700"
+            >
+              {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+              {isExpanded ? "Hide" : "Analyze"}
+            </button>
+            <button
+              onClick={() => saveHookMutation.mutate()}
+              disabled={saveHookMutation.isPending || !video.videoTitle}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-600 hover:text-teal-700 disabled:opacity-50"
+            >
+              {saveHookMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Bookmark size={10} />}
+              {saveHookMutation.isSuccess ? "Saved!" : "Save Hook"}
+            </button>
+            {video.videoUrl && (
+              <a
+                href={video.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600"
+              >
+                <ExternalLink size={10} />
+                View
+              </a>
+            )}
+            <button
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="ml-auto text-slate-300 hover:text-rose-500 transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded breakdown */}
+      {isExpanded && (
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          {breakdownQuery.isLoading ? (
+            <p className="text-xs text-slate-400">Loading breakdown...</p>
+          ) : breakdown ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: "Topic", value: breakdown.topic },
+                { label: "Angle", value: breakdown.angle },
+                { label: "Hook Format", value: breakdown.hookFormat },
+                { label: "Story Style", value: breakdown.storyStyle },
+                { label: "Visual Format", value: breakdown.visualFormat },
+                { label: "Visuals", value: breakdown.visuals },
+                { label: "Audio", value: breakdown.audio },
+              ].map((item) => (
+                <div key={item.label} className="bg-slate-50 rounded-lg p-2">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
+                  <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-slate-400">No breakdown yet.</p>
+              <button
+                onClick={() => analyzeMutation.mutate()}
+                disabled={analyzeMutation.isPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold hover:bg-violet-100 disabled:opacity-50"
+              >
+                {analyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                {analyzeMutation.isPending ? "Analyzing..." : "Generate Breakdown"}
+              </button>
+            </div>
+          )}
+          {analyzeMutation.isError && (
+            <p className="text-xs text-rose-500 mt-1">{(analyzeMutation.error as Error).message}</p>
+          )}
         </div>
       )}
     </div>
