@@ -87,6 +87,24 @@ export const savedCaptions = sqliteTable("saved_captions", {
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });
 
+export const hashtagGroups = sqliteTable("hashtag_groups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  hashtags: text("hashtags").notNull(), // JSON array of strings
+  category: text("category"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const captionTemplates = sqliteTable("caption_templates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  platform: text("platform"),
+  template: text("template").notNull(),
+  format: text("format"),
+  usageCount: integer("usage_count").default(0),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
 export const channelSnapshots = sqliteTable("channel_snapshots", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   handle: text("handle").notNull(),

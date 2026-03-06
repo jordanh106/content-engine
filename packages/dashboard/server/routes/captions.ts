@@ -4,7 +4,7 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "../db.js";
-import { savedCaptions, calendarEntries } from "../../shared/schema.js";
+import { savedCaptions, calendarEntries, hashtagGroups, captionTemplates, performanceMetrics } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import { parseConfig } from "../parsers/config.js";
@@ -82,6 +82,28 @@ export function createCaptionsRouter(contentLibraryPath: string) {
   } catch {
     console.warn("[captions] ANTHROPIC_API_KEY not set.");
   }
+
+  // GET /api/captions/counts - batch platform counts per video
+  router.get("/counts", (_req, res) => {
+    const rows = db
+      .select({
+        videoCode: savedCaptions.videoCode,
+        platform: savedCaptions.platform,
+      })
+      .from(savedCaptions)
+      .all();
+
+    const counts: Record<string, number> = {};
+    const seen: Record<string, Set<string>> = {};
+    for (const row of rows) {
+      if (!seen[row.videoCode]) seen[row.videoCode] = new Set();
+      seen[row.videoCode].add(row.platform);
+    }
+    for (const [code, platforms] of Object.entries(seen)) {
+      counts[code] = platforms.size;
+    }
+    res.json(counts);
+  });
 
   // GET /api/captions/:videoCode - all captions for a video
   router.get("/:videoCode", (req, res) => {
@@ -171,11 +193,24 @@ export function createCaptionsRouter(contentLibraryPath: string) {
       return;
     }
 
-    const { videoCode, prompt, conversationHistory } = req.body;
+    const { videoCode, prompt, conversationHistory, platforms: requestedPlatforms } = req.body;
     if (!videoCode) {
       res.status(400).json({ error: "videoCode is required" });
       return;
     }
+
+    // Platform filter: generate only for specified platforms
+    const platformMap: Record<string, string> = {
+      instagram_reels: "Instagram",
+      tiktok: "TikTok",
+      youtube_shorts: "YouTube Shorts",
+      youtube_long: "YouTube Long",
+    };
+    const allPlatformKeys = Object.keys(platformMap);
+    const targetPlatformKeys: string[] = requestedPlatforms?.length
+      ? (requestedPlatforms as string[]).filter((p: string) => allPlatformKeys.includes(p))
+      : allPlatformKeys;
+    const targetPlatformNames = targetPlatformKeys.map((k) => platformMap[k]);
 
     try {
       const videos = parseContentLibrary(contentLibraryPath);
@@ -199,11 +234,41 @@ export function createCaptionsRouter(contentLibraryPath: string) {
 
       const formatInfo = FORMATS[video.format];
 
+      // Metrics-informed: find top performers in same format
+      let provenPatterns = "";
+      try {
+        const topMetrics = db
+          .select()
+          .from(performanceMetrics)
+          .orderBy(desc(performanceMetrics.views))
+          .limit(20)
+          .all();
+
+        if (topMetrics.length > 0) {
+          // Get unique top video codes
+          const topCodes = [...new Set(topMetrics.map((m) => m.videoCode))].slice(0, 5);
+          const topCaptions = topCodes.flatMap((code) =>
+            db.select().from(savedCaptions)
+              .where(and(eq(savedCaptions.videoCode, code), eq(savedCaptions.status, "approved")))
+              .all(),
+          );
+          if (topCaptions.length > 0) {
+            const examples = topCaptions.slice(0, 5).map((c) => {
+              const metrics = topMetrics.find((m) => m.videoCode === c.videoCode);
+              return `[${c.platform}] (${metrics ? `${metrics.views} views, ${metrics.likes} likes` : "top performer"}):\n${c.caption.slice(0, 300)}`;
+            });
+            provenPatterns = `\n\nPROVEN CAPTION PATTERNS (from your top-performing videos):\n${examples.join("\n\n")}`;
+          }
+        }
+      } catch {
+        // Metrics lookup is optional
+      }
+
       const systemPrompt = buildCaptionSystemPrompt(brandVoice, hookText, {
         format: `${video.format} (${formatInfo?.name || ""})`,
         audience: audienceLabel,
         tags: video.tags,
-      });
+      }) + provenPatterns;
 
       const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
       if (conversationHistory?.length > 0) {
@@ -212,7 +277,11 @@ export function createCaptionsRouter(contentLibraryPath: string) {
         }
       }
 
-      const userContent = prompt || `Generate captions for all platforms for this video.
+      const platformInstruction = targetPlatformNames.length < 4
+        ? `Generate captions ONLY for these platforms: ${targetPlatformNames.join(", ")}.`
+        : "Generate captions for all platforms.";
+
+      const userContent = prompt || `${platformInstruction}
 
 Video: ${video.code} - ${video.title}
 Format: ${formatInfo?.name || video.format} (${video.duration}s)
@@ -288,6 +357,211 @@ ${video.script.slice(0, 1500)}`;
       console.error("[captions] Generate error:", message);
       res.status(500).json({ error: message });
     }
+  });
+
+  // --- Hashtag Groups CRUD ---
+
+  // GET /api/captions/hashtag-groups
+  router.get("/hashtag-groups", (_req, res) => {
+    const rows = db.select().from(hashtagGroups).orderBy(desc(hashtagGroups.createdAt)).all();
+    res.json({ groups: rows });
+  });
+
+  // POST /api/captions/hashtag-groups
+  router.post("/hashtag-groups", (req, res) => {
+    const { name, hashtags, category } = req.body;
+    if (!name || !hashtags) {
+      res.status(400).json({ error: "name and hashtags are required" });
+      return;
+    }
+    const row = db
+      .insert(hashtagGroups)
+      .values({ name, hashtags: JSON.stringify(hashtags), category: category || null })
+      .returning()
+      .get();
+    res.status(201).json(row);
+  });
+
+  // DELETE /api/captions/hashtag-groups/:id
+  router.delete("/hashtag-groups/:id", (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    db.delete(hashtagGroups).where(eq(hashtagGroups.id, id)).run();
+    res.json({ deleted: true });
+  });
+
+  // POST /api/captions/suggest-hashtags - AI-suggested hashtags
+  router.post("/suggest-hashtags", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable" });
+      return;
+    }
+    const { videoCode, platform, caption } = req.body;
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === videoCode);
+      const context = video
+        ? `Topic: ${video.title}\nAudience: ${video.audience}\nTags: ${video.tags.join(", ")}`
+        : "";
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        messages: [{
+          role: "user",
+          content: `Suggest 8-12 relevant hashtags for this ${platform || "Instagram"} post about chiropractic content.
+
+${context}
+${caption ? `Current caption: ${caption.slice(0, 500)}` : ""}
+
+Return ONLY a JSON array of hashtag strings (including the # symbol). No other text.`,
+        }],
+      });
+      const text = response.content.find((b) => b.type === "text");
+      if (!text || text.type !== "text") {
+        res.status(500).json({ error: "No response" });
+        return;
+      }
+      const tags = JSON.parse(stripCodeFences(text.text));
+      res.json({ hashtags: tags });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed";
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  // --- Caption Templates CRUD ---
+
+  // GET /api/captions/templates
+  router.get("/templates", (_req, res) => {
+    const rows = db.select().from(captionTemplates).orderBy(desc(captionTemplates.usageCount)).all();
+    res.json({ templates: rows });
+  });
+
+  // POST /api/captions/templates
+  router.post("/templates", (req, res) => {
+    const { name, platform, template, format } = req.body;
+    if (!name || !template) {
+      res.status(400).json({ error: "name and template are required" });
+      return;
+    }
+    const row = db
+      .insert(captionTemplates)
+      .values({ name, platform: platform || null, template, format: format || null })
+      .returning()
+      .get();
+    res.status(201).json(row);
+  });
+
+  // DELETE /api/captions/templates/:id
+  router.delete("/templates/:id", (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    db.delete(captionTemplates).where(eq(captionTemplates.id, id)).run();
+    res.json({ deleted: true });
+  });
+
+  // --- Bulk Status Update ---
+
+  // PUT /api/captions/bulk-status
+  router.put("/bulk-status", (req, res) => {
+    const { videoCode, status } = req.body;
+    if (!videoCode || !status || !["draft", "approved", "posted"].includes(status)) {
+      res.status(400).json({ error: "videoCode and valid status required" });
+      return;
+    }
+    const rows = db
+      .update(savedCaptions)
+      .set({ status, updatedAt: new Date().toISOString() })
+      .where(eq(savedCaptions.videoCode, videoCode))
+      .returning()
+      .get();
+    res.json({ updated: rows });
+  });
+
+  // --- Batch Generation ---
+
+  // POST /api/captions/generate-batch
+  router.post("/generate-batch", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable" });
+      return;
+    }
+    const { videoCodes } = req.body;
+    if (!Array.isArray(videoCodes) || videoCodes.length === 0) {
+      res.status(400).json({ error: "videoCodes array required" });
+      return;
+    }
+
+    const results: Array<{ videoCode: string; status: string; error?: string }> = [];
+    const videos = parseContentLibrary(contentLibraryPath);
+
+    const brandVoice = fs.existsSync(brandPath)
+      ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
+      : "";
+    const hookCategories = parseHookPatterns(hookPatternsPath);
+    const hookText = hookCategories
+      .map((c) => `${c.name}:\n${c.patterns.map((p) => `- ${p.pattern}: "${p.example}" (${p.platform}, optimizes ${p.optimizes})`).join("\n")}`)
+      .join("\n\n");
+    const config = fs.existsSync(configPath) ? parseConfig(configPath) : null;
+
+    for (const videoCode of videoCodes) {
+      try {
+        const video = videos.find((v) => v.code === videoCode);
+        if (!video) {
+          results.push({ videoCode, status: "error", error: "Video not found" });
+          continue;
+        }
+
+        const audienceLabel = config?.audiences.find((a) => a.id === video.audience)?.label || video.audience;
+        const formatInfo = FORMATS[video.format];
+        const systemPrompt = buildCaptionSystemPrompt(brandVoice, hookText, {
+          format: `${video.format} (${formatInfo?.name || ""})`,
+          audience: audienceLabel,
+          tags: video.tags,
+        });
+
+        const response = await client.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{
+            role: "user",
+            content: `Generate captions for all platforms for this video.\n\nVideo: ${video.code} - ${video.title}\nFormat: ${formatInfo?.name || video.format} (${video.duration}s)\nScript:\n${video.script.slice(0, 1500)}`,
+          }],
+        });
+
+        const textBlock = response.content.find((b) => b.type === "text");
+        if (!textBlock || textBlock.type !== "text") {
+          results.push({ videoCode, status: "error", error: "No AI response" });
+          continue;
+        }
+
+        const parsed = JSON.parse(stripCodeFences(textBlock.text));
+        const platformKeyMap: Record<string, string> = {
+          instagram: "instagram_reels",
+          tiktok: "tiktok",
+          "youtube shorts": "youtube_shorts",
+          "youtube long": "youtube_long",
+        };
+
+        for (const cap of parsed.captions) {
+          const platformKey = platformKeyMap[cap.platform.toLowerCase()] || cap.platform.toLowerCase();
+          const existing = db
+            .select()
+            .from(savedCaptions)
+            .where(and(eq(savedCaptions.videoCode, videoCode), eq(savedCaptions.platform, platformKey)))
+            .all();
+          db.insert(savedCaptions)
+            .values({ videoCode, platform: platformKey, caption: cap.caption, variant: existing.length + 1, status: "draft" })
+            .run();
+        }
+
+        results.push({ videoCode, status: "success" });
+      } catch (error) {
+        results.push({ videoCode, status: "error", error: error instanceof Error ? error.message : "Failed" });
+      }
+    }
+
+    res.json({ results });
   });
 
   // GET /api/captions/publish-kit/:videoCode - enriched publish data

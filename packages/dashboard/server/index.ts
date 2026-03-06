@@ -36,6 +36,7 @@ import { createWatchlistIntelRouter } from "./routes/watchlist-intel.js";
 import { createVideoDirectorAiRouter } from "./routes/video-director-ai.js";
 import { createCreatorAnalysisAiRouter } from "./routes/creator-analysis-ai.js";
 import { createCaptionsRouter } from "./routes/captions.js";
+import { createVideoAnalysisRouter } from "./routes/video-analysis.js";
 import { createBenchmarkingRouter } from "./routes/benchmarking.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
@@ -80,6 +81,7 @@ app.use("/api/watchlist-intel", createWatchlistIntelRouter(contentLibraryPath));
 app.use("/api/video-director", createVideoDirectorAiRouter(contentLibraryPath));
 app.use("/api/creator-analysis", createCreatorAnalysisAiRouter(contentLibraryPath));
 app.use("/api/captions", createCaptionsRouter(contentLibraryPath));
+app.use("/api/video-analysis", createVideoAnalysisRouter(contentLibraryPath));
 app.use("/api/benchmarking", createBenchmarkingRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
