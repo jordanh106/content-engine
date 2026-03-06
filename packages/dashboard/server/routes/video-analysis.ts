@@ -108,6 +108,14 @@ export function createVideoAnalysisRouter(contentLibraryPath: string) {
         return;
       }
 
+      // Always load practice context from config
+      const configPath = contentLibraryPath.replace("content-library.md", "config.json");
+      let practiceContext = "";
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        practiceContext = `\nPRACTICE CONTEXT: This video is for "${config.name}" - ${config.description} Content covers: ${(config.audiences as Array<{ label: string }>).map((a) => a.label).join(", ")}. Captions should reflect this practice's brand and audience.`;
+      } catch { /* optional */ }
+
       // Build context from existing video data if videoCode provided
       let videoContext = "";
       if (videoCode) {
@@ -143,16 +151,25 @@ Script: ${video.script.slice(0, 1000)}`;
         ? requestedPlatforms.split(",").map((p) => p.trim())
         : ["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"];
 
-      const analysisPrompt = `Analyze this video (shown as extracted frames) for social media captioning.
+      const analysisPrompt = `Analyze this video (shown as ${framePaths.length} extracted frames at ~2s intervals) for social media captioning.
+${practiceContext}
 ${transcript ? `\nAUDIO TRANSCRIPT: "${transcript}"` : "\n(No audio transcript available)"}
 ${videoContext}
+
+IMPORTANT: Describe EXACTLY what you see in the frames. Note:
+- Who appears (gender, clothing, setting)
+- Any visible text on clothing, walls, signs, or equipment
+- The physical environment (office type, medical equipment, decor)
+- Actions being performed
+- Mood and energy conveyed through body language
+Do NOT guess what the video is about from a single detail. Look at ALL frames before forming your description.
 
 TARGET PLATFORMS: ${platformList.join(", ")}
 
 Respond with a JSON object containing:
 {
-  "visualDescription": "Brief description of what's happening in the video",
-  "mood": "One word mood (energetic, calming, educational, humorous, etc.)",
+  "visualDescription": "Detailed description of what's happening in the video based on what you actually see",
+  "mood": "One word mood (energetic, calming, educational, humorous, authentic, personal, etc.)",
   "hookSuggestions": ["3-5 hook ideas based on the visual content"],
   "captionSuggestions": {
     "instagram_reels": "Full caption with hashtags",
@@ -168,8 +185,9 @@ Respond with a JSON object containing:
 Only include platforms from the target list. Your response must be valid JSON only.`;
 
       const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6-20250514",
         max_tokens: 2048,
+        system: "You are a social media content analyst. Describe EXACTLY what you see in the video frames - real people, settings, actions, visible text on clothing, equipment, etc. Do not guess or hallucinate details you cannot see. If unsure about something, say so. Your analysis will be used to write platform-specific captions.",
         messages: [{
           role: "user",
           content: [

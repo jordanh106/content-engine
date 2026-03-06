@@ -218,7 +218,10 @@ export const WatchlistView: React.FC = () => {
             {benchmarkData && (
               <div className="border border-teal-200 bg-teal-50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-bold text-teal-800">Your Channel</p>
+                  <div>
+                    <p className="text-sm font-bold text-teal-800">Your Channel</p>
+                    <p className="text-[10px] font-medium text-teal-600">@collective_family</p>
+                  </div>
                   <button
                     onClick={() => setShowLogMetrics("@collective_family")}
                     className="text-[10px] font-bold text-teal-600 hover:text-teal-800"
@@ -273,6 +276,12 @@ export const WatchlistView: React.FC = () => {
                         {comp.trend === "declining" && <ArrowDown size={10} />}
                         {comp.trend}
                       </span>
+                      <button
+                        onClick={() => setShowLogMetrics(comp.handle)}
+                        className="text-[10px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+                      >
+                        Log
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -302,17 +311,6 @@ export const WatchlistView: React.FC = () => {
                 {analyzeMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 {analyzeMutation.isPending ? "Analyzing..." : "Analyze Position"}
               </button>
-              {creators.length > 0 && (
-                <button
-                  onClick={() => {
-                    const handle = creators[0]?.handle;
-                    if (handle) setShowLogMetrics(handle);
-                  }}
-                  className="text-[10px] font-bold text-slate-500 hover:text-slate-700"
-                >
-                  Log Competitor Metrics
-                </button>
-              )}
             </div>
 
             {/* AI Analysis results */}

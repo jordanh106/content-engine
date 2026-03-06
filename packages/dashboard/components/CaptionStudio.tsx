@@ -585,7 +585,7 @@ export const CaptionStudio: React.FC = () => {
                 <EmptyState
                   icon={<MessageSquareText size={24} className="text-slate-400" />}
                   headline="No videos ready for captions"
-                  description="Move videos to ASSEMBLED, SCHEDULED, or PUBLISHED stage in the pipeline first."
+                  description="Move videos to ASSEMBLED, SCHEDULED, or PUBLISHED stage in the pipeline first. You can still analyze video files directly."
                   compact
                 />
               )}
@@ -675,9 +675,22 @@ export const CaptionStudio: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
               <MessageSquareText size={48} className="mx-auto text-slate-300 mb-4" />
               <p className="text-lg font-serif font-bold text-slate-600 mb-2">Select a Video</p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-400 mb-6">
                 Choose a video from the list to generate and manage captions
               </p>
+              <div className="border-t border-slate-100 pt-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+                  Or analyze any video file
+                </p>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  disabled={analysisLoading}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-teal-200 bg-teal-50 text-teal-700 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-colors disabled:opacity-50"
+                >
+                  {analysisLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  {analysisLoading ? analysisStep : "Analyze Video"}
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -739,158 +752,6 @@ export const CaptionStudio: React.FC = () => {
                   <p className="text-sm text-red-600 mt-2">{generateMutation.error.message}</p>
                 )}
               </div>
-
-              {/* Upload overlay */}
-              {showUpload && (
-                <div
-                  className="bg-white border-2 border-dashed border-teal-300 rounded-2xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-colors"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "video/mp4,video/quicktime,video/webm";
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) handleVideoUpload(file);
-                    };
-                    input.click();
-                  }}
-                >
-                  <Upload size={32} className="mx-auto text-teal-400 mb-3" />
-                  <p className="text-sm font-medium text-slate-700 mb-1">
-                    Drop a video file here or click to browse
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    MP4, MOV, or WebM (max 200MB). AI will analyze visuals and audio.
-                  </p>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowUpload(false); }}
-                    className="mt-3 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-
-              {/* Video Analysis Results */}
-              {videoAnalysis && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                      Video Analysis
-                    </p>
-                    <button
-                      onClick={() => setVideoAnalysis(null)}
-                      className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-
-                  {/* Visual description & mood */}
-                  <p className="text-sm text-slate-700 mb-2">{videoAnalysis.visualDescription || ""}</p>
-                  {videoAnalysis.mood ? (
-                    <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold mb-3">
-                      {videoAnalysis.mood}
-                    </span>
-                  ) : null}
-
-                  {/* Hook suggestions */}
-                  {videoAnalysis.hookSuggestions && videoAnalysis.hookSuggestions.length > 0 ? (
-                    <div className="mb-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hook Ideas</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {videoAnalysis.hookSuggestions.map((hook, i) => (
-                          <button
-                            key={i}
-                            onClick={() => navigator.clipboard.writeText(hook)}
-                            className="px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-xs text-amber-800 hover:bg-amber-100 transition-colors"
-                            title="Click to copy"
-                          >
-                            {hook}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Hashtag suggestions from analysis */}
-                  {videoAnalysis.hashtagSuggestions && videoAnalysis.hashtagSuggestions.length > 0 ? (
-                    <div className="mb-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hashtags</p>
-                      <div className="flex flex-wrap gap-1">
-                        {videoAnalysis.hashtagSuggestions.map((tag, i) => (
-                          <button
-                            key={i}
-                            onClick={() => navigator.clipboard.writeText(tag)}
-                            className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-xs text-teal-700 hover:bg-teal-100 transition-colors"
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Use These Captions button */}
-                  {videoAnalysis.captionSuggestions ? (
-                    <button
-                      onClick={() => {
-                        const suggestions = videoAnalysis.captionSuggestions!;
-                        // Save each suggestion as a draft caption
-                        for (const [plat, caption] of Object.entries(suggestions)) {
-                          if (caption && selectedVideo) {
-                            fetch("/api/captions", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ videoCode: selectedVideo, platform: plat, caption, status: "draft" }),
-                            });
-                          }
-                        }
-                        queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
-                        queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
-                      }}
-                      className="px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
-                    >
-                      Use These Captions
-                    </button>
-                  ) : null}
-
-                  {/* Transcript */}
-                  {videoAnalysis.transcript ? (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => setScriptExpanded(!scriptExpanded)}
-                        className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600"
-                      >
-                        {scriptExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                        Transcript
-                      </button>
-                      {scriptExpanded && (
-                        <p className="mt-1 text-xs text-slate-600 bg-slate-50 rounded-xl p-3">
-                          {videoAnalysis.transcript}
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {/* Key moments */}
-                  {videoAnalysis.keyMoments && videoAnalysis.keyMoments.length > 0 ? (
-                    <div className="mt-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Key Moments</p>
-                      <div className="space-y-1">
-                        {videoAnalysis.keyMoments.map((m, i) => (
-                          <div key={i} className="flex items-center gap-2 text-xs">
-                            <span className="font-mono text-slate-400 w-10">{m.timestamp}</span>
-                            <span className="text-slate-600">{m.description}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
 
               {/* AI Chat Refinement */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4">
@@ -1246,6 +1107,157 @@ export const CaptionStudio: React.FC = () => {
                 </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Upload overlay - renders regardless of video selection */}
+          {showUpload && (
+            <div
+              className="mt-4 bg-white border-2 border-dashed border-teal-300 rounded-2xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-colors"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "video/mp4,video/quicktime,video/webm";
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleVideoUpload(file);
+                };
+                input.click();
+              }}
+            >
+              <Upload size={32} className="mx-auto text-teal-400 mb-3" />
+              <p className="text-sm font-medium text-slate-700 mb-1">
+                Drop a video file here or click to browse
+              </p>
+              <p className="text-xs text-slate-400">
+                MP4, MOV, or WebM (max 200MB). AI will analyze visuals and audio.
+              </p>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowUpload(false); }}
+                className="mt-3 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Video Analysis Results - renders regardless of video selection */}
+          {videoAnalysis && (
+            <div className="mt-4 bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Video Analysis
+                </p>
+                <button
+                  onClick={() => setVideoAnalysis(null)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Visual description & mood */}
+              <p className="text-sm text-slate-700 mb-2">{videoAnalysis.visualDescription || ""}</p>
+              {videoAnalysis.mood ? (
+                <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold mb-3">
+                  {videoAnalysis.mood}
+                </span>
+              ) : null}
+
+              {/* Hook suggestions */}
+              {videoAnalysis.hookSuggestions && videoAnalysis.hookSuggestions.length > 0 ? (
+                <div className="mb-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hook Ideas</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {videoAnalysis.hookSuggestions.map((hook, i) => (
+                      <button
+                        key={i}
+                        onClick={() => navigator.clipboard.writeText(hook)}
+                        className="px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-xs text-amber-800 hover:bg-amber-100 transition-colors"
+                        title="Click to copy"
+                      >
+                        {hook}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Hashtag suggestions from analysis */}
+              {videoAnalysis.hashtagSuggestions && videoAnalysis.hashtagSuggestions.length > 0 ? (
+                <div className="mb-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hashtags</p>
+                  <div className="flex flex-wrap gap-1">
+                    {videoAnalysis.hashtagSuggestions.map((tag, i) => (
+                      <button
+                        key={i}
+                        onClick={() => navigator.clipboard.writeText(tag)}
+                        className="px-2 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-xs text-teal-700 hover:bg-teal-100 transition-colors"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Use These Captions button - only when a video is selected */}
+              {videoAnalysis.captionSuggestions && selectedVideo ? (
+                <button
+                  onClick={() => {
+                    const suggestions = videoAnalysis.captionSuggestions!;
+                    for (const [plat, caption] of Object.entries(suggestions)) {
+                      if (caption && selectedVideo) {
+                        fetch("/api/captions", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ videoCode: selectedVideo, platform: plat, caption, status: "draft" }),
+                        });
+                      }
+                    }
+                    queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
+                    queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
+                  }}
+                  className="px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
+                >
+                  Use These Captions
+                </button>
+              ) : null}
+
+              {/* Transcript */}
+              {videoAnalysis.transcript ? (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setScriptExpanded(!scriptExpanded)}
+                    className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600"
+                  >
+                    {scriptExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                    Transcript
+                  </button>
+                  {scriptExpanded && (
+                    <p className="mt-1 text-xs text-slate-600 bg-slate-50 rounded-xl p-3">
+                      {videoAnalysis.transcript}
+                    </p>
+                  )}
+                </div>
+              ) : null}
+
+              {/* Key moments */}
+              {videoAnalysis.keyMoments && videoAnalysis.keyMoments.length > 0 ? (
+                <div className="mt-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Key Moments</p>
+                  <div className="space-y-1">
+                    {videoAnalysis.keyMoments.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="font-mono text-slate-400 w-10">{m.timestamp}</span>
+                        <span className="text-slate-600">{m.description}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
