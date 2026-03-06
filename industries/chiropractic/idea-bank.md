@@ -12,13 +12,11 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 
 | Topic | Suggested Format | Hook Angle | Priority | Source | Date Added |
 |-------|-----------------|------------|----------|--------|------------|
-| Tech Neck Prevention Guide | A (Explainer) | Your phone is aging your spine | High | n8n Content Intelligence | 2026-03-02 |
-| Pregnancy Pain Relief | C (Demo) | Safe adjustments for each trimester | High | n8n Content Intelligence | 2026-03-02 |
-| Desk Worker Revival | F (Quick Tip) | 60-second posture fixes | High | n8n Content Intelligence | 2026-03-02 |
 | Desk Worker's Daily Mobility Routine | C (Demo) | 3 Minutes to Better Posture | High | n8n Content Intelligence | 2026-03-03 |
 | Stress-Pain Connection | D (Myth Buster) | This Is Why You're Always Tense | High | n8n Content Intelligence | 2026-03-03 |
 | 5-Minute Office Recovery | F (Quick Tip) | Instant Desk Relief | High | n8n Content Intelligence | 2026-03-03 |
 | Chair Exercises for Spinal Decompression | C | Is sitting all day destroying your spine? | High | Opportunities AI | 2026-03-04 |
+| The Phone Position Destroying Your Neck | D | Your phone isn't the problem - this is | High | Opportunities AI | 2026-03-06 |
 
 ---
 
@@ -78,4 +76,6 @@ Move ideas here after they've been promoted to the calendar. Keep for reference.
 
 | Topic | Format | Scheduled Date | Video Code |
 |-------|--------|---------------|------------|
-| | | | |
+| Pregnancy Pain Relief | C (Demo) | 2026-03-06 | |
+| Tech Neck Prevention Guide | A (Explainer) | 2026-03-06 | |
+| Desk Worker Revival | F (Quick Tip) | 2026-03-06 | |

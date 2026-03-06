@@ -1653,6 +1653,51 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 ---
 
+
+#### C1: Pregnancy Pain Relief
+
+**Format:** C (Demo) | **Duration:** 45s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Safe adjustments for each trimester
+
+
+#### C2: Pregnancy Pain Relief
+
+**Format:** C (Demo) | **Duration:** 45s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Safe adjustments for each trimester
+
+
+#### A7: Tech Neck Prevention Guide
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Your phone is aging your spine
+
+
+#### F1: Desk Worker Revival
+
+**Format:** F (Quick Tip) | **Duration:** 10s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] 60-second posture fixes
+
+
+#### C3: Athletic Recovery Between Training Sessions
+
+**Format:** C (Demo) | **Duration:** 45s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Here's something nobody teaches you about recovery between sessions.
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library
