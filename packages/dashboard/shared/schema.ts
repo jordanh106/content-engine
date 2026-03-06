@@ -75,3 +75,28 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
   watchTimeSeconds: integer("watch_time_seconds"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
+
+export const savedCaptions = sqliteTable("saved_captions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code").notNull(),
+  platform: text("platform").notNull(),
+  caption: text("caption").notNull(),
+  variant: integer("variant").default(1),
+  status: text("status").notNull().default("draft"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
+export const channelSnapshots = sqliteTable("channel_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  handle: text("handle").notNull(),
+  platform: text("platform").notNull(),
+  followers: integer("followers"),
+  avgViews: integer("avg_views"),
+  engagementRateBps: integer("engagement_rate_bps"),
+  saveRateBps: integer("save_rate_bps"),
+  postsPerWeek: integer("posts_per_week"),
+  recordedAt: text("recorded_at").notNull(),
+  notes: text("notes"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});

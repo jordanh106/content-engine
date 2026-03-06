@@ -5,6 +5,7 @@ import type { Idea, IdeaCategory } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
+import { EmptyState } from "./ui/EmptyState.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -151,14 +152,13 @@ export const IdeasView: React.FC = () => {
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading ideas...</div>
       ) : ideas.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-          <Lightbulb size={32} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 text-sm">
-            {activeCategory === "all"
-              ? "No ideas yet. Run /viral-scout or /last30days to discover content ideas."
-              : `No ${CATEGORY_META[activeCategory as IdeaCategory]?.label.toLowerCase()} ideas yet.`}
-          </p>
-        </div>
+        <EmptyState
+          icon={<Lightbulb size={24} className="text-slate-400" />}
+          headline="No ideas yet"
+          description={activeCategory === "all"
+            ? "Run /viral-scout or /last30days to discover content ideas, or add them manually."
+            : `No ${CATEGORY_META[activeCategory as IdeaCategory]?.label.toLowerCase()} ideas yet.`}
+        />
       ) : (
         <div className="space-y-3">
           {ideas.map((idea) => (

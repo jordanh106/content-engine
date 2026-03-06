@@ -9,9 +9,11 @@ import {
   Calendar,
   Timer,
   TrendingUp,
+  MessageSquareText,
 } from "lucide-react";
 import type { DashboardView } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { WhatsNew } from "./ui/WhatsNew.js";
 
 type NavItem = {
   view: DashboardView;
@@ -28,6 +30,7 @@ const navItems: NavItem[] = [
   { view: "WATCHLIST", label: "Watchlist", icon: <Eye size={20} /> },
   { view: "CALENDAR", label: "Calendar", icon: <Calendar size={20} /> },
   { view: "SESSION", label: "Session", icon: <Timer size={20} /> },
+  { view: "CAPTIONS", label: "Captions", icon: <MessageSquareText size={20} /> },
   { view: "METRICS", label: "Metrics", icon: <TrendingUp size={20} /> },
 ];
 
@@ -57,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({
             key={item.view}
             onClick={() => onNavigate(item.view)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left",
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full",
               currentView === item.view
                 ? "bg-teal-50 text-teal-700"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
@@ -65,6 +68,7 @@ export const Layout: React.FC<LayoutProps> = ({
           >
             {item.icon}
             {item.label}
+            {item.view === "HOME" && <WhatsNew />}
           </button>
         ))}
       </nav>

@@ -26,6 +26,7 @@ import { PipelineCard } from "./ui/PipelineCard.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+import { useOnboarding } from "./OnboardingProvider.js";
 
 type PipelineBoardProps = {
   onSelectVideo: (code: string) => void;
@@ -182,6 +183,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   onSelectVideo,
 }) => {
   const queryClient = useQueryClient();
+  const { trackEvent } = useOnboarding();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<ProductionStatus | null>("SCRIPTED");
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
@@ -313,6 +315,9 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       if (context?.previous) {
         queryClient.setQueryData(["pipeline"], context.previous);
       }
+    },
+    onSuccess: () => {
+      trackEvent("move-video");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
@@ -490,7 +495,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       <FeatureHint id="pipeline-drag" content={FEATURE_HINTS["pipeline-drag"].content} side="bottom">
         <p className="hidden md:block text-xs text-slate-400 mb-2">Drag cards to advance</p>
       </FeatureHint>
-      <div className="hidden md:block">
+      <div data-tour="pipeline-board" className="hidden md:block">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}

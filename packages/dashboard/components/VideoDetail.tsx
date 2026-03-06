@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -9,6 +9,7 @@ import type {
   VibeMotionComponent,
   TimelineResponse,
   ProductionPlan,
+  SavedCaption,
 } from "../shared/types.js";
 import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -26,7 +27,7 @@ type VideoDetailProps = {
   onOpenComposer?: (code: string) => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline" | "production";
+type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -141,11 +142,14 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
     },
   });
 
+  const showPublishTab = video && ["ASSEMBLED", "SCHEDULED", "PUBLISHED"].includes(video.status);
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "script", label: "Script", icon: <FileText size={16} /> },
     { id: "shots", label: "Shots", icon: <Camera size={16} /> },
     { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
     { id: "production", label: "Production", icon: <ListChecks size={16} /> },
+    ...(showPublishTab ? [{ id: "publish" as Tab, label: "Publish", icon: <Send size={16} /> }] : []),
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
 
@@ -363,6 +367,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
               {activeTab === "production" && (
                 <ProductionTab code={code} plan={productionPlanData?.plan ?? null} isLoading={!productionPlanData} />
               )}
+              {activeTab === "publish" && <PublishTab code={code} />}
               {activeTab === "info" && <InfoTab video={video} />}
             </>
           )}
@@ -654,6 +659,187 @@ const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoa
       </div>
       {generateMutation.isError && (
         <p className="text-xs text-rose-500 text-center mt-1">{(generateMutation.error as Error)?.message}</p>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// Publish Tab
+// ============================================
+
+const PUBLISH_PLATFORM_LABELS: Record<string, string> = {
+  instagram_reels: "Instagram Reels",
+  tiktok: "TikTok",
+  youtube_shorts: "YouTube Shorts",
+  youtube_long: "YouTube Long",
+};
+
+const PUBLISH_PLATFORM_COLORS: Record<string, string> = {
+  instagram_reels: "border-pink-200 bg-pink-50",
+  tiktok: "border-slate-300 bg-slate-50",
+  youtube_shorts: "border-red-200 bg-red-50",
+  youtube_long: "border-red-200 bg-red-50",
+};
+
+type PublishKitResponse = {
+  video: { code: string; title: string; format: string; scriptPreview: string; tags: string[]; audience: string };
+  captions: SavedCaption[];
+  calendarEntries: Array<{ id: number; date: string; platform: string; status: string }>;
+  missingPlatforms: string[];
+  coveredCount: number;
+  totalPlatforms: number;
+};
+
+const PublishTab: React.FC<{ code: string }> = ({ code }) => {
+  const queryClient = useQueryClient();
+  const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
+
+  const { data: kit, isLoading } = useQuery<PublishKitResponse>({
+    queryKey: ["publish-kit", code],
+    queryFn: () => fetch(`/api/captions/publish-kit/${code}`).then((r) => r.json()),
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/captions/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoCode: code }),
+      });
+      if (!r.ok) throw new Error("Generation failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publish-kit", code] });
+      queryClient.invalidateQueries({ queryKey: ["captions", code] });
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/pipeline/${code}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PUBLISHED" }),
+      });
+      if (!r.ok) throw new Error("Status update failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video", code] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["publish-kit", code] });
+    },
+  });
+
+  const handleCopy = (platform: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPlatform(platform);
+    setTimeout(() => setCopiedPlatform(null), 2000);
+  };
+
+  if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
+  if (!kit) return <div className="text-center py-12 text-slate-400">Could not load publish data</div>;
+
+  const platforms = ["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"];
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            Publish Checklist
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {kit.coveredCount}/{kit.totalPlatforms} platforms have captions
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {kit.missingPlatforms.length > 0 && (
+            <button
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50"
+            >
+              {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              Generate Missing
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Platform checklist */}
+      {platforms.map((platform) => {
+        const caption = kit.captions.find((c) => c.platform === platform && c.status === "approved")
+          || kit.captions.find((c) => c.platform === platform);
+        const calEntry = kit.calendarEntries.find((e) => e.platform === platform);
+
+        return (
+          <div key={platform} className={cn("border rounded-xl p-4", PUBLISH_PLATFORM_COLORS[platform] || "border-slate-200 bg-white")}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-bold text-slate-800">
+                {PUBLISH_PLATFORM_LABELS[platform] || platform}
+              </p>
+              <div className="flex items-center gap-2">
+                {caption && (
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    caption.status === "approved" ? "bg-emerald-100 text-emerald-700" :
+                    caption.status === "posted" ? "bg-teal-100 text-teal-700" :
+                    "bg-slate-100 text-slate-600",
+                  )}>
+                    {caption.status}
+                  </span>
+                )}
+                {calEntry && (
+                  <span className="text-[10px] font-bold text-slate-500">
+                    {calEntry.date}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {caption ? (
+              <div className="relative">
+                <p className="text-sm text-slate-600 whitespace-pre-wrap pr-10 line-clamp-4">{caption.caption}</p>
+                <button
+                  onClick={() => handleCopy(platform, caption.caption)}
+                  className="absolute top-0 right-0 p-2 rounded-lg hover:bg-white/60 transition-colors"
+                  title="Copy caption"
+                >
+                  {copiedPlatform === platform ? (
+                    <Check size={16} className="text-teal-500" />
+                  ) : (
+                    <Copy size={16} className="text-slate-400" />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">No caption generated</p>
+            )}
+
+            {!calEntry && (
+              <p className="text-[10px] text-slate-400 mt-2">Not scheduled</p>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Mark Published */}
+      <div className="flex justify-center pt-2">
+        <button
+          onClick={() => publishMutation.mutate()}
+          disabled={publishMutation.isPending}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+        >
+          {publishMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          Mark as Published
+        </button>
+      </div>
+      {generateMutation.isError && (
+        <p className="text-xs text-rose-500 text-center">{(generateMutation.error as Error)?.message}</p>
       )}
     </div>
   );

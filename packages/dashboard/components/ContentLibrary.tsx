@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownAZ, ArrowUpDown } from "lucide-react";
+import { ArrowDownAZ, ArrowUpDown, Search } from "lucide-react";
 import type { VideoSummary, FormatId, Audience } from "../shared/types.js";
 import { VideoCard } from "./ui/VideoCard.js";
 import { SearchInput } from "./ui/SearchInput.js";
 import { FilterBar } from "./ui/FilterBar.js";
 import { cn } from "../utils/cn.js";
+import { EmptyState } from "./ui/EmptyState.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -145,17 +146,20 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
       {videosLoading ? (
         <div className="text-center py-12 text-slate-400">Loading...</div>
       ) : grouped.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">
-          No videos match your filters
-        </div>
+        <EmptyState
+          icon={<Search size={24} className="text-slate-400" />}
+          headline="No videos match"
+          description="Try adjusting your filters or search query to find what you're looking for."
+          action={{ label: "Clear Filters", onClick: () => window.location.reload() }}
+        />
       ) : (
         <div className="space-y-8">
-          {grouped.map(([audienceId, group]) => (
+          {grouped.map(([audienceId, group], groupIdx) => (
             <section key={audienceId}>
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
                 {group.label} ({group.videos.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" {...(groupIdx === 0 ? { "data-tour": "video-card" } : {})}>
                 {group.videos.map((video) => (
                   <VideoCard
                     key={video.code}

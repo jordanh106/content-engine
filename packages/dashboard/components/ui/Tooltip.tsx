@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -51,6 +51,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const tipRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isTouchRef = useRef(false);
+  const isHoveringTipRef = useRef(false);
+  const tooltipId = useId();
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current || !tipRef.current) return;
@@ -71,7 +73,12 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
   const hide = useCallback(() => {
     clearTimeout(timerRef.current);
-    setVisible(false);
+    // Small delay to allow moving to the tooltip content
+    setTimeout(() => {
+      if (!isHoveringTipRef.current) {
+        setVisible(false);
+      }
+    }, 100);
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -80,6 +87,29 @@ export const Tooltip: React.FC<TooltipProps> = ({
       setVisible((v) => !v);
     }
   }, []);
+
+  // Keyboard: show on focus, hide on blur
+  const handleFocus = useCallback(() => {
+    if (isTouchRef.current) return;
+    setVisible(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setVisible(false);
+  }, []);
+
+  // Escape key dismiss (WCAG 1.4.13)
+  useEffect(() => {
+    if (!visible) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setVisible(false);
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [visible]);
 
   // Close on outside tap (mobile)
   useEffect(() => {
@@ -105,11 +135,24 @@ export const Tooltip: React.FC<TooltipProps> = ({
     return () => document.removeEventListener("mousemove", handler);
   }, []);
 
+  // Tooltip hover handlers (WCAG 1.4.13 - hoverable)
+  const handleTipMouseEnter = useCallback(() => {
+    isHoveringTipRef.current = true;
+  }, []);
+
+  const handleTipMouseLeave = useCallback(() => {
+    isHoveringTipRef.current = false;
+    setVisible(false);
+  }, []);
+
   const child = React.cloneElement(children, {
     ref: triggerRef,
     onMouseEnter: show,
     onMouseLeave: hide,
     onPointerDown: handlePointerDown,
+    onFocus: handleFocus,
+    onBlur: handleBlur,
+    "aria-describedby": visible ? tooltipId : undefined,
   } as Record<string, unknown>);
 
   return (
@@ -120,12 +163,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
           {visible && (
             <motion.div
               ref={tipRef}
+              id={tooltipId}
+              role="tooltip"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="fixed z-[60] pointer-events-none"
+              className="fixed z-[60]"
               style={{ top: position.top, left: position.left, maxWidth }}
+              onMouseEnter={handleTipMouseEnter}
+              onMouseLeave={handleTipMouseLeave}
             >
               <div className="bg-slate-900 text-white text-xs rounded-xl px-3 py-2 shadow-lg leading-relaxed">
                 {content}

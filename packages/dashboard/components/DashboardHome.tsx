@@ -23,6 +23,7 @@ import type {
   DashboardView,
   OpportunitiesResponse,
   VelocityResponse,
+  ActionsResponse,
 } from "../shared/types.js";
 import { PRODUCTION_STATUSES } from "../shared/types.js";
 import { StatCard } from "./ui/StatCard.js";
@@ -128,6 +129,11 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     queryFn: () => fetch("/api/analytics/velocity").then((r) => r.json()).catch(() => null),
   });
 
+  const { data: actionsData } = useQuery<ActionsResponse>({
+    queryKey: ["analytics-actions"],
+    queryFn: () => fetch("/api/analytics/actions").then((r) => r.json()).catch(() => null),
+  });
+
   if (isLoading || !data) {
     return (
       <div className="text-center py-12 text-slate-400">Loading...</div>
@@ -174,7 +180,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div data-tour="stat-cards" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {PRODUCTION_STATUSES.map((status) => {
           const meta = STATUS_META[status];
           return (
@@ -289,12 +295,65 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
       </section>
 
-      {/* Tonight's Session */}
-      {recommendation && (
-        <section>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
-            Tonight's Session
-          </h2>
+      {/* Action Feed */}
+      <section data-tour="action-feed">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+          Action Feed
+        </h2>
+        {actionsData && actionsData.actions.length > 0 ? (
+          <div className="space-y-2">
+            {actionsData.actions.map((action, i) => {
+              const urgencyStyles = {
+                today: "border-red-200 bg-red-50",
+                this_week: "border-amber-200 bg-amber-50",
+                recommendation: "border-teal-200 bg-teal-50",
+              };
+              const urgencyIconColors = {
+                today: "bg-red-100 text-red-600",
+                this_week: "bg-amber-100 text-amber-600",
+                recommendation: "bg-teal-100 text-teal-600",
+              };
+              const urgencyBtnColors = {
+                today: "bg-red-600 hover:bg-red-700",
+                this_week: "bg-amber-600 hover:bg-amber-700",
+                recommendation: "bg-teal-600 hover:bg-teal-700",
+              };
+              const typeIcons: Record<string, React.ReactNode> = {
+                captions: <FileText size={14} />,
+                cadence: <Calendar size={14} />,
+                stuck: <AlertTriangle size={14} />,
+                opportunity: <Radar size={14} />,
+                session: <Zap size={14} />,
+              };
+
+              return (
+                <div
+                  key={i}
+                  className={`border rounded-2xl p-4 ${urgencyStyles[action.urgency]}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-7 h-7 rounded-lg ${urgencyIconColors[action.urgency]} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                      {typeIcons[action.type] || <Zap size={14} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">{action.title}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">{action.detail}</p>
+                    </div>
+                    {onNavigate && (
+                      <button
+                        onClick={() => onNavigate(action.targetView)}
+                        className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white rounded-full ${urgencyBtnColors[action.urgency]} transition-colors flex-shrink-0 flex items-center gap-1`}
+                      >
+                        {action.actionLabel}
+                        <ArrowRight size={10} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : recommendation ? (
           <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -324,19 +383,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </div>
             </div>
           </div>
-        </section>
-      )}
-
-      {!recommendation && (
-        <section>
+        ) : (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center">
             <CircleCheck className="mx-auto mb-2 text-emerald-600" size={24} />
             <p className="text-sm font-semibold text-slate-900">
-              All videos published
+              All caught up, no actions needed
             </p>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <ViewHelp {...VIEW_HELP.HOME} />
     </div>

@@ -15,6 +15,7 @@ import type { SessionType, FormatId, ProductionSession } from "../shared/types.j
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { cn } from "../utils/cn.js";
+import { EmptyState } from "./ui/EmptyState.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -207,9 +208,12 @@ export const SessionView: React.FC = () => {
                 )}
               </div>
               {availableData.videos.length === 0 ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
-                  <p className="text-sm text-slate-500">No videos in {SESSION_TYPES.find((s) => s.type === selectedType)?.statusFrom} status</p>
-                </div>
+                <EmptyState
+                  icon={<Film size={24} className="text-slate-400" />}
+                  headline="No videos ready"
+                  description={`No videos are currently in ${SESSION_TYPES.find((s) => s.type === selectedType)?.statusFrom} status for this session type.`}
+                  compact
+                />
               ) : (
                 <div className="space-y-2">
                   {availableData.videos.map((v) => (

@@ -97,4 +97,29 @@ sqlite.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS saved_captions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    caption TEXT NOT NULL,
+    variant INTEGER DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS channel_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    handle TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    followers INTEGER,
+    avg_views INTEGER,
+    engagement_rate_bps INTEGER,
+    save_rate_bps INTEGER,
+    posts_per_week INTEGER,
+    recorded_at TEXT NOT NULL,
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);

@@ -1,26 +1,43 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { isHintSeen, markHintSeen } from "../../utils/hints.js";
+import { Info } from "lucide-react";
+import { useOnboarding } from "../OnboardingProvider.js";
 
-type FeatureHintProps = {
+type CoachmarkProps = {
   id: string;
   content: string;
+  title?: string;
   side?: "top" | "bottom" | "left" | "right";
+  /** Only show after this hint has been dismissed */
+  showAfter?: string;
+  /** Show on Nth view visit (default 1). Set higher to avoid showing during tour. */
+  delayVisits?: number;
   children: React.ReactElement;
 };
 
-export const FeatureHint: React.FC<FeatureHintProps> = ({
+const Coachmark: React.FC<CoachmarkProps> = ({
   id,
   content,
+  title,
   side = "bottom",
+  showAfter,
+  delayVisits = 1,
   children,
 }) => {
-  const [seen, setSeen] = useState(() => isHintSeen(id));
+  const { isHintSeen, markHintSeen: markSeen, progress, isTourActive } = useOnboarding();
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  const seen = isHintSeen(id);
+
+  // Don't show during tour
+  const blocked = isTourActive
+    || seen
+    || (showAfter && !isHintSeen(showAfter))
+    || progress.viewsVisited.length < delayVisits;
 
   const updatePosition = useCallback(() => {
     if (!wrapperRef.current) return;
@@ -63,13 +80,25 @@ export const FeatureHint: React.FC<FeatureHintProps> = ({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // Escape to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
   const dismiss = () => {
-    markHintSeen(id);
-    setSeen(true);
+    markSeen(id);
     setOpen(false);
   };
 
-  if (seen) return <>{children}</>;
+  if (blocked) return <>{children}</>;
 
   const translateStyle =
     side === "top" || side === "bottom"
@@ -80,14 +109,13 @@ export const FeatureHint: React.FC<FeatureHintProps> = ({
     <div ref={wrapperRef} className="relative inline-flex">
       {children}
 
-      {/* Pulsing dot */}
+      {/* Info badge */}
       <button
         onClick={() => setOpen(!open)}
-        className="absolute -top-1 -right-1 z-10 w-3 h-3 flex items-center justify-center"
+        className="absolute -top-1.5 -right-1.5 z-10 w-4 h-4 rounded-full bg-white border-2 border-teal-500 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
         aria-label="Feature tip"
       >
-        <span className="absolute w-3 h-3 rounded-full bg-teal-400 animate-ping opacity-75" />
-        <span className="relative w-2 h-2 rounded-full bg-teal-500" />
+        <Info size={8} className="text-teal-600" strokeWidth={3} />
       </button>
 
       {/* Popover */}
@@ -104,6 +132,9 @@ export const FeatureHint: React.FC<FeatureHintProps> = ({
               style={{ top: position.top, left: position.left, ...translateStyle }}
             >
               <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xl max-w-[260px]">
+                {title && (
+                  <p className="text-xs font-bold text-slate-900 mb-1">{title}</p>
+                )}
                 <p className="text-sm text-slate-700 leading-relaxed mb-3">{content}</p>
                 <button
                   onClick={dismiss}
@@ -120,3 +151,7 @@ export const FeatureHint: React.FC<FeatureHintProps> = ({
     </div>
   );
 };
+
+// Export both names for backward compatibility
+export { Coachmark };
+export { Coachmark as FeatureHint };

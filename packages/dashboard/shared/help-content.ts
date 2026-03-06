@@ -1,4 +1,4 @@
-import type { DashboardView } from "../shared/types.js";
+import type { DashboardView, TourStep, ChecklistItem, ChangelogEntry } from "../shared/types.js";
 
 export type ViewHelpData = {
   title: string;
@@ -226,6 +226,28 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  CAPTIONS: {
+    title: "Caption Studio",
+    description:
+      "Generate, manage, and store social media captions for your videos. AI-powered generation with format-aware hook patterns and platform-specific optimization.",
+    tips: [
+      {
+        label: "Generate All",
+        detail:
+          "One click generates captions for all 4 platforms (Instagram, TikTok, YouTube Shorts, YouTube Long) using your video's script and hook patterns.",
+      },
+      {
+        label: "Status Tracking",
+        detail:
+          "Mark captions as Draft, Approved, or Posted to track which posts are ready to publish.",
+      },
+      {
+        label: "Variants",
+        detail:
+          "Generate multiple caption variants per platform for A/B testing. Each generation adds a new variant.",
+      },
+    ],
+  },
 };
 
 export const FEATURE_HINTS: Record<string, HintData> = {
@@ -278,3 +300,78 @@ export const FEATURE_HINTS: Record<string, HintData> = {
     side: "bottom",
   },
 };
+
+// ============================================
+// Guided Tour Steps
+// ============================================
+
+export const TOUR_STEPS: TourStep[] = [
+  {
+    targetSelector: '[data-tour="stat-cards"]',
+    title: "Production at a Glance",
+    content: "These cards show how many videos are in each production stage. Track your progress from script to publish.",
+    side: "bottom",
+    view: "HOME",
+  },
+  {
+    targetSelector: '[data-tour="action-feed"]',
+    title: "Your Action Feed",
+    content: "Prioritized tasks based on deadlines, cadence gaps, and stuck videos. Start here each session.",
+    side: "top",
+    view: "HOME",
+  },
+  {
+    targetSelector: '[data-tour="pipeline-board"]',
+    title: "Drag to Advance",
+    content: "Drag video cards between columns to move them through production stages.",
+    side: "bottom",
+    view: "PIPELINE",
+  },
+  {
+    targetSelector: '[data-tour="video-card"]',
+    title: "Video Detail",
+    content: "Tap any card to see the full script, shot prompts, and production controls.",
+    side: "bottom",
+    view: "LIBRARY",
+  },
+  {
+    targetSelector: '[data-tour="caption-workspace"]',
+    title: "Caption Studio",
+    content: "Generate captions for all platforms with one click. Edit, approve, and track status.",
+    side: "bottom",
+    view: "CAPTIONS",
+  },
+];
+
+// ============================================
+// Onboarding Checklist
+// ============================================
+
+export const CHECKLIST_ITEMS: ChecklistItem[] = [
+  { id: "visit-library", label: "Browse your content library", eventId: "visit-library", targetView: "LIBRARY" },
+  { id: "open-detail", label: "Open a video detail panel", eventId: "open-detail", targetView: "LIBRARY" },
+  { id: "move-video", label: "Move a video in the pipeline", eventId: "move-video", targetView: "PIPELINE" },
+  { id: "visit-ideas", label: "Check out the idea bank", eventId: "visit-ideas", targetView: "IDEAS" },
+  { id: "visit-calendar", label: "Explore your calendar", eventId: "visit-calendar", targetView: "CALENDAR" },
+];
+
+// ============================================
+// Changelog
+// ============================================
+
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.1.0",
+    date: "2026-03-05",
+    title: "Guided Onboarding & New Features",
+    items: [
+      "Welcome tour walks you through the dashboard",
+      "Onboarding checklist tracks your first steps",
+      "Caption Studio for persistent caption management",
+      "Competitive Benchmarking on Watchlist",
+      "Smart Action Feed on Home",
+      "Better tooltips with keyboard support",
+      "Improved empty states across all views",
+    ],
+  },
+];

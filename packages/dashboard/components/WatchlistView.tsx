@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2 } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
+import { EmptyState } from "./ui/EmptyState.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP } from "../shared/help-content.js";
 
@@ -98,8 +99,42 @@ export const WatchlistView: React.FC = () => {
 
   const [expandedHandle, setExpandedHandle] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showLogMetrics, setShowLogMetrics] = useState<string | null>(null);
+  const [benchmarkExpanded, setBenchmarkExpanded] = useState(false);
   const creators = data?.creators ?? [];
   const sections = data?.sections ?? [];
+
+  // Benchmarking data
+  const { data: benchmarkData } = useQuery<BenchmarkComparison>({
+    queryKey: ["benchmarking-compare"],
+    queryFn: () => fetch("/api/benchmarking/compare").then((r) => r.json()),
+  });
+
+  const logSnapshotMutation = useMutation({
+    mutationFn: async (body: { handle: string; platform: string; followers?: number; avgViews?: number; engagementRateBps?: number; postsPerWeek?: number }) => {
+      const r = await fetch("/api/benchmarking/snapshots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error("Failed to log snapshot");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["benchmarking-compare"] });
+      setShowLogMetrics(null);
+    },
+  });
+
+  const analyzeMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/benchmarking/analyze", { method: "POST", headers: { "Content-Type": "application/json" } });
+      if (!r.ok) { const d = await r.json().catch(() => ({ error: `Error: ${r.status}` })); throw new Error(d.error || "Analysis failed"); }
+      return r.json();
+    },
+  });
+
+  const [analysisResult, setAnalysisResult] = useState<{ strengths: string[]; gaps: string[]; opportunities: string[]; summary: string } | null>(null);
 
   const addCreatorMutation = useMutation({
     mutationFn: async (body: WatchlistCreator & { section?: string }) => {
@@ -162,19 +197,166 @@ export const WatchlistView: React.FC = () => {
         />
       )}
 
+      {/* Benchmarking Section */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <button
+          onClick={() => setBenchmarkExpanded(!benchmarkExpanded)}
+          className="w-full flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <BarChart3 size={18} className="text-teal-600" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Competitive Benchmarking
+            </p>
+          </div>
+          {benchmarkExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+        </button>
+
+        {benchmarkExpanded && (
+          <div className="mt-4 space-y-4">
+            {/* Your Channel */}
+            {benchmarkData && (
+              <div className="border border-teal-200 bg-teal-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-bold text-teal-800">Your Channel</p>
+                  <button
+                    onClick={() => setShowLogMetrics("@collective_family")}
+                    className="text-[10px] font-bold text-teal-600 hover:text-teal-800"
+                  >
+                    Log Snapshot
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold text-teal-600 uppercase">Avg Views</p>
+                    <p className="text-lg font-bold text-teal-900">{benchmarkData.yourMetrics.avgViews.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-teal-600 uppercase">Engagement</p>
+                    <p className="text-lg font-bold text-teal-900">{(benchmarkData.yourMetrics.avgEngagementRate / 100).toFixed(1)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-teal-600 uppercase">Save Rate</p>
+                    <p className="text-lg font-bold text-teal-900">{(benchmarkData.yourMetrics.avgSaveRate / 100).toFixed(1)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-teal-600 uppercase">Published</p>
+                    <p className="text-lg font-bold text-teal-900">{benchmarkData.yourMetrics.totalPublished}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Competitor comparison */}
+            {benchmarkData?.competitors && benchmarkData.competitors.length > 0 && (
+              <div className="space-y-2">
+                {benchmarkData.competitors.map((comp) => (
+                  <div key={comp.handle} className="border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-slate-700">{comp.handle}</p>
+                      <p className="text-[10px] text-slate-400">{comp.platform}</p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      {comp.latestSnapshot.followers && (
+                        <span className="text-slate-600">{comp.latestSnapshot.followers.toLocaleString()} followers</span>
+                      )}
+                      {comp.latestSnapshot.engagementRateBps && (
+                        <span className="text-slate-600">{(comp.latestSnapshot.engagementRateBps / 100).toFixed(1)}% eng.</span>
+                      )}
+                      <span className={cn(
+                        "flex items-center gap-0.5 text-[10px] font-bold",
+                        comp.trend === "growing" ? "text-emerald-600" :
+                        comp.trend === "declining" ? "text-rose-600" :
+                        "text-slate-400",
+                      )}>
+                        {comp.trend === "growing" && <ArrowUp size={10} />}
+                        {comp.trend === "declining" && <ArrowDown size={10} />}
+                        {comp.trend}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Log metrics modal */}
+            {showLogMetrics && (
+              <LogMetricsForm
+                handle={showLogMetrics}
+                onSubmit={(body) => logSnapshotMutation.mutate(body)}
+                onCancel={() => setShowLogMetrics(null)}
+                isPending={logSnapshotMutation.isPending}
+              />
+            )}
+
+            {/* Analyze button */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  const result = await analyzeMutation.mutateAsync();
+                  setAnalysisResult(result);
+                }}
+                disabled={analyzeMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              >
+                {analyzeMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                {analyzeMutation.isPending ? "Analyzing..." : "Analyze Position"}
+              </button>
+              {creators.length > 0 && (
+                <button
+                  onClick={() => {
+                    const handle = creators[0]?.handle;
+                    if (handle) setShowLogMetrics(handle);
+                  }}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-700"
+                >
+                  Log Competitor Metrics
+                </button>
+              )}
+            </div>
+
+            {/* AI Analysis results */}
+            {analysisResult && (
+              <div className="space-y-3 mt-3">
+                <p className="text-sm text-slate-600">{analysisResult.summary}</p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <div className="border border-emerald-200 bg-emerald-50 rounded-xl p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Strengths</p>
+                    {analysisResult.strengths.map((s, i) => (
+                      <p key={i} className="text-xs text-emerald-800 mb-1">- {s}</p>
+                    ))}
+                  </div>
+                  <div className="border border-rose-200 bg-rose-50 rounded-xl p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 mb-2">Gaps</p>
+                    {analysisResult.gaps.map((g, i) => (
+                      <p key={i} className="text-xs text-rose-800 mb-1">- {g}</p>
+                    ))}
+                  </div>
+                  <div className="border border-violet-200 bg-violet-50 rounded-xl p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">Opportunities</p>
+                    {analysisResult.opportunities.map((o, i) => (
+                      <p key={i} className="text-xs text-violet-800 mb-1">- {o}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            {analyzeMutation.isError && (
+              <p className="text-xs text-rose-500">{(analyzeMutation.error as Error)?.message}</p>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Creator Cards */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading watchlist...</div>
       ) : creators.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
-          <Users size={32} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 text-sm mb-2">
-            No creators on your watchlist yet.
-          </p>
-          <p className="text-slate-400 text-xs">
-            Add creators to <code className="bg-slate-100 px-1 py-0.5 rounded">watchlist.md</code>
-          </p>
-        </div>
+        <EmptyState
+          icon={<Eye size={24} className="text-slate-400" />}
+          headline="No creators tracked yet"
+          description="Add creators to watchlist.md to start tracking their content patterns and strategies."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {creators.map((creator) => (
@@ -626,6 +808,68 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
         >
           {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
           Add to Watchlist
+        </button>
+      </div>
+    </div>
+  );
+};
+
+type LogMetricsFormProps = {
+  handle: string;
+  onSubmit: (body: { handle: string; platform: string; followers?: number; avgViews?: number; engagementRateBps?: number; postsPerWeek?: number }) => void;
+  onCancel: () => void;
+  isPending: boolean;
+};
+
+const LogMetricsForm: React.FC<LogMetricsFormProps> = ({ handle, onSubmit, onCancel, isPending }) => {
+  const [platform, setPlatform] = useState("Instagram");
+  const [followers, setFollowers] = useState("");
+  const [avgViews, setAvgViews] = useState("");
+  const [engRate, setEngRate] = useState("");
+  const [postsPerWeek, setPostsPerWeek] = useState("");
+
+  return (
+    <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-bold text-slate-700">Log Metrics: {handle}</p>
+        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+      </div>
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+        <div>
+          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Platform</label>
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white">
+            <option>Instagram</option>
+            <option>TikTok</option>
+            <option>YouTube</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Followers</label>
+          <input value={followers} onChange={(e) => setFollowers(e.target.value)} placeholder="50000" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Avg Views</label>
+          <input value={avgViews} onChange={(e) => setAvgViews(e.target.value)} placeholder="5000" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Posts/Week</label>
+          <input value={postsPerWeek} onChange={(e) => setPostsPerWeek(e.target.value)} placeholder="4" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 mt-3">
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+        <button
+          onClick={() => onSubmit({
+            handle,
+            platform,
+            followers: followers ? parseInt(followers) : undefined,
+            avgViews: avgViews ? parseInt(avgViews) : undefined,
+            postsPerWeek: postsPerWeek ? parseInt(postsPerWeek) : undefined,
+          })}
+          disabled={isPending}
+          className="px-3 py-1.5 rounded-full bg-teal-600 text-white text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
+        >
+          {isPending ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

@@ -53,7 +53,7 @@ Creators outside chiropractic whose content strategies, audience overlap, or for
 
 | Handle | Platform | Followers | Why Tracking | Content Style | Frequency | Last Analyzed |
 |--------|----------|-----------|-------------|---------------|-----------|---------------|
-| @docjenfit | Instagram | 693K IG | Dr. Jen Esquer, PT/DPT. Mobility Method founder. Pelvic floor, pregnancy, postpartum content overlaps directly with your prenatal audience. Master of turning clinical expertise into viral educational content. | Quick mobility routines, pelvic floor education, clean production, empowering tone. Built a full platform (app, podcast, membership). | 5-6x/week | - |
+| @docjenfit | Instagram | 693K IG | Dr. Jen Esquer, PT/DPT. Mobility Method founder. Pelvic floor, pregnancy, postpartum content overlaps directly with your prenatal audience. Master of turning clinical expertise into viral educational content. | Quick mobility routines, pelvic floor education, clean production, empowering tone. Built a full platform (app, podcast, membership). | 5-6x/week | 2026-03-05 |
 | @dr.danginader | TikTok, IG | ~1M TikTok | Physical therapist famous for viral strength/mobility tests. Study his interactive "test yourself" content format. This format (can you do X?) drives massive saves and shares, easily adaptable to chiropractic. | Viral physical challenges, mobility assessments, educational with entertainment hook. High engagement. | Daily TikTok | - |
 
 **What to steal:** DocJenFit's educational-to-platform pipeline (content to app/membership), Dr. Dan's interactive "test yourself" format that drives saves/shares.

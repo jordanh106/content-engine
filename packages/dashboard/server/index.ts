@@ -35,6 +35,8 @@ import { createCalendarRouter } from "./routes/calendar.js";
 import { createWatchlistIntelRouter } from "./routes/watchlist-intel.js";
 import { createVideoDirectorAiRouter } from "./routes/video-director-ai.js";
 import { createCreatorAnalysisAiRouter } from "./routes/creator-analysis-ai.js";
+import { createCaptionsRouter } from "./routes/captions.js";
+import { createBenchmarkingRouter } from "./routes/benchmarking.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -77,6 +79,8 @@ app.use("/api/calendar", createCalendarRouter(contentLibraryPath));
 app.use("/api/watchlist-intel", createWatchlistIntelRouter(contentLibraryPath));
 app.use("/api/video-director", createVideoDirectorAiRouter(contentLibraryPath));
 app.use("/api/creator-analysis", createCreatorAnalysisAiRouter(contentLibraryPath));
+app.use("/api/captions", createCaptionsRouter(contentLibraryPath));
+app.use("/api/benchmarking", createBenchmarkingRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

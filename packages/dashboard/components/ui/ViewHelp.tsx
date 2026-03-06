@@ -1,24 +1,34 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle, X, RotateCcw } from "lucide-react";
-import { resetAllHints } from "../../utils/hints.js";
+import { HelpCircle, X, RotateCcw, Play } from "lucide-react";
 import type { ViewHelpData } from "../../shared/help-content.js";
+import { useOnboarding } from "../OnboardingProvider.js";
 
 export const ViewHelp: React.FC<ViewHelpData> = ({ title, description, tips }) => {
   const [open, setOpen] = useState(false);
+  const { resetAll, startTour, completeWelcome, isChecklistDismissed } = useOnboarding();
 
   const handleReset = () => {
-    resetAllHints();
+    resetAll();
     window.location.reload();
   };
+
+  const handleTakeTour = () => {
+    setOpen(false);
+    completeWelcome();
+    startTour();
+  };
+
+  // Shift left when checklist widget is visible
+  const buttonRight = !isChecklistDismissed ? "right-16" : "right-4";
 
   return (
     <>
       {/* Floating help button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 md:bottom-6 right-4 z-30 w-10 h-10 rounded-full bg-slate-900 text-white shadow-lg flex items-center justify-center hover:bg-slate-800 transition-colors"
+        className={`fixed bottom-24 md:bottom-6 ${buttonRight} z-30 w-10 h-10 rounded-full bg-slate-900 text-white shadow-lg flex items-center justify-center hover:bg-slate-800 transition-all`}
         aria-label="View help"
       >
         <HelpCircle size={18} />
@@ -78,13 +88,20 @@ export const ViewHelp: React.FC<ViewHelpData> = ({ title, description, tips }) =
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 flex-shrink-0">
+                <div className="p-4 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">
                   <button
                     onClick={handleReset}
                     className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                   >
                     <RotateCcw size={10} />
                     Reset Tips
+                  </button>
+                  <button
+                    onClick={handleTakeTour}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-widest transition-colors"
+                  >
+                    <Play size={10} />
+                    Take Tour Again
                   </button>
                 </div>
               </motion.div>

@@ -128,6 +128,7 @@ export const DASHBOARD_VIEWS = [
   "CALENDAR",
   "SESSION",
   "COMPOSER",
+  "CAPTIONS",
   "METRICS",
 ] as const;
 
@@ -789,4 +790,105 @@ export type WatchlistIntelReport = {
   risingCreators: RisingCreator[];
   selfImprovementNotes: SelfImprovementNotes;
   previousTopics: string[];
+};
+
+// ============================================
+// Saved Caption Types
+// ============================================
+
+export type SavedCaption = {
+  id: number;
+  videoCode: string;
+  platform: string;
+  caption: string;
+  variant: number;
+  status: "draft" | "approved" | "posted";
+  createdAt: string;
+  updatedAt: string;
+};
+
+// ============================================
+// Channel Snapshot / Benchmarking Types
+// ============================================
+
+export type ChannelSnapshot = {
+  id: number;
+  handle: string;
+  platform: string;
+  followers: number | null;
+  avgViews: number | null;
+  engagementRateBps: number | null;
+  saveRateBps: number | null;
+  postsPerWeek: number | null;
+  recordedAt: string;
+  notes: string | null;
+};
+
+export type BenchmarkComparison = {
+  yourMetrics: {
+    avgViews: number;
+    avgEngagementRate: number;
+    avgSaveRate: number;
+    postsPerWeek: number;
+    totalPublished: number;
+  };
+  competitors: Array<{
+    handle: string;
+    platform: string;
+    latestSnapshot: ChannelSnapshot;
+    trend: "growing" | "stable" | "declining" | "unknown";
+  }>;
+};
+
+// ============================================
+// Smart Action Feed Types
+// ============================================
+
+export type ActionItem = {
+  type: "captions" | "cadence" | "stuck" | "opportunity" | "session";
+  priority: number;
+  title: string;
+  detail: string;
+  actionLabel: string;
+  targetView: DashboardView;
+  urgency: "today" | "this_week" | "recommendation";
+};
+
+export type ActionsResponse = {
+  actions: ActionItem[];
+};
+
+// ============================================
+// Onboarding Types
+// ============================================
+
+export type OnboardingProgress = {
+  welcomeCompleted: boolean;
+  tourCompleted: boolean;
+  tourStep: number;
+  checklist: Record<string, boolean>;
+  firstVisitDate: string;
+  viewsVisited: string[];
+};
+
+export type TourStep = {
+  targetSelector: string;
+  title: string;
+  content: string;
+  side?: "top" | "bottom" | "left" | "right";
+  view?: DashboardView;
+};
+
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  eventId: string;
+  targetView?: DashboardView;
+};
+
+export type ChangelogEntry = {
+  version: string;
+  date: string;
+  title: string;
+  items: string[];
 };

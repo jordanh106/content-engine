@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import type { DashboardView } from "../shared/types.js";
 import { Layout } from "./Layout.js";
 import { DashboardHome } from "./DashboardHome.js";
@@ -12,12 +12,35 @@ import { WatchlistView } from "./WatchlistView.js";
 import { OpportunitiesView } from "./OpportunitiesView.js";
 import { SessionView } from "./SessionView.js";
 import { CalendarView } from "./CalendarView.js";
+import { CaptionStudio } from "./CaptionStudio.js";
+import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
+import { WelcomeModal } from "./ui/WelcomeModal.js";
+import { GuidedTour } from "./ui/GuidedTour.js";
+import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
 
-export const App: React.FC = () => {
+const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
   const [previousView, setPreviousView] = useState<DashboardView>("LIBRARY");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
   const [composerVideoCode, setComposerVideoCode] = useState<string | null>(null);
+  const onboarding = useOnboarding();
+
+  // Register navigation function with onboarding context
+  useEffect(() => {
+    onboarding.setOnNavigate(setView);
+  }, [onboarding.setOnNavigate]);
+
+  // Track view visits for checklist auto-completion
+  useEffect(() => {
+    onboarding.trackViewVisit(view);
+  }, [view, onboarding.trackViewVisit]);
+
+  // Track video detail open for checklist
+  useEffect(() => {
+    if (selectedVideoCode) {
+      onboarding.trackEvent("open-detail");
+    }
+  }, [selectedVideoCode, onboarding.trackEvent]);
 
   const handleSelectVideo = (code: string) => {
     setSelectedVideoCode(code);
@@ -56,30 +79,43 @@ export const App: React.FC = () => {
   }
 
   return (
-    <Layout currentView={view} onNavigate={setView}>
-      {view === "LIBRARY" && (
-        <ContentLibrary onSelectVideo={handleSelectVideo} />
-      )}
-      {view === "HOME" && (
-        <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={setView} />
-      )}
-      {view === "PIPELINE" && (
-        <PipelineBoard onSelectVideo={handleSelectVideo} />
-      )}
-      {view === "CALENDAR" && <CalendarView />}
-      {view === "SESSION" && <SessionView />}
-      {view === "IDEAS" && <IdeasView />}
-      {view === "OPPORTUNITIES" && <OpportunitiesView />}
-      {view === "WATCHLIST" && <WatchlistView />}
-      {view === "METRICS" && <MetricsView />}
+    <>
+      <Layout currentView={view} onNavigate={setView}>
+        {view === "LIBRARY" && (
+          <ContentLibrary onSelectVideo={handleSelectVideo} />
+        )}
+        {view === "HOME" && (
+          <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={setView} />
+        )}
+        {view === "PIPELINE" && (
+          <PipelineBoard onSelectVideo={handleSelectVideo} />
+        )}
+        {view === "CALENDAR" && <CalendarView />}
+        {view === "SESSION" && <SessionView />}
+        {view === "IDEAS" && <IdeasView />}
+        {view === "OPPORTUNITIES" && <OpportunitiesView />}
+        {view === "WATCHLIST" && <WatchlistView />}
+        {view === "CAPTIONS" && <CaptionStudio />}
+        {view === "METRICS" && <MetricsView />}
 
-      {selectedVideoCode && (
-        <VideoDetail
-          code={selectedVideoCode}
-          onClose={handleCloseDetail}
-          onOpenComposer={handleOpenComposer}
-        />
-      )}
-    </Layout>
+        {selectedVideoCode && (
+          <VideoDetail
+            code={selectedVideoCode}
+            onClose={handleCloseDetail}
+            onOpenComposer={handleOpenComposer}
+          />
+        )}
+      </Layout>
+
+      <WelcomeModal />
+      <GuidedTour />
+      <OnboardingChecklist />
+    </>
   );
 };
+
+export const App: React.FC = () => (
+  <OnboardingProvider>
+    <AppInner />
+  </OnboardingProvider>
+);
