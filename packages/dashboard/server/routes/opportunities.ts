@@ -198,6 +198,12 @@ ${Object.keys(signals.avgViewsByFormat).length > 0 ? `PERFORMANCE BASELINES:\n${
 
 ${signals.performanceSummary}
 
+PERFORMANCE-DRIVEN PRIORITIZATION:
+- Formats with above-average views should be STRONGLY preferred (boost Format Fit score by 20+ points for proven formats)
+- Topics similar to top performers should score 80+ on Audience Demand even with moderate research signals
+- If a format consistently outperforms (2x+ avg views), prioritize opportunities that naturally fit that format
+- Match top performer audience segments when evidence supports it
+
 AUDIENCE-SPECIFIC RESEARCH GUIDANCE:
 When evaluating topics, consider the unique needs of each audience beyond what trends on Reddit/X:
 - Prenatal: pregnancy discomfort, Webster technique, birth preparation, postpartum recovery
@@ -340,6 +346,104 @@ RULES:
       res.json({ success: true, message: `Added "${topic}" to idea bank` });
     } else {
       res.status(500).json({ error: "Failed to write to idea-bank.md" });
+    }
+  });
+
+  // POST /api/opportunities/interpret-trends - AI synthesizes research into actionable insights
+  router.post("/interpret-trends", async (_req, res) => {
+    if (!client) {
+      res.status(500).json({ error: "ANTHROPIC_API_KEY must be set in .env" });
+      return;
+    }
+
+    try {
+      const research = parseResearchReport();
+      const digest = parseViralInsights(viralInsightsDir);
+      const videos = parseContentLibrary(contentLibraryPath);
+      const config = parseConfig(configPath);
+
+      const hasResearch = (research?.reddit?.length ?? 0) + (research?.x?.length ?? 0) + (research?.web?.length ?? 0) > 0;
+      const hasDigest = digest !== null;
+
+      if (!hasResearch && !hasDigest) {
+        res.json({
+          insights: [],
+          summary: "No research data available. Run research from the Metrics page or /last30days to generate trend insights.",
+          generatedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const redditSummary = research?.reddit?.slice(0, 15).map((t) => `- r/${t.subreddit}: "${t.title}" (${t.score} score, ${t.engagement?.num_comments ?? 0} comments)`).join("\n") ?? "";
+      const xSummary = research?.x?.slice(0, 15).map((p) => `- @${p.author_handle}: "${p.text?.slice(0, 120)}" (${p.engagement?.likes ?? 0} likes)`).join("\n") ?? "";
+      const webSummary = research?.web?.slice(0, 10).map((w) => `- ${w.title}: ${w.snippet?.slice(0, 100)}`).join("\n") ?? "";
+      const digestSummary = digest ? `Viral Insights Digest:\n${JSON.stringify(digest).slice(0, 2000)}` : "";
+
+      const existingTopics = videos.map((v) => `${v.code}: ${v.title} (${v.audience})`).join("\n");
+      const audiences = config.audiences.map((a: { id: string; label: string }) => `${a.id}: ${a.label}`).join(", ");
+
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 3000,
+        messages: [{
+          role: "user",
+          content: `You are a content strategy analyst. Synthesize the following research data into 3-5 clear, actionable content insights for a chiropractic practice's social media.
+
+AUDIENCE SEGMENTS: ${audiences}
+
+EXISTING CONTENT (do not suggest topics already covered):
+${existingTopics}
+
+REDDIT DISCUSSIONS:
+${redditSummary || "No Reddit data"}
+
+X/TWITTER POSTS:
+${xSummary || "No X data"}
+
+WEB ARTICLES:
+${webSummary || "No web data"}
+
+${digestSummary}
+
+Return JSON:
+{
+  "insights": [
+    {
+      "title": "Short insight title",
+      "summary": "2-3 sentence explanation of what the data shows and why it matters for content strategy",
+      "confidence": "high" | "medium" | "low",
+      "contentIdeas": ["Specific video idea 1", "Specific video idea 2"],
+      "evidence": "Brief citation of which data points support this",
+      "targetAudience": "Which audience segment this serves",
+      "urgency": "act_now" | "this_week" | "this_month" | "evergreen"
+    }
+  ],
+  "summary": "One paragraph overall trend summary"
+}
+
+RULES:
+- Ground insights in ACTUAL data from above, not generic advice
+- Each insight must cite specific Reddit threads, X posts, or web articles
+- Content ideas must not overlap with existing content
+- No emdashes. Use commas, periods, or restructure.
+- Return ONLY valid JSON, no markdown fences`,
+        }],
+      });
+
+      const responseText = message.content[0].type === "text" ? message.content[0].text : "";
+      const cleaned = stripCodeFences(responseText);
+
+      try {
+        const parsed = JSON.parse(cleaned);
+        res.json({ ...parsed, generatedAt: new Date().toISOString() });
+      } catch {
+        console.error("[interpret-trends] Failed to parse AI response:", cleaned.slice(0, 200));
+        res.status(500).json({ error: "Failed to parse AI response" });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to interpret trends";
+      console.error("[interpret-trends] Error:", message);
+      res.status(500).json({ error: message });
     }
   });
 

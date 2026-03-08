@@ -1,5 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   FileText,
   Mic,
@@ -13,6 +14,8 @@ import {
   TrendingUp,
   Trophy,
   Eye,
+  Heart,
+  Clock,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -170,6 +173,218 @@ function determineWhatsNext(
   };
 }
 
+// ============================
+// Production Timeline
+// ============================
+
+const FORMAT_COLORS_MAP: Record<string, string> = {
+  A: "bg-teal-500", B: "bg-emerald-500", C: "bg-sky-500",
+  D: "bg-rose-500", E: "bg-violet-500", F: "bg-orange-500", G: "bg-pink-500",
+};
+
+type TimelineVideo = {
+  code: string;
+  title: string;
+  format: string;
+  audienceLabel: string;
+  currentStatus: string;
+  stageIndex: number;
+  totalStages: number;
+  projectedDaysRemaining: number;
+  projectedComplete: string;
+};
+
+// Render Queue Status
+type RenderQueueData = {
+  queued: number;
+  running: number;
+  completed: number;
+  failed: number;
+  jobs: Array<{ id: string; videoCode: string; compositionId: string; status: string; createdAt: string; error: string | null }>;
+};
+
+type AutomationWorkflow = {
+  id: string;
+  label: string;
+  schedule: string;
+  active: boolean;
+  lastRun: string | null;
+  lastStatus: string;
+  lastFinished: string | null;
+  recentExecutions: Array<{ id: string; status: string; startedAt: string; stoppedAt: string }>;
+  error?: string;
+};
+
+type AutomationData = {
+  configured: boolean;
+  workflows: AutomationWorkflow[];
+  message?: string;
+};
+
+const AutomationStatus: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<AutomationData>({
+    queryKey: ["automation-status"],
+    queryFn: () => fetch("/api/automation/status").then((r) => r.json()),
+    refetchInterval: 60000,
+  });
+
+  if (!data?.configured || data.workflows.length === 0) return null;
+
+  const allOk = data.workflows.every((w) => w.lastStatus === "success");
+  const anyError = data.workflows.some((w) => w.lastStatus === "error");
+
+  function timeAgo(dateStr: string | null): string {
+    if (!dateStr) return "never";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 1) return "< 1h ago";
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  }
+
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
+        <div className="flex items-center gap-2">
+          <Clock size={14} className="text-teal-500" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Automations</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {allOk && <span className="text-[10px] font-bold text-emerald-600">All healthy</span>}
+          {anyError && <span className="text-[10px] font-bold text-rose-600">Error detected</span>}
+          <ChevronRight size={12} className={`text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {data.workflows.map((wf) => (
+            <div key={wf.id} className={`flex items-center gap-3 p-3 rounded-lg ${wf.lastStatus === "error" ? "bg-rose-50" : wf.active ? "bg-emerald-50" : "bg-slate-50"}`}>
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${wf.lastStatus === "error" ? "bg-rose-500" : wf.active ? "bg-emerald-500" : "bg-slate-400"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-slate-700 truncate">{wf.label}</p>
+                <p className="text-[10px] text-slate-500">{wf.schedule} {wf.active ? "" : "(inactive)"}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className={`text-[10px] font-bold ${wf.lastStatus === "success" ? "text-emerald-600" : wf.lastStatus === "error" ? "text-rose-600" : "text-slate-500"}`}>
+                  {wf.lastStatus}
+                </p>
+                <p className="text-[10px] text-slate-400">{timeAgo(wf.lastRun)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const RenderQueueStatus: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<RenderQueueData>({
+    queryKey: ["render-queue"],
+    queryFn: () => fetch("/api/renders/queue").then((r) => r.json()),
+    refetchInterval: 10000,
+  });
+
+  if (!data || (data.queued === 0 && data.running === 0 && data.completed === 0 && data.failed === 0)) return null;
+
+  const activeJobs = data.jobs.filter((j) => j.status === "running" || j.status === "queued");
+  const recentJobs = data.jobs.filter((j) => j.status === "completed" || j.status === "failed").slice(0, 5);
+
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
+        <div className="flex items-center gap-2">
+          <Sparkles size={14} className="text-violet-500" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Render Queue</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {data.running > 0 && <span className="text-[10px] font-bold text-amber-600">{data.running} running</span>}
+          {data.queued > 0 && <span className="text-[10px] font-bold text-slate-500">{data.queued} queued</span>}
+          <span className="text-[10px] text-emerald-600">{data.completed} done</span>
+          {data.failed > 0 && <span className="text-[10px] text-rose-500">{data.failed} failed</span>}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {activeJobs.map((j) => (
+            <div key={j.id} className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs font-medium text-slate-700">{j.videoCode}</span>
+              <span className="text-[10px] text-slate-500">{j.compositionId}</span>
+              <span className="ml-auto text-[10px] font-bold text-amber-600 uppercase">{j.status}</span>
+            </div>
+          ))}
+          {recentJobs.map((j) => (
+            <div key={j.id} className={`flex items-center gap-2 p-2 rounded-lg ${j.status === "completed" ? "bg-emerald-50" : "bg-rose-50"}`}>
+              <div className={`w-2 h-2 rounded-full ${j.status === "completed" ? "bg-emerald-500" : "bg-rose-500"}`} />
+              <span className="text-xs font-medium text-slate-700">{j.videoCode}</span>
+              <span className="text-[10px] text-slate-500">{j.compositionId}</span>
+              <span className={`ml-auto text-[10px] font-bold uppercase ${j.status === "completed" ? "text-emerald-600" : "text-rose-600"}`}>{j.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const ProductionTimeline: React.FC<{ onSelectVideo: (code: string) => void }> = ({ onSelectVideo }) => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<{ timeline: TimelineVideo[] }>({
+    queryKey: ["production-timeline"],
+    queryFn: () => fetch("/api/analytics/production-timeline").then((r) => r.json()),
+  });
+
+  if (!data || data.timeline.length === 0) return null;
+
+  return (
+    <section>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5 hover:text-slate-600 transition-colors"
+      >
+        <Clock size={12} />
+        Production Timeline ({data.timeline.length})
+        <ChevronRight size={12} className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
+      </button>
+
+      {expanded && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
+          {data.timeline.slice(0, 8).map((v) => (
+            <button
+              key={v.code}
+              onClick={() => onSelectVideo(v.code)}
+              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left"
+            >
+              <div className={`w-2 h-8 rounded-full ${FORMAT_COLORS_MAP[v.format] || "bg-slate-300"}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{v.code}: {v.title}</p>
+                <p className="text-[10px] text-slate-400">{v.currentStatus} - {v.audienceLabel}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-teal-500"
+                    style={{ width: `${(v.stageIndex / (v.totalStages - 1)) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 w-8 text-right">
+                  {v.projectedDaysRemaining}d
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
 export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
   onNavigate,
@@ -195,6 +410,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         return { totalViews: 0, thisWeek: 0, topPerformer: null };
       }
     },
+  });
+
+  type HealthDim = { score: number; max: number; detail: string };
+  const { data: healthData } = useQuery<{ score: number; dimensions: Record<string, HealthDim> }>({
+    queryKey: ["health-score"],
+    queryFn: () => fetch("/api/analytics/health-score").then((r) => r.json()),
   });
 
   if (isLoading) {
@@ -348,6 +569,47 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
       </section>
 
+      {/* Content Health Score */}
+      {healthData && (
+        <section>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+            <Heart size={12} className="text-rose-500" />
+            Content Health
+          </h2>
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="flex items-center gap-4 mb-3">
+              <span className={`text-3xl font-black ${healthData.score >= 75 ? "text-emerald-600" : healthData.score >= 50 ? "text-amber-600" : "text-rose-600"}`}>
+                {healthData.score}
+              </span>
+              <span className="text-sm text-slate-400">/100</span>
+            </div>
+            <div className="space-y-2">
+              {Object.entries(healthData.dimensions).map(([key, dim]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500 w-24 shrink-0 capitalize">{key}</span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${dim.score >= dim.max * 0.75 ? "bg-emerald-500" : dim.score >= dim.max * 0.5 ? "bg-amber-500" : "bg-rose-500"}`}
+                      style={{ width: `${(dim.score / dim.max) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 w-20 text-right truncate">{dim.detail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Production Timeline */}
+      <ProductionTimeline onSelectVideo={onSelectVideo} />
+
+      {/* Render Queue Status */}
+      <RenderQueueStatus />
+
+      {/* Automation Status */}
+      <AutomationStatus />
+
       {/* Keyboard shortcut hint */}
       <div className="hidden md:flex justify-center pt-2">
         <p className="text-xs text-slate-400">
@@ -355,7 +617,11 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded">
             {navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl"}+K
           </kbd>{" "}
-          to quickly navigate anywhere
+          for command palette.{" "}
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded">
+            1-9
+          </kbd>{" "}
+          for quick nav.
         </p>
       </div>
     </div>

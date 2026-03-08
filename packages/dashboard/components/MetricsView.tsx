@@ -183,6 +183,73 @@ function platformPillClass(platform: string): string {
   return "bg-slate-100 text-slate-600";
 }
 
+// Audience Segment Analytics Component
+type AudienceMetric = {
+  audience: string;
+  label: string;
+  views: number;
+  likes: number;
+  saves: number;
+  videoCount: number;
+  avgViews: number;
+  engagementRate: number;
+  saveRate: number;
+};
+
+const AudienceAnalytics: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<{ byAudience: AudienceMetric[] }>({
+    queryKey: ["audience-analytics"],
+    queryFn: () => fetch("/api/analytics/by-audience").then((r) => r.json()),
+  });
+
+  const audiences = data?.byAudience || [];
+  if (audiences.length === 0) return null;
+
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full text-left"
+      >
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          Performance by Audience
+        </p>
+        {expanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+      </button>
+
+      {expanded && (
+        <div className="mt-4">
+          <div className="space-y-3">
+            {audiences.map((a) => (
+              <div key={a.audience} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{a.label}</p>
+                  <p className="text-[10px] text-slate-500">{a.videoCount} video{a.videoCount !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="flex items-center gap-4 text-right shrink-0">
+                  <div>
+                    <p className="text-xs font-bold text-slate-700 tabular-nums">{a.avgViews.toLocaleString()}</p>
+                    <p className="text-[9px] text-slate-400">avg views</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-teal-600 tabular-nums">{a.engagementRate}%</p>
+                    <p className="text-[9px] text-slate-400">eng rate</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-violet-600 tabular-nums">{a.saveRate}%</p>
+                    <p className="text-[9px] text-slate-400">save rate</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
 type MetricsViewProps = {
   onNavigate?: (view: DashboardView) => void;
 };
@@ -1220,6 +1287,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 )}
               </section>
             )}
+
+            {/* Audience Segment Analytics */}
+            <AudienceAnalytics />
 
             {/* Content Mix + Platform Cadence */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

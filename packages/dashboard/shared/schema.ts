@@ -195,6 +195,28 @@ export const scriptVersions = sqliteTable("script_versions", {
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
+export const thumbnailConcepts = sqliteTable("thumbnail_concepts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code").notNull(),
+  textOverlay: text("text_overlay").notNull(),
+  expression: text("expression"),
+  background: text("background"),
+  colorScheme: text("color_scheme"),
+  style: text("style"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  detail: text("detail"),
+  targetView: text("target_view"),
+  targetId: text("target_id"),
+  read: integer("read", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
 export const contentWaterfall = sqliteTable("content_waterfall", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   sourceVideoCode: text("source_video_code").notNull(),

@@ -246,5 +246,46 @@ export function createWatchlistIntelRouter(contentLibraryPath: string) {
     }
   });
 
+  // POST /api/watchlist-intel/add-idea - add single intel idea to idea bank
+  router.post("/add-idea", (req, res) => {
+    const { topic, suggestedFormat, hookAngle, priority, source, category, inspiredBy } = req.body as {
+      topic: string;
+      suggestedFormat?: string;
+      hookAngle?: string;
+      priority?: string;
+      source?: string;
+      category?: IdeaCategory;
+      inspiredBy?: string;
+    };
+
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    try {
+      const existing = parseIdeaBank(ideaBankPath);
+      if (existing.some((e) => e.topic.toLowerCase().trim() === topic.toLowerCase().trim())) {
+        res.json({ added: 0, message: "Idea already exists in idea bank" });
+        return;
+      }
+
+      const added = appendIdeasToFile(ideaBankPath, [{
+        topic,
+        suggestedFormat,
+        hookAngle,
+        priority,
+        source: source || (inspiredBy ? `Watchlist Intel: ${inspiredBy}` : "Watchlist Intelligence"),
+        category: category || "competitor",
+      }]);
+
+      if (added > 0) invalidateIdeaCache();
+      res.status(201).json({ added });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add idea";
+      res.status(500).json({ error: message });
+    }
+  });
+
   return router;
 }

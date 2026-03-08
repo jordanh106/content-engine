@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { creatorVideos, videoBreakdowns, channelSnapshots, vaultHooks } from "../../shared/schema.js";
+import { parseContentLibrary } from "../parsers/content-library.js";
 
 function stripCodeFences(text: string): string {
   let cleaned = text.trim();
@@ -428,6 +429,198 @@ Respond with JSON:
     } catch (error) {
       console.error("[creator-videos] Delete error:", error);
       res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+
+  // GET /api/creator-videos/outliers - Find videos that significantly outperform creator's median
+  router.get("/outliers", (_req, res) => {
+    try {
+      const allVideos = db.select().from(creatorVideos).orderBy(desc(creatorVideos.views)).all();
+
+      // Group by creator
+      const byCreator = new Map<string, typeof allVideos>();
+      for (const v of allVideos) {
+        if (!byCreator.has(v.creatorHandle)) byCreator.set(v.creatorHandle, []);
+        byCreator.get(v.creatorHandle)!.push(v);
+      }
+
+      const outliers: Array<{
+        id: number;
+        creatorHandle: string;
+        platform: string;
+        title: string;
+        views: number;
+        medianViews: number;
+        multiplier: number;
+        url: string | null;
+        postedAt: string | null;
+        hasBreakdown: boolean;
+      }> = [];
+
+      for (const [handle, videos] of byCreator.entries()) {
+        if (videos.length < 3) continue; // Need enough data
+
+        // Calculate median views
+        const sortedViews = videos.map((v) => v.views ?? 0).sort((a, b) => a - b);
+        const mid = Math.floor(sortedViews.length / 2);
+        const median = sortedViews.length % 2 !== 0
+          ? sortedViews[mid]
+          : Math.round((sortedViews[mid - 1] + sortedViews[mid]) / 2);
+
+        if (median === 0) continue;
+
+        // Find outliers (3x+ median)
+        for (const v of videos) {
+          const views = v.views ?? 0;
+          const multiplier = views / median;
+          if (multiplier >= 3) {
+            const breakdown = db.select().from(videoBreakdowns).all()
+              .find((b) => b.creatorVideoId === v.id);
+            outliers.push({
+              id: v.id,
+              creatorHandle: handle,
+              platform: v.platform,
+              title: v.videoTitle || "Untitled",
+              views,
+              medianViews: median,
+              multiplier: Number(multiplier.toFixed(1)),
+              url: v.videoUrl,
+              postedAt: v.publishedAt,
+              hasBreakdown: !!breakdown,
+            });
+          }
+        }
+      }
+
+      // Sort by multiplier descending
+      outliers.sort((a, b) => b.multiplier - a.multiplier);
+
+      res.json({ outliers: outliers.slice(0, 20), total: outliers.length });
+    } catch (error) {
+      console.error("[creator-videos] Outlier detection error:", error);
+      res.status(500).json({ error: "Failed to detect outliers" });
+    }
+  });
+
+  // GET /api/creator-videos/competitor-gaps - Topics they cover that you don't
+  router.get("/competitor-gaps", (_req, res) => {
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const myTopics = new Set(videos.map((v) => v.title.toLowerCase()));
+
+      // Get all breakdowns for topic analysis
+      const breakdowns = db.select().from(videoBreakdowns).all();
+
+      // Extract unique topics from competitor breakdowns
+      const competitorTopics = new Map<string, { topic: string; creators: Set<string>; count: number }>();
+
+      for (const b of breakdowns) {
+        if (!b.topic) continue;
+        const topicLower = b.topic.toLowerCase();
+        const existing = competitorTopics.get(topicLower);
+        if (existing) {
+          existing.count++;
+          if (b.creatorHandle) existing.creators.add(b.creatorHandle);
+        } else {
+          competitorTopics.set(topicLower, {
+            topic: b.topic,
+            creators: new Set(b.creatorHandle ? [b.creatorHandle] : []),
+            count: 1,
+          });
+        }
+      }
+
+      // Classify: blue ocean (they have, you don't), overlap, unique to you
+      const blueOcean: Array<{ topic: string; creators: string[]; count: number }> = [];
+      const overlap: Array<{ topic: string; creators: string[]; count: number }> = [];
+
+      for (const [topicLower, data] of competitorTopics) {
+        const isOverlap = [...myTopics].some((mt) =>
+          mt.includes(topicLower) || topicLower.includes(mt) ||
+          topicLower.split(" ").filter((w) => w.length > 3).some((w) => mt.includes(w)),
+        );
+
+        const entry = { topic: data.topic, creators: [...data.creators], count: data.count };
+        if (isOverlap) {
+          overlap.push(entry);
+        } else {
+          blueOcean.push(entry);
+        }
+      }
+
+      blueOcean.sort((a, b) => b.count - a.count);
+      overlap.sort((a, b) => b.count - a.count);
+
+      res.json({
+        blueOcean: blueOcean.slice(0, 15),
+        overlap: overlap.slice(0, 10),
+        uniqueToYou: videos.length,
+        totalCompetitorTopics: competitorTopics.size,
+      });
+    } catch (error) {
+      console.error("[creator-videos] Competitor gaps error:", error);
+      res.status(500).json({ error: "Failed to analyze competitor gaps" });
+    }
+  });
+
+  // GET /api/creator-videos/compare - Compare 2-4 creators side-by-side
+  router.get("/compare", (req, res) => {
+    try {
+      const handles = ((req.query.handles as string) || "").split(",").map((h) => h.trim()).filter(Boolean);
+      if (handles.length < 2 || handles.length > 4) {
+        res.status(400).json({ error: "Provide 2-4 creator handles separated by commas" });
+        return;
+      }
+
+      const snapshots = db.select().from(channelSnapshots).all();
+      const videos = db.select().from(creatorVideos).all();
+      const breakdowns = db.select().from(videoBreakdowns).all();
+
+      const comparison = handles.map((handle) => {
+        const snap = snapshots
+          .filter((s) => s.handle === handle)
+          .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))[0];
+
+        const creatorVids = videos.filter((v) => v.creatorHandle === handle);
+        const totalViews = creatorVids.reduce((s, v) => s + (v.views ?? 0), 0);
+        const avgViews = creatorVids.length > 0 ? Math.round(totalViews / creatorVids.length) : 0;
+        const creatorBreakdowns = breakdowns.filter((b) => b.creatorHandle === handle);
+
+        // Extract format preferences from breakdowns
+        const formatCounts: Record<string, number> = {};
+        for (const b of creatorBreakdowns) {
+          if (b.visualFormat) {
+            formatCounts[b.visualFormat] = (formatCounts[b.visualFormat] || 0) + 1;
+          }
+        }
+
+        // Extract hook patterns
+        const hookFormats: Record<string, number> = {};
+        for (const b of creatorBreakdowns) {
+          if (b.hookFormat) {
+            hookFormats[b.hookFormat] = (hookFormats[b.hookFormat] || 0) + 1;
+          }
+        }
+
+        return {
+          handle,
+          followers: snap?.followers ?? null,
+          avgViews,
+          engagementRateBps: snap?.engagementRateBps ?? null,
+          saveRateBps: snap?.saveRateBps ?? null,
+          postsPerWeek: snap?.postsPerWeek ?? null,
+          platform: snap?.platform ?? "unknown",
+          videoCount: creatorVids.length,
+          breakdownCount: creatorBreakdowns.length,
+          topFormats: Object.entries(formatCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f, c]) => ({ format: f, count: c })),
+          topHookStyles: Object.entries(hookFormats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([h, c]) => ({ style: h, count: c })),
+        };
+      });
+
+      res.json({ comparison });
+    } catch (error) {
+      console.error("[creator-videos] Compare error:", error);
+      res.status(500).json({ error: "Failed to compare creators" });
     }
   });
 

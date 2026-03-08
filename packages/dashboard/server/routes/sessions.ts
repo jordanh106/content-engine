@@ -75,6 +75,61 @@ export function createSessionsRouter(contentLibraryPath: string) {
     res.json({ videos: available, sessionType: type });
   });
 
+  // GET /api/sessions/recommendations - Smart batching suggestions
+  router.get("/recommendations", (req, res) => {
+    const type = (req.query.type as SessionType) || "voiceover";
+    if (!SESSION_STATUS_MAP[type]) {
+      res.status(400).json({ error: "Invalid session type" });
+      return;
+    }
+
+    const targetStatus = SESSION_STATUS_MAP[type].from;
+    const videos = parseContentLibrary(contentLibraryPath);
+    const statusRecords = db.select().from(videoStatus).all();
+    const statusMap = new Map(statusRecords.map((s) => [s.videoCode, s.currentStatus]));
+
+    const available = videos.filter((v) => {
+      const status = statusMap.get(v.code) || "SCRIPTED";
+      return status === targetStatus;
+    });
+
+    if (available.length === 0) {
+      res.json({ batches: [], total: 0 });
+      return;
+    }
+
+    // Group by audience for tone consistency
+    const byAudience = new Map<string, typeof available>();
+    for (const v of available) {
+      const key = v.audienceLabel || v.audience;
+      if (!byAudience.has(key)) byAudience.set(key, []);
+      byAudience.get(key)!.push(v);
+    }
+
+    const batches = Array.from(byAudience.entries()).map(([audience, vids]) => {
+      // Estimate recording time based on format
+      const formatMinutes: Record<string, number> = { A: 5, B: 5, C: 7, D: 3, E: 7, F: 2, G: 4 };
+      const estMinutes = vids.reduce((sum, v) => sum + (formatMinutes[v.format] || 5), 0);
+
+      // Group by format within audience for set consistency
+      const formats = [...new Set(vids.map((v) => v.format))];
+
+      return {
+        audience,
+        videos: vids.map((v) => ({ code: v.code, title: v.title, format: v.format, audienceLabel: v.audienceLabel })),
+        count: vids.length,
+        estimatedMinutes: estMinutes,
+        formats,
+        reason: `${vids.length} ${audience} videos share the same tone and audience. Formats: ${formats.join(", ")}. Est. ${estMinutes} min.`,
+      };
+    });
+
+    // Sort by count descending (biggest batch first)
+    batches.sort((a, b) => b.count - a.count);
+
+    res.json({ batches, total: available.length });
+  });
+
   // POST /api/sessions - Create a new session
   router.post("/", (req, res) => {
     const { sessionType, audienceCategory, videoCodes } = req.body as {

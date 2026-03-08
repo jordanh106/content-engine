@@ -8,6 +8,9 @@ import {
   Trash2,
   AlertTriangle,
   ArrowRight,
+  CalendarDays,
+  Calendar,
+  TrendingUp,
 } from "lucide-react";
 import type { CalendarEntry, CalendarResponse, CalendarGap, FormatId, DashboardView } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -51,9 +54,29 @@ type CalendarViewProps = {
   onNavigate?: (view: DashboardView) => void;
 };
 
+type ViewMode = "week" | "month";
+
+function getMonthStart(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function getMonthLabel(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+const PLATFORM_DOTS: Record<string, string> = {
+  instagram_reels: "bg-pink-400",
+  youtube_shorts: "bg-red-400",
+  youtube_long: "bg-red-600",
+  tiktok: "bg-slate-600",
+  instagram_stories: "bg-purple-400",
+};
+
 export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [monthStart, setMonthStart] = useState(() => getMonthStart(new Date()));
   const [showAddModal, setShowAddModal] = useState<{ date: string; platform: string } | null>(null);
   const [addVideoCode, setAddVideoCode] = useState("");
   const [addNotes, setAddNotes] = useState("");
@@ -64,8 +87,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
     return end;
   }, [weekStart]);
 
-  const startStr = formatDate(weekStart);
-  const endStr = formatDate(weekEnd);
+  const monthEnd = useMemo(() => {
+    const end = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+    return end;
+  }, [monthStart]);
+
+  const startStr = viewMode === "week" ? formatDate(weekStart) : formatDate(monthStart);
+  const endStr = viewMode === "week" ? formatDate(weekEnd) : formatDate(monthEnd);
 
   // Fetch calendar entries
   const { data: calendarData } = useQuery<CalendarResponse>({
@@ -77,6 +105,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
   const { data: gapsData } = useQuery<{ gaps: CalendarGap[] }>({
     queryKey: ["calendar-gaps"],
     queryFn: () => fetch("/api/calendar/gaps?weeks=4").then((r) => r.json()),
+  });
+
+  // Fetch best posting times
+  type BestTime = { day: string; platform: string; avgViews: number; sampleSize: number };
+  const { data: bestTimesData } = useQuery<{ bestTimes: BestTime[]; hasEnoughData: boolean }>({
+    queryKey: ["best-times"],
+    queryFn: () => fetch("/api/analytics/best-times").then((r) => r.json()),
   });
 
   // Fetch available videos (ASSEMBLED status) for scheduling
@@ -146,12 +181,42 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
     });
   };
 
+  const navigateMonth = (delta: number) => {
+    setMonthStart((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+  };
+
   const isToday = (d: Date) => {
     const today = new Date();
     return d.toDateString() === today.toDateString();
   };
 
   const weekLabel = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+
+  // Build month grid (6 rows x 7 columns, padding with prev/next month days)
+  const monthDays = useMemo(() => {
+    const firstDay = monthStart.getDay(); // 0=Sun
+    const offset = firstDay === 0 ? 6 : firstDay - 1; // Convert to Mon=0
+    const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+    const totalCells = Math.ceil((offset + daysInMonth) / 7) * 7;
+    const result: Array<{ date: Date; isCurrentMonth: boolean }> = [];
+    for (let i = 0; i < totalCells; i++) {
+      const d = new Date(monthStart);
+      d.setDate(d.getDate() - offset + i);
+      result.push({ date: d, isCurrentMonth: d.getMonth() === monthStart.getMonth() });
+    }
+    return result;
+  }, [monthStart]);
+
+  // Month entries grouped by date
+  const monthEntriesByDate = useMemo(() => {
+    const map = new Map<string, CalendarEntry[]>();
+    for (const e of entries) {
+      const list = map.get(e.date) || [];
+      list.push(e);
+      map.set(e.date, list);
+    }
+    return map;
+  }, [entries]);
 
   const totalGaps = gapsData?.gaps?.length ?? 0;
 
@@ -164,27 +229,63 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
             Content Calendar
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            {entries.length} entries this week
+            {entries.length} entries {viewMode === "week" ? "this week" : "this month"}
             {totalGaps > 0 && (
               <FeatureHint id="calendar-gaps" content={FEATURE_HINTS["calendar-gaps"].content} side="bottom">
-                <span className="text-amber-600 ml-2">
+                <button
+                  onClick={() => onNavigate?.("OPPORTUNITIES")}
+                  className="text-amber-600 ml-2 hover:text-amber-700 hover:underline transition-colors"
+                >
                   <AlertTriangle size={12} className="inline mr-0.5" />
-                  {totalGaps} cadence gaps
-                </span>
+                  {totalGaps} cadence gap{totalGaps !== 1 ? "s" : ""} - fill from opportunities
+                </button>
               </FeatureHint>
             )}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => navigateWeek(-1)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+          {/* View mode toggle */}
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 mr-2">
+            <button
+              onClick={() => setViewMode("week")}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors",
+                viewMode === "week" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700",
+              )}
+            >
+              <CalendarDays size={12} /> Week
+            </button>
+            <button
+              onClick={() => setViewMode("month")}
+              className={cn(
+                "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors",
+                viewMode === "month" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700",
+              )}
+            >
+              <Calendar size={12} /> Month
+            </button>
+          </div>
+
+          <button
+            onClick={() => viewMode === "week" ? navigateWeek(-1) : navigateMonth(-1)}
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-medium text-slate-700 min-w-[160px] text-center">{weekLabel}</span>
-          <button onClick={() => navigateWeek(1)} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+          <span className="text-sm font-medium text-slate-700 min-w-[160px] text-center">
+            {viewMode === "week" ? weekLabel : getMonthLabel(monthStart)}
+          </span>
+          <button
+            onClick={() => viewMode === "week" ? navigateWeek(1) : navigateMonth(1)}
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          >
             <ChevronRight size={18} />
           </button>
           <button
-            onClick={() => setWeekStart(getMonday(new Date()))}
+            onClick={() => {
+              if (viewMode === "week") setWeekStart(getMonday(new Date()));
+              else setMonthStart(getMonthStart(new Date()));
+            }}
             className="text-[10px] font-bold text-teal-600 hover:text-teal-700 ml-2"
           >
             Today
@@ -192,81 +293,183 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[700px]">
-          {/* Day headers */}
-          <div className="grid gap-1" style={{ gridTemplateColumns: "100px repeat(7, 1fr)" }}>
-            <div /> {/* Platform label column spacer */}
-            {days.map((d, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "text-center py-2 rounded-t-lg",
-                  isToday(d) ? "bg-teal-50" : "",
-                )}
-              >
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{DAYS[i]}</p>
-                <p className={cn(
-                  "text-sm font-bold",
-                  isToday(d) ? "text-teal-600" : "text-slate-700",
-                )}>
-                  {d.getDate()}
-                </p>
-              </div>
-            ))}
+      {/* Best Posting Times */}
+      {bestTimesData && bestTimesData.bestTimes.length > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs mb-4">
+          <TrendingUp size={14} className="text-emerald-600 shrink-0" />
+          <span className="text-emerald-700 font-medium">Best days:</span>
+          {bestTimesData.bestTimes.slice(0, 3).map((t, i) => (
+            <span key={i} className="text-emerald-600">
+              {t.day} on {PLATFORM_LABELS[t.platform] || t.platform}
+              {t.sampleSize >= 3 ? ` (${t.avgViews} avg views)` : ""}
+              {i < 2 && bestTimesData.bestTimes.length > i + 1 ? " · " : ""}
+            </span>
+          ))}
+          {!bestTimesData.hasEnoughData && (
+            <span className="text-emerald-400 italic">Collecting more data...</span>
+          )}
+        </div>
+      )}
 
-            {/* Platform rows */}
-            {platforms.map((platform) => (
-              <React.Fragment key={platform}>
-                <div className="flex items-center px-2">
-                  <span className="text-[10px] font-bold text-slate-500 truncate">
-                    {PLATFORM_LABELS[platform] || platform}
-                  </span>
+      {/* Week View */}
+      {viewMode === "week" && (
+        <div className="overflow-x-auto">
+          <div className="min-w-[700px]">
+            <div className="grid gap-1" style={{ gridTemplateColumns: "100px repeat(7, 1fr)" }}>
+              <div />
+              {days.map((d, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "text-center py-2 rounded-t-lg",
+                    isToday(d) ? "bg-teal-50" : "",
+                  )}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{DAYS[i]}</p>
+                  <p className={cn(
+                    "text-sm font-bold",
+                    isToday(d) ? "text-teal-600" : "text-slate-700",
+                  )}>
+                    {d.getDate()}
+                  </p>
                 </div>
-                {days.map((d) => {
-                  const dateStr = formatDate(d);
-                  const cellEntries = entriesByCell.get(`${dateStr}|${platform}`) || [];
-                  return (
-                    <div
-                      key={`${platform}-${dateStr}`}
-                      className={cn(
-                        "min-h-[60px] border border-slate-100 rounded-lg p-1 relative group",
-                        isToday(d) ? "bg-teal-50/30" : "bg-white",
-                      )}
-                    >
-                      {cellEntries.map((entry) => (
-                        <div
-                          key={entry.id}
-                          className={cn(
-                            "text-[10px] rounded-md px-1.5 py-1 mb-0.5 border flex items-center gap-1",
-                            PLATFORM_COLORS[platform] || "bg-slate-50 border-slate-200 text-slate-700",
-                          )}
-                        >
-                          {entry.videoFormat && <FormatBadge format={entry.videoFormat} />}
-                          <span className="font-bold truncate">{entry.videoCode || entry.slotLabel || "TBD"}</span>
-                          <button
-                            onClick={() => deleteMutation.mutate(entry.id)}
-                            className="ml-auto opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity"
-                          >
-                            <Trash2 size={10} />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setShowAddModal({ date: dateStr, platform })}
-                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              ))}
+
+              {platforms.map((platform) => (
+                <React.Fragment key={platform}>
+                  <div className="flex items-center px-2">
+                    <span className="text-[10px] font-bold text-slate-500 truncate">
+                      {PLATFORM_LABELS[platform] || platform}
+                    </span>
+                  </div>
+                  {days.map((d) => {
+                    const dateStr = formatDate(d);
+                    const cellEntries = entriesByCell.get(`${dateStr}|${platform}`) || [];
+                    return (
+                      <div
+                        key={`${platform}-${dateStr}`}
+                        className={cn(
+                          "min-h-[60px] border border-slate-100 rounded-lg p-1 relative group",
+                          isToday(d) ? "bg-teal-50/30" : "bg-white",
+                        )}
                       >
-                        <Plus size={14} className="text-slate-300" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            ))}
+                        {cellEntries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className={cn(
+                              "text-[10px] rounded-md px-1.5 py-1 mb-0.5 border flex items-center gap-1",
+                              PLATFORM_COLORS[platform] || "bg-slate-50 border-slate-200 text-slate-700",
+                            )}
+                          >
+                            {entry.videoFormat && <FormatBadge format={entry.videoFormat} />}
+                            <span className="font-bold truncate">{entry.videoCode || entry.slotLabel || "TBD"}</span>
+                            <button
+                              onClick={() => deleteMutation.mutate(entry.id)}
+                              className="ml-auto opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setShowAddModal({ date: dateStr, platform })}
+                          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Plus size={14} className="text-slate-300" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Month View */}
+      {viewMode === "month" && (
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 border-b border-slate-200">
+            {DAYS.map((d) => (
+              <div key={d} className="py-2 text-center">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{d}</span>
+              </div>
+            ))}
+          </div>
+          {/* Day cells */}
+          <div className="grid grid-cols-7">
+            {monthDays.map(({ date, isCurrentMonth }, i) => {
+              const dateStr = formatDate(date);
+              const dayEntries = monthEntriesByDate.get(dateStr) || [];
+              const platformSet = new Set(dayEntries.map((e) => e.platform));
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "min-h-[80px] border-b border-r border-slate-100 p-1.5 relative group cursor-pointer hover:bg-slate-50 transition-colors",
+                    !isCurrentMonth && "bg-slate-50/50",
+                    isToday(date) && "bg-teal-50/40",
+                  )}
+                  onClick={() => {
+                    if (platforms.length > 0) {
+                      setShowAddModal({ date: dateStr, platform: platforms[0] });
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn(
+                      "text-xs font-bold",
+                      isToday(date) ? "text-teal-600" : isCurrentMonth ? "text-slate-700" : "text-slate-300",
+                    )}>
+                      {date.getDate()}
+                    </span>
+                    {dayEntries.length > 0 && (
+                      <span className="text-[9px] font-bold text-slate-400">{dayEntries.length}</span>
+                    )}
+                  </div>
+                  {/* Platform dots */}
+                  {platformSet.size > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {Array.from(platformSet).map((p) => (
+                        <div
+                          key={p}
+                          className={cn("w-2 h-2 rounded-full", PLATFORM_DOTS[p] || "bg-slate-400")}
+                          title={PLATFORM_LABELS[p] || p}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* Show video codes */}
+                  {dayEntries.slice(0, 2).map((entry) => (
+                    <div key={entry.id} className="text-[9px] font-medium text-slate-500 truncate mt-0.5">
+                      {entry.videoCode || entry.slotLabel || "TBD"}
+                    </div>
+                  ))}
+                  {dayEntries.length > 2 && (
+                    <div className="text-[9px] text-slate-400">+{dayEntries.length - 2} more</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Month summary */}
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center gap-4 flex-wrap">
+            {platforms.map((p) => {
+              const count = entries.filter((e) => e.platform === p).length;
+              return (
+                <div key={p} className="flex items-center gap-1.5">
+                  <div className={cn("w-2.5 h-2.5 rounded-full", PLATFORM_DOTS[p] || "bg-slate-400")} />
+                  <span className="text-[10px] font-bold text-slate-500">
+                    {PLATFORM_LABELS[p] || p}: {count}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Add Entry Modal */}
       {showAddModal && (

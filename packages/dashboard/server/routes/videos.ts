@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
+import Anthropic from "@anthropic-ai/sdk";
+import fs from "fs";
 import { db } from "../db.js";
-import { videoStatus, contentWaterfall } from "../../shared/schema.js";
+import { videoStatus, contentWaterfall, performanceMetrics, scriptVersions, vaultHooks, thumbnailConcepts } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
@@ -221,6 +223,453 @@ export function createVideosRouter(
       console.error("[videos] Waterfall delete error:", error);
       res.status(500).json({ error: "Failed to delete waterfall item" });
     }
+  });
+
+  // POST /api/videos/:code/adapt-script - Rewrite script for a specific platform
+  router.post("/:code/adapt-script", async (req, res) => {
+    let client: Anthropic | null = null;
+    try {
+      client = new Anthropic();
+    } catch {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const { code } = req.params;
+      const { platform } = req.body as { platform: string };
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      const platformSpecs: Record<string, string> = {
+        tiktok: "TikTok: 6-15 seconds max. Hook MUST land in first 0.5 seconds. Text-heavy overlay style. Fast pace. End with a loop-friendly transition or strong CTA. Use trending patterns.",
+        instagram_reels: "Instagram Reels: 15-30 seconds. Visual hook in first 1-2 seconds. Slower cuts outperform rapid cuts. Optimize for saves and shares. Clean, polished feel.",
+        youtube_shorts: "YouTube Shorts: Up to 60 seconds. Slightly more educational depth allowed. Hook in first 2 seconds. Clear value proposition. End with subscribe CTA.",
+        youtube_long: "YouTube Long-form: 3-5 minutes. Expand the core message with deeper explanation, examples, and B-roll cues in brackets. Include [B-ROLL: description] markers. Pattern: you speaking > graphic > B-roll > back to you. Add chapter markers with timestamps.",
+      };
+
+      const spec = platformSpecs[platform] || "General short-form: 15-60 seconds.";
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1500,
+        messages: [{
+          role: "user",
+          content: `Rewrite this video script optimized for the target platform. Keep the core message but restructure for the platform's format and audience behavior.
+
+ORIGINAL SCRIPT (Format ${video.format}):
+${video.script}
+
+TARGET PLATFORM REQUIREMENTS:
+${spec}
+
+Rules:
+- Keep delivery cues in [brackets]
+- No emdashes
+- Maintain the educational value
+- Adapt pacing, length, and structure for the platform
+- If expanding (YouTube Long), add [B-ROLL: description] markers
+
+Return ONLY the adapted script text, no JSON, no explanation.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      res.json({ script: textBlock.text.trim(), platform });
+    } catch (error) {
+      console.error("[videos] Script adaptation error:", error);
+      res.status(500).json({ error: "Failed to adapt script" });
+    }
+  });
+
+  // POST /api/videos/:code/repurpose-suggestions - AI suggests derivative content
+  router.post("/:code/repurpose-suggestions", async (req, res) => {
+    let client: Anthropic | null = null;
+    try {
+      client = new Anthropic();
+    } catch {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const { code } = req.params;
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      const scriptPreview = video.script
+        ? video.script.split("\n").slice(0, 15).join("\n")
+        : "No script available";
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1200,
+        messages: [{
+          role: "user",
+          content: `Generate repurposing suggestions for this video. Each suggestion should include actual content, not just "make a shorter version."
+
+VIDEO: ${code} - "${video.title}"
+FORMAT: ${video.format} (${video.formatName || ""})
+AUDIENCE: ${video.audienceLabel}
+TAGS: ${video.tags.join(", ")}
+SCRIPT:
+${scriptPreview}
+
+Generate 5-7 derivative content suggestions across these tiers:
+- cutdown: Shorter video versions (15s, 30s, 60s)
+- short: Platform-specific micro-content
+- text: Written posts (X threads, LinkedIn posts, carousel scripts)
+
+For each suggestion, include the actual draft content or outline.
+
+Respond with JSON only, no emdashes:
+{
+  "suggestions": [
+    {
+      "tier": "cutdown|short|text",
+      "platform": "TikTok|Instagram|YouTube Shorts|X/Twitter|LinkedIn",
+      "description": "Brief label for this derivative",
+      "content": "The actual draft content, script outline, or post text (2-4 sentences)"
+    }
+  ]
+}`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+
+      const parsed = JSON.parse(cleaned);
+      res.json(parsed);
+    } catch (error) {
+      console.error("[videos] Repurpose suggestions error:", error);
+      res.status(500).json({ error: "Failed to generate suggestions" });
+    }
+  });
+
+  // POST /api/videos/:code/virality-score - AI-powered pre-publish score
+  router.post("/:code/virality-score", async (req, res) => {
+    let client: Anthropic | null = null;
+    try {
+      client = new Anthropic();
+    } catch {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const { code } = req.params;
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      // Gather context for scoring
+      const allMetrics = db.select().from(performanceMetrics).all();
+
+      // Format-level performance benchmarks
+      const formatMetrics = allMetrics.filter((m) => {
+        const v = videos.find((vv) => vv.code === m.videoCode);
+        return v && v.format === video.format;
+      });
+      const formatAvgViews = formatMetrics.length > 0
+        ? Math.round(formatMetrics.reduce((s, m) => s + (m.views ?? 0), 0) / formatMetrics.length)
+        : null;
+
+      // Hook used (if any)
+      const latestScript = db.select().from(scriptVersions)
+        .all()
+        .filter((s) => s.videoCode === code)
+        .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))[0];
+      let hookInfo = "";
+      if (latestScript?.hookId) {
+        const hook = db.select().from(vaultHooks).all().find((h) => h.id === latestScript.hookId);
+        if (hook) hookInfo = `Hook pattern used: "${hook.pattern}" (category: ${hook.category}, optimizes: ${hook.optimizes || "unknown"})`;
+      }
+
+      // Script preview
+      const scriptPreview = video.script
+        ? video.script.split("\n").slice(0, 8).join("\n")
+        : "No script available";
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 800,
+        messages: [{
+          role: "user",
+          content: `Score this video's virality potential (0-100) based on the following data. Be realistic and specific.
+
+VIDEO: ${code} - "${video.title}"
+FORMAT: ${video.format} (${video.formatName || ""})
+AUDIENCE: ${video.audienceLabel}
+TAGS: ${video.tags.join(", ")}
+SCRIPT PREVIEW:
+${scriptPreview}
+
+${hookInfo}
+
+BENCHMARK DATA:
+- Format ${video.format} average views: ${formatAvgViews !== null ? formatAvgViews : "No data yet"}
+- Total published videos with metrics: ${allMetrics.length}
+
+Score on these 5 dimensions (each 0-20):
+1. HOOK STRENGTH: Is the opening attention-grabbing? Does it create curiosity?
+2. TOPIC RELEVANCE: Is this topic trending or evergreen? Would people search for this?
+3. FORMAT FIT: Does the format match the content type well?
+4. SHAREABILITY: Would viewers share this? Does it provide value worth spreading?
+5. PLATFORM POTENTIAL: How well does this content work for short-form platforms?
+
+Respond with JSON only:
+{
+  "score": <total 0-100>,
+  "dimensions": {
+    "hookStrength": { "score": <0-20>, "note": "<1 sentence>" },
+    "topicRelevance": { "score": <0-20>, "note": "<1 sentence>" },
+    "formatFit": { "score": <0-20>, "note": "<1 sentence>" },
+    "shareability": { "score": <0-20>, "note": "<1 sentence>" },
+    "platformPotential": { "score": <0-20>, "note": "<1 sentence>" }
+  },
+  "suggestion": "<1-2 sentences on the single biggest improvement to boost virality>"
+}`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+
+      const parsed = JSON.parse(cleaned);
+      res.json(parsed);
+    } catch (error) {
+      console.error("[videos] Virality score error:", error);
+      res.status(500).json({ error: "Failed to generate virality score" });
+    }
+  });
+
+  // POST /api/videos/:code/thumbnail-concepts - AI generates thumbnail concepts
+  router.post("/:code/thumbnail-concepts", async (req, res) => {
+    const { code } = req.params;
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) { res.status(404).json({ error: "Video not found" }); return; }
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) { res.status(400).json({ error: "ANTHROPIC_API_KEY not set" }); return; }
+
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{
+          role: "user",
+          content: `Generate 3 thumbnail concepts for this video. Each concept should drive clicks.
+
+Video: "${video.title}"
+Format: ${video.formatName}
+Script hook: ${video.script.split("\n").find((l) => l.trim())?.slice(0, 150)}
+
+Return JSON array of 3 objects with these fields:
+- textOverlay: short text for the thumbnail (2-5 words, provocative/curious)
+- expression: facial expression or pose direction
+- background: background suggestion
+- colorScheme: 2-3 colors that pop
+- style: overall thumbnail aesthetic (e.g. "clean minimal", "bold contrast", "cinematic")
+
+Return ONLY the JSON array, no markdown.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") { res.status(500).json({ error: "No AI response" }); return; }
+
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      const concepts = JSON.parse(cleaned) as Array<{ textOverlay: string; expression: string; background: string; colorScheme: string; style: string }>;
+
+      // Clear old concepts and save new ones
+      const existing = db.select().from(thumbnailConcepts).all().filter((t) => t.videoCode === code);
+      for (const e of existing) {
+        db.delete(thumbnailConcepts).where(eq(thumbnailConcepts.id, e.id)).run();
+      }
+
+      for (const c of concepts) {
+        db.insert(thumbnailConcepts).values({
+          videoCode: code,
+          textOverlay: c.textOverlay,
+          expression: c.expression || null,
+          background: c.background || null,
+          colorScheme: c.colorScheme || null,
+          style: c.style || null,
+        }).run();
+      }
+
+      res.json({ concepts });
+    } catch (error) {
+      console.error("[videos] Thumbnail concepts error:", error);
+      res.status(500).json({ error: "Failed to generate thumbnail concepts" });
+    }
+  });
+
+  // GET /api/videos/:code/thumbnail-concepts - Get saved thumbnail concepts
+  router.get("/:code/thumbnail-concepts", (req, res) => {
+    const { code } = req.params;
+    const concepts = db.select().from(thumbnailConcepts).all().filter((t) => t.videoCode === code);
+    res.json({ concepts });
+  });
+
+  // POST /api/videos/:code/consistency-check - Voice/style consistency check
+  router.post("/:code/consistency-check", async (req, res) => {
+    const { code } = req.params;
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) { res.status(404).json({ error: "Video not found" }); return; }
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) { res.status(400).json({ error: "ANTHROPIC_API_KEY not set" }); return; }
+
+      // Load brand guide if available
+      const brandPath = path.join(path.dirname(contentLibraryPath), "brand.md");
+      let brandGuide = "";
+      try { brandGuide = fs.readFileSync(brandPath, "utf-8").slice(0, 2000); } catch { /* no brand file */ }
+
+      // Find other scripts in same audience for comparison
+      const sameAudience = videos.filter((v) => v.audience === video.audience && v.code !== code).slice(0, 3);
+      const comparisons = sameAudience.map((v) => v.script.slice(0, 200)).join("\n---\n");
+
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 800,
+        messages: [{
+          role: "user",
+          content: `Check this script for voice/style consistency.
+
+Script to check:
+${video.script.slice(0, 1500)}
+
+${brandGuide ? `Brand guidelines:\n${brandGuide.slice(0, 800)}` : ""}
+
+${comparisons ? `Other scripts in same audience category for comparison:\n${comparisons}` : ""}
+
+Rate these dimensions 1-10 and give brief feedback:
+1. voiceConsistency: Does it match brand voice guidelines?
+2. hookStrength: Is the hook compelling? (avg top performers use 8 words or fewer)
+3. toneMatch: Does it match the tone of other scripts in this audience?
+4. structureQuality: Does it follow the format structure well?
+5. deliveryCues: Are delivery cues clear and helpful?
+
+Return JSON: { "scores": { "voiceConsistency": N, "hookStrength": N, "toneMatch": N, "structureQuality": N, "deliveryCues": N }, "overallScore": N, "issues": ["issue1", ...], "strengths": ["strength1", ...] }
+Return ONLY JSON, no markdown.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") { res.status(500).json({ error: "No AI response" }); return; }
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      res.json(JSON.parse(cleaned));
+    } catch (error) {
+      console.error("[videos] Consistency check error:", error);
+      res.status(500).json({ error: "Failed to run consistency check" });
+    }
+  });
+
+  // ==========================================
+  // Assembly Checklist (4.5)
+  // ==========================================
+
+  const ASSEMBLY_ITEMS = [
+    "voiceover_synced",
+    "graphics_overlaid",
+    "captions_added",
+    "music_sfx_added",
+    "color_graded",
+    "exported",
+  ];
+
+  // GET /api/videos/:code/assembly-checklist
+  router.get("/:code/assembly-checklist", (req, res) => {
+    const code = req.params.code.toUpperCase();
+    const record = db.select().from(videoStatus).where(eq(videoStatus.videoCode, code)).get();
+    const raw = (record as Record<string, unknown>)?.assembly_checklist;
+    const checklist: Record<string, boolean> = raw ? JSON.parse(raw as string) : {};
+
+    const items = ASSEMBLY_ITEMS.map((key) => ({
+      key,
+      label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      completed: checklist[key] ?? false,
+    }));
+
+    const completedCount = items.filter((i) => i.completed).length;
+
+    res.json({ items, completedCount, totalCount: items.length, allComplete: completedCount === items.length });
+  });
+
+  // PUT /api/videos/:code/assembly-checklist - Toggle item
+  router.put("/:code/assembly-checklist", (req, res) => {
+    const code = req.params.code.toUpperCase();
+    const { key, completed } = req.body as { key: string; completed: boolean };
+
+    if (!key || !ASSEMBLY_ITEMS.includes(key)) {
+      res.status(400).json({ error: "Invalid checklist key" });
+      return;
+    }
+
+    const record = db.select().from(videoStatus).where(eq(videoStatus.videoCode, code)).get();
+    const raw = (record as Record<string, unknown>)?.assembly_checklist;
+    const checklist: Record<string, boolean> = raw ? JSON.parse(raw as string) : {};
+    checklist[key] = completed;
+
+    if (record) {
+      db.update(videoStatus)
+        .set({ updatedAt: new Date().toISOString() })
+        .where(eq(videoStatus.videoCode, code))
+        .run();
+      // Direct SQL for the TEXT column not in Drizzle schema
+      const sqlite = db as unknown as { $client: { prepare: (sql: string) => { run: (...args: unknown[]) => void } } };
+      sqlite.$client.prepare("UPDATE video_status SET assembly_checklist = ? WHERE video_code = ?").run(JSON.stringify(checklist), code);
+    }
+
+    const items = ASSEMBLY_ITEMS.map((k) => ({
+      key: k,
+      label: k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      completed: checklist[k] ?? false,
+    }));
+
+    const completedCount = items.filter((i) => i.completed).length;
+    res.json({ items, completedCount, totalCount: items.length, allComplete: completedCount === items.length });
   });
 
   return router;

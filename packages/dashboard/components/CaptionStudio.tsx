@@ -18,6 +18,7 @@ import {
   Hash,
   Upload,
   ArrowRight,
+  CalendarPlus,
 } from "lucide-react";
 import type { ConversationMessage } from "../shared/types.js";
 import type { SavedCaption, FormatId, ProductionStatus, DashboardView } from "../shared/types.js";
@@ -275,6 +276,30 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
   const [batchSelected, setBatchSelected] = useState<Set<string>>(new Set());
   const [batchProgress, setBatchProgress] = useState<Array<{ videoCode: string; status: string }> | null>(null);
   const [workspaceTab, setWorkspaceTab] = useState<"edit" | "publish">("edit");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  });
+  const [schedulePlatform, setSchedulePlatform] = useState("instagram_reels");
+  const [scheduleSuccess, setScheduleSuccess] = useState(false);
+
+  const scheduleMutation = useMutation({
+    mutationFn: (params: { videoCode: string; date: string; platform: string }) =>
+      fetch("/api/calendar/schedule-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      setScheduleSuccess(true);
+      setScheduleOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      setTimeout(() => setScheduleSuccess(false), 3000);
+    },
+  });
 
   // Fetch pipeline to get videos in ASSEMBLED/SCHEDULED/PUBLISHED
   const { data: pipelineData } = useQuery<PipelineResponse>({
@@ -1328,18 +1353,76 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           )}
         </div>
       </div>
-      {onNavigate && (
-        <div className="mt-6">
-          <button
-            onClick={() => onNavigate("CALENDAR")}
-            className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
-          >
-            <div>
-              <span className="text-sm font-semibold text-teal-800">Schedule on Calendar</span>
-              <span className="block text-xs text-teal-600 mt-0.5">Add this video to your publishing schedule</span>
+      {selectedVideo && (
+        <div className="mt-6 space-y-3">
+          {scheduleSuccess && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+              <Check size={16} />
+              Video scheduled successfully!
             </div>
-            <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
-          </button>
+          )}
+
+          {scheduleOpen ? (
+            <div className="bg-white border border-teal-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-slate-900">Schedule Video</h4>
+                <button onClick={() => setScheduleOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Platform</label>
+                  <select
+                    value={schedulePlatform}
+                    onChange={(e) => setSchedulePlatform(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                  >
+                    {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={() => scheduleMutation.mutate({ videoCode: selectedVideo, date: scheduleDate, platform: schedulePlatform })}
+                disabled={scheduleMutation.isPending}
+                className="w-full px-4 py-2.5 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {scheduleMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CalendarPlus size={14} />}
+                {scheduleMutation.isPending ? "Scheduling..." : "Schedule & Update Status"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setScheduleOpen(true)}
+              className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left"
+            >
+              <div>
+                <span className="text-sm font-semibold text-teal-800">Schedule This Video</span>
+                <span className="block text-xs text-teal-600 mt-0.5">Pick a date and platform to add to your calendar</span>
+              </div>
+              <CalendarPlus size={16} className="text-teal-600 shrink-0 ml-3" />
+            </button>
+          )}
+
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate("CALENDAR")}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-semibold text-slate-500 hover:text-teal-600 transition-colors"
+            >
+              View full calendar <ArrowRight size={12} />
+            </button>
+          )}
         </div>
       )}
     </div>

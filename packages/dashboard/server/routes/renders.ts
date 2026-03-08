@@ -381,6 +381,24 @@ export function createRendersRouter(
 
   fs.mkdirSync(renderOutputDir, { recursive: true });
 
+  // GET /api/renders/queue - Global render queue status
+  router.get("/queue", (_req, res) => {
+    const allJobs = Array.from(jobsById.values()).map(toPublicJob);
+    const queued = allJobs.filter((j) => j.status === "queued");
+    const running = allJobs.filter((j) => j.status === "running");
+    const completed = allJobs.filter((j) => j.status === "completed");
+    const failed = allJobs.filter((j) => j.status === "failed");
+
+    res.json({
+      queued: queued.length,
+      running: running.length,
+      completed: completed.length,
+      failed: failed.length,
+      maxConcurrent: MAX_CONCURRENT_RENDERS,
+      jobs: allJobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50),
+    });
+  });
+
   router.get("/:code", (req, res) => {
     const code = req.params.code.toUpperCase();
     const jobs = jobsByCode.get(code) ?? [];

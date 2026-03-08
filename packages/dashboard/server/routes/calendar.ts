@@ -158,6 +158,48 @@ export function createCalendarRouter(contentLibraryPath: string) {
     res.json({ videoCode, date, platform, status: "SCHEDULED" });
   });
 
+  // POST /api/calendar/recurring - Create recurring calendar slots
+  router.post("/recurring", (req, res) => {
+    const { platform, dayOfWeek, weeks, slotLabel, format } = req.body as {
+      platform: string;
+      dayOfWeek: number; // 0=Sunday, 1=Monday, etc.
+      weeks?: number;
+      slotLabel?: string;
+      format?: string;
+    };
+
+    if (!platform || dayOfWeek === undefined) {
+      res.status(400).json({ error: "platform and dayOfWeek are required" });
+      return;
+    }
+
+    const numWeeks = weeks || 8;
+    const entries: Array<{ id: number; date: string }> = [];
+    const now = new Date();
+
+    for (let w = 0; w < numWeeks; w++) {
+      const target = new Date(now);
+      // Find next occurrence of dayOfWeek from this week + w
+      const currentDay = target.getDay();
+      let daysUntil = dayOfWeek - currentDay;
+      if (daysUntil < 0) daysUntil += 7;
+      target.setDate(target.getDate() + daysUntil + w * 7);
+      const dateStr = target.toISOString().split("T")[0];
+
+      const result = db.insert(calendarEntries).values({
+        date: dateStr,
+        platform,
+        slotLabel: slotLabel || (format ? `Format ${format} slot` : null),
+        status: "planned",
+        notes: format ? `Recurring ${format} slot` : "Recurring slot",
+      }).run();
+
+      entries.push({ id: Number(result.lastInsertRowid), date: dateStr });
+    }
+
+    res.json({ created: entries.length, entries });
+  });
+
   // GET /api/calendar/gaps - Detect cadence gaps
   router.get("/gaps", (req, res) => {
     const weeksParam = parseInt(req.query.weeks as string) || 4;

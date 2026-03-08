@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight } from "lucide-react";
-import type { Idea, IdeaCategory, DashboardView } from "../shared/types.js";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check } from "lucide-react";
+import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
@@ -53,7 +53,15 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
     },
   });
 
+  const { data: intelData } = useQuery<{ ideas: WatchlistIntelIdea[]; date: string | null }>({
+    queryKey: ["watchlist-intel-latest"],
+    queryFn: () => fetch("/api/watchlist-intel/latest").then((r) => r.json()),
+  });
+
   const ideas = data?.ideas ?? [];
+  const intelIdeas = intelData?.ideas ?? [];
+  const existingTopics = new Set((data?.ideas ?? []).map((i) => i.topic.toLowerCase().trim()));
+  const unadoptedIntel = intelIdeas.filter((i) => !existingTopics.has(i.topic.toLowerCase().trim()));
   const categories: (IdeaCategory | "all")[] = ["all", "trending", "competitor", "evergreen", "audience", "personal", "archived"];
 
   return (
@@ -152,6 +160,11 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
         })}
       </div>
 
+      {/* Competitor Insights from Watchlist Intelligence */}
+      {unadoptedIntel.length > 0 && activeCategory !== "archived" && (
+        <CompetitorInsights ideas={unadoptedIntel} intelDate={intelData?.date ?? null} />
+      )}
+
       {/* Ideas List */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading ideas...</div>
@@ -206,6 +219,118 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
       )}
 
       <ViewHelp {...VIEW_HELP.IDEAS} />
+    </div>
+  );
+};
+
+// ============================================
+// Competitor Insights from Watchlist Intelligence
+// ============================================
+
+const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: string | null }> = ({ ideas, intelDate }) => {
+  const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
+  const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
+
+  const addMutation = useMutation({
+    mutationFn: async (idea: WatchlistIntelIdea) => {
+      const r = await fetch("/api/watchlist-intel/add-idea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: idea.topic,
+          suggestedFormat: idea.suggestedFormat,
+          hookAngle: idea.hookAngle,
+          priority: idea.priority,
+          source: idea.source,
+          category: idea.category || "competitor",
+          inspiredBy: idea.inspiredBy,
+        }),
+      });
+      if (!r.ok) throw new Error("Failed to add idea");
+      return r.json();
+    },
+    onSuccess: (_data, idea) => {
+      setAddedTopics((prev) => new Set(prev).add(idea.topic));
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+    },
+  });
+
+  const displayIdeas = expanded ? ideas : ideas.slice(0, 3);
+
+  return (
+    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 md:p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Eye size={16} className="text-violet-600" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">
+            Competitor Insights
+          </p>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-200 text-violet-700">
+            {ideas.length}
+          </span>
+        </div>
+        {intelDate && (
+          <p className="text-[10px] text-violet-400">{intelDate}</p>
+        )}
+      </div>
+      <p className="text-xs text-violet-600 mb-3">
+        Non-obvious opportunities from watchlist intelligence. Add promising ones to your idea bank.
+      </p>
+      <div className="space-y-2">
+        {displayIdeas.map((idea, i) => {
+          const wasAdded = addedTopics.has(idea.topic);
+          return (
+            <div key={i} className="bg-white border border-violet-100 rounded-xl p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900">{idea.topic}</p>
+                  {idea.hookAngle && (
+                    <p className="text-xs text-slate-500 mt-0.5">{idea.hookAngle}</p>
+                  )}
+                  {idea.whyNonObvious && (
+                    <p className="text-[11px] text-violet-600 mt-1 italic">"{idea.whyNonObvious}"</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {idea.inspiredBy && (
+                      <span className="text-[10px] text-violet-500">Inspired by: {idea.inspiredBy}</span>
+                    )}
+                    {idea.suggestedFormat && (
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        {idea.suggestedFormat}
+                      </span>
+                    )}
+                    {idea.targetAudience && (
+                      <span className="text-[10px] text-slate-400">{idea.targetAudience}</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => !wasAdded && addMutation.mutate(idea)}
+                  disabled={wasAdded || addMutation.isPending}
+                  className={cn(
+                    "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
+                    wasAdded
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-violet-100 text-violet-700 hover:bg-violet-200",
+                  )}
+                >
+                  {wasAdded ? <><Check size={12} /> Added</> : <><Plus size={12} /> Add</>}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {ideas.length > 3 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-2 text-xs text-violet-600 hover:text-violet-800 font-medium"
+        >
+          {expanded ? "Show less" : `Show ${ideas.length - 3} more`}
+        </button>
+      )}
     </div>
   );
 };

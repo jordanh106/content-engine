@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2 } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -384,8 +384,33 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
 // Script Tab
 // ============================================
 
+const ADAPT_PLATFORMS = [
+  { key: "tiktok", label: "TikTok", note: "6-15s, hook in 0.5s, text-heavy" },
+  { key: "instagram_reels", label: "IG Reels", note: "15-30s, visual hooks, slower cuts" },
+  { key: "youtube_shorts", label: "YT Shorts", note: "Up to 60s, educational depth" },
+  { key: "youtube_long", label: "YT Long", note: "3-5 min, expanded with B-roll cues" },
+];
+
 const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
   const lines = video.script.split("\n");
+  const [adaptedScript, setAdaptedScript] = useState<string | null>(null);
+  const [adaptPlatform, setAdaptPlatform] = useState<string | null>(null);
+
+  const adaptMutation = useMutation({
+    mutationFn: async (platform: string) => {
+      const r = await fetch(`/api/videos/${video.code}/adapt-script`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform }),
+      });
+      if (!r.ok) throw new Error("Adaptation failed");
+      return r.json();
+    },
+    onSuccess: (data: { script: string; platform: string }) => {
+      setAdaptedScript(data.script);
+      setAdaptPlatform(data.platform);
+    },
+  });
 
   return (
     <div>
@@ -393,7 +418,28 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
           Voiceover Script
         </p>
-        <CopyButton text={video.script} label="Copy Script" />
+        <div className="flex items-center gap-2">
+          <div className="relative group">
+            <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors">
+              <Wand2 size={10} />
+              Adapt
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 hidden group-hover:block">
+              {ADAPT_PLATFORMS.map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => adaptMutation.mutate(p.key)}
+                  disabled={adaptMutation.isPending}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
+                >
+                  <span className="text-xs font-medium text-slate-800">{p.label}</span>
+                  <span className="block text-[10px] text-slate-400">{p.note}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <CopyButton text={adaptedScript || video.script} label="Copy Script" />
+        </div>
       </div>
 
       {video.deliveryCues.length > 0 && (
@@ -431,6 +477,204 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
           );
         })}
       </div>
+
+      {/* Adapted Script */}
+      {adaptMutation.isPending && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-violet-600">
+          <Loader2 size={14} className="animate-spin" /> Adapting script...
+        </div>
+      )}
+      {adaptedScript && adaptPlatform && (
+        <div className="mt-4 border border-violet-200 bg-violet-50 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">
+              Adapted for {ADAPT_PLATFORMS.find((p) => p.key === adaptPlatform)?.label || adaptPlatform}
+            </p>
+            <div className="flex items-center gap-2">
+              <CopyButton text={adaptedScript} label="Copy" />
+              <button onClick={() => { setAdaptedScript(null); setAdaptPlatform(null); }} className="text-[10px] text-violet-400 hover:text-violet-600">
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 space-y-2">
+            {adaptedScript.split("\n").map((line, i) => {
+              if (!line.trim()) return <div key={i} className="h-2" />;
+              const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
+              return (
+                <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-violet-600 font-semibold italic" : "text-slate-700")}>
+                  {line}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {adaptMutation.isError && (
+        <p className="text-xs text-rose-500 mt-2">{(adaptMutation.error as Error)?.message}</p>
+      )}
+
+      {/* Consistency Check */}
+      <ConsistencyCheck code={video.code} />
+    </div>
+  );
+};
+
+// ============================================
+// Consistency Check Component
+// ============================================
+
+type ConsistencyResult = {
+  scores: Record<string, number>;
+  overallScore: number;
+  issues: string[];
+  strengths: string[];
+};
+
+const CONSISTENCY_LABELS: Record<string, string> = {
+  voiceConsistency: "Voice",
+  hookStrength: "Hook",
+  toneMatch: "Tone",
+  structureQuality: "Structure",
+  deliveryCues: "Cues",
+};
+
+const ConsistencyCheck: React.FC<{ code: string }> = ({ code }) => {
+  const [result, setResult] = useState<ConsistencyResult | null>(null);
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/consistency-check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Check failed");
+      return r.json() as Promise<ConsistencyResult>;
+    },
+    onSuccess: (data) => setResult(data),
+  });
+
+  return (
+    <div className="mt-4 border border-slate-200 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          Voice Consistency
+        </p>
+        <button
+          onClick={() => mutation.mutate()}
+          disabled={mutation.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-100 text-sky-700 text-[10px] font-bold hover:bg-sky-200 disabled:opacity-50 transition-colors"
+        >
+          {mutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+          {result ? "Recheck" : "Check"}
+        </button>
+      </div>
+
+      {result ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className={cn("text-2xl font-black", result.overallScore >= 7 ? "text-emerald-600" : result.overallScore >= 5 ? "text-amber-600" : "text-rose-600")}>
+              {result.overallScore}
+            </span>
+            <span className="text-xs text-slate-400">/10</span>
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {Object.entries(result.scores).map(([key, score]) => (
+              <div key={key} className="text-center">
+                <div className={cn("text-sm font-bold", score >= 7 ? "text-emerald-600" : score >= 5 ? "text-amber-600" : "text-rose-600")}>
+                  {score}
+                </div>
+                <div className="text-[9px] text-slate-400 truncate">{CONSISTENCY_LABELS[key] || key}</div>
+              </div>
+            ))}
+          </div>
+          {result.issues.length > 0 && (
+            <div className="text-xs text-rose-600 space-y-0.5">
+              {result.issues.slice(0, 3).map((issue, i) => <p key={i}>- {issue}</p>)}
+            </div>
+          )}
+          {result.strengths.length > 0 && (
+            <div className="text-xs text-emerald-600 space-y-0.5">
+              {result.strengths.slice(0, 2).map((s, i) => <p key={i}>+ {s}</p>)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400">AI checks voice, hook, tone, structure, and delivery cues.</p>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// Thumbnail Concepts Component
+// ============================================
+
+type ThumbnailConcept = {
+  textOverlay: string;
+  expression: string;
+  background: string;
+  colorScheme: string;
+  style: string;
+};
+
+const ThumbnailConcepts: React.FC<{ code: string }> = ({ code }) => {
+  const [concepts, setConcepts] = useState<ThumbnailConcept[]>([]);
+
+  const { data: savedConcepts } = useQuery<{ concepts: ThumbnailConcept[] }>({
+    queryKey: ["thumbnail-concepts", code],
+    queryFn: () => fetch(`/api/videos/${code}/thumbnail-concepts`).then((r) => r.json()),
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/thumbnail-concepts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Generation failed");
+      return r.json() as Promise<{ concepts: ThumbnailConcept[] }>;
+    },
+    onSuccess: (data) => setConcepts(data.concepts),
+  });
+
+  const displayConcepts = concepts.length > 0 ? concepts : savedConcepts?.concepts || [];
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Camera size={14} className="text-pink-500" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            Thumbnail Concepts
+          </p>
+        </div>
+        <button
+          onClick={() => generateMutation.mutate()}
+          disabled={generateMutation.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-100 text-pink-700 text-[10px] font-bold hover:bg-pink-200 disabled:opacity-50 transition-colors"
+        >
+          {generateMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+          {displayConcepts.length > 0 ? "Regenerate" : "Generate"}
+        </button>
+      </div>
+
+      {displayConcepts.length > 0 ? (
+        <div className="space-y-2 mt-2">
+          {displayConcepts.map((c, i) => (
+            <div key={i} className="bg-pink-50 rounded-lg p-3">
+              <p className="text-sm font-bold text-slate-800">{c.textOverlay}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[10px] text-slate-500">
+                {c.expression && <span>Expression: {c.expression}</span>}
+                {c.background && <span>BG: {c.background}</span>}
+                {c.colorScheme && <span>Colors: {c.colorScheme}</span>}
+                {c.style && <span>Style: {c.style}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400">AI generates text overlays, expressions, and visual direction for thumbnails.</p>
+      )}
     </div>
   );
 };
@@ -663,6 +907,64 @@ const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoa
       {generateMutation.isError && (
         <p className="text-xs text-rose-500 text-center mt-1">{(generateMutation.error as Error)?.message}</p>
       )}
+
+      {/* Assembly Checklist */}
+      <AssemblyChecklist code={code} />
+    </div>
+  );
+};
+
+// ============================================
+// Assembly Checklist (4.5)
+// ============================================
+
+type AssemblyItem = { key: string; label: string; completed: boolean };
+
+const AssemblyChecklist: React.FC<{ code: string }> = ({ code }) => {
+  const queryClient = useQueryClient();
+  const { data } = useQuery<{ items: AssemblyItem[]; completedCount: number; totalCount: number; allComplete: boolean }>({
+    queryKey: ["assembly-checklist", code],
+    queryFn: () => fetch(`/api/videos/${code}/assembly-checklist`).then((r) => r.json()),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ key, completed }: { key: string; completed: boolean }) => {
+      const r = await fetch(`/api/videos/${code}/assembly-checklist`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, completed }),
+      });
+      return r.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assembly-checklist", code] }),
+  });
+
+  if (!data) return null;
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700">Assembly Checklist</p>
+        <span className="text-[10px] font-bold text-amber-600">{data.completedCount}/{data.totalCount}</span>
+      </div>
+      <div className="space-y-2">
+        {data.items.map((item) => (
+          <label key={item.key} className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={item.completed}
+              onChange={() => toggleMutation.mutate({ key: item.key, completed: !item.completed })}
+              className="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+            />
+            <span className={`text-xs ${item.completed ? "text-amber-500 line-through" : "text-amber-800 font-medium"}`}>
+              {item.label}
+            </span>
+          </label>
+        ))}
+      </div>
+      {data.allComplete && (
+        <p className="text-[10px] text-emerald-600 font-bold mt-2">All assembly steps complete. Ready to schedule.</p>
+      )}
     </div>
   );
 };
@@ -694,9 +996,50 @@ type PublishKitResponse = {
   totalPlatforms: number;
 };
 
+type ViralityScore = {
+  score: number;
+  dimensions: Record<string, { score: number; note: string }>;
+  suggestion: string;
+};
+
+const VIRALITY_DIMENSION_LABELS: Record<string, string> = {
+  hookStrength: "Hook Strength",
+  topicRelevance: "Topic Relevance",
+  formatFit: "Format Fit",
+  shareability: "Shareability",
+  platformPotential: "Platform Potential",
+};
+
+function scoreColor(score: number): string {
+  if (score >= 75) return "text-emerald-600";
+  if (score >= 50) return "text-amber-600";
+  return "text-rose-600";
+}
+
+function scoreBg(score: number): string {
+  if (score >= 75) return "bg-emerald-500";
+  if (score >= 50) return "bg-amber-500";
+  return "bg-rose-500";
+}
+
 const PublishTab: React.FC<{ code: string }> = ({ code }) => {
   const queryClient = useQueryClient();
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
+  const [viralityScore, setViralityScore] = useState<ViralityScore | null>(null);
+
+  const viralityMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/virality-score`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Score generation failed");
+      return r.json();
+    },
+    onSuccess: (data: ViralityScore) => {
+      setViralityScore(data);
+    },
+  });
 
   const { data: kit, isLoading } = useQuery<PublishKitResponse>({
     queryKey: ["publish-kit", code],
@@ -772,6 +1115,77 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
           )}
         </div>
       </div>
+
+      {/* Virality Score */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-amber-500" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Virality Score
+            </p>
+          </div>
+          <button
+            onClick={() => viralityMutation.mutate()}
+            disabled={viralityMutation.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-200 disabled:opacity-50 transition-colors"
+          >
+            {viralityMutation.isPending ? (
+              <><Loader2 size={12} className="animate-spin" /> Scoring...</>
+            ) : viralityScore ? (
+              <><RefreshCw size={12} /> Rescore</>
+            ) : (
+              <><Zap size={12} /> Score</>
+            )}
+          </button>
+        </div>
+
+        {viralityScore ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className={cn("text-3xl font-black", scoreColor(viralityScore.score))}>
+                {viralityScore.score}
+              </span>
+              <span className="text-sm text-slate-400">/100</span>
+            </div>
+
+            <div className="space-y-1.5">
+              {Object.entries(viralityScore.dimensions).map(([key, dim]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500 w-28 shrink-0 truncate">
+                    {VIRALITY_DIMENSION_LABELS[key] || key}
+                  </span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all", scoreBg(dim.score * 5))}
+                      style={{ width: `${(dim.score / 20) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 w-6 text-right">{dim.score}</span>
+                </div>
+              ))}
+            </div>
+
+            {viralityScore.suggestion && (
+              <p className="text-xs text-slate-600 bg-slate-50 rounded-lg p-2.5 mt-2">
+                <Sparkles size={12} className="inline mr-1 text-amber-500" />
+                {viralityScore.suggestion}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400">
+            AI evaluates hook strength, topic relevance, format fit, shareability, and platform potential.
+          </p>
+        )}
+
+        {viralityMutation.isError && (
+          <p className="text-xs text-rose-500 mt-2">{(viralityMutation.error as Error)?.message}</p>
+        )}
+      </div>
+
+      {/* Thumbnail Concepts */}
+      <ThumbnailConcepts code={code} />
 
       {/* Platform checklist */}
       {platforms.map((platform) => {
@@ -957,12 +1371,21 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   published: { label: "Published", color: "text-emerald-600" },
 };
 
+type RepurposeSuggestion = {
+  tier: string;
+  platform: string;
+  description: string;
+  content: string;
+};
+
 const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [newTier, setNewTier] = useState("short");
   const [newPlatform, setNewPlatform] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [suggestions, setSuggestions] = useState<RepurposeSuggestion[]>([]);
+  const [addedSuggestions, setAddedSuggestions] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useQuery<{ items: WaterfallEntry[] }>({
     queryKey: ["waterfall", code],
@@ -1013,6 +1436,41 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
     },
   });
 
+  const suggestMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/repurpose-suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Failed to generate suggestions");
+      return r.json();
+    },
+    onSuccess: (data: { suggestions: RepurposeSuggestion[] }) => {
+      setSuggestions(data.suggestions || []);
+      setAddedSuggestions(new Set());
+    },
+  });
+
+  const addSuggestionMutation = useMutation({
+    mutationFn: async (s: RepurposeSuggestion) => {
+      const r = await fetch(`/api/videos/${code}/waterfall`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: s.tier, platform: s.platform, description: `${s.description}: ${s.content}` }),
+      });
+      if (!r.ok) throw new Error("Failed to add");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+    },
+  });
+
+  const handleAddSuggestion = (index: number, s: RepurposeSuggestion) => {
+    addSuggestionMutation.mutate(s);
+    setAddedSuggestions((prev) => new Set(prev).add(index));
+  };
+
   const items = data?.items ?? [];
 
   // Group by tier
@@ -1034,14 +1492,67 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             Track derivative content from this source video
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-        >
-          <Plus size={10} />
-          Add
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => suggestMutation.mutate()}
+            disabled={suggestMutation.isPending}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 disabled:opacity-50 transition-colors"
+          >
+            {suggestMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+            AI Suggest
+          </button>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+          >
+            <Plus size={10} />
+            Add
+          </button>
+        </div>
       </div>
+
+      {/* AI Suggestions */}
+      {suggestions.length > 0 && (
+        <div className="border border-violet-200 bg-violet-50 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider">
+              AI Suggestions ({suggestions.length})
+            </p>
+            <button onClick={() => setSuggestions([])} className="text-[10px] text-violet-400 hover:text-violet-600">
+              Dismiss
+            </button>
+          </div>
+          {suggestions.map((s, i) => (
+            <div key={i} className="bg-white border border-violet-100 rounded-lg p-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[9px] font-bold uppercase text-violet-500">{s.tier}</span>
+                    {s.platform && <span className="text-[9px] text-slate-400">{s.platform}</span>}
+                  </div>
+                  <p className="text-xs font-medium text-slate-800">{s.description}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{s.content}</p>
+                </div>
+                <button
+                  onClick={() => handleAddSuggestion(i, s)}
+                  disabled={addedSuggestions.has(i)}
+                  className={cn(
+                    "shrink-0 px-2 py-1 rounded-full text-[10px] font-bold transition-colors",
+                    addedSuggestions.has(i)
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-violet-100 text-violet-700 hover:bg-violet-200",
+                  )}
+                >
+                  {addedSuggestions.has(i) ? <Check size={10} /> : <Plus size={10} />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {suggestMutation.isError && (
+        <p className="text-xs text-rose-500">{(suggestMutation.error as Error)?.message}</p>
+      )}
 
       {showAdd && (
         <div className="border border-slate-200 rounded-xl p-3 space-y-2">

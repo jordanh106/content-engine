@@ -36,6 +36,75 @@ const PLATFORM_COLORS: Record<string, string> = {
   X: "bg-slate-900 text-white",
 };
 
+// ============================
+// Competitor Content Gaps
+// ============================
+
+type GapData = {
+  blueOcean: Array<{ topic: string; creators: string[]; count: number }>;
+  overlap: Array<{ topic: string; creators: string[]; count: number }>;
+  uniqueToYou: number;
+  totalCompetitorTopics: number;
+};
+
+const CompetitorGaps: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<GapData>({
+    queryKey: ["competitor-gaps"],
+    queryFn: () => fetch("/api/creator-videos/competitor-gaps").then((r) => r.json()),
+  });
+
+  if (!data || (data.blueOcean.length === 0 && data.overlap.length === 0)) return null;
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-500 mb-2 px-1 hover:text-sky-700 transition-colors"
+      >
+        <Search size={12} />
+        Blue Ocean Topics ({data.blueOcean.length})
+        <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
+      </button>
+
+      {expanded && (
+        <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 space-y-3">
+          <p className="text-xs text-sky-700">
+            Topics your competitors cover that you don't. These are potential content gaps to fill.
+          </p>
+          {data.blueOcean.length > 0 ? (
+            <div className="space-y-2">
+              {data.blueOcean.slice(0, 10).map((gap, i) => (
+                <div key={i} className="bg-white border border-sky-100 rounded-lg p-2.5 flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{gap.topic}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Covered by: {gap.creators.slice(0, 3).map((c) => `@${c}`).join(", ")}
+                      {gap.count > 1 && ` (${gap.count} videos)`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-sky-600">No gaps detected. Analyze more creators to discover opportunities.</p>
+          )}
+          {data.overlap.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] font-bold text-slate-500 mb-1">Topics you both cover ({data.overlap.length}):</p>
+              <div className="flex flex-wrap gap-1">
+                {data.overlap.slice(0, 8).map((o, i) => (
+                  <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{o.topic}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 type WatchlistViewProps = {
   onNavigate?: (view: DashboardView) => void;
 };
@@ -49,6 +118,12 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   const { data: intelData } = useQuery<IntelResponse>({
     queryKey: ["watchlist-intel"],
     queryFn: () => fetch("/api/watchlist-intel/latest").then((r) => r.json()),
+  });
+
+  type Outlier = { id: number; creatorHandle: string; platform: string; title: string; views: number; medianViews: number; multiplier: number; url: string | null; hasBreakdown: boolean };
+  const { data: outliersData } = useQuery<{ outliers: Outlier[] }>({
+    queryKey: ["creator-outliers"],
+    queryFn: () => fetch("/api/creator-videos/outliers").then((r) => r.json()),
   });
 
   const queryClient = useQueryClient();
@@ -379,6 +454,43 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
+
+      {/* Outlier Videos */}
+      {outliersData && outliersData.outliers.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={16} className="text-amber-600" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">
+              Outlier Videos ({outliersData.outliers.length})
+            </p>
+          </div>
+          <p className="text-xs text-amber-700 mb-3">
+            Videos that got 3x+ their creator's median views. Study these to find what works.
+          </p>
+          <div className="space-y-2">
+            {outliersData.outliers.slice(0, 5).map((o) => (
+              <div key={o.id} className="bg-white border border-amber-100 rounded-xl p-3 flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">{o.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-slate-500">@{o.creatorHandle}</span>
+                    <span className="text-[10px] font-bold text-amber-600">{o.multiplier}x median</span>
+                    <span className="text-[10px] text-slate-400">{o.views.toLocaleString()} views</span>
+                  </div>
+                </div>
+                {o.url && (
+                  <a href={o.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-teal-600 shrink-0">
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Competitor Content Gaps */}
+      <CompetitorGaps />
 
       {/* Creator Cards */}
       {isLoading ? (

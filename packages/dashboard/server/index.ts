@@ -40,6 +40,8 @@ import { createVideoAnalysisRouter } from "./routes/video-analysis.js";
 import { createBenchmarkingRouter } from "./routes/benchmarking.js";
 import { createVaultRouter } from "./routes/vault.js";
 import { createCreatorVideosRouter } from "./routes/creator-videos.js";
+import { createSearchRouter } from "./routes/search.js";
+import { createAutomationRouter } from "./routes/automation.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -87,6 +89,8 @@ app.use("/api/video-analysis", createVideoAnalysisRouter(contentLibraryPath));
 app.use("/api/benchmarking", createBenchmarkingRouter(contentLibraryPath));
 app.use("/api/vault", createVaultRouter(contentLibraryPath));
 app.use("/api/creator-videos", createCreatorVideosRouter(contentLibraryPath));
+app.use("/api/search", createSearchRouter(contentLibraryPath));
+app.use("/api/automation", createAutomationRouter());
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

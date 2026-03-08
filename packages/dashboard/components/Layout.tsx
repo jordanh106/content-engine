@@ -14,7 +14,9 @@ import {
   MoreHorizontal,
   ChevronDown,
   X,
+  Bell,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -86,6 +88,83 @@ function getCollapsedState(): Record<string, boolean> {
   }
 }
 
+// Notification Bell Component
+type Notification = {
+  id: number;
+  type: string;
+  title: string;
+  detail: string | null;
+  targetView: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
+const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> = ({ onNavigate }) => {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery<{ notifications: Notification[]; unreadCount: number }>({
+    queryKey: ["notifications"],
+    queryFn: () => fetch("/api/analytics/notifications").then((r) => r.json()),
+    refetchInterval: 60000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: () => fetch("/api/analytics/notifications/read-all", { method: "PUT" }).then((r) => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+
+  const unread = data?.unreadCount ?? 0;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setOpen(!open); if (!open && unread > 0) markReadMutation.mutate(); }}
+        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors relative"
+        title="Notifications"
+      >
+        <Bell size={18} />
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+            <div className="p-3 border-b border-slate-100">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Notifications</p>
+            </div>
+            {(data?.notifications || []).length === 0 ? (
+              <p className="p-4 text-xs text-slate-400 text-center">No notifications yet</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {(data?.notifications || []).slice(0, 10).map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      if (n.targetView) onNavigate(n.targetView as DashboardView);
+                      setOpen(false);
+                    }}
+                    className={cn("w-full text-left p-3 hover:bg-slate-50 transition-colors", !n.read && "bg-amber-50/50")}
+                  >
+                    <p className="text-xs font-medium text-slate-800">{n.title}</p>
+                    {n.detail && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{n.detail}</p>}
+                    <p className="text-[9px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 type LayoutProps = {
   currentView: DashboardView;
   onNavigate: (view: DashboardView) => void;
@@ -125,15 +204,18 @@ export const Layout: React.FC<LayoutProps> = ({
               Production Dashboard
             </p>
           </div>
-          {onOpenVault && (
-            <button
-              onClick={onOpenVault}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-              title="Open Vault"
-            >
-              <Bookmark size={18} />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            <NotificationBell onNavigate={onNavigate} />
+            {onOpenVault && (
+              <button
+                onClick={onOpenVault}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                title="Open Vault"
+              >
+                <Bookmark size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Nav groups */}

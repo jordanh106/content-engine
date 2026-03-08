@@ -11,6 +11,7 @@ import {
   ChevronRight,
   RotateCcw,
   ArrowRight,
+  Zap,
 } from "lucide-react";
 import type { SessionType, FormatId, ProductionSession, DashboardView } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -62,6 +63,13 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
   const { data: availableData } = useQuery<{ videos: AvailableVideo[]; sessionType: SessionType }>({
     queryKey: ["session-available", selectedType],
     queryFn: () => fetch(`/api/sessions/available-videos?type=${selectedType}`).then((r) => r.json()),
+    enabled: !!selectedType,
+  });
+
+  type BatchRec = { audience: string; videos: Array<{ code: string; title: string; format: string }>; count: number; estimatedMinutes: number; formats: string[]; reason: string };
+  const { data: recommendations } = useQuery<{ batches: BatchRec[] }>({
+    queryKey: ["session-recommendations", selectedType],
+    queryFn: () => fetch(`/api/sessions/recommendations?type=${selectedType}`).then((r) => r.json()),
     enabled: !!selectedType,
   });
 
@@ -198,6 +206,38 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
               ))}
             </div>
           </section>
+
+          {/* Smart Batch Recommendations */}
+          {selectedType && recommendations && recommendations.batches.length > 1 && (
+            <section>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+                <Zap size={12} className="text-amber-500" />
+                Smart Batches
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {recommendations.batches.map((batch) => (
+                  <button
+                    key={batch.audience}
+                    onClick={() => setSelectedCodes(new Set(batch.videos.map((v) => v.code)))}
+                    className={cn(
+                      "border rounded-xl p-3 text-left transition-all",
+                      batch.videos.every((v) => selectedCodes.has(v.code))
+                        ? "border-amber-300 bg-amber-50"
+                        : "border-slate-200 bg-white hover:border-amber-200",
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-slate-800">{batch.audience}</span>
+                      <span className="text-[10px] text-slate-400">{batch.estimatedMinutes} min</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      {batch.count} videos, Formats: {batch.formats.join(", ")}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Video Selection */}
           {selectedType && availableData && (

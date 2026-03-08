@@ -228,11 +228,54 @@ sqlite.exec(`
     performance_note TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS thumbnail_concepts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT NOT NULL,
+    text_overlay TEXT NOT NULL,
+    expression TEXT,
+    background TEXT,
+    color_scheme TEXT,
+    style TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT,
+    target_view TEXT,
+    target_id TEXT,
+    read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// Indices for query performance
+sqlite.exec(`
+  CREATE INDEX IF NOT EXISTS idx_perf_metrics_video_platform ON performance_metrics(video_code, platform);
+  CREATE INDEX IF NOT EXISTS idx_perf_metrics_recorded ON performance_metrics(recorded_at);
+  CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_entries(date);
+  CREATE INDEX IF NOT EXISTS idx_calendar_video ON calendar_entries(video_code);
+  CREATE INDEX IF NOT EXISTS idx_status_history_video ON status_history(video_code);
+  CREATE INDEX IF NOT EXISTS idx_video_status_code ON video_status(video_code);
+  CREATE INDEX IF NOT EXISTS idx_creator_videos_handle ON creator_videos(creator_handle);
+  CREATE INDEX IF NOT EXISTS idx_script_versions_video ON script_versions(video_code);
+  CREATE INDEX IF NOT EXISTS idx_session_items_session ON session_items(session_id);
+  CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
+  CREATE INDEX IF NOT EXISTS idx_saved_captions_video ON saved_captions(video_code);
+  CREATE INDEX IF NOT EXISTS idx_channel_snapshots_handle ON channel_snapshots(handle, platform);
 `);
 
 // Migrations for existing databases
 try {
   sqlite.exec(`ALTER TABLE script_versions ADD COLUMN idea_topic TEXT`);
+} catch { /* column already exists */ }
+
+// Add assembly_checklist column
+try {
+  sqlite.exec(`ALTER TABLE video_status ADD COLUMN assembly_checklist TEXT`);
 } catch { /* column already exists */ }
 
 // Fix script_versions: video_code must be nullable (SQLite can't ALTER COLUMN, must recreate)

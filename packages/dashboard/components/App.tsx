@@ -46,17 +46,38 @@ const AppInner: React.FC = () => {
     }
   }, [selectedVideoCode, onboarding.trackEvent]);
 
-  // Cmd+K keyboard listener for command palette
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Cmd+K: Command palette
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Skip shortcuts when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (commandPaletteOpen) return;
+
+      switch (e.key) {
+        case "1": setView("HOME"); break;
+        case "2": setView("OPPORTUNITIES"); break;
+        case "3": setView("IDEAS"); break;
+        case "4": setView("LIBRARY"); break;
+        case "5": setView("PIPELINE"); break;
+        case "6": setView("SESSION"); break;
+        case "7": setView("CALENDAR"); break;
+        case "8": setView("CAPTIONS"); break;
+        case "9": setView("METRICS"); break;
+        case "v": setVaultOpen((prev) => !prev); break;
+        case "w": setView("WATCHLIST"); break;
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [commandPaletteOpen]);
 
   const handleNavigate = useCallback((target: DashboardView) => {
     setView(target);
@@ -145,6 +166,7 @@ const AppInner: React.FC = () => {
         onOpenChange={setCommandPaletteOpen}
         onNavigate={handleNavigate}
         onOpenVault={handleOpenVault}
+        onSelectVideo={handleSelectVideo}
       />
 
       <WelcomeModal />

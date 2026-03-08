@@ -2,7 +2,7 @@ import { Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, desc, like, and } from "drizzle-orm";
 import { db } from "../db.js";
-import { vaultHooks, vaultStyles } from "../../shared/schema.js";
+import { vaultHooks, vaultStyles, scriptVersions, performanceMetrics } from "../../shared/schema.js";
 import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import type { VaultHook, VaultStyle } from "../../shared/types.js";
 
@@ -495,6 +495,123 @@ Respond with JSON only:
   });
 
   // =============================================
+  // HOOK PERFORMANCE - Aggregate by category
+  // =============================================
+
+  router.get("/hooks/performance", async (_req, res) => {
+    try {
+      // Get all script versions that have a hookId
+      const scripts = db.select().from(scriptVersions).all().filter((s) => s.hookId != null);
+
+      if (scripts.length === 0) {
+        res.json({ categories: [], totalLinked: 0 });
+        return;
+      }
+
+      // Build hookId -> hook data map (from custom hooks)
+      const customHooks = db.select().from(vaultHooks).all();
+      const hookMap = new Map<number, { category: string; pattern: string; bestFormat: string | null; platform: string | null }>();
+      for (const h of customHooks) {
+        hookMap.set(h.id, { category: h.category, pattern: h.pattern, bestFormat: h.bestFormat, platform: h.platform });
+      }
+
+      // Build videoCode -> hookCategory map
+      const videoHookCategory = new Map<string, string>();
+      for (const s of scripts) {
+        if (s.videoCode && s.hookId && hookMap.has(s.hookId)) {
+          videoHookCategory.set(s.videoCode, hookMap.get(s.hookId)!.category);
+        }
+      }
+
+      // Get all performance metrics for linked videos
+      const allMetrics = db.select().from(performanceMetrics).all();
+      const linkedMetrics = allMetrics.filter((m) => videoHookCategory.has(m.videoCode));
+
+      // Aggregate by category
+      const categoryStats = new Map<string, {
+        category: string;
+        videoCount: number;
+        totalViews: number;
+        totalLikes: number;
+        totalSaves: number;
+        totalShares: number;
+        totalComments: number;
+        videos: Set<string>;
+        platforms: Set<string>;
+      }>();
+
+      for (const m of linkedMetrics) {
+        const cat = videoHookCategory.get(m.videoCode)!;
+        if (!categoryStats.has(cat)) {
+          categoryStats.set(cat, {
+            category: cat,
+            videoCount: 0,
+            totalViews: 0,
+            totalLikes: 0,
+            totalSaves: 0,
+            totalShares: 0,
+            totalComments: 0,
+            videos: new Set(),
+            platforms: new Set(),
+          });
+        }
+        const stats = categoryStats.get(cat)!;
+        stats.videos.add(m.videoCode);
+        stats.platforms.add(m.platform);
+        stats.totalViews += m.views ?? 0;
+        stats.totalLikes += m.likes ?? 0;
+        stats.totalSaves += m.saves ?? 0;
+        stats.totalShares += m.shares ?? 0;
+        stats.totalComments += m.comments ?? 0;
+      }
+
+      // Format response
+      const categories = Array.from(categoryStats.values()).map((s) => ({
+        category: s.category,
+        videoCount: s.videos.size,
+        platforms: Array.from(s.platforms),
+        avgViews: s.videos.size > 0 ? Math.round(s.totalViews / s.videos.size) : 0,
+        avgEngagement: s.totalViews > 0
+          ? Number(((s.totalLikes + s.totalSaves + s.totalShares + s.totalComments) / s.totalViews * 100).toFixed(1))
+          : 0,
+        totalViews: s.totalViews,
+        totalEngagement: s.totalLikes + s.totalSaves + s.totalShares + s.totalComments,
+      }));
+
+      // Sort by avgEngagement descending
+      categories.sort((a, b) => b.avgEngagement - a.avgEngagement);
+
+      // Count total hooks by category (all hooks including library)
+      const hookPatternsPath = contentLibraryPath.replace("content-library.md", "hook-patterns.md");
+      const allCategoryCounts = new Map<string, number>();
+      try {
+        const parsedCats = parseHookPatterns(hookPatternsPath);
+        for (const cat of parsedCats) {
+          const slug = categorySlug(cat.name);
+          allCategoryCounts.set(slug, (allCategoryCounts.get(slug) ?? 0) + cat.patterns.length);
+        }
+      } catch { /* ok */ }
+      for (const h of customHooks) {
+        allCategoryCounts.set(h.category, (allCategoryCounts.get(h.category) ?? 0) + 1);
+      }
+
+      // Mark untested categories
+      const untestedCategories = Array.from(allCategoryCounts.entries())
+        .filter(([cat]) => !categoryStats.has(cat))
+        .map(([cat, count]) => ({ category: cat, hookCount: count }));
+
+      res.json({
+        categories,
+        untestedCategories,
+        totalLinked: videoHookCategory.size,
+      });
+    } catch (error) {
+      console.error("[vault] Hook performance error:", error);
+      res.status(500).json({ error: "Failed to aggregate hook performance" });
+    }
+  });
+
+  // =============================================
   // SEED - Pre-load proven hook templates
   // =============================================
 
@@ -539,6 +656,52 @@ Respond with JSON only:
     } catch (error) {
       console.error("[vault] Seed error:", error);
       res.status(500).json({ error: "Failed to seed hooks" });
+    }
+  });
+
+  // POST /api/vault/hooks/:id/adapt - AI generates niche adaptations of a hook
+  router.post("/hooks/:id/adapt", async (req, res) => {
+    const hookId = parseInt(req.params.id);
+    try {
+      const hook = db.select().from(vaultHooks).where(eq(vaultHooks.id, hookId)).get();
+      if (!hook) { res.status(404).json({ error: "Hook not found" }); return; }
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) { res.status(400).json({ error: "ANTHROPIC_API_KEY not set" }); return; }
+
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        messages: [{
+          role: "user",
+          content: `Adapt this hook pattern for a chiropractic/health & wellness content creator. Generate 3 adapted versions.
+
+Original hook: "${hook.pattern}"
+${hook.example ? `Example: "${hook.example}"` : ""}
+${hook.sourceCreator ? `Source creator: ${hook.sourceCreator}` : ""}
+Category: ${hook.category}
+
+Create 3 adaptations that:
+- Keep the psychological trigger (curiosity, fear, authority, etc.)
+- Apply to chiropractic, health, family wellness topics
+- Sound natural and conversational
+- Are ready to use (not templates)
+
+Return JSON array of 3 objects: [{ "pattern": "adapted hook pattern with [VARIABLES]", "example": "concrete filled example", "whyItWorks": "brief explanation" }]
+Return ONLY the JSON array.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") { res.status(500).json({ error: "No AI response" }); return; }
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      const adaptations = JSON.parse(cleaned);
+      res.json({ originalHook: hook.pattern, adaptations });
+    } catch (error) {
+      console.error("[vault] Hook adaptation error:", error);
+      res.status(500).json({ error: "Failed to adapt hook" });
     }
   });
 

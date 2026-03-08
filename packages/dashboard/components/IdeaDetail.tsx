@@ -192,6 +192,8 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
           format: editedFormat || idea.suggestedFormat,
           hookAngle: idea.hookAngle,
           source: idea.source || "Idea Bank",
+          generatedScript: developMutation.data?.script || undefined,
+          deliveryCues: developMutation.data?.deliveryCues || undefined,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);

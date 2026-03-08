@@ -13,6 +13,9 @@ import {
   Palette,
   Zap,
   X,
+  BarChart3,
+  Trophy,
+  AlertCircle,
 } from "lucide-react";
 import type { VaultHook, VaultStyle } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
@@ -75,6 +78,68 @@ function highlightVariables(pattern: string): React.ReactNode {
   );
 }
 
+// Hook Adaptation Button Component
+type Adaptation = { pattern: string; example: string; whyItWorks: string };
+
+const HookAdaptButton: React.FC<{ hookId: number }> = ({ hookId }) => {
+  const [adaptations, setAdaptations] = useState<Adaptation[] | null>(null);
+  const [showAdapt, setShowAdapt] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const adaptMutation = {
+    isPending: false,
+    mutate: async () => {
+      try {
+        const r = await fetch(`/api/vault/hooks/${hookId}/adapt`, { method: "POST", headers: { "Content-Type": "application/json" } });
+        if (!r.ok) return;
+        const data = await r.json();
+        setAdaptations(data.adaptations);
+        setShowAdapt(true);
+      } catch { /* ignore */ }
+    },
+  };
+
+  const handleCopyAdapt = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  if (showAdapt && adaptations) {
+    return (
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] font-bold text-teal-600">Adapted for your niche:</span>
+          <button onClick={() => setShowAdapt(false)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
+        </div>
+        <div className="space-y-1.5">
+          {adaptations.map((a, i) => (
+            <div key={i} className="bg-teal-50 rounded-lg p-2 flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-slate-800">{a.example}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{a.whyItWorks}</p>
+              </div>
+              <button onClick={() => handleCopyAdapt(a.example, i)} className="shrink-0 p-1 rounded hover:bg-teal-100">
+                {copiedIdx === i ? <Check size={12} className="text-green-600" /> : <Copy size={12} className="text-slate-400" />}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => adaptMutation.mutate()}
+      className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors"
+    >
+      <Zap size={12} />
+      Adapt
+    </button>
+  );
+};
+
 export const VaultView: React.FC = () => {
   const [tab, setTab] = useState<Tab>("hooks");
   const [hooks, setHooks] = useState<VaultHook[]>([]);
@@ -106,6 +171,23 @@ export const VaultView: React.FC = () => {
 
   // Variable fill-in state
   const [filledVariables, setFilledVariables] = useState<Record<string, string>>({});
+
+  // Performance view state
+  const [showPerformance, setShowPerformance] = useState(false);
+  const [perfData, setPerfData] = useState<{
+    categories: Array<{ category: string; videoCount: number; platforms: string[]; avgViews: number; avgEngagement: number; totalViews: number; totalEngagement: number }>;
+    untestedCategories: Array<{ category: string; hookCount: number }>;
+    totalLinked: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (showPerformance && !perfData) {
+      fetch("/api/vault/hooks/performance")
+        .then((r) => r.json())
+        .then(setPerfData)
+        .catch(() => {});
+    }
+  }, [showPerformance, perfData]);
 
   const fetchHooks = useCallback(async () => {
     try {
@@ -314,6 +396,18 @@ export const VaultView: React.FC = () => {
               />
             </div>
             <button
+              onClick={() => setShowPerformance(!showPerformance)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0",
+                showPerformance
+                  ? "bg-violet-100 text-violet-700"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+              )}
+            >
+              <BarChart3 size={16} />
+              Performance
+            </button>
+            <button
               onClick={() => setShowAddHook(true)}
               className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors shrink-0"
             >
@@ -321,6 +415,77 @@ export const VaultView: React.FC = () => {
               Add Hook
             </button>
           </div>
+
+          {/* Hook Performance Heatmap */}
+          {showPerformance && (
+            <div className="mb-5 bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart3 size={16} className="text-violet-600" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Hook Performance by Category
+                </p>
+              </div>
+              {!perfData ? (
+                <p className="text-sm text-slate-400 text-center py-4">Loading...</p>
+              ) : perfData.categories.length === 0 ? (
+                <div className="text-center py-6">
+                  <AlertCircle size={24} className="text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">No performance data yet.</p>
+                  <p className="text-xs text-slate-400 mt-1">Link hooks to scripts via the Script Writer, then add metrics for those videos.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Proven Winners */}
+                  <div className="space-y-1.5">
+                    {perfData.categories.map((cat) => {
+                      const maxEng = perfData.categories[0]?.avgEngagement || 1;
+                      const barWidth = Math.max(8, (cat.avgEngagement / maxEng) * 100);
+                      const catLabel = HOOK_CATEGORIES.find((c) => c.key === cat.category)?.label || cat.category;
+                      return (
+                        <div key={cat.category} className="flex items-center gap-3">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 w-28 text-center truncate",
+                            CATEGORY_COLORS[cat.category] || "bg-slate-100 text-slate-700",
+                          )}>
+                            {catLabel}
+                          </span>
+                          <div className="flex-1 bg-slate-50 rounded-full h-6 relative overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-teal-400 to-teal-600 rounded-full flex items-center justify-end pr-2 transition-all"
+                              style={{ width: `${barWidth}%` }}
+                            >
+                              {barWidth > 30 && (
+                                <span className="text-[10px] font-bold text-white">{cat.avgEngagement}%</span>
+                              )}
+                            </div>
+                            {barWidth <= 30 && (
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">{cat.avgEngagement}%</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 shrink-0 w-16 text-right">
+                            {cat.videoCount} video{cat.videoCount !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span className="text-[10px] text-slate-400">
+                      <Trophy size={12} className="inline mr-1 text-amber-500" />
+                      {perfData.totalLinked} video{perfData.totalLinked !== 1 ? "s" : ""} linked to hooks
+                    </span>
+                    {perfData.untestedCategories.length > 0 && (
+                      <span className="text-[10px] text-slate-400">
+                        {perfData.untestedCategories.length} untested categor{perfData.untestedCategories.length !== 1 ? "ies" : "y"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Category Filters */}
           <div className="flex flex-wrap gap-1.5 mb-5 overflow-x-auto pb-1">
@@ -542,6 +707,7 @@ export const VaultView: React.FC = () => {
                             )}
                             {copiedId === `hook-${hook.id}` ? "Copied" : "Copy"}
                           </button>
+                          <HookAdaptButton hookId={hook.id} />
                           {hook.optimizes && (
                             <span className="flex items-center text-xs text-slate-400 px-2">
                               Optimizes: {hook.optimizes}

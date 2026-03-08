@@ -545,12 +545,14 @@ DURATION: [estimated seconds]`,
 
   // POST /api/ideas/start-production - create a video entry from an idea and start production
   router.post("/start-production", (req, res) => {
-    const { topic, format, audience, hookAngle, source } = req.body as {
+    const { topic, format, audience, hookAngle, source, generatedScript, deliveryCues } = req.body as {
       topic?: string;
       format?: string;
       audience?: string;
       hookAngle?: string;
       source?: string;
+      generatedScript?: string;
+      deliveryCues?: string[];
     };
 
     if (!topic) {
@@ -593,6 +595,21 @@ DURATION: [estimated seconds]`,
       const duration = defaultDurations[formatLetter] || 30;
 
       // Build the video entry
+      const scriptLines: string[] = [];
+      if (generatedScript) {
+        // Format each paragraph as a blockquote line
+        for (const line of generatedScript.split("\n")) {
+          const trimmed = line.trim();
+          if (trimmed) {
+            scriptLines.push(`> ${trimmed}`);
+          } else {
+            scriptLines.push(">");
+          }
+        }
+      } else {
+        scriptLines.push(`> [Direct to camera] ${hookAngle || "Script to be developed in Composer."}`);
+      }
+
       const entry = [
         "",
         `#### ${newCode}: ${topic}`,
@@ -601,7 +618,7 @@ DURATION: [estimated seconds]`,
         "",
         "**Voiceover Script:**",
         "",
-        `> [Direct to camera] ${hookAngle || "Script to be developed in Composer."}`,
+        ...scriptLines,
         "",
       ].join("\n");
 

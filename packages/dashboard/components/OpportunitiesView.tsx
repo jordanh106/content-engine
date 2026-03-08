@@ -881,6 +881,116 @@ const OpportunityDetail: React.FC<{
 };
 
 // ============================
+// Content Gap Heat Map
+// ============================
+
+type GapCell = { total: number; published: number };
+type GapData = {
+  audiences: Array<{ id: string; label: string }>;
+  formats: Array<{ id: string; name: string }>;
+  matrix: Record<string, Record<string, GapCell>>;
+  totalGaps: number;
+};
+
+const ContentGapHeatMap: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+  const { data } = useQuery<GapData>({
+    queryKey: ["content-gaps"],
+    queryFn: () => fetch("/api/analytics/content-gaps").then((r) => r.json()),
+  });
+
+  if (!data || data.totalGaps === 0) return null;
+
+  const cellColor = (cell: GapCell) => {
+    if (cell.total === 0) return "bg-slate-50 border-dashed border-slate-200";
+    if (cell.published > 0) return "bg-emerald-100 border-emerald-200";
+    return "bg-amber-50 border-amber-200";
+  };
+
+  const cellText = (cell: GapCell) => {
+    if (cell.total === 0) return "text-slate-300";
+    if (cell.published > 0) return "text-emerald-700";
+    return "text-amber-700";
+  };
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 px-1 hover:text-slate-600 transition-colors"
+      >
+        <Layers size={12} />
+        Content Gaps ({data.totalGaps})
+        <ChevronDown
+          size={12}
+          className={cn("transition-transform", expanded && "rotate-180")}
+        />
+      </button>
+
+      {expanded && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 overflow-x-auto">
+          <table className="w-full text-center">
+            <thead>
+              <tr>
+                <th className="text-[10px] font-bold text-slate-400 text-left pb-2 pr-3 min-w-[100px]">
+                  Audience
+                </th>
+                {data.formats.map((f) => (
+                  <th
+                    key={f.id}
+                    className="text-[10px] font-bold pb-2 px-1"
+                    style={{ color: FORMAT_COLORS[f.id] || "#64748b" }}
+                  >
+                    {f.id}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.audiences.map((aud) => (
+                <tr key={aud.id}>
+                  <td className="text-[10px] text-slate-600 font-medium text-left pr-3 py-1 truncate max-w-[120px]">
+                    {aud.label}
+                  </td>
+                  {data.formats.map((fmt) => {
+                    const cell = data.matrix[aud.id]?.[fmt.id] || { total: 0, published: 0 };
+                    return (
+                      <td key={fmt.id} className="px-0.5 py-0.5">
+                        <div
+                          className={cn(
+                            "w-8 h-8 md:w-9 md:h-9 rounded-lg border flex items-center justify-center mx-auto text-[11px] font-bold",
+                            cellColor(cell),
+                            cellText(cell),
+                          )}
+                          title={`${aud.label} + ${fmt.name}: ${cell.total} videos (${cell.published} published)`}
+                        >
+                          {cell.total || ""}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex items-center gap-4 mt-3 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-slate-50 border border-dashed border-slate-200" /> Gap
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-amber-50 border border-amber-200" /> In Production
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" /> Published
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================
 // Main OpportunitiesView
 // ============================
 
@@ -1076,6 +1186,9 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
           </p>
         </div>
       )}
+
+      {/* Content Gap Heat Map */}
+      <ContentGapHeatMap />
 
       {/* Sort + Filter controls */}
       {opportunities.length > 0 && !generateMutation.isPending && <FeatureHint id="opportunity-dims" content={FEATURE_HINTS["opportunity-dims"].content} side="bottom"><span className="text-[10px] text-slate-400 mb-1 block">Tap any opportunity to see the full 7-dimension breakdown</span></FeatureHint>}

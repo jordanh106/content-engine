@@ -1,8 +1,8 @@
 import { Router } from "express";
 import path from "path";
 import { db } from "../db.js";
-import { statusHistory, videoStatus, performanceMetrics, calendarEntries, savedCaptions } from "../../shared/schema.js";
-import { sql, eq } from "drizzle-orm";
+import { statusHistory, videoStatus, performanceMetrics, calendarEntries, savedCaptions, notifications } from "../../shared/schema.js";
+import { sql, eq, desc } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
 import type { StageTransition, ActionItem } from "../../shared/types.js";
@@ -447,6 +447,506 @@ export function createAnalyticsRouter(contentLibraryPath: string) {
     actions.sort((a, b) => b.priority - a.priority);
 
     res.json({ actions });
+  });
+
+  // GET /api/analytics/health-score - Content cadence health score
+  router.get("/health-score", (_req, res) => {
+    try {
+      const config = parseConfig(configPath);
+      const videos = parseContentLibrary(contentLibraryPath);
+      const statuses = db.select().from(videoStatus).all();
+      const statusMap = new Map(statuses.map((s) => [s.videoCode, s.currentStatus]));
+      const calendar = db.select().from(calendarEntries).all();
+      const metrics = db.select().from(performanceMetrics).all();
+
+      // 1. Publishing consistency (0-25)
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const recentPublishes = calendar.filter((e) => new Date(e.date) >= thirtyDaysAgo && new Date(e.date) <= now);
+      const publishedCount = recentPublishes.length;
+      const targetMonthly = 20; // ~5/week across platforms
+      const consistencyScore = Math.min(25, Math.round((publishedCount / targetMonthly) * 25));
+
+      // 2. Format diversity (0-25)
+      const publishedVideos = videos.filter((v) => statusMap.get(v.code) === "PUBLISHED");
+      const formatSet = new Set(publishedVideos.map((v) => v.format));
+      const totalFormats = 7; // A-G
+      const diversityScore = Math.min(25, Math.round((formatSet.size / totalFormats) * 25));
+
+      // 3. Audience coverage (0-25)
+      const audienceSet = new Set(publishedVideos.map((v) => v.audience));
+      const totalAudiences = config.audiences?.length || 7;
+      const coverageScore = Math.min(25, Math.round((audienceSet.size / totalAudiences) * 25));
+
+      // 4. Pipeline health (0-25) - videos in progress
+      const inProgress = statuses.filter((s) =>
+        s.currentStatus !== "PUBLISHED" && s.currentStatus !== "SCRIPTED",
+      );
+      const pipelineScore = Math.min(25, inProgress.length >= 5 ? 25 : Math.round((inProgress.length / 5) * 25));
+
+      const totalScore = consistencyScore + diversityScore + coverageScore + pipelineScore;
+
+      res.json({
+        score: totalScore,
+        dimensions: {
+          consistency: { score: consistencyScore, max: 25, detail: `${publishedCount} publishes in last 30 days` },
+          diversity: { score: diversityScore, max: 25, detail: `${formatSet.size}/${totalFormats} formats used` },
+          coverage: { score: coverageScore, max: 25, detail: `${audienceSet.size}/${totalAudiences} audiences reached` },
+          pipeline: { score: pipelineScore, max: 25, detail: `${inProgress.length} videos in production` },
+        },
+      });
+    } catch (error) {
+      console.error("[analytics] Health score error:", error);
+      res.status(500).json({ error: "Failed to calculate health score" });
+    }
+  });
+
+  // GET /api/analytics/best-times - Optimal posting times from historical data
+  router.get("/best-times", (_req, res) => {
+    try {
+      const calendar = db.select().from(calendarEntries).all();
+      const metrics = db.select().from(performanceMetrics).all();
+      const metricsMap = new Map<string, typeof metrics[0]>();
+
+      // Group metrics by videoCode+platform, keep best
+      for (const m of metrics) {
+        const key = `${m.videoCode}:${m.platform}`;
+        const existing = metricsMap.get(key);
+        if (!existing || (m.views ?? 0) > (existing.views ?? 0)) {
+          metricsMap.set(key, m);
+        }
+      }
+
+      // Aggregate views by day of week and platform
+      const dayStats = new Map<string, { totalViews: number; count: number }>();
+
+      for (const entry of calendar) {
+        const date = new Date(entry.date);
+        const dayOfWeek = date.getDay(); // 0=Sun
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const dayName = dayNames[dayOfWeek];
+        const key = `${dayName}:${entry.platform}`;
+
+        const metric = metricsMap.get(`${entry.videoCode}:${entry.platform}`);
+        if (metric) {
+          if (!dayStats.has(key)) dayStats.set(key, { totalViews: 0, count: 0 });
+          const stat = dayStats.get(key)!;
+          stat.totalViews += metric.views ?? 0;
+          stat.count++;
+        }
+      }
+
+      const bestTimes = Array.from(dayStats.entries())
+        .map(([key, stat]) => {
+          const [day, platform] = key.split(":");
+          return {
+            day,
+            platform,
+            avgViews: stat.count > 0 ? Math.round(stat.totalViews / stat.count) : 0,
+            sampleSize: stat.count,
+          };
+        })
+        .filter((t) => t.sampleSize >= 1)
+        .sort((a, b) => b.avgViews - a.avgViews);
+
+      res.json({
+        bestTimes,
+        hasEnoughData: bestTimes.some((t) => t.sampleSize >= 3),
+      });
+    } catch (error) {
+      console.error("[analytics] Best times error:", error);
+      res.status(500).json({ error: "Failed to calculate best times" });
+    }
+  });
+
+  // GET /api/analytics/content-gaps - Audience x Format matrix showing gaps
+  router.get("/content-gaps", (_req, res) => {
+    try {
+      const config = parseConfig(configPath);
+      const videos = parseContentLibrary(contentLibraryPath);
+      const statuses = db.select().from(videoStatus).all();
+      const statusMap = new Map(statuses.map((s) => [s.videoCode, s.currentStatus]));
+
+      const audiences = (config.audiences || []).map((a) => ({ id: a.id, label: a.label }));
+      const formats: Array<{ id: string; name: string }> = [
+        { id: "A", name: "Explainer" },
+        { id: "B", name: "Checklist" },
+        { id: "C", name: "Demo" },
+        { id: "D", name: "Myth Buster" },
+        { id: "E", name: "Walkthrough" },
+        { id: "F", name: "Quick Tip" },
+        { id: "G", name: "Patient Story" },
+      ];
+
+      // Build matrix: audience x format = count of videos
+      const matrix: Record<string, Record<string, { total: number; published: number }>> = {};
+      for (const aud of audiences) {
+        matrix[aud.id] = {};
+        for (const fmt of formats) {
+          matrix[aud.id][fmt.id] = { total: 0, published: 0 };
+        }
+      }
+
+      for (const v of videos) {
+        if (matrix[v.audience] && matrix[v.audience][v.format]) {
+          matrix[v.audience][v.format].total++;
+          const status = statusMap.get(v.code) || "SCRIPTED";
+          if (status === "PUBLISHED") {
+            matrix[v.audience][v.format].published++;
+          }
+        }
+      }
+
+      // Find gaps (cells with 0 videos)
+      const gaps: Array<{ audience: string; audienceLabel: string; format: string; formatName: string }> = [];
+      for (const aud of audiences) {
+        for (const fmt of formats) {
+          if (matrix[aud.id][fmt.id].total === 0) {
+            gaps.push({
+              audience: aud.id,
+              audienceLabel: aud.label,
+              format: fmt.id,
+              formatName: fmt.name,
+            });
+          }
+        }
+      }
+
+      res.json({ audiences, formats, matrix, gaps, totalGaps: gaps.length });
+    } catch (error) {
+      console.error("[analytics] Content gaps error:", error);
+      res.status(500).json({ error: "Failed to calculate content gaps" });
+    }
+  });
+
+  // =======================================
+  // Notifications
+  // =======================================
+
+  // GET /api/analytics/notifications - List notifications
+  router.get("/notifications", (req, res) => {
+    const unreadOnly = req.query.unread === "true";
+    let rows = db.select().from(notifications).orderBy(desc(notifications.createdAt)).all();
+    if (unreadOnly) rows = rows.filter((n) => !n.read);
+    res.json({ notifications: rows.slice(0, 50), unreadCount: rows.filter((n) => !n.read).length });
+  });
+
+  // PUT /api/analytics/notifications/:id/read - Mark notification as read
+  router.put("/notifications/:id/read", (req, res) => {
+    const id = parseInt(req.params.id);
+    db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).run();
+    res.json({ success: true });
+  });
+
+  // PUT /api/analytics/notifications/read-all - Mark all as read
+  router.put("/notifications/read-all", (_req, res) => {
+    db.update(notifications).set({ read: true }).run();
+    res.json({ success: true });
+  });
+
+  // POST /api/analytics/notifications - Create a notification (internal use)
+  router.post("/notifications", (req, res) => {
+    const { type, title, detail, targetView, targetId } = req.body;
+    if (!type || !title) { res.status(400).json({ error: "type and title required" }); return; }
+    db.insert(notifications).values({
+      type, title, detail: detail || null,
+      targetView: targetView || null,
+      targetId: targetId || null,
+    }).run();
+    res.json({ success: true });
+  });
+
+  // =======================================
+  // Cross-Platform Publishing Tracker
+  // =======================================
+
+  // GET /api/analytics/cross-platform/:code - Publishing progress for a video
+  router.get("/cross-platform/:code", (req, res) => {
+    const { code } = req.params;
+    const config = parseConfig(configPath);
+    const platforms = config.platforms || ["Instagram Reels", "TikTok", "YouTube Shorts", "YouTube Long"];
+
+    const entries = db.select().from(calendarEntries).all().filter((e) => e.videoCode === code);
+    const metrics = db.select().from(performanceMetrics).all().filter((m) => m.videoCode === code);
+
+    const platformStatus = platforms.map((platform) => {
+      const calEntry = entries.find((e) => e.platform === platform);
+      const metric = metrics.find((m) => m.platform === platform);
+      return {
+        platform,
+        scheduled: !!calEntry,
+        scheduledDate: calEntry?.date || null,
+        hasMetrics: !!metric,
+        views: metric?.views ?? 0,
+      };
+    });
+
+    const publishedCount = platformStatus.filter((p) => p.hasMetrics).length;
+
+    res.json({
+      videoCode: code,
+      platforms: platformStatus,
+      publishedCount,
+      totalPlatforms: platforms.length,
+      allPublished: publishedCount === platforms.length,
+    });
+  });
+
+  // GET /api/analytics/production-timeline - Videos with projected completion dates
+  router.get("/production-timeline", (_req, res) => {
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const statuses = db.select().from(videoStatus).all();
+      const statusMap = new Map(statuses.map((s) => [s.videoCode, s]));
+      const history = db.select().from(statusHistory).orderBy(statusHistory.changedAt).all();
+
+      // Calculate average days per stage from history
+      const stageDurations: Record<string, number[]> = {};
+      const byVideo = new Map<string, typeof history>();
+      for (const h of history) {
+        const list = byVideo.get(h.videoCode) || [];
+        list.push(h);
+        byVideo.set(h.videoCode, list);
+      }
+
+      for (const [, transitions] of byVideo) {
+        for (let i = 1; i < transitions.length; i++) {
+          const prev = transitions[i - 1];
+          const curr = transitions[i];
+          if (prev.changedAt && curr.changedAt) {
+            const days = (new Date(curr.changedAt).getTime() - new Date(prev.changedAt).getTime()) / (1000 * 60 * 60 * 24);
+            const stage = prev.toStatus;
+            if (!stageDurations[stage]) stageDurations[stage] = [];
+            stageDurations[stage].push(days);
+          }
+        }
+      }
+
+      const avgDays: Record<string, number> = {};
+      for (const [stage, days] of Object.entries(stageDurations)) {
+        avgDays[stage] = days.length > 0 ? Math.round((days.reduce((s, d) => s + d, 0) / days.length) * 10) / 10 : 3;
+      }
+
+      // Default avg if no data
+      const defaultAvg: Record<string, number> = { SCRIPTED: 3, RECORDING: 2, GENERATING: 2, ASSEMBLED: 1, SCHEDULED: 3 };
+
+      const STAGE_ORDER = ["SCRIPTED", "RECORDING", "GENERATING", "ASSEMBLED", "SCHEDULED", "PUBLISHED"];
+
+      const timeline = videos.slice(0, 30).map((v) => {
+        const statusRecord = statusMap.get(v.code);
+        const currentStatus = statusRecord?.currentStatus || "SCRIPTED";
+        const currentIdx = STAGE_ORDER.indexOf(currentStatus);
+        const startDate = statusRecord?.statusUpdatedAt || statusRecord?.createdAt || new Date().toISOString();
+
+        // Project remaining stages
+        let projectedDays = 0;
+        for (let i = currentIdx; i < STAGE_ORDER.length - 1; i++) {
+          projectedDays += avgDays[STAGE_ORDER[i]] || defaultAvg[STAGE_ORDER[i]] || 3;
+        }
+
+        const projectedComplete = new Date(new Date(startDate).getTime() + projectedDays * 24 * 60 * 60 * 1000);
+
+        return {
+          code: v.code,
+          title: v.title,
+          format: v.format,
+          audienceLabel: v.audienceLabel,
+          currentStatus,
+          stageIndex: currentIdx,
+          totalStages: STAGE_ORDER.length,
+          startDate: startDate.split("T")[0],
+          projectedComplete: projectedComplete.toISOString().split("T")[0],
+          projectedDaysRemaining: Math.round(projectedDays),
+        };
+      }).filter((v) => v.currentStatus !== "PUBLISHED");
+
+      timeline.sort((a, b) => a.projectedDaysRemaining - b.projectedDaysRemaining);
+
+      res.json({ timeline, avgDaysPerStage: { ...defaultAvg, ...avgDays } });
+    } catch (error) {
+      console.error("[analytics] Production timeline error:", error);
+      res.status(500).json({ error: "Failed to build production timeline" });
+    }
+  });
+
+  // =======================================
+  // Audience Segment Analytics (2.5)
+  // =======================================
+
+  // GET /api/analytics/by-audience - Metrics aggregated by audience segment
+  router.get("/by-audience", (_req, res) => {
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const videoAudienceMap = new Map(videos.map((v) => [v.code, { audience: v.audience, audienceLabel: v.audienceLabel }]));
+      const metrics = db.select().from(performanceMetrics).all();
+
+      const byAudience: Record<string, {
+        label: string;
+        views: number;
+        likes: number;
+        saves: number;
+        shares: number;
+        comments: number;
+        videoCount: number;
+        codes: Set<string>;
+      }> = {};
+
+      for (const m of metrics) {
+        const info = videoAudienceMap.get(m.videoCode);
+        if (!info) continue;
+        if (!byAudience[info.audience]) {
+          byAudience[info.audience] = { label: info.audienceLabel, views: 0, likes: 0, saves: 0, shares: 0, comments: 0, videoCount: 0, codes: new Set() };
+        }
+        const seg = byAudience[info.audience];
+        seg.views += m.views ?? 0;
+        seg.likes += m.likes ?? 0;
+        seg.saves += m.saves ?? 0;
+        seg.shares += m.shares ?? 0;
+        seg.comments += m.comments ?? 0;
+        seg.codes.add(m.videoCode);
+      }
+
+      const result = Object.entries(byAudience).map(([audience, data]) => ({
+        audience,
+        label: data.label,
+        views: data.views,
+        likes: data.likes,
+        saves: data.saves,
+        shares: data.shares,
+        comments: data.comments,
+        videoCount: data.codes.size,
+        avgViews: data.codes.size > 0 ? Math.round(data.views / data.codes.size) : 0,
+        engagementRate: data.views > 0
+          ? Math.round(((data.likes + data.saves + data.shares + data.comments) / data.views) * 10000) / 100
+          : 0,
+        saveRate: data.views > 0 ? Math.round((data.saves / data.views) * 10000) / 100 : 0,
+      }));
+
+      result.sort((a, b) => b.avgViews - a.avgViews);
+      res.json({ byAudience: result });
+    } catch (error) {
+      console.error("[analytics] By-audience error:", error);
+      res.status(500).json({ error: "Failed to calculate audience analytics" });
+    }
+  });
+
+  // =======================================
+  // Content Decay Detection (2.6)
+  // =======================================
+
+  // GET /api/analytics/content-decay - Identify evergreen vs spike-and-die content
+  router.get("/content-decay", (_req, res) => {
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const videoMap = new Map(videos.map((v) => [v.code, v]));
+      const metrics = db.select().from(performanceMetrics).orderBy(performanceMetrics.recordedAt).all();
+
+      // Group metrics by videoCode, ordered by date
+      const byVideo = new Map<string, Array<{ date: string; views: number }>>();
+      for (const m of metrics) {
+        const list = byVideo.get(m.videoCode) || [];
+        list.push({ date: m.recordedAt, views: m.views ?? 0 });
+        byVideo.set(m.videoCode, list);
+      }
+
+      const results: Array<{
+        code: string;
+        title: string;
+        format: string;
+        audienceLabel: string;
+        totalViews: number;
+        dataPoints: number;
+        trend: "evergreen" | "spike" | "growing" | "stable" | "insufficient";
+        decayRate: number;
+        recommendation: string;
+      }> = [];
+
+      for (const [code, entries] of byVideo) {
+        const video = videoMap.get(code);
+        if (!video || entries.length < 2) {
+          if (video) {
+            results.push({
+              code, title: video.title, format: video.format, audienceLabel: video.audienceLabel,
+              totalViews: entries.reduce((s, e) => s + e.views, 0), dataPoints: entries.length,
+              trend: "insufficient", decayRate: 0, recommendation: "Need more data points",
+            });
+          }
+          continue;
+        }
+
+        const totalViews = entries.reduce((s, e) => s + e.views, 0);
+        const firstHalf = entries.slice(0, Math.ceil(entries.length / 2));
+        const secondHalf = entries.slice(Math.ceil(entries.length / 2));
+
+        const firstAvg = firstHalf.reduce((s, e) => s + e.views, 0) / firstHalf.length;
+        const secondAvg = secondHalf.reduce((s, e) => s + e.views, 0) / secondHalf.length;
+
+        let trend: "evergreen" | "spike" | "growing" | "stable" | "insufficient";
+        let decayRate = firstAvg > 0 ? Math.round(((secondAvg - firstAvg) / firstAvg) * 100) : 0;
+        let recommendation: string;
+
+        if (decayRate > 20) {
+          trend = "growing";
+          recommendation = "Growing content. Consider cross-posting to more platforms.";
+        } else if (decayRate >= -20) {
+          trend = secondAvg > 50 ? "evergreen" : "stable";
+          recommendation = trend === "evergreen"
+            ? "Evergreen content. Repost on different platforms."
+            : "Stable but low views. Consider refreshing with new hook.";
+        } else if (decayRate >= -60) {
+          trend = "spike";
+          recommendation = "Normal decay. Repurpose key points into new content.";
+        } else {
+          trend = "spike";
+          recommendation = "Spike and die. Extract what worked for the hook.";
+        }
+
+        results.push({
+          code, title: video.title, format: video.format, audienceLabel: video.audienceLabel,
+          totalViews, dataPoints: entries.length, trend, decayRate, recommendation,
+        });
+      }
+
+      results.sort((a, b) => b.totalViews - a.totalViews);
+
+      const summary = {
+        evergreen: results.filter((r) => r.trend === "evergreen").length,
+        growing: results.filter((r) => r.trend === "growing").length,
+        spike: results.filter((r) => r.trend === "spike").length,
+        stable: results.filter((r) => r.trend === "stable").length,
+        insufficient: results.filter((r) => r.trend === "insufficient").length,
+      };
+
+      res.json({ videos: results, summary });
+    } catch (error) {
+      console.error("[analytics] Content decay error:", error);
+      res.status(500).json({ error: "Failed to analyze content decay" });
+    }
+  });
+
+  // =======================================
+  // Backup & Restore (9.2)
+  // =======================================
+
+  // GET /api/analytics/backup - Export all data as JSON
+  router.get("/backup", (_req, res) => {
+    try {
+      const data = {
+        exportedAt: new Date().toISOString(),
+        videoStatus: db.select().from(videoStatus).all(),
+        statusHistory: db.select().from(statusHistory).all(),
+        calendarEntries: db.select().from(calendarEntries).all(),
+        performanceMetrics: db.select().from(performanceMetrics).all(),
+        savedCaptions: db.select().from(savedCaptions).all(),
+        notifications: db.select().from(notifications).all(),
+      };
+
+      res.setHeader("Content-Disposition", `attachment; filename=content-engine-backup-${new Date().toISOString().split("T")[0]}.json`);
+      res.json(data);
+    } catch (error) {
+      console.error("[analytics] Backup error:", error);
+      res.status(500).json({ error: "Failed to create backup" });
+    }
   });
 
   return router;
