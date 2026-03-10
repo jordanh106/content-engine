@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star, ChevronDown, ChevronRight, Video, Bot, AlertTriangle } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -15,7 +15,12 @@ import type {
   StoryboardShot,
   AiGenerationPrompt,
   VaultVisualStyle,
+  ProductionStyle,
+  ProduceTabData,
+  ShotProductionCard,
+  ProductionChecklistItem,
 } from "../shared/types.js";
+import { ProductionStylePicker } from "./ui/ProductionStylePicker.js";
 import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { AudienceBadge } from "./ui/AudienceBadge.js";
@@ -23,13 +28,18 @@ import { StatusBadge } from "./ui/StatusBadge.js";
 import { CopyButton } from "./ui/CopyButton.js";
 
 import { cn } from "../utils/cn.js";
+import {
+  CINEMA_DEFAULTS_BY_FORMAT,
+  recommendToolAndModel,
+  suggestCameraMovement,
+} from "../shared/production-knowledge.js";
 
 type VideoDetailProps = {
   code: string;
   onClose: () => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish" | "waterfall" | "storyboard";
+type Tab = "script" | "shots" | "info" | "timeline" | "produce" | "publish" | "waterfall" | "storyboard";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -69,7 +79,13 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const { data: productionPlanData } = useQuery<{ available: boolean; plan: ProductionPlan | null }>({
     queryKey: ["production-plan", code],
     queryFn: () => fetch(`/api/videos/${code}/production-plan`).then((r) => r.json()),
-    enabled: activeTab === "production",
+    enabled: activeTab === "produce",
+  });
+
+  const { data: produceData } = useQuery<ProduceTabData>({
+    queryKey: ["produce", code],
+    queryFn: () => fetch(`/api/produce/${code}`).then((r) => r.json()),
+    enabled: activeTab === "produce",
   });
 
   const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
@@ -150,7 +166,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
     { id: "script", label: "Script", icon: <FileText size={16} /> },
     { id: "shots", label: "Shots", icon: <Camera size={16} /> },
     { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
-    { id: "production", label: "Production", icon: <ListChecks size={16} /> },
+    { id: "produce", label: "Produce", icon: <ListChecks size={16} /> },
     ...(showPublishTab ? [{ id: "publish" as Tab, label: "Publish", icon: <Send size={16} /> }] : []),
     { id: "storyboard", label: "Storyboard", icon: <Film size={16} /> },
     { id: "waterfall", label: "Waterfall", icon: <GitBranch size={16} /> },
@@ -276,7 +292,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
           {shotsData?.components && shotsData.components.length > 0 && (
             <div className="space-y-2">
               {shotsData.components.map((comp) => (
-                <ShotCard
+                <RenderShotCard
                   key={comp.id}
                   component={comp}
                   job={findJobForShot(shotsData.jobs, comp.id)}
@@ -357,13 +373,13 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
               {activeTab === "timeline" && !timelineData && (
                 <div className="text-center py-12 text-slate-400">Loading timeline...</div>
               )}
-              {activeTab === "production" && (
-                <ProductionTab code={code} plan={productionPlanData?.plan ?? null} isLoading={!productionPlanData} />
+              {activeTab === "produce" && (
+                <ProduceTab code={code} plan={productionPlanData?.plan ?? null} produceData={produceData ?? null} />
               )}
               {activeTab === "publish" && <PublishTab code={code} />}
               {activeTab === "storyboard" && <StoryboardTab code={code} />}
               {activeTab === "waterfall" && <WaterfallTab code={code} />}
-              {activeTab === "info" && <InfoTab video={video} />}
+              {activeTab === "info" && <InfoTab video={video} code={code} />}
             </>
           )}
         </div>
@@ -731,9 +747,38 @@ const ShotsTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 // Info Tab
 // ============================================
 
-const InfoTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
+const InfoTab: React.FC<{ video: VideoDetailResponse; code: string }> = ({ video, code }) => {
+  const queryClient = useQueryClient();
+  const styleMutation = useMutation({
+    mutationFn: async (style: ProductionStyle) => {
+      const r = await fetch(`/api/videos/${code}/production-style`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ style }),
+      });
+      if (!r.ok) throw new Error("Failed to set production style");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video", code] });
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline"] });
+    },
+  });
+
   return (
     <div className="space-y-4">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+          Production Style
+        </p>
+        <ProductionStylePicker
+          value={video.productionStyle}
+          onChange={(style) => styleMutation.mutate(style)}
+          disabled={styleMutation.isPending}
+        />
+      </div>
+
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
           Tags
@@ -779,11 +824,280 @@ const InfoTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 };
 
 // ============================================
-// Production Tab
+// Produce Tab (Production Companion)
 // ============================================
 
-const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoading: boolean }> = ({ code, plan, isLoading }) => {
+const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  real: { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200" },
+  ai_enhanced: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+  ai_generated: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },
+  motion_graphic: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+};
+
+const METHOD_LABELS: Record<string, string> = {
+  real: "Real",
+  ai_enhanced: "AI Enhanced",
+  ai_generated: "AI Generated",
+  motion_graphic: "Motion Graphic",
+};
+
+const ACT_COLORS: Record<string, string> = {
+  hook: "bg-rose-100 text-rose-700",
+  conflict: "bg-amber-100 text-amber-700",
+  build: "bg-sky-100 text-sky-700",
+  resolution: "bg-emerald-100 text-emerald-700",
+  cta: "bg-violet-100 text-violet-700",
+};
+
+const ProduceChecklist: React.FC<{
+  title: string;
+  items: Array<ProductionChecklistItem & { completed: boolean }>;
+  videoCode: string;
+  checklistType: string;
+  defaultOpen?: boolean;
+}> = ({ title, items, videoCode, checklistType, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
   const queryClient = useQueryClient();
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({ itemKey, completed }: { itemKey: string; completed: boolean }) => {
+      const r = await fetch(`/api/produce/${videoCode}/check`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemKey, checklistType, completed }),
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produce", videoCode] });
+    },
+  });
+
+  const completed = items.filter((i) => i.completed).length;
+  const pct = items.length > 0 ? Math.round((completed / items.length) * 100) : 100;
+
+  return (
+    <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {open ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={cn("text-[10px] font-bold", pct === 100 ? "text-emerald-600" : "text-slate-400")}>
+            {completed}/{items.length}
+          </span>
+          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all", pct === 100 ? "bg-emerald-500" : "bg-teal-500")}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      </button>
+      {open && (
+        <div className="border-t border-slate-100 p-3 space-y-1.5">
+          {items.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => toggleMutation.mutate({ itemKey: item.key, completed: !item.completed })}
+              className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors text-left"
+            >
+              <div className={cn(
+                "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
+                item.completed
+                  ? "bg-teal-600 border-teal-600"
+                  : item.critical
+                    ? "border-amber-400"
+                    : "border-slate-300",
+              )}>
+                {item.completed && <Check size={12} className="text-white" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={cn("text-sm", item.completed ? "text-slate-400 line-through" : "text-slate-700")}>
+                  {item.label}
+                </span>
+                {item.critical && !item.completed && (
+                  <span className="ml-1.5 text-[9px] font-bold text-amber-500 uppercase">Critical</span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ShotCard: React.FC<{
+  shot: ShotProductionCard;
+  videoCode: string;
+}> = ({ shot, videoCode }) => {
+  const queryClient = useQueryClient();
+  const colors = METHOD_COLORS[shot.productionMethod] || METHOD_COLORS.real;
+
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/produce/${videoCode}/check`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemKey: `shot_${shot.shotNumber}`,
+          checklistType: "shot_completion",
+          completed: !shot.completed,
+        }),
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produce", videoCode] });
+    },
+  });
+
+  return (
+    <div className={cn(
+      "border rounded-xl p-3 transition-all",
+      shot.completed ? "bg-slate-50 border-slate-200 opacity-70" : cn(colors.bg, colors.border),
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-800 font-mono">#{shot.shotNumber}</span>
+          {shot.act && (
+            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full", ACT_COLORS[shot.act] || "bg-slate-100 text-slate-600")}>
+              {shot.act}
+            </span>
+          )}
+          <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border", colors.border, colors.text, colors.bg)}>
+            {METHOD_LABELS[shot.productionMethod]}
+          </span>
+          <span className="text-[10px] text-slate-400">{shot.durationSeconds}s</span>
+        </div>
+        <button
+          onClick={() => toggleMutation.mutate()}
+          className={cn(
+            "w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+            shot.completed ? "bg-teal-600 border-teal-600" : "border-slate-300 hover:border-teal-400",
+          )}
+        >
+          {shot.completed && <Check size={14} className="text-white" />}
+        </button>
+      </div>
+
+      {/* Script line */}
+      {shot.scriptLine && (
+        <p className="text-xs text-slate-600 italic mb-2 leading-relaxed">"{shot.scriptLine}"</p>
+      )}
+
+      {/* Technique guidance */}
+      <div className="space-y-1.5">
+        {/* Tool + Model */}
+        {shot.toolRecommendation && (
+          <div className="flex items-center gap-1.5">
+            <Wand2 size={10} className="text-slate-400 flex-shrink-0" />
+            <span className="text-[10px] text-slate-500">
+              <span className="font-bold">{shot.toolRecommendation}</span>
+              {shot.modelRecommendation && shot.modelRecommendation !== "N/A" && (
+                <> / {shot.modelRecommendation}</>
+              )}
+            </span>
+          </div>
+        )}
+
+        {/* VFX Trick */}
+        {shot.vfxTrick && (
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={10} className="text-amber-500 flex-shrink-0" />
+            <span className="text-[10px] font-bold text-amber-600">{shot.vfxTrick}</span>
+          </div>
+        )}
+
+        {/* Camera defaults */}
+        {shot.cameraDefaults && (
+          <div className="flex items-center gap-1.5">
+            <Camera size={10} className="text-slate-400 flex-shrink-0" />
+            <span className="text-[10px] text-slate-500">
+              {shot.cameraDefaults.camera} / {shot.cameraDefaults.lens} / {shot.cameraDefaults.focalLength} / {shot.cameraDefaults.genre}
+            </span>
+          </div>
+        )}
+
+        {/* Suggested movement */}
+        {shot.suggestedMovement && (
+          <div className="flex items-center gap-1.5">
+            <Film size={10} className="text-slate-400 flex-shrink-0" />
+            <span className="text-[10px] text-slate-500">
+              Movement: <span className="font-bold">{shot.suggestedMovement}</span>
+              {shot.suggestedMovementReason && <span className="text-slate-400"> - {shot.suggestedMovementReason}</span>}
+            </span>
+          </div>
+        )}
+
+        {/* Color grade notes */}
+        {shot.colorGradeNotes && (
+          <div className="flex items-center gap-1.5">
+            <Layers size={10} className="text-slate-400 flex-shrink-0" />
+            <span className="text-[10px] text-slate-500">Color: {shot.colorGradeNotes}</span>
+          </div>
+        )}
+
+        {/* Cinema Studio prompt */}
+        {shot.cinemaStudioPrompt && (
+          <div className="mt-2 bg-white/60 border border-slate-200 rounded-lg p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cinema Studio Prompt</span>
+              <CopyButton text={shot.cinemaStudioPrompt} />
+            </div>
+            <p className="text-[10px] text-slate-600 leading-relaxed">{shot.cinemaStudioPrompt}</p>
+          </div>
+        )}
+
+        {/* AI Enhancement notes */}
+        {shot.aiEnhancementNotes && (
+          <div className="flex items-center gap-1.5">
+            <Wand2 size={10} className="text-amber-500 flex-shrink-0" />
+            <span className="text-[10px] text-amber-600">{shot.aiEnhancementNotes}</span>
+          </div>
+        )}
+
+        {/* Remotion component */}
+        {shot.remotionComponent && (
+          <div className="flex items-center gap-1.5">
+            <Bot size={10} className="text-violet-500 flex-shrink-0" />
+            <span className="text-[10px] text-violet-600 font-mono">{shot.remotionComponent}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Filming tips (collapsed by default) */}
+      {shot.filmingTips.length > 0 && !shot.completed && (
+        <details className="mt-2">
+          <summary className="text-[10px] text-slate-400 cursor-pointer hover:text-slate-600">
+            Tips ({shot.filmingTips.length})
+          </summary>
+          <ul className="mt-1 space-y-0.5">
+            {shot.filmingTips.map((tip, i) => (
+              <li key={i} className="text-[10px] text-slate-500 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1.5 before:w-1 before:h-1 before:rounded-full before:bg-slate-300">
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+};
+
+const ProduceTab: React.FC<{
+  code: string;
+  plan: ProductionPlan | null;
+  produceData: ProduceTabData | null;
+}> = ({ code, plan, produceData }) => {
+  const queryClient = useQueryClient();
+
   const generateMutation = useMutation({
     mutationFn: async (videoCode: string) => {
       const r = await fetch(`/api/video-director/${videoCode}/generate-plan`, {
@@ -801,103 +1115,125 @@ const ProductionTab: React.FC<{ code: string; plan: ProductionPlan | null; isLoa
     },
   });
 
-  if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
-
-  if (!plan) {
-    return (
-      <div className="text-center py-12">
-        <ListChecks size={32} className="text-slate-300 mx-auto mb-3" />
-        <p className="text-sm text-slate-500 mb-1">No production plan yet.</p>
-        <p className="text-xs text-slate-400 mb-4">Generate hook variations, platform notes, and a shot list.</p>
-        <button
-          onClick={() => generateMutation.mutate(code)}
-          disabled={generateMutation.isPending}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
-        >
-          {generateMutation.isPending ? (
-            <><Loader2 size={12} className="animate-spin" /> Generating...</>
-          ) : (
-            <><Wand2 size={12} /> Generate Plan</>
-          )}
-        </button>
-        {generateMutation.isError && (
-          <p className="text-xs text-rose-500 mt-3">{(generateMutation.error as Error)?.message}</p>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5">
-      {plan.hookVariations.length > 0 && (
+      {/* Overall completion */}
+      {produceData && produceData.shotCards.length > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                produceData.completion.overall === 100 ? "bg-emerald-500" : "bg-teal-500",
+              )}
+              style={{ width: `${produceData.completion.overall}%` }}
+            />
+          </div>
+          <span className={cn(
+            "text-xs font-bold",
+            produceData.completion.overall === 100 ? "text-emerald-600" : "text-slate-500",
+          )}>
+            {produceData.completion.overall}%
+          </span>
+        </div>
+      )}
+
+      {/* Pre-production checklist */}
+      {produceData && produceData.preProduction.length > 0 && (
+        <ProduceChecklist
+          title="Pre-Production"
+          items={produceData.preProduction}
+          videoCode={code}
+          checklistType="pre_production"
+          defaultOpen={produceData.completion.pre < 100}
+        />
+      )}
+
+      {/* Shot-by-shot production cards */}
+      {produceData && produceData.shotCards.length > 0 ? (
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
-            Hook Variations ({plan.hookVariations.length})
+            Shot Guide ({produceData.shotCards.filter((s) => s.completed).length}/{produceData.shotCards.length})
           </p>
           <div className="space-y-2">
-            {plan.hookVariations.map((hook, i) => (
-              <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
-                <p className="text-sm text-slate-700">{hook}</p>
-                <CopyButton text={hook} />
-              </div>
+            {produceData.shotCards.map((shot) => (
+              <ShotCard key={shot.shotNumber} shot={shot} videoCode={code} />
             ))}
           </div>
         </div>
-      )}
-
-      {Object.keys(plan.platformOptimization).length > 0 && (
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
-            Platform Optimization
-          </p>
-          <div className="grid gap-2">
-            {Object.entries(plan.platformOptimization).map(([platform, notes]) => (
-              <div key={platform} className="bg-white border border-slate-200 rounded-xl p-3">
-                <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">{platform}</p>
-                <p className="text-sm text-slate-600">{notes}</p>
-              </div>
-            ))}
-          </div>
+      ) : (
+        <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl">
+          <Film size={24} className="text-slate-300 mx-auto mb-2" />
+          <p className="text-sm text-slate-500 mb-1">No storyboard yet.</p>
+          <p className="text-xs text-slate-400">Generate a storyboard first to get shot-by-shot production guidance.</p>
         </div>
       )}
 
-      {plan.shotList.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-              Shot List ({plan.shotList.length})
-            </p>
-            <CopyButton text={plan.shotList.join("\n")} label="Copy All" />
-          </div>
-          <div className="space-y-2">
-            {plan.shotList.map((shot, i) => (
-              <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
-                <div className="flex items-start gap-2">
-                  <span className="w-6 h-6 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-slate-700">{shot}</p>
-                </div>
-                <CopyButton text={shot} />
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Post-production quality checklist */}
+      {produceData && produceData.postProduction.length > 0 && (
+        <ProduceChecklist
+          title="Post-Production Quality"
+          items={produceData.postProduction}
+          videoCode={code}
+          checklistType="post_production"
+          defaultOpen={false}
+        />
       )}
 
-      <div className="flex items-center justify-center gap-3">
-        <p className="text-xs text-slate-400">Generated {plan.generatedAt}</p>
-        <button
-          onClick={() => generateMutation.mutate(code)}
-          disabled={generateMutation.isPending}
-          className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <RefreshCw size={12} className={generateMutation.isPending ? "animate-spin" : ""} />
-          Regenerate
-        </button>
-      </div>
-      {generateMutation.isError && (
-        <p className="text-xs text-rose-500 text-center mt-1">{(generateMutation.error as Error)?.message}</p>
+      {/* Production Plan (hook variations, platform notes) */}
+      {plan && (
+        <>
+          {plan.hookVariations.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                Hook Variations ({plan.hookVariations.length})
+              </p>
+              <div className="space-y-2">
+                {plan.hookVariations.map((hook, i) => (
+                  <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
+                    <p className="text-sm text-slate-700">{hook}</p>
+                    <CopyButton text={hook} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {Object.keys(plan.platformOptimization).length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                Platform Optimization
+              </p>
+              <div className="grid gap-2">
+                {Object.entries(plan.platformOptimization).map(([platform, notes]) => (
+                  <div key={platform} className="bg-white border border-slate-200 rounded-xl p-3">
+                    <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">{platform}</p>
+                    <p className="text-sm text-slate-600">{notes}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {!plan && (
+        <div className="text-center py-4">
+          <button
+            onClick={() => generateMutation.mutate(code)}
+            disabled={generateMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors"
+          >
+            {generateMutation.isPending ? (
+              <><Loader2 size={12} className="animate-spin" /> Generating...</>
+            ) : (
+              <><Wand2 size={12} /> Generate Hook Variations</>
+            )}
+          </button>
+          {generateMutation.isError && (
+            <p className="text-xs text-rose-500 mt-3">{(generateMutation.error as Error)?.message}</p>
+          )}
+        </div>
       )}
 
       {/* Assembly Checklist */}
@@ -1288,7 +1624,7 @@ const JobStatusBadge: React.FC<{ status: RenderJob["status"] }> = ({ status }) =
   </span>
 );
 
-const ShotCard: React.FC<{
+const RenderShotCard: React.FC<{
   component: VibeMotionComponent;
   job: RenderJob | null;
   onRender: () => void;
@@ -1678,14 +2014,14 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
 // Storyboard Tab
 // ============================================
 
-const METHOD_COLORS: Record<string, { dot: string; label: string; text: string }> = {
+const SB_METHOD_COLORS: Record<string, { dot: string; label: string; text: string }> = {
   real: { dot: "bg-emerald-500", label: "text-emerald-700 bg-emerald-50", text: "Film" },
   ai_enhanced: { dot: "bg-blue-500", label: "text-blue-700 bg-blue-50", text: "AI Enhanced" },
   ai_generated: { dot: "bg-violet-500", label: "text-violet-700 bg-violet-50", text: "AI Generated" },
   motion_graphic: { dot: "bg-teal-500", label: "text-teal-700 bg-teal-50", text: "Motion Graphic" },
 };
 
-const ACT_COLORS: Record<string, string> = {
+const SB_ACT_COLORS: Record<string, string> = {
   hook: "bg-rose-100 text-rose-700",
   conflict: "bg-amber-100 text-amber-700",
   build: "bg-sky-100 text-sky-700",
@@ -1880,7 +2216,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
               {shots.length} shots
               {Object.keys(methodCounts).length > 0 && ": "}
               {Object.entries(methodCounts)
-                .map(([method, count]) => `${count} ${METHOD_COLORS[method]?.text.toLowerCase() ?? method}`)
+                .map(([method, count]) => `${count} ${SB_METHOD_COLORS[method]?.text.toLowerCase() ?? method}`)
                 .join(", ")}
               {storyboard.totalDurationSeconds != null && (
                 <> &middot; {storyboard.totalDurationSeconds}s total</>
@@ -1893,7 +2229,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
             {shots
               .sort((a, b) => a.orderIndex - b.orderIndex)
               .map((shot) => {
-                const method = METHOD_COLORS[shot.productionMethod] ?? METHOD_COLORS.real;
+                const method = SB_METHOD_COLORS[shot.productionMethod] ?? SB_METHOD_COLORS.real;
                 const shotPrompts = aiPrompts.filter((p) => p.shotNumber === shot.shotNumber);
                 const isExpanded = expandedShots.has(shot.shotNumber);
 
@@ -1923,7 +2259,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         <span
                           className={cn(
                             "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
-                            ACT_COLORS[shot.act] ?? "bg-slate-100 text-slate-600",
+                            SB_ACT_COLORS[shot.act] ?? "bg-slate-100 text-slate-600",
                           )}
                         >
                           {shot.act}
@@ -1935,6 +2271,50 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         </span>
                       )}
                     </div>
+
+                    {/* Technique Context Badges */}
+                    {(() => {
+                      const formatId = code.charAt(0);
+                      const badges: React.ReactNode[] = [];
+                      if (shot.productionMethod === "ai_generated") {
+                        const defaults = CINEMA_DEFAULTS_BY_FORMAT[formatId];
+                        if (defaults) {
+                          badges.push(
+                            <span key="cam" className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5">
+                              {defaults.camera} &middot; {defaults.lens} {defaults.focalLength}
+                            </span>,
+                          );
+                        }
+                      }
+                      if (shot.productionMethod === "ai_enhanced" || shot.productionMethod === "ai_generated") {
+                        const rec = recommendToolAndModel(shot.productionMethod, shot.shotType ?? null, shot.act ?? null);
+                        if (rec) {
+                          badges.push(
+                            <span key="tool" className="text-[10px] font-medium text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
+                              {rec.tool} &middot; {rec.model}
+                            </span>,
+                          );
+                        }
+                      }
+                      if (badges.length > 0) {
+                        const moveSuggestion = suggestCameraMovement(
+                          shot.shotType ?? null,
+                          shot.act ?? null,
+                          shot.productionMethod,
+                          formatId,
+                        );
+                        if (moveSuggestion && shot.cameraMovement !== moveSuggestion.movement) {
+                          badges.push(
+                            <span key="move" className="text-[10px] font-medium text-sky-600 bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5" title={moveSuggestion.reason}>
+                              Suggested: {moveSuggestion.movement}
+                            </span>,
+                          );
+                        }
+                      }
+                      return badges.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mb-2">{badges}</div>
+                      ) : null;
+                    })()}
 
                     {/* Script Line */}
                     {shot.scriptLine && (

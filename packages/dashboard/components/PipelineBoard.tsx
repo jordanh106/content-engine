@@ -20,7 +20,7 @@ import type {
   FormatId,
   DashboardView,
 } from "../shared/types.js";
-import { PRODUCTION_STATUSES, FORMAT_IDS } from "../shared/types.js";
+import { PRODUCTION_STATUSES, FORMAT_IDS, PRODUCTION_STYLES, PRODUCTION_STYLE_INFO } from "../shared/types.js";
 import { statusColors } from "../utils/format-colors.js";
 import { cn } from "../utils/cn.js";
 import { PipelineCard } from "./ui/PipelineCard.js";
@@ -28,6 +28,7 @@ import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 import { useOnboarding } from "./OnboardingProvider.js";
+import { QualityGateModal } from "./ui/QualityGateModal.js";
 
 type PipelineBoardProps = {
   onSelectVideo: (code: string) => void;
@@ -191,8 +192,10 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   const [openSection, setOpenSection] = useState<ProductionStatus | null>("SCRIPTED");
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
   const [audienceFilter, setAudienceFilter] = useState<string | null>(null);
+  const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
   const [bulkTarget, setBulkTarget] = useState<ProductionStatus | null>(null);
+  const [gateTarget, setGateTarget] = useState<{ code: string; from: ProductionStatus; to: ProductionStatus } | null>(null);
 
   const { data, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
@@ -219,11 +222,15 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       result[status] = data.stages[status].filter((v) => {
         if (formatFilter && v.format !== formatFilter) return false;
         if (audienceFilter && v.audience !== audienceFilter) return false;
+        if (styleFilter) {
+          if (styleFilter === "none" && v.productionStyle !== null) return false;
+          if (styleFilter !== "none" && v.productionStyle !== styleFilter) return false;
+        }
         return true;
       });
     }
     return result;
-  }, [data, formatFilter, audienceFilter]);
+  }, [data, formatFilter, audienceFilter, styleFilter]);
 
   const toggleSelect = (code: string) => {
     setSelectedCodes((prev) => {
@@ -325,6 +332,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });
       queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["quality-gate"] });
     },
   });
 
@@ -352,7 +360,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
     if (!sourceStatus || sourceStatus === targetStatus) return;
 
-    moveMutation.mutate({ code, status: targetStatus });
+    setGateTarget({ code, from: sourceStatus, to: targetStatus });
   };
 
   const handleAdvance = (code: string) => {
@@ -369,7 +377,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
     const idx = PRODUCTION_STATUSES.indexOf(currentStatus);
     if (idx < PRODUCTION_STATUSES.length - 1) {
-      moveMutation.mutate({ code, status: PRODUCTION_STATUSES[idx + 1] });
+      setGateTarget({ code, from: currentStatus, to: PRODUCTION_STATUSES[idx + 1] });
     }
   };
 
@@ -404,10 +412,10 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Filter size={14} className="text-slate-400" />
         <button
-          onClick={() => { setFormatFilter(null); setAudienceFilter(null); }}
+          onClick={() => { setFormatFilter(null); setAudienceFilter(null); setStyleFilter(null); }}
           className={cn(
             "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
-            !formatFilter && !audienceFilter
+            !formatFilter && !audienceFilter && !styleFilter
               ? "bg-teal-600 text-white"
               : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
           )}
@@ -447,6 +455,24 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
             ))}
           </>
         )}
+        <span className="w-px h-4 bg-slate-200" />
+        {PRODUCTION_STYLES.map((s) => {
+          const info = PRODUCTION_STYLE_INFO[s];
+          return (
+            <button
+              key={s}
+              onClick={() => setStyleFilter(styleFilter === s ? null : s)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
+                styleFilter === s
+                  ? cn(info.color.bg, info.color.text, info.color.border, "border")
+                  : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+              )}
+            >
+              {info.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* Bulk Actions Bar */}
@@ -612,6 +638,19 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
       )}
 
       <ViewHelp {...VIEW_HELP.PIPELINE} />
+
+      {gateTarget && (
+        <QualityGateModal
+          videoCode={gateTarget.code}
+          fromStatus={gateTarget.from}
+          toStatus={gateTarget.to}
+          onConfirm={() => {
+            moveMutation.mutate({ code: gateTarget.code, status: gateTarget.to });
+            setGateTarget(null);
+          }}
+          onCancel={() => setGateTarget(null)}
+        />
+      )}
     </div>
   );
 };

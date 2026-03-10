@@ -411,3 +411,20 @@ const dnaColumns = [
 for (const col of dnaColumns) {
   try { sqlite.exec(`ALTER TABLE video_breakdowns ADD COLUMN ${col} TEXT`); } catch { /* exists */ }
 }
+
+// Migration: Add production_style column to video_status
+try {
+  sqlite.exec(`ALTER TABLE video_status ADD COLUMN production_style TEXT`);
+} catch { /* column already exists */ }
+
+// Migration: Create production_checklist table
+sqlite.exec(`CREATE TABLE IF NOT EXISTS production_checklist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  video_code TEXT NOT NULL,
+  checklist_type TEXT NOT NULL,
+  item_key TEXT NOT NULL,
+  completed INTEGER DEFAULT 0,
+  completed_at TEXT,
+  stage_transition TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);

@@ -14,6 +14,7 @@ export const videoStatus = sqliteTable("video_status", {
   generatedAt: text("generated_at"),
   assembledAt: text("assembled_at"),
   publishedAt: text("published_at"),
+  productionStyle: text("production_style"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });
@@ -321,5 +322,18 @@ export const contentWaterfall = sqliteTable("content_waterfall", {
   description: text("description"),
   status: text("status").notNull().default("idea"),
   performanceNote: text("performance_note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+// Production Companion
+
+export const productionChecklist = sqliteTable("production_checklist", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code").notNull(),
+  checklistType: text("checklist_type").notNull(),
+  itemKey: text("item_key").notNull(),
+  completed: integer("completed", { mode: "boolean" }).default(false),
+  completedAt: text("completed_at"),
+  stageTransition: text("stage_transition"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });

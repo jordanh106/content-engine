@@ -3,7 +3,8 @@ import { db } from "../db.js";
 import { productionSessions, sessionItems, videoStatus, statusHistory } from "../../shared/schema.js";
 import { eq, desc } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
-import type { SessionType, ProductionStatus } from "../../shared/types.js";
+import type { SessionType, ProductionStatus, ProductionStyle } from "../../shared/types.js";
+import { PRODUCTION_STYLE_INFO } from "../../shared/types.js";
 
 const SESSION_STATUS_MAP: Record<SessionType, { from: ProductionStatus; to: ProductionStatus }> = {
   voiceover: { from: "SCRIPTED", to: "RECORDING" },
@@ -86,11 +87,20 @@ export function createSessionsRouter(contentLibraryPath: string) {
     const targetStatus = SESSION_STATUS_MAP[type].from;
     const videos = parseContentLibrary(contentLibraryPath);
     const statusRecords = db.select().from(videoStatus).all();
-    const statusMap = new Map(statusRecords.map((s) => [s.videoCode, s.currentStatus]));
+    const statusMap = new Map(statusRecords.map((s) => [s.videoCode, s]));
 
     const available = videos.filter((v) => {
-      const status = statusMap.get(v.code) || "SCRIPTED";
-      return status === targetStatus;
+      const record = statusMap.get(v.code);
+      const status = record?.currentStatus || "SCRIPTED";
+      if (status !== targetStatus) return false;
+
+      // For generation sessions, skip "real" style videos (no AI generation needed)
+      if (type === "generation") {
+        const style = record?.productionStyle as ProductionStyle | undefined;
+        if (style === "real") return false;
+      }
+
+      return true;
     });
 
     if (available.length === 0) {
@@ -98,34 +108,60 @@ export function createSessionsRouter(contentLibraryPath: string) {
       return;
     }
 
-    // Group by audience for tone consistency
-    const byAudience = new Map<string, typeof available>();
+    // Group by production style first, then by audience within each style
+    const byStyleAndAudience = new Map<string, typeof available>();
     for (const v of available) {
-      const key = v.audienceLabel || v.audience;
-      if (!byAudience.has(key)) byAudience.set(key, []);
-      byAudience.get(key)!.push(v);
+      const record = statusMap.get(v.code);
+      const style = (record?.productionStyle as ProductionStyle) || "unset";
+      const audience = v.audienceLabel || v.audience;
+      const key = `${style}::${audience}`;
+      if (!byStyleAndAudience.has(key)) byStyleAndAudience.set(key, []);
+      byStyleAndAudience.get(key)!.push(v);
     }
 
-    const batches = Array.from(byAudience.entries()).map(([audience, vids]) => {
-      // Estimate recording time based on format
-      const formatMinutes: Record<string, number> = { A: 5, B: 5, C: 7, D: 3, E: 7, F: 2, G: 4 };
-      const estMinutes = vids.reduce((sum, v) => sum + (formatMinutes[v.format] || 5), 0);
+    const formatMinutes: Record<string, number> = { A: 5, B: 5, C: 7, D: 3, E: 7, F: 2, G: 4 };
 
-      // Group by format within audience for set consistency
+    const batches = Array.from(byStyleAndAudience.entries()).map(([key, vids]) => {
+      const [style, audience] = key.split("::");
+      const styleInfo = style !== "unset" ? PRODUCTION_STYLE_INFO[style as ProductionStyle] : null;
+      const multiplier = styleInfo?.timeMultiplier[type] ?? 1.0;
+
+      const baseMinutes = vids.reduce((sum, v) => sum + (formatMinutes[v.format] || 5), 0);
+      const estMinutes = Math.round(baseMinutes * multiplier);
       const formats = [...new Set(vids.map((v) => v.format))];
+
+      const styleName = styleInfo ? styleInfo.name : "No style set";
+      const styleNote = type === "generation" && style === "real"
+        ? " (skipped: no AI generation needed)"
+        : type === "voiceover" && style === "full_ai"
+          ? " (voiceover only, no filming needed)"
+          : "";
 
       return {
         audience,
-        videos: vids.map((v) => ({ code: v.code, title: v.title, format: v.format, audienceLabel: v.audienceLabel })),
+        productionStyle: style !== "unset" ? style : null,
+        videos: vids.map((v) => ({
+          code: v.code,
+          title: v.title,
+          format: v.format,
+          audienceLabel: v.audienceLabel,
+          productionStyle: style !== "unset" ? style : null,
+        })),
         count: vids.length,
         estimatedMinutes: estMinutes,
         formats,
-        reason: `${vids.length} ${audience} videos share the same tone and audience. Formats: ${formats.join(", ")}. Est. ${estMinutes} min.`,
+        reason: `${vids.length} ${audience} videos (${styleName}). Formats: ${formats.join(", ")}. Est. ${estMinutes} min.${styleNote}`,
       };
     });
 
-    // Sort by count descending (biggest batch first)
-    batches.sort((a, b) => b.count - a.count);
+    // Sort by production style (grouped), then by count within
+    batches.sort((a, b) => {
+      const styleOrder = ["real", "enhanced", "heavy_ai", "full_ai", null];
+      const aIdx = styleOrder.indexOf(a.productionStyle as string);
+      const bIdx = styleOrder.indexOf(b.productionStyle as string);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      return b.count - a.count;
+    });
 
     res.json({ batches, total: available.length });
   });

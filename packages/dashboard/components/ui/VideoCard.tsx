@@ -4,6 +4,7 @@ import type { VideoSummary } from "../../shared/types.js";
 import { FormatBadge } from "./FormatBadge.js";
 import { AudienceBadge } from "./AudienceBadge.js";
 import { StatusBadge } from "./StatusBadge.js";
+import { ProductionStyleBadge } from "./ProductionStyleBadge.js";
 
 type VideoCardProps = {
   video: VideoSummary;
@@ -30,6 +31,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
       </p>
       <div className="flex flex-wrap gap-1.5">
         <FormatBadge format={video.format} />
+        <ProductionStyleBadge style={video.productionStyle} />
         <AudienceBadge audience={video.audience} label={video.audienceLabel} />
         {video.remotionGraphicsRequired && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-wider">

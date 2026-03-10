@@ -2,6 +2,7 @@ import React from "react";
 import type { PipelineVideo } from "../../shared/types.js";
 import { FormatBadge } from "./FormatBadge.js";
 import { AudienceBadge } from "./AudienceBadge.js";
+import { ProductionStyleBadge } from "./ProductionStyleBadge.js";
 import { cn } from "../../utils/cn.js";
 
 type PipelineCardProps = {
@@ -47,10 +48,22 @@ export const PipelineCard: React.FC<PipelineCardProps> = ({
         </h3>
         <div className="flex flex-wrap gap-1">
           <FormatBadge format={video.format} />
-          <AudienceBadge audience={video.audience} label={video.audienceLabel} />
+          <ProductionStyleBadge style={video.productionStyle} />
         </div>
       </button>
       {advanceButton}
+      {/* Quality gate completion indicator */}
+      {typeof video.qualityCompletion === "number" && video.qualityCompletion > 0 && (
+        <div className="mt-2 -mx-3 -mb-3 h-1 rounded-b-xl overflow-hidden bg-slate-100">
+          <div
+            className={cn(
+              "h-full transition-all duration-300 rounded-b-xl",
+              video.qualityCompletion === 100 ? "bg-emerald-500" : "bg-teal-400",
+            )}
+            style={{ width: `${video.qualityCompletion}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 };

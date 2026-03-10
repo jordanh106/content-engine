@@ -114,8 +114,46 @@ function determineWhatsNext(
     };
   }
 
-  // Priority 3: Scripts ready but not recording
+  // Priority 2.5: Videos without a production style set
+  const scriptedVideos = pipeline.stages.SCRIPTED ?? [];
+  const unstyledCount = scriptedVideos.filter((v) => !v.productionStyle).length;
+  if (unstyledCount >= 3) {
+    return {
+      headline: `${unstyledCount} videos need a production style`,
+      description: "Decide how you're making each video: Real, Enhanced, Heavy AI, or Full AI. This shapes your sessions and workflow.",
+      cta: "Set Production Styles",
+      target: "LIBRARY",
+      gradient: "from-slate-50 to-slate-100",
+      borderColor: "border-slate-300",
+    };
+  }
+
+  // Priority 3: Scripts ready but not recording (style-aware)
   if (scripted >= 3) {
+    const filmingVideos = scriptedVideos.filter((v) => v.productionStyle === "real" || v.productionStyle === "enhanced");
+    const aiOnlyVideos = scriptedVideos.filter((v) => v.productionStyle === "full_ai" || v.productionStyle === "heavy_ai");
+
+    if (filmingVideos.length >= 3) {
+      return {
+        headline: `${filmingVideos.length} videos ready to film`,
+        description: `${filmingVideos.length} Real/Enhanced videos need filming. Batch by audience for tone consistency.`,
+        cta: "Start Filming Session",
+        target: "SESSION",
+        gradient: "from-amber-50 to-yellow-50",
+        borderColor: "border-amber-200",
+      };
+    }
+    if (aiOnlyVideos.length >= 3) {
+      return {
+        headline: `${aiOnlyVideos.length} AI videos ready for voiceover`,
+        description: `These videos skip filming. Record voiceovers, then move straight to AI generation.`,
+        cta: "Start Voiceover Session",
+        target: "SESSION",
+        gradient: "from-sky-50 to-violet-50",
+        borderColor: "border-violet-200",
+      };
+    }
+
     return {
       headline: `${scripted} scripts ready for recording`,
       description: "Batch record voiceovers in one focused session. Group by audience category for the most efficient workflow.",

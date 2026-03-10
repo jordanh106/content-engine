@@ -14,6 +14,62 @@ export const PRODUCTION_STATUSES = [
 export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
 
 // ============================================
+// Production Styles
+// ============================================
+
+export const PRODUCTION_STYLES = ["real", "enhanced", "heavy_ai", "full_ai"] as const;
+export type ProductionStyle = (typeof PRODUCTION_STYLES)[number];
+
+export type ProductionStyleInfo = {
+  id: ProductionStyle;
+  name: string;
+  description: string;
+  color: { bg: string; text: string; border: string; dot: string };
+  needsFilming: boolean;
+  needsAiGeneration: boolean;
+  timeMultiplier: Record<string, number>;
+};
+
+export const PRODUCTION_STYLE_INFO: Record<ProductionStyle, ProductionStyleInfo> = {
+  real: {
+    id: "real",
+    name: "Real",
+    description: "You on camera. No AI.",
+    color: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
+    needsFilming: true,
+    needsAiGeneration: false,
+    timeMultiplier: { voiceover: 1.0, generation: 0, assembly: 0.8 },
+  },
+  enhanced: {
+    id: "enhanced",
+    name: "Enhanced",
+    description: "Real footage + subtle AI polish.",
+    color: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
+    needsFilming: true,
+    needsAiGeneration: true,
+    timeMultiplier: { voiceover: 1.0, generation: 1.0, assembly: 1.2 },
+  },
+  heavy_ai: {
+    id: "heavy_ai",
+    name: "Heavy AI",
+    description: "Mostly AI visuals. Film the hook only.",
+    color: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-300", dot: "bg-violet-500" },
+    needsFilming: false,
+    needsAiGeneration: true,
+    timeMultiplier: { voiceover: 1.0, generation: 1.5, assembly: 1.0 },
+  },
+  full_ai: {
+    id: "full_ai",
+    name: "Full AI",
+    description: "Voiceover only. All AI visuals.",
+    color: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-300", dot: "bg-sky-500" },
+    needsFilming: false,
+    needsAiGeneration: true,
+    timeMultiplier: { voiceover: 1.0, generation: 1.8, assembly: 0.8 },
+  },
+};
+
+// ============================================
 // Video Formats
 // ============================================
 
@@ -101,6 +157,7 @@ export type VideoSummary = {
   audienceLabel: string;
   tags: string[];
   status: ProductionStatus;
+  productionStyle: ProductionStyle | null;
   scriptPreview: string;
   remotionGraphicsRequired: boolean;
   remotionGraphicsNotes: string | null;
@@ -108,6 +165,7 @@ export type VideoSummary = {
 
 export type VideoDetailResponse = ParsedVideo & {
   status: ProductionStatus;
+  productionStyle: ProductionStyle | null;
   statusUpdatedAt: string | null;
   notes: string | null;
   remotionGraphicsRequired: boolean;
@@ -145,6 +203,8 @@ export type PipelineVideo = {
   audience: string;
   audienceLabel: string;
   daysInStage: number;
+  productionStyle: ProductionStyle | null;
+  qualityCompletion: number;
 };
 
 export type PipelineResponse = {
@@ -1138,4 +1198,51 @@ export type AiGenerationPrompt = {
   resultRating: number | null;
   status: "draft" | "generating" | "completed" | "rejected";
   createdAt: string;
+};
+
+// ============================================
+// Production Companion Types
+// ============================================
+
+export type ProductionChecklistItem = {
+  key: string;
+  label: string;
+  category: "pre_production" | "post_production" | "quality_gate";
+  critical: boolean;
+};
+
+export type ShotProductionCard = {
+  shotNumber: number;
+  act: string | null;
+  durationSeconds: number;
+  scriptLine: string | null;
+  productionMethod: "real" | "ai_enhanced" | "ai_generated" | "motion_graphic";
+  filmingTips: string[];
+  toolRecommendation: string | null;
+  modelRecommendation: string | null;
+  vfxTrick: string | null;
+  cameraDefaults: { camera: string; lens: string; focalLength: string; genre: string } | null;
+  suggestedMovement: string | null;
+  suggestedMovementReason: string | null;
+  colorGradeNotes: string | null;
+  cinemaStudioPrompt: string | null;
+  aiEnhancementNotes: string | null;
+  remotionComponent: string | null;
+  completed: boolean;
+};
+
+export type ProduceTabData = {
+  preProduction: Array<ProductionChecklistItem & { completed: boolean }>;
+  shotCards: ShotProductionCard[];
+  postProduction: Array<ProductionChecklistItem & { completed: boolean }>;
+  productionStyle: ProductionStyle | null;
+  formatId: string;
+  completion: { pre: number; shots: number; post: number; overall: number };
+};
+
+export type QualityGateData = {
+  items: Array<ProductionChecklistItem & { completed: boolean }>;
+  completionPercent: number;
+  fromStatus: ProductionStatus;
+  toStatus: ProductionStatus;
 };

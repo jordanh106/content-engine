@@ -11,7 +11,8 @@ import { parseVibeMotion } from "../parsers/vibe-motion.js";
 import { buildTimeline } from "../parsers/timeline-builder.js";
 import { parseProductionPlans } from "../parsers/production-plans.js";
 import path from "path";
-import type { VideoSummary, ProductionStatus, FormatId } from "../../shared/types.js";
+import type { VideoSummary, ProductionStatus, ProductionStyle, FormatId } from "../../shared/types.js";
+import { PRODUCTION_STYLES } from "../../shared/types.js";
 
 export function createVideosRouter(
   contentLibraryPath: string,
@@ -22,7 +23,7 @@ export function createVideosRouter(
 
   // GET /api/videos - list all videos with optional filters
   router.get("/", (_req, res) => {
-    const { audience, format, status, search } = _req.query;
+    const { audience, format, status, search, style } = _req.query;
 
     let videos = parseContentLibrary(contentLibraryPath);
 
@@ -45,6 +46,7 @@ export function createVideosRouter(
         audienceLabel: v.audienceLabel,
         tags: v.tags,
         status: (statusRecord?.currentStatus as ProductionStatus) || "SCRIPTED",
+        productionStyle: (statusRecord?.productionStyle as ProductionStyle) || null,
         scriptPreview:
           v.script.split("\n").find((l) => l.trim() && !l.startsWith("["))?.slice(0, 120) || "",
         remotionGraphicsRequired: Boolean(v.vibeMotion),
@@ -72,6 +74,13 @@ export function createVideosRouter(
           v.scriptPreview.toLowerCase().includes(q),
       );
     }
+    if (style && typeof style === "string") {
+      if (style === "none") {
+        summaries = summaries.filter((v) => !v.productionStyle);
+      } else {
+        summaries = summaries.filter((v) => v.productionStyle === style);
+      }
+    }
 
     res.json(summaries);
   });
@@ -98,6 +107,7 @@ export function createVideosRouter(
     res.json({
       ...video,
       status: (statusRecord?.currentStatus as ProductionStatus) || "SCRIPTED",
+      productionStyle: (statusRecord?.productionStyle as ProductionStyle) || null,
       statusUpdatedAt: statusRecord?.statusUpdatedAt || null,
       notes: statusRecord?.notes || null,
       remotionGraphicsRequired: Boolean(video.vibeMotion),
@@ -604,6 +614,73 @@ Return ONLY JSON, no markdown.`,
       console.error("[videos] Consistency check error:", error);
       res.status(500).json({ error: "Failed to run consistency check" });
     }
+  });
+
+  // ==========================================
+  // Production Style
+  // ==========================================
+
+  // PUT /api/videos/:code/production-style - Set production style
+  router.put("/:code/production-style", (req, res) => {
+    const code = req.params.code.toUpperCase();
+    const { style } = req.body as { style: ProductionStyle };
+
+    if (!PRODUCTION_STYLES.includes(style)) {
+      res.status(400).json({ error: `Invalid production style. Must be one of: ${PRODUCTION_STYLES.join(", ")}` });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const record = db.select().from(videoStatus).where(eq(videoStatus.videoCode, code)).get();
+
+    if (record) {
+      db.update(videoStatus)
+        .set({ productionStyle: style, updatedAt: now })
+        .where(eq(videoStatus.videoCode, code))
+        .run();
+    } else {
+      db.insert(videoStatus)
+        .values({ videoCode: code, currentStatus: "SCRIPTED", productionStyle: style })
+        .run();
+    }
+
+    res.json({ code, productionStyle: style });
+  });
+
+  // PUT /api/videos/bulk-production-style - Bulk assign production style
+  router.put("/bulk-production-style", (req, res) => {
+    const { codes, style } = req.body as { codes: string[]; style: ProductionStyle };
+
+    if (!Array.isArray(codes) || codes.length === 0) {
+      res.status(400).json({ error: "codes array is required" });
+      return;
+    }
+    if (!PRODUCTION_STYLES.includes(style)) {
+      res.status(400).json({ error: `Invalid production style. Must be one of: ${PRODUCTION_STYLES.join(", ")}` });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    let updated = 0;
+
+    for (const rawCode of codes) {
+      const code = rawCode.toUpperCase();
+      const record = db.select().from(videoStatus).where(eq(videoStatus.videoCode, code)).get();
+
+      if (record) {
+        db.update(videoStatus)
+          .set({ productionStyle: style, updatedAt: now })
+          .where(eq(videoStatus.videoCode, code))
+          .run();
+      } else {
+        db.insert(videoStatus)
+          .values({ videoCode: code, currentStatus: "SCRIPTED", productionStyle: style })
+          .run();
+      }
+      updated++;
+    }
+
+    res.json({ updated, style });
   });
 
   // ==========================================

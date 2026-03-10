@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownAZ, ArrowUpDown, Search } from "lucide-react";
-import type { VideoSummary, FormatId, Audience } from "../shared/types.js";
+import type { VideoSummary, FormatId, Audience, ProductionStyle } from "../shared/types.js";
+import { PRODUCTION_STYLES, PRODUCTION_STYLE_INFO } from "../shared/types.js";
 import { VideoCard } from "./ui/VideoCard.js";
 import { SearchInput } from "./ui/SearchInput.js";
 import { FilterBar } from "./ui/FilterBar.js";
@@ -31,6 +32,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
   const [audienceFilter, setAudienceFilter] = useState<string | null>(null);
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
   const [remotionOnly, setRemotionOnly] = useState(false);
+  const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("default");
 
   const { data: videos = [], isLoading: videosLoading } = useQuery<VideoSummary[]>({
@@ -65,6 +67,13 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
     if (remotionOnly) {
       result = result.filter((v) => v.remotionGraphicsRequired);
     }
+    if (styleFilter) {
+      if (styleFilter === "none") {
+        result = result.filter((v) => !v.productionStyle);
+      } else {
+        result = result.filter((v) => v.productionStyle === styleFilter);
+      }
+    }
 
     if (sortBy === "alpha") {
       result = [...result].sort((a, b) => a.title.localeCompare(b.title));
@@ -75,7 +84,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
     }
 
     return result;
-  }, [videos, audienceFilter, formatFilter, search, remotionOnly, sortBy]);
+  }, [videos, audienceFilter, formatFilter, search, remotionOnly, styleFilter, sortBy]);
 
   // Group by audience for section headers (or flat when sorting)
   const grouped = useMemo(() => {
@@ -119,6 +128,43 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
             onRemotionOnlyChange={setRemotionOnly}
           />
         </FeatureHint>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 self-center mr-1">Style:</span>
+          <button
+            onClick={() => setStyleFilter(null)}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-colors",
+              !styleFilter ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300",
+            )}
+          >
+            All
+          </button>
+          {PRODUCTION_STYLES.map((s) => {
+            const info = PRODUCTION_STYLE_INFO[s];
+            const isActive = styleFilter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setStyleFilter(isActive ? null : s)}
+                className={cn(
+                  "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-colors",
+                  isActive ? cn(info.color.bg, info.color.text, info.color.border) : "bg-white text-slate-600 border-slate-200 hover:border-slate-300",
+                )}
+              >
+                {info.name}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setStyleFilter(styleFilter === "none" ? null : "none")}
+            className={cn(
+              "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border border-dashed transition-colors",
+              styleFilter === "none" ? "bg-slate-100 text-slate-700 border-slate-400" : "bg-white text-slate-400 border-slate-300 hover:border-slate-400",
+            )}
+          >
+            No Style
+          </button>
+        </div>
       </div>
 
       {/* Results count + Sort */}

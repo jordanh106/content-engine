@@ -2,8 +2,9 @@ import { Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, and, asc } from "drizzle-orm";
 import { db } from "../db.js";
-import { storyboards, storyboardShots, vaultVisualStyles } from "../../shared/schema.js";
+import { storyboards, storyboardShots, vaultVisualStyles, videoStatus } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
+import type { ProductionStyle } from "../../shared/types.js";
 
 function stripCodeFences(text: string): string {
   let cleaned = text.trim();
@@ -65,11 +66,23 @@ ${s.doNot ? `DO NOT: ${s.doNot}` : ""}`;
         }
       }
 
+      // Look up production style for constraints
+      const statusRecord = db.select().from(videoStatus).where(eq(videoStatus.videoCode, videoCode)).get();
+      const prodStyle = statusRecord?.productionStyle as ProductionStyle | null;
+
+      const styleConstraints: Record<string, string> = {
+        real: "\nPRODUCTION STYLE CONSTRAINT: REAL - ALL shots must use productionMethod 'real' or 'motion_graphic'. No AI generation. No 'ai_enhanced' or 'ai_generated' methods.",
+        enhanced: "\nPRODUCTION STYLE CONSTRAINT: ENHANCED - Most shots should be 'real'. Use 'ai_enhanced' sparingly for 2-3 shots max. Never use 'ai_generated' for talent-on-camera shots. The AI enhancements should be subtle and undetectable. IMPORTANT: For ai_enhanced shots, include color-grade matching notes to ensure AI output matches the warmth, contrast, and tone of adjacent real footage. Seamless cuts between real and AI are critical.",
+        heavy_ai: "\nPRODUCTION STYLE CONSTRAINT: HEAVY AI - Talent may appear in hook and CTA shots. Most build/conflict/resolution shots should be 'ai_generated' or 'ai_enhanced'. Lean heavily on Cinema Studio visuals.",
+        full_ai: "\nPRODUCTION STYLE CONSTRAINT: FULL AI - ALL shots must use 'ai_generated' or 'motion_graphic'. No 'real' production method. This video is voiceover-only with no filmed footage.",
+      };
+      const styleConstraint = prodStyle ? (styleConstraints[prodStyle] || "") : "";
+
       const prompt = `Generate a structured storyboard for this video. Map each shot to the 5-act story structure.
 
 VIDEO: ${video.code} "${video.title}" | FORMAT: ${video.format} | AUDIENCE: ${video.audienceLabel}
 SCRIPT: ${video.script}
-${visualStyleRules}
+${visualStyleRules}${styleConstraint}
 
 For each shot determine:
 1. Act position: hook (first 3s), conflict, build, resolution, cta
@@ -442,6 +455,9 @@ Available AI tools and techniques:
 5. Upscale: Match phone footage quality to AI segments
 6. Motion Engine: Smooth shaky real footage
 7. Remotion motion graphic: TitleCard, StatCard, ChecklistOverlay, MythTruthReveal, StepIndicator, CallToAction, HookText, SectionCard
+8. Color-Grade Matching: Match AI-generated shot colors/contrast/warmth to adjacent real footage for seamless cuts
+9. Motion Tracking Overlay: AI elements (text, graphics, environmental additions) that track motion in real footage
+10. Voice Clone + Lip Sync: AI voice generation with synchronized lip movement (Kling 2.6/3.0 or Lipsync Studio)
 
 For the recommended technique, provide:
 - Which technique and why

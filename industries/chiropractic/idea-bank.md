@@ -70,7 +70,7 @@ Behind-the-scenes, humor, personal brand content, experimental formats.
 
 | Topic | Suggested Format | Hook Angle | Priority | Notes | Date Added |
 |-------|-----------------|------------|----------|-------|------------|
-| | | | | | |
+| The AI Reveal: Before vs After | F (Quick Tip) or A (Explainer) | "Can you tell which shots are AI?" | High | Show finished Enhanced video, then toggle AI layers off to reveal raw footage. Builds trust, showcases production quality. Before/after reveals are inherently engaging. | 2026-03-10 |
 
 ---
 

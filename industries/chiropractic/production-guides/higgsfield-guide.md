@@ -166,6 +166,45 @@ Higgsfield Upscale takes your phone footage and increases the resolution and cla
 
 If your real footage has slight shakiness or inconsistent motion, Motion Engine equalizes the movement across all your clips. This prevents the subtle jitter that signals "phone footage" to the viewer's eye.
 
+### Advanced Seamlessness Techniques
+
+These techniques push Enhanced-style videos from "good enough" to truly invisible AI integration. Inspired by River Cody's approach of hiding AI inside real footage so viewers cannot distinguish between the two.
+
+#### Color-Grade Matching
+
+The most common tell when cutting between real and AI footage is mismatched color. After AI enhancement, match the color temperature, contrast, and saturation to your real footage. Export a still from your real clip as a reference frame. Apply that same warmth/tone to the AI output before assembling.
+
+**The test:** Watch your edit on your phone at normal speed. If you notice a shift in warmth or contrast at any cut point, the color grade doesn't match. Fix it before posting.
+
+#### Motion Tracking Overlays
+
+Use AI to add elements (environmental details, text, subtle visual additions) that track motion in your real footage. The key is that added elements should follow natural camera movement, not float independently. This is how you add visual richness to a real shot without it looking composited.
+
+**Example:** A slow pan across your treatment room. AI adds warm light rays through the window that track with the camera movement, making the space feel more inviting without any visible compositing.
+
+#### Voice Clone + Lip Sync Workflow
+
+For full_ai videos where "you" still need to appear speaking naturally:
+
+1. Record your voiceover cleanly (quiet room, consistent mic distance)
+2. Use Kling 2.6/3.0 or Lipsync Studio to generate synchronized lip movements on AI-generated talent shots
+3. Match the lip-synced output to your voiceover timing
+4. Color-grade the result to match any adjacent real footage
+
+This enables full_ai production style videos that still feel personal and authentic.
+
+#### The Seamlessness Checklist
+
+Before publishing any Enhanced video, run through this:
+
+1. Watch the full edit on your phone at 1x speed. Can you spot where real ends and AI begins?
+2. Check cut points for color temperature shifts between real and AI shots
+3. Verify any AI-added motion elements track naturally with camera movement
+4. Confirm upscaled phone footage matches the resolution of AI segments
+5. If voice cloning was used, listen for unnatural cadence or mismatched room tone
+
+If anything feels off at normal viewing speed, fix it. The goal is zero visible seams.
+
 ---
 
 ## Where AI Generates from Scratch
