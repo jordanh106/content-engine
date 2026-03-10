@@ -11,6 +11,7 @@ import {
   TrendingUp,
   MessageSquareText,
   Bookmark,
+  BookOpen,
   MoreHorizontal,
   ChevronDown,
   X,
@@ -169,6 +170,7 @@ type LayoutProps = {
   currentView: DashboardView;
   onNavigate: (view: DashboardView) => void;
   onOpenVault?: () => void;
+  onOpenGuide?: () => void;
   children: React.ReactNode;
 };
 
@@ -176,6 +178,7 @@ export const Layout: React.FC<LayoutProps> = ({
   currentView,
   onNavigate,
   onOpenVault,
+  onOpenGuide,
   children,
 }) => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(getCollapsedState);
@@ -206,6 +209,15 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell onNavigate={onNavigate} />
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                title="Field Manual (?)"
+              >
+                <BookOpen size={18} />
+              </button>
+            )}
             {onOpenVault && (
               <button
                 onClick={onOpenVault}
@@ -363,19 +375,33 @@ export const Layout: React.FC<LayoutProps> = ({
                 ))}
               </div>
             ))}
-            {/* Vault in More sheet */}
-            {onOpenVault && (
-              <div className="px-3 pb-4 border-t border-slate-100 mt-1 pt-2">
-                <button
-                  onClick={() => {
-                    onOpenVault();
-                    setMoreOpen(false);
-                  }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left w-full"
-                >
-                  <Bookmark size={18} />
-                  Vault
-                </button>
+            {/* Vault & Guide in More sheet */}
+            {(onOpenVault || onOpenGuide) && (
+              <div className="px-3 pb-4 border-t border-slate-100 mt-1 pt-2 space-y-0.5">
+                {onOpenGuide && (
+                  <button
+                    onClick={() => {
+                      onOpenGuide();
+                      setMoreOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left w-full"
+                  >
+                    <BookOpen size={18} />
+                    Field Manual
+                  </button>
+                )}
+                {onOpenVault && (
+                  <button
+                    onClick={() => {
+                      onOpenVault();
+                      setMoreOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left w-full"
+                  >
+                    <Bookmark size={18} />
+                    Vault
+                  </button>
+                )}
               </div>
             )}
           </div>

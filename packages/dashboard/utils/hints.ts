@@ -44,6 +44,7 @@ const DEFAULT_PROGRESS: OnboardingProgress = {
   checklist: {},
   firstVisitDate: new Date().toISOString().split("T")[0],
   viewsVisited: [],
+  guideSectionsRead: [],
 };
 
 export function getOnboardingProgress(): OnboardingProgress {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { OnboardingProgress, DashboardView } from "../shared/types.js";
-import { CHECKLIST_ITEMS, CHANGELOG } from "../shared/help-content.js";
+import { CHECKLIST_ITEMS, CHANGELOG, GUIDE_SECTIONS } from "../shared/help-content.js";
 import {
   getOnboardingProgress,
   updateOnboardingProgress,
@@ -34,6 +34,11 @@ type OnboardingContextValue = {
   markChecklistDone: (id: string) => void;
   dismissChecklist: () => void;
   trackEvent: (eventId: string) => void;
+
+  // Guide section tracking
+  guideSectionsRead: string[];
+  markGuideSectionRead: (id: string) => void;
+  guideCompletionPercent: number;
 
   // Hints
   isHintSeen: (id: string) => boolean;
@@ -168,6 +173,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [progress.viewsVisited, trackEvent]);
 
+  // Guide section tracking
+  const guideSectionsRead = progress.guideSectionsRead || [];
+  const guideCompletionPercent = Math.round(
+    (guideSectionsRead.length / Math.max(GUIDE_SECTIONS.length, 1)) * 100,
+  );
+  const markGuideSectionRead = useCallback(
+    (id: string) => {
+      if (guideSectionsRead.includes(id)) return;
+      updateProgress({ guideSectionsRead: [...guideSectionsRead, id] });
+    },
+    [guideSectionsRead, updateProgress],
+  );
+
   // Hints
   const isHintSeen = useCallback(
     (id: string) => {
@@ -221,6 +239,9 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     markChecklistDone,
     dismissChecklist,
     trackEvent,
+    guideSectionsRead,
+    markGuideSectionRead,
+    guideCompletionPercent,
     isHintSeen,
     markHintSeen,
     resetAll: resetAllOnboarding,

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle, X, RotateCcw, Play } from "lucide-react";
+import { HelpCircle, X, RotateCcw, Play, BookOpen } from "lucide-react";
 import type { ViewHelpData } from "../../shared/help-content.js";
 import { useOnboarding } from "../OnboardingProvider.js";
 
-export const ViewHelp: React.FC<ViewHelpData> = ({ title, description, tips }) => {
+export const ViewHelp: React.FC<ViewHelpData & { onOpenGuide?: () => void }> = ({ title, description, tips, onOpenGuide }) => {
   const [open, setOpen] = useState(false);
   const { resetAll, startTour, completeWelcome, isChecklistDismissed } = useOnboarding();
 
@@ -96,13 +96,24 @@ export const ViewHelp: React.FC<ViewHelpData> = ({ title, description, tips }) =
                     <RotateCcw size={10} />
                     Reset Tips
                   </button>
-                  <button
-                    onClick={handleTakeTour}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-widest transition-colors"
-                  >
-                    <Play size={10} />
-                    Take Tour Again
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {onOpenGuide && (
+                      <button
+                        onClick={() => { setOpen(false); onOpenGuide(); }}
+                        className="inline-flex items-center gap-1.5 text-[10px] font-bold text-sky-600 hover:text-sky-700 uppercase tracking-widest transition-colors"
+                      >
+                        <BookOpen size={10} />
+                        Full Guide
+                      </button>
+                    )}
+                    <button
+                      onClick={handleTakeTour}
+                      className="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-widest transition-colors"
+                    >
+                      <Play size={10} />
+                      Take Tour Again
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </>

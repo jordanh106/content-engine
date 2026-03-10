@@ -12,6 +12,7 @@ import {
   TrendingUp,
   LayoutDashboard,
   Bookmark,
+  BookOpen,
   Zap,
   Search,
   ArrowRight,
@@ -26,6 +27,7 @@ type CommandPaletteProps = {
   onOpenChange: (open: boolean) => void;
   onNavigate: (view: DashboardView) => void;
   onOpenVault: () => void;
+  onOpenGuide?: () => void;
   onSelectVideo?: (code: string) => void;
 };
 
@@ -65,6 +67,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenChange,
   onNavigate,
   onOpenVault,
+  onOpenGuide,
   onSelectVideo,
 }) => {
   const [recentViews, setRecentViews] = useState<DashboardView[]>([]);
@@ -161,6 +164,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const actionItems: CommandItem[] = [
     { id: "vault", label: "Open Vault", icon: <Bookmark size={16} />, action: () => { onOpenVault(); onOpenChange(false); }, group: "actions", keywords: "hooks styles" },
+    { id: "guide", label: "Open Field Manual", icon: <BookOpen size={16} />, action: () => { onOpenGuide?.(); onOpenChange(false); }, group: "actions", keywords: "help guide manual how to learn reference" },
     { id: "gen-opps", label: "Generate Opportunities", icon: <Zap size={16} />, action: () => nav("OPPORTUNITIES"), group: "actions", keywords: "ai analyze score" },
     { id: "run-research", label: "Run Research", icon: <Search size={16} />, action: () => nav("METRICS"), group: "actions", keywords: "last30days reddit x" },
     { id: "start-session", label: "Start Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "actions", keywords: "record batch produce" },

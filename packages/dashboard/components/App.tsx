@@ -18,11 +18,13 @@ import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
 import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
 import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
+import { FieldManual } from "./FieldManual.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const onboarding = useOnboarding();
 
@@ -70,6 +72,7 @@ const AppInner: React.FC = () => {
         case "9": setView("METRICS"); break;
         case "v": setVaultOpen((prev) => !prev); break;
         case "w": setView("WATCHLIST"); break;
+        case "?": setGuideOpen((prev) => !prev); break;
       }
     };
     window.addEventListener("keydown", handler);
@@ -97,9 +100,17 @@ const AppInner: React.FC = () => {
     setVaultOpen(false);
   }, []);
 
+  const handleOpenGuide = useCallback(() => {
+    setGuideOpen(true);
+  }, []);
+
+  const handleCloseGuide = useCallback(() => {
+    setGuideOpen(false);
+  }, []);
+
   return (
     <>
-      <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault}>
+      <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault} onOpenGuide={handleOpenGuide}>
         {view === "LIBRARY" && (
           <ContentLibrary onSelectVideo={handleSelectVideo} />
         )}
@@ -128,12 +139,21 @@ const AppInner: React.FC = () => {
       {/* Vault slide-out panel */}
       <VaultPanel open={vaultOpen} onClose={handleCloseVault} />
 
+      {/* Field Manual */}
+      <FieldManual
+        open={guideOpen}
+        onClose={handleCloseGuide}
+        currentView={view}
+        onNavigate={(target) => { handleNavigate(target); setGuideOpen(false); }}
+      />
+
       {/* Command palette */}
       <CommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
         onNavigate={handleNavigate}
         onOpenVault={handleOpenVault}
+        onOpenGuide={handleOpenGuide}
         onSelectVideo={handleSelectVideo}
       />
 

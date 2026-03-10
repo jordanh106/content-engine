@@ -912,6 +912,7 @@ export type OnboardingProgress = {
   checklist: Record<string, boolean>;
   firstVisitDate: string;
   viewsVisited: string[];
+  guideSectionsRead: string[];
 };
 
 export type TourStep = {
