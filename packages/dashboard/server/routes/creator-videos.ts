@@ -1,9 +1,17 @@
 import { Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegStatic from "ffmpeg-static";
 import { db } from "../db.js";
 import { creatorVideos, videoBreakdowns, channelSnapshots, vaultHooks } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
+import { downloadVideo, isYtDlpAvailable, cleanupDownload } from "../lib/video-downloader.js";
+
+if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
 
 function stripCodeFences(text: string): string {
   let cleaned = text.trim();
@@ -621,6 +629,405 @@ Respond with JSON:
     } catch (error) {
       console.error("[creator-videos] Compare error:", error);
       res.status(500).json({ error: "Failed to compare creators" });
+    }
+  });
+
+  // ============================================
+  // Deep DNA Analysis (Feature 1 - Replaces Manis AI)
+  // ============================================
+
+  function extractFramesFromVideo(videoPath: string, outputDir: string, intervalSeconds = 2): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .outputOptions([
+          `-vf`, `fps=1/${intervalSeconds},scale=810:1440:force_original_aspect_ratio=decrease`,
+          `-q:v`, `3`,
+        ])
+        .output(path.join(outputDir, "frame_%04d.jpg"))
+        .on("end", () => {
+          const files = fs.readdirSync(outputDir)
+            .filter((f) => f.startsWith("frame_") && f.endsWith(".jpg"))
+            .sort()
+            .map((f) => path.join(outputDir, f));
+          resolve(files);
+        })
+        .on("error", (err) => reject(err))
+        .run();
+    });
+  }
+
+  function getVideoDuration(videoPath: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(videoPath, (err, metadata) => {
+        if (err) return reject(err);
+        resolve(metadata.format.duration || 0);
+      });
+    });
+  }
+
+  async function transcribeAudio(videoPath: string): Promise<string | null> {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) return null;
+    const audioPath = videoPath + ".audio.mp3";
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(videoPath)
+          .outputOptions(["-vn", "-ac", "1", "-ab", "64k", "-f", "mp3"])
+          .output(audioPath)
+          .on("end", () => resolve())
+          .on("error", (err) => reject(err))
+          .run();
+      });
+      const audioSize = fs.statSync(audioPath).size;
+      if (audioSize < 1024) return null;
+      const { default: OpenAI } = await import("openai");
+      const openai = new OpenAI({ apiKey: openaiKey });
+      const transcription = await openai.audio.transcriptions.create({
+        model: "whisper-1",
+        file: fs.createReadStream(audioPath) as unknown as File,
+      });
+      return transcription.text || null;
+    } catch (err) {
+      console.warn("[creator-videos] Whisper transcription failed:", err);
+      return null;
+    } finally {
+      try { if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath); } catch { /* cleanup */ }
+    }
+  }
+
+  const DEEP_DNA_PROMPT = `You are a professional video analyst. You have been given extracted frames from a video and its full transcript. Extract the complete creative DNA.
+
+1. ONE-SENTENCE CONCEPT: The core idea in under 20 words (technically interesting + emotionally resonant)
+2. STORY STRUCTURE: Map to 5-act model with approximate timestamps:
+   - Hook (first 3s): What grabs attention?
+   - Conflict/Setup: What tension or question is introduced?
+   - Build: How does the content develop?
+   - Resolution/Payoff: What's the satisfying answer?
+   - CTA: How does it end?
+3. AESTHETIC KEYWORDS: 5-8 words describing the visual feel
+4. TYPOGRAPHY SYSTEM: Title card style, section headers, caption/subtitle style, overlay approach
+5. COLOR PALETTE: Primary, secondary, accent colors (hex if visible), overall mood, grading approach
+6. SET DESIGN: Key environmental elements, lighting approach, props, background composition
+7. MUSIC/AUDIO: Mood, approximate BPM range, genre classification, energy curve
+8. TRANSITION STYLE: Cut types (hard cut, dissolve, AI morph), pacing between shots, any signatures
+9. B-ROLL TYPES: Categorize shots as macro/close-up, process/behind-scenes, or product/reveal
+10. REPLICATION PLAN: 5-8 ordered steps to recreate this style for different content
+
+Also extract the standard 7 fields:
+- topic: What the video is fundamentally about (1-2 words)
+- angle: The unique perspective or approach taken
+- hookFormat: The hook type used (Question, Shock, Transformation, List, etc.)
+- storyStyle: How the content is structured (Problem-solution, Before-after, Narrative arc, Tutorial, etc.)
+- visualFormat: Primary visual approach (Talking head, B-roll heavy, Text overlay, Split screen, etc.)
+- visuals: Specific visual elements and style choices
+- audio: Audio approach (Voiceover, Direct to camera, Trending sound, Original music, etc.)
+
+Return as structured JSON with these exact keys:
+{
+  "topic": "...",
+  "angle": "...",
+  "hookFormat": "...",
+  "storyStyle": "...",
+  "visualFormat": "...",
+  "visuals": "...",
+  "audio": "...",
+  "oneSentenceConcept": "...",
+  "storyStructure": { "hook": {...}, "conflict": {...}, "build": {...}, "resolution": {...}, "cta": {...} },
+  "aestheticKeywords": ["..."],
+  "typographySystem": { "titleStyle": "...", "headerStyle": "...", "captionStyle": "...", "overlayApproach": "..." },
+  "colorPalette": { "primary": "...", "secondary": "...", "accent": "...", "mood": "...", "grading": "..." },
+  "setDesign": { "elements": [...], "lighting": "...", "environment": "..." },
+  "musicAudio": { "mood": "...", "bpmRange": "...", "genre": "...", "energyCurve": "..." },
+  "transitionStyle": { "types": [...], "pacing": "...", "signature": "..." },
+  "brollTypes": { "macro": [...], "process": [...], "reveal": [...] },
+  "replicationPlan": ["step 1", "step 2", ...]
+}
+
+No emdashes. Return JSON only.`;
+
+  // POST /api/creator-videos/:id/deep-breakdown - Full DNA analysis with video frames + transcript
+  router.post("/:id/deep-breakdown", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    const id = parseInt(req.params.id);
+    const video = db.select().from(creatorVideos).where(eq(creatorVideos.id, id)).limit(1).all();
+    if (video.length === 0) {
+      res.status(404).json({ error: "Video not found" });
+      return;
+    }
+
+    const v = video[0];
+    let downloadedPath: string | null = null;
+    const framesDir = path.join(os.tmpdir(), `ce-dna-frames-${Date.now()}`);
+    fs.mkdirSync(framesDir, { recursive: true });
+
+    try {
+      let videoFilePath: string | null = null;
+
+      // Try to download video if URL exists
+      if (v.videoUrl) {
+        const hasYtDlp = await isYtDlpAvailable();
+        if (hasYtDlp) {
+          console.log(`[creator-videos] Downloading video: ${v.videoUrl}`);
+          try {
+            const result = await downloadVideo(v.videoUrl);
+            videoFilePath = result.filePath;
+            downloadedPath = result.filePath;
+            console.log(`[creator-videos] Downloaded: ${result.title} (${result.duration}s)`);
+          } catch (dlErr) {
+            console.warn("[creator-videos] Download failed, falling back to web search:", dlErr);
+          }
+        }
+      }
+
+      let framePaths: string[] = [];
+      let transcript: string | null = null;
+
+      if (videoFilePath) {
+        // Extract frames + transcribe from downloaded video
+        let interval = 2;
+        try {
+          const duration = await getVideoDuration(videoFilePath);
+          if (duration > 30) interval = Math.ceil(duration / 10);
+        } catch { /* default interval */ }
+
+        [framePaths, transcript] = await Promise.all([
+          extractFramesFromVideo(videoFilePath, framesDir, interval),
+          transcribeAudio(videoFilePath),
+        ]);
+        console.log(`[creator-videos] Extracted ${framePaths.length} frames, transcript: ${transcript ? "yes" : "no"}`);
+      }
+
+      // Build AI message
+      const imageContent: Anthropic.ImageBlockParam[] = framePaths.slice(0, 10).map((fp) => ({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: "image/jpeg" as const,
+          data: fs.readFileSync(fp).toString("base64"),
+        },
+      }));
+
+      const contextText = `VIDEO: "${v.videoTitle || "Unknown"}" by ${v.creatorHandle} on ${v.platform}
+Views: ${v.views}, Likes: ${v.likes}, Comments: ${v.comments}
+${v.videoUrl ? `URL: ${v.videoUrl}` : ""}
+${transcript ? `\nTRANSCRIPT:\n${transcript}` : "\n(No transcript available)"}
+${framePaths.length > 0 ? `\n${framePaths.length} video frames attached.` : "\n(No video frames available - analyze based on metadata and web search results)"}`;
+
+      // If we have frames, use vision. Otherwise fall back to web_search.
+      let response;
+      if (imageContent.length > 0) {
+        response = await client.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4096,
+          messages: [{
+            role: "user",
+            content: [
+              ...imageContent,
+              { type: "text", text: `${DEEP_DNA_PROMPT}\n\n${contextText}` },
+            ],
+          }],
+        }, { timeout: 180_000 });
+      } else {
+        // Fallback: use web_search to find information about the video
+        response = await client.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4096,
+          tools: [{
+            type: "web_search_20250305" as const,
+            name: "web_search" as const,
+            max_uses: 5,
+          }],
+          messages: [{
+            role: "user",
+            content: `${DEEP_DNA_PROMPT}\n\n${contextText}\n\nSince no video frames are available, use web search to find information about this video and creator to inform your analysis. Search for the creator and their content style.`,
+          }],
+        }, { timeout: 120_000 });
+      }
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      // Save to database (upsert: delete existing then insert)
+      db.delete(videoBreakdowns).where(eq(videoBreakdowns.creatorVideoId, id)).run();
+
+      const result = db
+        .insert(videoBreakdowns)
+        .values({
+          creatorVideoId: id,
+          creatorHandle: v.creatorHandle,
+          videoUrl: v.videoUrl,
+          topic: parsed.topic,
+          angle: parsed.angle,
+          hookFormat: parsed.hookFormat,
+          storyStyle: parsed.storyStyle,
+          visualFormat: parsed.visualFormat,
+          visuals: parsed.visuals,
+          audio: parsed.audio,
+          typographySystem: JSON.stringify(parsed.typographySystem),
+          storyStructure: JSON.stringify(parsed.storyStructure),
+          aestheticKeywords: JSON.stringify(parsed.aestheticKeywords),
+          colorPalette: JSON.stringify(parsed.colorPalette),
+          setDesign: JSON.stringify(parsed.setDesign),
+          musicAudio: JSON.stringify(parsed.musicAudio),
+          transitionStyle: JSON.stringify(parsed.transitionStyle),
+          replicationPlan: JSON.stringify(parsed.replicationPlan),
+          brollTypes: JSON.stringify(parsed.brollTypes),
+          oneSentenceConcept: parsed.oneSentenceConcept,
+        })
+        .returning()
+        .get();
+
+      res.json({ breakdown: result, hasVideo: !!videoFilePath, hasTranscript: !!transcript, frameCount: framePaths.length });
+    } catch (error) {
+      console.error("[creator-videos] Deep breakdown error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate deep breakdown" });
+    } finally {
+      // Cleanup
+      try {
+        if (downloadedPath) cleanupDownload(downloadedPath);
+        if (fs.existsSync(framesDir)) {
+          for (const f of fs.readdirSync(framesDir)) fs.unlinkSync(path.join(framesDir, f));
+          fs.rmdirSync(framesDir);
+        }
+      } catch { /* best effort */ }
+    }
+  });
+
+  // POST /api/creator-videos/analyze-url - One-off analysis from any video URL
+  router.post("/analyze-url", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    const { url, save } = req.body;
+    if (!url) {
+      res.status(400).json({ error: "url is required" });
+      return;
+    }
+
+    let downloadedPath: string | null = null;
+    const framesDir = path.join(os.tmpdir(), `ce-dna-url-${Date.now()}`);
+    fs.mkdirSync(framesDir, { recursive: true });
+
+    try {
+      const hasYtDlp = await isYtDlpAvailable();
+      if (!hasYtDlp) {
+        res.status(503).json({ error: "yt-dlp not available. Install with: pip3 install yt-dlp" });
+        return;
+      }
+
+      console.log(`[creator-videos] Downloading video from URL: ${url}`);
+      const dlResult = await downloadVideo(url);
+      downloadedPath = dlResult.filePath;
+      console.log(`[creator-videos] Downloaded: ${dlResult.title} (${dlResult.duration}s)`);
+
+      // Extract frames + transcribe
+      let interval = 2;
+      try {
+        const duration = await getVideoDuration(dlResult.filePath);
+        if (duration > 30) interval = Math.ceil(duration / 10);
+      } catch { /* default */ }
+
+      const [framePaths, transcript] = await Promise.all([
+        extractFramesFromVideo(dlResult.filePath, framesDir, interval),
+        transcribeAudio(dlResult.filePath),
+      ]);
+
+      const imageContent: Anthropic.ImageBlockParam[] = framePaths.slice(0, 10).map((fp) => ({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: "image/jpeg" as const,
+          data: fs.readFileSync(fp).toString("base64"),
+        },
+      }));
+
+      const contextText = `VIDEO: "${dlResult.title}" from URL: ${url}
+Duration: ${dlResult.duration ? `${dlResult.duration}s` : "unknown"}
+${transcript ? `\nTRANSCRIPT:\n${transcript}` : "\n(No transcript available)"}
+${framePaths.length} video frames attached.`;
+
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        messages: [{
+          role: "user",
+          content: [
+            ...imageContent,
+            { type: "text", text: `${DEEP_DNA_PROMPT}\n\n${contextText}` },
+          ],
+        }],
+      }, { timeout: 180_000 });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      // Optionally save to database
+      let savedBreakdown = null;
+      if (save) {
+        savedBreakdown = db
+          .insert(videoBreakdowns)
+          .values({
+            creatorVideoId: null,
+            creatorHandle: null,
+            videoUrl: url,
+            topic: parsed.topic,
+            angle: parsed.angle,
+            hookFormat: parsed.hookFormat,
+            storyStyle: parsed.storyStyle,
+            visualFormat: parsed.visualFormat,
+            visuals: parsed.visuals,
+            audio: parsed.audio,
+            typographySystem: JSON.stringify(parsed.typographySystem),
+            storyStructure: JSON.stringify(parsed.storyStructure),
+            aestheticKeywords: JSON.stringify(parsed.aestheticKeywords),
+            colorPalette: JSON.stringify(parsed.colorPalette),
+            setDesign: JSON.stringify(parsed.setDesign),
+            musicAudio: JSON.stringify(parsed.musicAudio),
+            transitionStyle: JSON.stringify(parsed.transitionStyle),
+            replicationPlan: JSON.stringify(parsed.replicationPlan),
+            brollTypes: JSON.stringify(parsed.brollTypes),
+            oneSentenceConcept: parsed.oneSentenceConcept,
+          })
+          .returning()
+          .get();
+      }
+
+      res.json({
+        breakdown: parsed,
+        saved: !!savedBreakdown,
+        savedId: savedBreakdown?.id ?? null,
+        videoTitle: dlResult.title,
+        duration: dlResult.duration,
+        frameCount: framePaths.length,
+        hasTranscript: !!transcript,
+      });
+    } catch (error) {
+      console.error("[creator-videos] Analyze URL error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to analyze video" });
+    } finally {
+      try {
+        if (downloadedPath) cleanupDownload(downloadedPath);
+        if (fs.existsSync(framesDir)) {
+          for (const f of fs.readdirSync(framesDir)) fs.unlinkSync(path.join(framesDir, f));
+          fs.rmdirSync(framesDir);
+        }
+      } catch { /* best effort */ }
     }
   });
 

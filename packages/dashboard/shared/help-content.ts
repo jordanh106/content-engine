@@ -231,23 +231,6 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
-  COMPOSER: {
-    title: "Motion Graphics Composer",
-    description:
-      "Visual editor for Remotion motion graphics. Arrange components, preview live, and render individual clips.",
-    tips: [
-      {
-        label: "Full-Page Mode",
-        detail:
-          "Composer replaces the dashboard temporarily. Press Back to return to the video you came from.",
-      },
-      {
-        label: "AI Chat",
-        detail:
-          "Describe changes in natural language. The AI modifies components based on your instructions.",
-      },
-    ],
-  },
   CAPTIONS: {
     title: "Caption Studio",
     description:
@@ -290,11 +273,6 @@ export const FEATURE_HINTS: Record<string, HintData> = {
     content:
       "Pulls new content ideas from your automated n8n research workflow.",
     side: "bottom",
-  },
-  "composer-button": {
-    content:
-      "Opens a full-page visual editor for this video's motion graphics.",
-    side: "left",
   },
   "session-phases": {
     content:

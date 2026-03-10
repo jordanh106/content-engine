@@ -45,7 +45,7 @@ function parseInsightMarkdown(content: string, filename: string): CreatorInsight
 
   // Try to extract handle from title line "# Creator Analysis: @handle" or filename
   let handle = filename.replace(/\.md$/, "").replace(/^creator-/, "");
-  const titleMatch = content.match(/#.*?@(\w+)/);
+  const titleMatch = content.match(/#.*?@([\w.]+)/);
   if (titleMatch) handle = titleMatch[1];
 
   // Extract date

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const videoStatus = sqliteTable("video_status", {
@@ -180,6 +180,17 @@ export const videoBreakdowns = sqliteTable("video_breakdowns", {
   visuals: text("visuals"),
   audio: text("audio"),
   rawNotes: text("raw_notes"),
+  // Deep DNA fields (Feature 1)
+  typographySystem: text("typography_system"),
+  storyStructure: text("story_structure"),
+  aestheticKeywords: text("aesthetic_keywords"),
+  colorPalette: text("color_palette"),
+  setDesign: text("set_design"),
+  musicAudio: text("music_audio"),
+  transitionStyle: text("transition_style"),
+  replicationPlan: text("replication_plan"),
+  brollTypes: text("broll_types"),
+  oneSentenceConcept: text("one_sentence_concept"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -214,6 +225,90 @@ export const notifications = sqliteTable("notifications", {
   targetView: text("target_view"),
   targetId: text("target_id"),
   read: integer("read", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+// Kova-Inspired Features
+
+export const vaultVisualStyles = sqliteTable("vault_visual_styles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  sourceCreator: text("source_creator"),
+  sourceUrl: text("source_url"),
+  sourceBreakdownIds: text("source_breakdown_ids"),
+  typographySystem: text("typography_system").notNull(),
+  colorPalette: text("color_palette").notNull(),
+  transitionRules: text("transition_rules"),
+  setDesignRules: text("set_design_rules"),
+  musicGuidelines: text("music_guidelines"),
+  motionGraphicsStyle: text("motion_graphics_style"),
+  doNot: text("do_not"),
+  usageCount: integer("usage_count").default(0),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const storyboards = sqliteTable("storyboards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code").notNull(),
+  visualStyleId: integer("visual_style_id"),
+  oneSentenceConcept: text("one_sentence_concept"),
+  storyStructure: text("story_structure"),
+  totalDurationSeconds: integer("total_duration_seconds"),
+  status: text("status").notNull().default("draft"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
+export const storyboardShots = sqliteTable("storyboard_shots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  storyboardId: integer("storyboard_id").notNull(),
+  shotNumber: integer("shot_number").notNull(),
+  act: text("act"),
+  durationSeconds: real("duration_seconds").notNull(),
+  shotType: text("shot_type"),
+  cameraMovement: text("camera_movement"),
+  cinemaStudioPrompt: text("cinema_studio_prompt"),
+  scriptLine: text("script_line"),
+  brollType: text("broll_type"),
+  productionMethod: text("production_method").notNull().default("real"),
+  aiEnhancementNotes: text("ai_enhancement_notes"),
+  remotionComponent: text("remotion_component"),
+  notes: text("notes"),
+  orderIndex: integer("order_index").notNull(),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const aiGenerationPrompts = sqliteTable("ai_generation_prompts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  storyboardShotId: integer("storyboard_shot_id"),
+  videoCode: text("video_code").notNull(),
+  shotNumber: integer("shot_number"),
+  technique: text("technique").notNull(),
+  tool: text("tool"),
+  model: text("model"),
+  promptText: text("prompt_text").notNull(),
+  promptVersion: integer("prompt_version").notNull().default(1),
+  sourceDescription: text("source_description"),
+  targetDescription: text("target_description"),
+  resultNotes: text("result_notes"),
+  resultRating: integer("result_rating"),
+  status: text("status").notNull().default("draft"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const ideaConcepts = sqliteTable("idea_concepts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ideaTopic: text("idea_topic").notNull(),
+  oneSentence: text("one_sentence").notNull(),
+  technicalInterestScore: integer("technical_interest_score"),
+  emotionalResonanceScore: integer("emotional_resonance_score"),
+  tenSecondExplainabilityScore: integer("ten_second_explainability_score"),
+  visualPayoffScore: integer("visual_payoff_score"),
+  overallScore: integer("overall_score"),
+  aiFeedback: text("ai_feedback"),
+  refinedVersion: text("refined_version"),
+  approved: integer("approved", { mode: "boolean" }).default(false),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

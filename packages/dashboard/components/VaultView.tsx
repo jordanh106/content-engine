@@ -16,11 +16,13 @@ import {
   BarChart3,
   Trophy,
   AlertCircle,
+  Eye,
+  Layers,
 } from "lucide-react";
-import type { VaultHook, VaultStyle } from "../shared/types.js";
+import type { VaultHook, VaultStyle, VaultVisualStyle } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
-type Tab = "hooks" | "styles";
+type Tab = "hooks" | "styles" | "visual";
 
 const HOOK_CATEGORIES = [
   { key: "all", label: "All" },
@@ -140,10 +142,196 @@ const HookAdaptButton: React.FC<{ hookId: number }> = ({ hookId }) => {
   );
 };
 
+const SynthesizeStyleModal: React.FC<{
+  onClose: () => void;
+  onCreated: (style: VaultVisualStyle) => void;
+}> = ({ onClose, onCreated }) => {
+  const [breakdowns, setBreakdowns] = useState<Array<{ id: number; creatorHandle: string; videoUrl: string | null; topic: string | null; oneSentenceConcept: string | null }>>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [synthesizing, setSynthesizing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Fetch breakdowns that have deep DNA
+    fetch("/api/creator-videos")
+      .then((r) => r.json())
+      .then(async (data) => {
+        // For each video, check if it has a breakdown with DNA fields
+        const allBreakdowns: typeof breakdowns = [];
+        for (const v of (data.videos || []).slice(0, 50)) {
+          const bRes = await fetch(`/api/creator-videos/${v.id}/breakdown`);
+          const bData = await bRes.json();
+          if (bData.breakdown && (bData.breakdown.colorPalette || bData.breakdown.storyStructure)) {
+            allBreakdowns.push({
+              id: bData.breakdown.id,
+              creatorHandle: v.creatorHandle,
+              videoUrl: v.videoUrl,
+              topic: bData.breakdown.topic,
+              oneSentenceConcept: bData.breakdown.oneSentenceConcept,
+            });
+          }
+        }
+        setBreakdowns(allBreakdowns);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const handleSynthesize = async () => {
+    if (selected.size === 0) return;
+    setSynthesizing(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/vault/visual-styles/synthesize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ breakdownIds: [...selected], name: name || undefined }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.error || "Synthesis failed");
+      }
+      const data = await r.json();
+      onCreated(data.style);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    }
+    setSynthesizing(false);
+  };
+
+  return (
+    <div className="bg-white border border-violet-200 rounded-2xl p-5 mb-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-serif font-bold text-slate-900">Synthesize Visual Style</h3>
+        <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
+      </div>
+      <p className="text-xs text-slate-500 mb-3">Select 1-5 analyzed videos to blend their visual DNA into your own composite style.</p>
+      <div className="mb-3">
+        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block">Style Name</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jordan's Chiro Cut" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+      </div>
+      {loading ? (
+        <p className="text-xs text-slate-400 py-4 text-center">Loading analyzed videos...</p>
+      ) : breakdowns.length === 0 ? (
+        <p className="text-xs text-slate-400 py-4 text-center">No deep-analyzed videos found. Use Deep Analyze on creator videos first.</p>
+      ) : (
+        <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+          {breakdowns.map((b) => (
+            <label key={b.id} className={cn("flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors", selected.has(b.id) ? "border-violet-400 bg-violet-50" : "border-slate-200 hover:border-slate-300")}>
+              <input type="checkbox" checked={selected.has(b.id)} onChange={() => {
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(b.id)) next.delete(b.id); else if (next.size < 5) next.add(b.id);
+                  return next;
+                });
+              }} className="accent-violet-600" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900">{b.creatorHandle}</p>
+                <p className="text-xs text-slate-500 truncate">{b.oneSentenceConcept || b.topic || "Analyzed video"}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
+      {error && <p className="text-xs text-rose-500 mb-2">{error}</p>}
+      <button onClick={handleSynthesize} disabled={selected.size === 0 || synthesizing} className={cn("w-full py-2.5 rounded-xl text-sm font-bold transition-colors", selected.size === 0 || synthesizing ? "bg-slate-100 text-slate-400" : "bg-violet-600 text-white hover:bg-violet-700")}>
+        {synthesizing ? "Synthesizing..." : `Synthesize from ${selected.size} Source${selected.size !== 1 ? "s" : ""}`}
+      </button>
+    </div>
+  );
+};
+
+const VisualStyleCard: React.FC<{
+  style: VaultVisualStyle;
+  onDelete: (id: number) => void;
+}> = ({ style, onDelete }) => {
+  const [expanded, setExpanded] = useState(false);
+  const colors = typeof style.colorPalette === "string" ? (() => { try { return JSON.parse(style.colorPalette); } catch { return null; } })() : style.colorPalette;
+  const typography = typeof style.typographySystem === "string" ? (() => { try { return JSON.parse(style.typographySystem); } catch { return null; } })() : style.typographySystem;
+  const transitions = style.transitionRules ? (typeof style.transitionRules === "string" ? (() => { try { return JSON.parse(style.transitionRules); } catch { return null; } })() : style.transitionRules) : null;
+  const setDesign = style.setDesignRules ? (typeof style.setDesignRules === "string" ? (() => { try { return JSON.parse(style.setDesignRules); } catch { return null; } })() : style.setDesignRules) : null;
+  const doNotList = style.doNot ? (typeof style.doNot === "string" ? (() => { try { return JSON.parse(style.doNot); } catch { return []; } })() : style.doNot) : [];
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 className="font-serif font-bold text-slate-900">{style.name}</h3>
+          {style.description && <p className="text-xs text-slate-500 mt-0.5">{style.description}</p>}
+          {style.sourceCreator && <p className="text-[10px] text-violet-500 mt-1">Source: {style.sourceCreator}</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          {style.usageCount > 0 && <span className="text-[10px] text-slate-400">{style.usageCount} uses</span>}
+          <button onClick={() => setExpanded(!expanded)} className="text-slate-400 hover:text-slate-600">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Color Swatches */}
+      {colors && (
+        <div className="flex items-center gap-2 mb-3">
+          {["primary", "secondary", "accent"].map((key) => colors[key] && (
+            <div key={key} className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full border border-slate-200" style={{ backgroundColor: colors[key] }} />
+              <span className="text-[10px] text-slate-400">{colors[key]}</span>
+            </div>
+          ))}
+          {colors.mood && <span className="text-[10px] text-slate-400 ml-2">{colors.mood}</span>}
+        </div>
+      )}
+
+      {expanded && (
+        <div className="space-y-3 mt-3 pt-3 border-t border-slate-100">
+          {typography && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Typography</p>
+              <div className="text-xs text-slate-600 space-y-0.5">
+                {Object.entries(typography).map(([k, v]) => <p key={k}><span className="font-medium text-slate-700">{k}:</span> {String(v)}</p>)}
+              </div>
+            </div>
+          )}
+          {transitions && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Transitions</p>
+              <div className="text-xs text-slate-600 space-y-0.5">
+                {Object.entries(transitions).map(([k, v]) => <p key={k}><span className="font-medium text-slate-700">{k}:</span> {Array.isArray(v) ? (v as string[]).join(", ") : String(v)}</p>)}
+              </div>
+            </div>
+          )}
+          {setDesign && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Set Design</p>
+              <div className="text-xs text-slate-600 space-y-0.5">
+                {Object.entries(setDesign).map(([k, v]) => <p key={k}><span className="font-medium text-slate-700">{k}:</span> {Array.isArray(v) ? (v as string[]).join(", ") : String(v)}</p>)}
+              </div>
+            </div>
+          )}
+          {Array.isArray(doNotList) && doNotList.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 mb-1">Do Not</p>
+              <ul className="text-xs text-rose-600 list-disc list-inside">{doNotList.map((item: string, i: number) => <li key={i}>{item}</li>)}</ul>
+            </div>
+          )}
+          <div className="flex items-center gap-2 pt-2">
+            <button onClick={() => onDelete(style.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-rose-500 hover:bg-rose-50 rounded-lg text-xs font-medium ml-auto">
+              <Trash2 size={12} /> Delete
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const VaultView: React.FC = () => {
   const [tab, setTab] = useState<Tab>("hooks");
   const [hooks, setHooks] = useState<VaultHook[]>([]);
   const [styles, setStyles] = useState<VaultStyle[]>([]);
+  const [visualStyles, setVisualStyles] = useState<VaultVisualStyle[]>([]);
+  const [showSynthesizeModal, setSynthesizeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -212,10 +400,20 @@ export const VaultView: React.FC = () => {
     }
   }, []);
 
+  const fetchVisualStyles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/vault/visual-styles");
+      const data = await res.json();
+      setVisualStyles(data.styles || []);
+    } catch (e) {
+      console.error("Failed to fetch visual styles:", e);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchHooks(), fetchStyles()]).finally(() => setLoading(false));
-  }, [fetchHooks, fetchStyles]);
+    Promise.all([fetchHooks(), fetchStyles(), fetchVisualStyles()]).finally(() => setLoading(false));
+  }, [fetchHooks, fetchStyles, fetchVisualStyles]);
 
   // Seed hooks on first load if empty
   useEffect(() => {
@@ -376,6 +574,21 @@ export const VaultView: React.FC = () => {
           Styles
           <span className="text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
             {styles.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setTab("visual")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            tab === "visual"
+              ? "bg-white text-teal-700 shadow-sm"
+              : "text-slate-500 hover:text-slate-700",
+          )}
+        >
+          <Eye size={16} />
+          Visual
+          <span className="text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+            {visualStyles.length}
           </span>
         </button>
       </div>
@@ -949,6 +1162,53 @@ export const VaultView: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===================== VISUAL TAB ===================== */}
+      {tab === "visual" && (
+        <>
+          <div className="flex justify-end mb-4 gap-2">
+            <button
+              onClick={() => setSynthesizeModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors"
+            >
+              <Layers size={16} />
+              Synthesize from Analyses
+            </button>
+          </div>
+
+          {/* Synthesize Modal */}
+          {showSynthesizeModal && (
+            <SynthesizeStyleModal
+              onClose={() => setSynthesizeModal(false)}
+              onCreated={(style) => {
+                setVisualStyles((prev) => [style, ...prev]);
+                setSynthesizeModal(false);
+              }}
+            />
+          )}
+
+          {visualStyles.length === 0 ? (
+            <div className="text-center py-12 bg-white border border-slate-200 rounded-2xl">
+              <Eye size={24} className="mx-auto text-slate-300 mb-3" />
+              <p className="text-sm text-slate-500">No visual styles yet</p>
+              <p className="text-xs text-slate-400 mt-1">Use "Synthesize from Analyses" to blend creator DNA into your own visual identity</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {visualStyles.map((style) => (
+                <VisualStyleCard
+                  key={style.id}
+                  style={style}
+                  onDelete={async (id) => {
+                    await fetch(`/api/vault/visual-styles/${id}`, { method: "DELETE" });
+                    setVisualStyles((prev) => prev.filter((s) => s.id !== id));
+                  }}
+                />
+              ))}
             </div>
           )}
         </>

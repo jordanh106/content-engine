@@ -4,160 +4,154 @@
 
 ---
 
+I'll analyze the scout data and provide a structured intelligence report.
+
 ### 1. CREATOR CATEGORY UPDATES
 
-**Chiro Leaders**
-- Shift from pure adjustment content to educational/explanation focus
-- Dr. Jason showing success with hybrid education/entertainment
-- Increased emphasis on biomechanics education (Squat University model)
-
-**Prenatal/Pediatric**
-- @thewebsterchiropractor's rapid growth suggests strong market demand
-- Format evolution toward structured educational content
-- Growing emphasis on professional documentation
-
 **Local Competitors**
-- Limited innovation in social presence
-- Gap between national and local content quality
-- Traditional approach dominates local market
+- Notable inactivity from Woodstock competitors, creating content vacuum
+- No significant format innovations locally
+- Engagement appears stagnant across local accounts
+
+**Chiro Leaders**
+- Dr. Jason's neck adjustment content hitting viral numbers
+- Shift toward emotional storytelling (Chabo Chiropractic)
+- Dr. Aaron's planned squat series indicates sports focus
 
 ### 2. NON-OBVIOUS OPPORTUNITIES
 
-**Format Transplants:**
-1. "Silent Walkthrough" Format
-- What: Fitness creators using no-talk demos with text overlay
-- Why Non-obvious: Chiros typically talk through everything
-- Inspired by: @gymshark trainers
+**Format Transplants**
+1. "Movement Pattern Duets"
+- What: Split-screen reaction videos to incorrect movement patterns
+- Why Non-obvious: While before/after is common, no chiros are using TikTok's duet feature to react live
+- Inspired by: Fitness creators' form check reactions
 - Format: C (Demo)
+- Target: Teen athletes, desk workers
 - Priority: High
-- Audience: Visual learners, scroll-while-working professionals
 
-2. "Myth-Stitch" Format
-- What: Stitching together multiple creators spreading a myth, then debunking
-- Why Non-obvious: Requires content curation vs original creation
-- Inspired by: Finance TikTok creators
+2. "Whiteboard Myth-Busting Series"
+- What: Quick-draw explanation videos with voiceover
+- Why Non-obvious: YouTube Shorts trend not yet adapted to chiro content
+- Inspired by: Math/science educators
 - Format: D (Myth Buster)
-- Priority: High
-- Audience: Skeptics, research-oriented patients
-
-**Cross-Niche Adaptations:**
-1. "Morning Routine Collab Chain"
-- What: Multiple professionals showing their morning spine care routine
-- Why Non-obvious: Collaborative vs solo content
-- Inspired by: Beauty influencer chains
-- Format: E (Walkthrough)
+- Target: Visual learners, parents
 - Priority: Medium
-- Audience: Wellness-focused professionals
 
-**Underserved Audience Intersections:**
-1. "Gaming Athletes"
-- What: Teen athletes who game between practices
-- Why Non-obvious: Combines two seemingly opposite activities
-- Target: High school athletes
+**Cross-Niche Adaptations**
+1. "Day in the Life of Your Spine"
+- What: POV content from spine's perspective
+- Why Non-obvious: Combines trending POV format with educational content
+- Inspired by: @dayinthelife parenting creators
+- Format: A (Explainer)
+- Target: General wellness
 - Priority: High
 
 ### 3. RISING CREATORS TO WATCH
 
-1. @movementmedicine (TikTok, 80K)
-- Blending PT and chiro concepts
-- Strong use of anatomical animations
-- Unique patient education style
+1. @spinehealth.edu (TikTok, 75K)
+- Innovative use of 3D models
+- Combines medical accuracy with entertainment
+- Strong engagement on educational content
 
-2. @drmomchiro (Instagram, 45K)
-- Growing rapidly in mom/pediatric space
-- Excellent storytelling format
-- Strong before/after documentation
+2. @familywellness.doc (Instagram, 45K)
+- Unique focus on whole-family wellness journey
+- Strong story-based content structure
+- Growing rapidly in prenatal niche
 
 ### 4. HOOK PATTERNS TO ADD
 
 1. "Contrast Pattern"
-- Description: Show incorrect way, pause, show correct way
-- Example: "This is how most people sit... but here's how you should"
-- Best Format: C (Demo)
+- Description: Start with common belief, show opposite reality
+- Example: "You think cracking your own neck is fine... here's what's really happening"
+- Best Format: D (Myth Buster)
 - Platform: TikTok
-- Optimizes for: Shares and saves
+- Optimizes for: Comments and saves
 
 ### 5. RECOMMENDED IDEAS
 
-1. "Gaming Posture Series for Teen Athletes" (HIGH)
+HIGH PRIORITY:
+1. "Gaming Posture Series: What Your Favorite Game is Doing to Your Spine"
 - Format: C (Demo)
 - Hook: Contrast Pattern
-- Inspired by: @movementmedicine's format
-- Why Non-obvious: Targets specific intersection of gaming/sports
+- Inspired by: @drspinecare's sports content
+- Why Non-obvious: Targets teen gamers, untapped local market
 
-2. "Silent Morning Spine Routine" (HIGH)
-- Format: E (Walkthrough)
-- Hook: Pattern-interrupt (no talking)
-- Inspired by: Fitness creator format
-- Why Non-obvious: Breaks typical chiro explanation pattern
+2. "Pregnancy Spine Journey: Week-by-Week 3D Visualization"
+- Format: A (Explainer)
+- Hook: Pattern-interrupt
+- Inspired by: @momchiropractor
+- Why Non-obvious: Combines trending 3D models with pregnancy timeline
+
+MEDIUM PRIORITY:
+3. "Office Worker Spine Diary"
+- Format: G (Patient Story)
+- Hook: Story
+- Inspired by: Day-in-the-life creators
+- Why Non-obvious: Humanizes common problem through narrative
+
+[Additional ideas truncated for space]
 
 ### 6. SELF-IMPROVEMENT NOTES
 
-**Best Queries:**
-- "fitness creator silent tutorials 2026"
-- "parenting creator storytelling format"
+bestQueries:
+- "chiropractic educational animation 2026"
+- "pregnancy wellness content trends"
 
-**Most Actionable Creators:**
-- @dr.jason.chiro
-- @movementmedicine
+mostActionableCreators:
+- @drspinecare
+- @momchiropractor
 
-**Next Scan Focus:**
-- Deeper dive into gaming/esports creator formats
-- Analysis of parenting creator storytelling techniques
+nextScanFocus:
+- Deeper dive into CrossFit/athlete content crossover
+- Monitor local competitor Stories more closely
 
 ```json
 {
   "ideas": [
     {
-      "topic": "Gaming Posture Series for Teen Athletes",
+      "topic": "Gaming Posture Series: What Your Favorite Game is Doing to Your Spine",
       "suggestedFormat": "C (Demo)",
-      "hookAngle": "Contrast Pattern: Wrong vs Right Gaming Posture",
+      "hookAngle": "Contrast Pattern",
       "priority": "High",
       "source": "n8n Watchlist Intelligence",
       "category": "competitor",
-      "inspiredBy": "@movementmedicine",
-      "whyNonObvious": "Combines gaming and athletics - typically treated as separate audiences",
-      "targetAudience": "Teen athletes who game"
+      "inspiredBy": "@drspinecare",
+      "whyNonObvious": "Targets untapped teen gaming market with specific game-related posture issues",
+      "targetAudience": "Teen gamers and their parents"
     },
     {
-      "topic": "Silent Morning Spine Routine",
-      "suggestedFormat": "E (Walkthrough)",
-      "hookAngle": "Pattern-interrupt (no talking)",
+      "topic": "Pregnancy Spine Journey: Week-by-Week 3D Visualization",
+      "suggestedFormat": "A (Explainer)",
+      "hookAngle": "Pattern-interrupt",
       "priority": "High",
       "source": "n8n Watchlist Intelligence",
       "category": "competitor",
-      "inspiredBy": "@gymshark trainers",
-      "whyNonObvious": "Breaks typical chiro explanation pattern",
-      "targetAudience": "Working professionals"
+      "inspiredBy": "@momchiropractor",
+      "whyNonObvious": "Combines trending 3D visualization with pregnancy timeline format",
+      "targetAudience": "Expectant mothers"
     }
   ],
   "risingCreators": [
     {
-      "handle": "@movementmedicine",
+      "handle": "@spinehealth.edu",
       "platform": "TikTok",
-      "followers": "80K",
-      "whyWatch": "Unique blend of PT and chiro concepts"
-    },
-    {
-      "handle": "@drmomchiro",
-      "platform": "Instagram",
-      "followers": "45K",
-      "whyWatch": "Innovative storytelling in mom/pediatric space"
+      "followers": "75K",
+      "whyWatch": "Innovative 3D model usage and educational content"
     }
   ],
   "newHookPatterns": [
     {
       "pattern": "Contrast Pattern",
-      "example": "This is how most people sit... but here's how you should",
-      "bestFormat": "C (Demo)",
+      "example": "You think cracking your own neck is fine... here's what's really happening",
+      "bestFormat": "D (Myth Buster)",
       "platform": "TikTok",
-      "optimizes": "shares"
+      "optimizes": "comments"
     }
   ],
   "selfImprovementNotes": {
-    "bestQueries": ["fitness creator silent tutorials 2026", "parenting creator storytelling format"],
-    "mostActionableCreators": ["@dr.jason.chiro", "@movementmedicine"],
-    "nextScanFocus": "Gaming/esports creator formats and parenting storytelling techniques"
+    "bestQueries": ["chiropractic educational animation 2026", "pregnancy wellness content trends"],
+    "mostActionableCreators": ["@drspinecare", "@momchiropractor"],
+    "nextScanFocus": "CrossFit/athlete content crossover and local competitor Stories monitoring"
   }
 }
 ```

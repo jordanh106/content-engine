@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Pencil, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -11,6 +11,10 @@ import type {
   ProductionPlan,
   SavedCaption,
   WaterfallEntry,
+  Storyboard,
+  StoryboardShot,
+  AiGenerationPrompt,
+  VaultVisualStyle,
 } from "../shared/types.js";
 import { TimelineView } from "./TimelineView.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -18,19 +22,16 @@ import { AudienceBadge } from "./ui/AudienceBadge.js";
 import { StatusBadge } from "./ui/StatusBadge.js";
 import { CopyButton } from "./ui/CopyButton.js";
 
-import { FeatureHint } from "./ui/FeatureHint.js";
-import { FEATURE_HINTS } from "../shared/help-content.js";
 import { cn } from "../utils/cn.js";
 
 type VideoDetailProps = {
   code: string;
   onClose: () => void;
-  onOpenComposer?: (code: string) => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish" | "waterfall";
+type Tab = "script" | "shots" | "info" | "timeline" | "production" | "publish" | "waterfall" | "storyboard";
 
-export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenComposer }) => {
+export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
   const queryClient = useQueryClient();
 
@@ -151,6 +152,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
     { id: "timeline", label: "Timeline", icon: <Clock size={16} /> },
     { id: "production", label: "Production", icon: <ListChecks size={16} /> },
     ...(showPublishTab ? [{ id: "publish" as Tab, label: "Publish", icon: <Send size={16} /> }] : []),
+    { id: "storyboard", label: "Storyboard", icon: <Film size={16} /> },
     { id: "waterfall", label: "Waterfall", icon: <GitBranch size={16} /> },
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
@@ -212,17 +214,6 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
               </p>
             </div>
             <div className="flex gap-2 flex-shrink-0">
-              {onOpenComposer && (
-                <FeatureHint id="composer-button" content={FEATURE_HINTS["composer-button"].content} side="left">
-                  <button
-                    onClick={() => onOpenComposer(code)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px] bg-violet-600 text-white hover:bg-violet-700"
-                  >
-                    <Pencil size={12} />
-                    Composer
-                  </button>
-                </FeatureHint>
-              )}
               <button
                 onClick={() => renderAllShotsMutation.mutate()}
                 disabled={renderAllShotsMutation.isPending || hasActiveShotJobs}
@@ -370,6 +361,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose, onOpenC
                 <ProductionTab code={code} plan={productionPlanData?.plan ?? null} isLoading={!productionPlanData} />
               )}
               {activeTab === "publish" && <PublishTab code={code} />}
+              {activeTab === "storyboard" && <StoryboardTab code={code} />}
               {activeTab === "waterfall" && <WaterfallTab code={code} />}
               {activeTab === "info" && <InfoTab video={video} />}
             </>
@@ -1676,6 +1668,428 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================
+// Storyboard Tab
+// ============================================
+
+const METHOD_COLORS: Record<string, { dot: string; label: string; text: string }> = {
+  real: { dot: "bg-emerald-500", label: "text-emerald-700 bg-emerald-50", text: "Film" },
+  ai_enhanced: { dot: "bg-blue-500", label: "text-blue-700 bg-blue-50", text: "AI Enhanced" },
+  ai_generated: { dot: "bg-violet-500", label: "text-violet-700 bg-violet-50", text: "AI Generated" },
+  motion_graphic: { dot: "bg-teal-500", label: "text-teal-700 bg-teal-50", text: "Motion Graphic" },
+};
+
+const ACT_COLORS: Record<string, string> = {
+  hook: "bg-rose-100 text-rose-700",
+  conflict: "bg-amber-100 text-amber-700",
+  build: "bg-sky-100 text-sky-700",
+  resolution: "bg-emerald-100 text-emerald-700",
+  cta: "bg-violet-100 text-violet-700",
+};
+
+const TECHNIQUE_COLORS: Record<string, string> = {
+  set_enhancement: "bg-emerald-50 text-emerald-700",
+  ai_transition: "bg-sky-50 text-sky-700",
+  scene_extension: "bg-amber-50 text-amber-700",
+  full_generation: "bg-violet-50 text-violet-700",
+};
+
+const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
+  const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
+  const [aiPrompts, setAiPrompts] = useState<AiGenerationPrompt[]>([]);
+  const [visualStyles, setVisualStyles] = useState<VaultVisualStyle[]>([]);
+  const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [expandedShots, setExpandedShots] = useState<Set<number>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [generatingPromptShot, setGeneratingPromptShot] = useState<number | null>(null);
+
+  // Fetch storyboard, prompts, and visual styles on mount
+  React.useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const [sbRes, promptsRes, stylesRes] = await Promise.all([
+          fetch(`/api/storyboards/${code}`).then((r) => (r.ok ? r.json() : null)),
+          fetch(`/api/ai-prompts/${code}`).then((r) => (r.ok ? r.json() : { prompts: [] })),
+          fetch(`/api/vault/visual-styles`).then((r) => (r.ok ? r.json() : { styles: [] })),
+        ]);
+        setStoryboard(sbRes?.storyboard ?? sbRes ?? null);
+        setAiPrompts(promptsRes?.prompts ?? []);
+        setVisualStyles(stylesRes?.styles ?? []);
+      } catch {
+        // silently handle
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [code]);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`/api/storyboards/${code}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visualStyleId: selectedStyleId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStoryboard(data.storyboard ?? data);
+        // Refresh prompts
+        const promptsRes = await fetch(`/api/ai-prompts/${code}`).then((r) =>
+          r.ok ? r.json() : { prompts: [] },
+        );
+        setAiPrompts(promptsRes?.prompts ?? []);
+      }
+    } catch {
+      // silently handle
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGeneratePrompt = async (shotNumber: number) => {
+    setGeneratingPromptShot(shotNumber);
+    try {
+      const res = await fetch(`/api/ai-prompts/generate-for-shot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoCode: code, shotNumber }),
+      });
+      if (res.ok) {
+        const promptsRes = await fetch(`/api/ai-prompts/${code}`).then((r) =>
+          r.ok ? r.json() : { prompts: [] },
+        );
+        setAiPrompts(promptsRes?.prompts ?? []);
+      }
+    } catch {
+      // silently handle
+    } finally {
+      setGeneratingPromptShot(null);
+    }
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const toggleShotExpand = (shotNumber: number) => {
+    setExpandedShots((prev) => {
+      const next = new Set(prev);
+      if (next.has(shotNumber)) next.delete(shotNumber);
+      else next.add(shotNumber);
+      return next;
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-slate-400">
+        <Loader2 size={20} className="animate-spin mr-2" />
+        Loading storyboard...
+      </div>
+    );
+  }
+
+  const shots = storyboard?.shots ?? [];
+  const methodCounts = shots.reduce<Record<string, number>>((acc, s) => {
+    acc[s.productionMethod] = (acc[s.productionMethod] || 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-6">
+      {/* Generation Controls */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          Generate Storyboard
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          {visualStyles.length > 0 && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-1">
+                Visual Style (optional)
+              </label>
+              <select
+                value={selectedStyleId ?? ""}
+                onChange={(e) => setSelectedStyleId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white"
+              >
+                <option value="">Default</option>
+                {visualStyles.map((style) => (
+                  <option key={style.id} value={style.id}>
+                    {style.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          >
+            {isGenerating ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Wand2 size={14} />
+            )}
+            {storyboard ? "Regenerate" : "Generate"} Storyboard
+          </button>
+        </div>
+      </div>
+
+      {/* Storyboard Display */}
+      {storyboard && (
+        <>
+          {/* Summary */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                Storyboard
+              </p>
+              <span
+                className={cn(
+                  "text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full",
+                  storyboard.status === "draft" && "bg-slate-100 text-slate-600",
+                  storyboard.status === "approved" && "bg-emerald-50 text-emerald-700",
+                  storyboard.status === "in_production" && "bg-amber-50 text-amber-700",
+                  storyboard.status === "completed" && "bg-teal-50 text-teal-700",
+                )}
+              >
+                {storyboard.status.replace("_", " ")}
+              </span>
+            </div>
+            {storyboard.oneSentenceConcept && (
+              <p className="text-sm text-slate-600 mb-3 italic">
+                {storyboard.oneSentenceConcept}
+              </p>
+            )}
+            <p className="text-xs text-slate-500">
+              {shots.length} shots
+              {Object.keys(methodCounts).length > 0 && ": "}
+              {Object.entries(methodCounts)
+                .map(([method, count]) => `${count} ${METHOD_COLORS[method]?.text.toLowerCase() ?? method}`)
+                .join(", ")}
+              {storyboard.totalDurationSeconds != null && (
+                <> &middot; {storyboard.totalDurationSeconds}s total</>
+              )}
+            </p>
+          </div>
+
+          {/* Shot Cards */}
+          <div className="space-y-3">
+            {shots
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((shot) => {
+                const method = METHOD_COLORS[shot.productionMethod] ?? METHOD_COLORS.real;
+                const shotPrompts = aiPrompts.filter((p) => p.shotNumber === shot.shotNumber);
+                const isExpanded = expandedShots.has(shot.shotNumber);
+
+                return (
+                  <div
+                    key={shot.id}
+                    className="bg-white border border-slate-200 rounded-2xl p-5"
+                  >
+                    {/* Shot Header */}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-700">
+                        Shot {shot.shotNumber}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {shot.durationSeconds}s
+                      </span>
+                      <span className={cn("w-2 h-2 rounded-full flex-shrink-0", method.dot)} />
+                      <span
+                        className={cn(
+                          "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
+                          method.label,
+                        )}
+                      >
+                        {method.text}
+                      </span>
+                      {shot.act && (
+                        <span
+                          className={cn(
+                            "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
+                            ACT_COLORS[shot.act] ?? "bg-slate-100 text-slate-600",
+                          )}
+                        >
+                          {shot.act}
+                        </span>
+                      )}
+                      {shot.brollType && (
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                          B-roll: {shot.brollType}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Script Line */}
+                    {shot.scriptLine && (
+                      <p className="text-sm text-slate-600 mb-2">{shot.scriptLine}</p>
+                    )}
+
+                    {/* Cinema Studio Prompt (for AI generated shots) */}
+                    {shot.cinemaStudioPrompt && shot.productionMethod === "ai_generated" && (
+                      <div className="bg-slate-50 rounded-lg p-3 mb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs text-slate-600 font-mono flex-1">
+                            {shot.cinemaStudioPrompt}
+                          </p>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(shot.cinemaStudioPrompt!, `cinema-${shot.id}`)
+                            }
+                            className="flex-shrink-0 text-slate-400 hover:text-teal-600 transition-colors"
+                          >
+                            {copiedId === `cinema-${shot.id}` ? (
+                              <Check size={14} className="text-emerald-500" />
+                            ) : (
+                              <Copy size={14} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI Enhancement Notes (for AI enhanced shots) */}
+                    {shot.aiEnhancementNotes && shot.productionMethod === "ai_enhanced" && (
+                      <div className="bg-blue-50 rounded-lg p-3 mb-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1">
+                          Enhancement Notes
+                        </p>
+                        <p className="text-xs text-blue-700">{shot.aiEnhancementNotes}</p>
+                      </div>
+                    )}
+
+                    {/* Remotion Component (for motion graphic shots) */}
+                    {shot.remotionComponent && shot.productionMethod === "motion_graphic" && (
+                      <div className="bg-teal-50 rounded-lg p-3 mb-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-400 mb-1">
+                          Remotion Component
+                        </p>
+                        <p className="text-xs text-teal-700 font-mono">{shot.remotionComponent}</p>
+                      </div>
+                    )}
+
+                    {/* AI Prompts Section */}
+                    {shot.productionMethod !== "real" && (
+                      <div className="mt-3 border-t border-slate-100 pt-3">
+                        <button
+                          onClick={() => toggleShotExpand(shot.shotNumber)}
+                          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          <Sparkles size={12} />
+                          AI Prompts ({shotPrompts.length})
+                          <span className="text-[8px]">{isExpanded ? "▲" : "▼"}</span>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="mt-3 space-y-3">
+                            {shotPrompts.map((prompt) => (
+                              <div
+                                key={prompt.id}
+                                className="bg-slate-50 rounded-lg p-3"
+                              >
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <span
+                                    className={cn(
+                                      "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
+                                      TECHNIQUE_COLORS[prompt.technique] ?? "bg-slate-100 text-slate-600",
+                                    )}
+                                  >
+                                    {prompt.technique.replace(/_/g, " ")}
+                                  </span>
+                                  {prompt.tool && (
+                                    <span className="text-[10px] text-slate-400">{prompt.tool}</span>
+                                  )}
+                                  {prompt.model && (
+                                    <span className="text-[10px] text-slate-400">{prompt.model}</span>
+                                  )}
+                                  {prompt.resultRating != null && (
+                                    <span className="flex items-center gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          size={10}
+                                          className={
+                                            i < prompt.resultRating!
+                                              ? "fill-amber-400 text-amber-400"
+                                              : "text-slate-200"
+                                          }
+                                        />
+                                      ))}
+                                    </span>
+                                  )}
+                                </div>
+                                <textarea
+                                  readOnly
+                                  value={prompt.promptText}
+                                  className="w-full text-xs text-slate-600 font-mono bg-white border border-slate-200 rounded-lg p-2 resize-none"
+                                  rows={3}
+                                />
+                                <div className="flex items-center gap-2 mt-2">
+                                  <button
+                                    onClick={() =>
+                                      copyToClipboard(prompt.promptText, `prompt-${prompt.id}`)
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                                  >
+                                    {copiedId === `prompt-${prompt.id}` ? (
+                                      <Check size={12} className="text-emerald-500" />
+                                    ) : (
+                                      <Copy size={12} />
+                                    )}
+                                    Copy Prompt
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Generate Prompt Button */}
+                            <button
+                              onClick={() => handleGeneratePrompt(shot.shotNumber)}
+                              disabled={generatingPromptShot === shot.shotNumber}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                            >
+                              {generatingPromptShot === shot.shotNumber ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Wand2 size={12} />
+                              )}
+                              Generate Prompt
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </>
+      )}
+
+      {/* Empty State */}
+      {!storyboard && !isGenerating && (
+        <div className="text-center py-12">
+          <Film size={32} className="mx-auto text-slate-300 mb-3" />
+          <p className="text-sm text-slate-500 mb-1">No storyboard yet</p>
+          <p className="text-xs text-slate-400">
+            Generate a storyboard to plan your shots, production methods, and AI prompts.
+          </p>
         </div>
       )}
     </div>

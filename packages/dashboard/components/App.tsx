@@ -5,7 +5,6 @@ import { DashboardHome } from "./DashboardHome.js";
 import { PipelineBoard } from "./PipelineBoard.js";
 import { ContentLibrary } from "./ContentLibrary.js";
 import { VideoDetail } from "./VideoDetail.js";
-import { ComposerPage } from "./composer/ComposerPage.js";
 import { MetricsView } from "./MetricsView.js";
 import { IdeasView } from "./IdeasView.js";
 import { WatchlistView } from "./WatchlistView.js";
@@ -22,9 +21,7 @@ import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
-  const [previousView, setPreviousView] = useState<DashboardView>("LIBRARY");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
-  const [composerVideoCode, setComposerVideoCode] = useState<string | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -92,24 +89,6 @@ const AppInner: React.FC = () => {
     setSelectedVideoCode(null);
   };
 
-  const handleOpenComposer = useCallback(
-    (code: string) => {
-      setPreviousView(view);
-      setComposerVideoCode(code);
-      setSelectedVideoCode(null);
-      setView("COMPOSER");
-    },
-    [view],
-  );
-
-  const handleBackFromComposer = useCallback(() => {
-    setView(previousView);
-    if (composerVideoCode) {
-      setSelectedVideoCode(composerVideoCode);
-    }
-    setComposerVideoCode(null);
-  }, [previousView, composerVideoCode]);
-
   const handleOpenVault = useCallback(() => {
     setVaultOpen(true);
   }, []);
@@ -117,16 +96,6 @@ const AppInner: React.FC = () => {
   const handleCloseVault = useCallback(() => {
     setVaultOpen(false);
   }, []);
-
-  // Composer is a full-page view - rendered outside Layout
-  if (view === "COMPOSER" && composerVideoCode) {
-    return (
-      <ComposerPage
-        videoCode={composerVideoCode}
-        onBack={handleBackFromComposer}
-      />
-    );
-  }
 
   return (
     <>
@@ -152,8 +121,7 @@ const AppInner: React.FC = () => {
           <VideoDetail
             code={selectedVideoCode}
             onClose={handleCloseDetail}
-            onOpenComposer={handleOpenComposer}
-          />
+/>
         )}
       </Layout>
 

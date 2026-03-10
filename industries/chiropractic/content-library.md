@@ -1698,6 +1698,15 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 > [Direct to camera] Here's something nobody teaches you about recovery between sessions.
 
+
+#### C4: Athletes Recovery Between Training Sessions
+
+**Format:** C (Demo) | **Duration:** 45s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] What happens when you skip recovery between training sessions?
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

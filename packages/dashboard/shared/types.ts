@@ -127,7 +127,6 @@ export const DASHBOARD_VIEWS = [
   "WATCHLIST",
   "CALENDAR",
   "SESSION",
-  "COMPOSER",
   "CAPTIONS",
   "VAULT",
   "METRICS",
@@ -235,44 +234,12 @@ export type TimelineResponse = {
 };
 
 // ============================================
-// AI Composer Types
+// Conversation Types
 // ============================================
-
-export type ComponentOperation =
-  | { action: "add"; component: VibeMotionComponent }
-  | { action: "replace"; index: number; component: VibeMotionComponent }
-  | {
-      action: "modify";
-      index: number;
-      props: Record<string, unknown>;
-      durationInSeconds?: number;
-    }
-  | { action: "remove"; index: number }
-  | { action: "reorder"; order: number[] };
 
 export type ConversationMessage = {
   role: "user" | "assistant";
   content: string;
-};
-
-export type ComposerAiRequest = {
-  prompt: string;
-  components: VibeMotionComponent[];
-  selectedIndex: number | null;
-  conversationHistory?: ConversationMessage[];
-  videoContext: {
-    code: string;
-    title: string;
-    format: string;
-    script: string;
-    audience: string;
-    tags: string[];
-  };
-};
-
-export type ComposerAiResponse = {
-  operations: ComponentOperation[];
-  message: string;
 };
 
 // ============================================
@@ -986,6 +953,60 @@ export type VideoBreakdown = {
   audio: string | null;
   rawNotes: string | null;
   createdAt: string;
+  // Deep DNA fields (Feature 1)
+  typographySystem: string | null;
+  storyStructure: string | null;
+  aestheticKeywords: string | null;
+  colorPalette: string | null;
+  setDesign: string | null;
+  musicAudio: string | null;
+  transitionStyle: string | null;
+  replicationPlan: string | null;
+  brollTypes: string | null;
+  oneSentenceConcept: string | null;
+};
+
+// Parsed deep DNA structures
+export type StoryStructure = {
+  hook: { description: string; timestamp: string };
+  conflict: { description: string; timestamp: string };
+  build: { description: string; timestamp: string };
+  resolution: { description: string; timestamp: string };
+  cta: { description: string; timestamp: string };
+};
+
+export type TypographySystem = {
+  title: string;
+  header: string;
+  caption: string;
+  overlayStyle: string;
+};
+
+export type ColorPalette = {
+  primary: string;
+  secondary: string;
+  accent: string;
+  mood: string;
+  grading?: string;
+};
+
+export type SetDesignInfo = {
+  elements: string[];
+  lighting: string;
+  environment: string;
+};
+
+export type MusicAudioInfo = {
+  mood: string;
+  bpm: string;
+  genre: string;
+  energyCurve: string;
+};
+
+export type BrollTypes = {
+  macro: string[];
+  process: string[];
+  reveal: string[];
 };
 
 // ============================================
@@ -1017,5 +1038,104 @@ export type WaterfallEntry = {
   description: string | null;
   status: "idea" | "created" | "published";
   performanceNote: string | null;
+  createdAt: string;
+};
+
+// ============================================
+// Idea Concept Types (Feature 5)
+// ============================================
+
+export type IdeaConcept = {
+  id: number;
+  ideaTopic: string;
+  oneSentence: string;
+  technicalInterestScore: number;
+  emotionalResonanceScore: number;
+  tenSecondExplainabilityScore: number;
+  visualPayoffScore: number;
+  overallScore: number;
+  aiFeedback: string | null;
+  refinedVersion: string | null;
+  approved: boolean;
+  createdAt: string;
+};
+
+// ============================================
+// Visual Style Types (Feature 2)
+// ============================================
+
+export type VaultVisualStyle = {
+  id: number;
+  name: string;
+  description: string | null;
+  sourceCreator: string | null;
+  sourceUrl: string | null;
+  sourceBreakdownIds: string | null;
+  typographySystem: string;
+  colorPalette: string;
+  transitionRules: string | null;
+  setDesignRules: string | null;
+  musicGuidelines: string | null;
+  motionGraphicsStyle: string | null;
+  doNot: string | null;
+  usageCount: number;
+  createdAt: string;
+};
+
+// ============================================
+// Storyboard Types (Feature 3)
+// ============================================
+
+export type Storyboard = {
+  id: number;
+  videoCode: string;
+  visualStyleId: number | null;
+  oneSentenceConcept: string | null;
+  storyStructure: string | null;
+  totalDurationSeconds: number | null;
+  status: "draft" | "approved" | "in_production" | "completed";
+  createdAt: string;
+  updatedAt: string;
+  shots?: StoryboardShot[];
+};
+
+export type StoryboardShot = {
+  id: number;
+  storyboardId: number;
+  shotNumber: number;
+  act: "hook" | "conflict" | "build" | "resolution" | "cta" | null;
+  durationSeconds: number;
+  shotType: string | null;
+  cameraMovement: string | null;
+  cinemaStudioPrompt: string | null;
+  scriptLine: string | null;
+  brollType: "macro" | "process" | "reveal" | null;
+  productionMethod: "real" | "ai_enhanced" | "ai_generated" | "motion_graphic";
+  aiEnhancementNotes: string | null;
+  remotionComponent: string | null;
+  notes: string | null;
+  orderIndex: number;
+  createdAt: string;
+};
+
+// ============================================
+// AI Generation Prompt Types (Feature 4)
+// ============================================
+
+export type AiGenerationPrompt = {
+  id: number;
+  storyboardShotId: number | null;
+  videoCode: string;
+  shotNumber: number | null;
+  technique: "set_enhancement" | "ai_transition" | "scene_extension" | "full_generation";
+  tool: string | null;
+  model: string | null;
+  promptText: string;
+  promptVersion: number;
+  sourceDescription: string | null;
+  targetDescription: string | null;
+  resultNotes: string | null;
+  resultRating: number | null;
+  status: "draft" | "generating" | "completed" | "rejected";
   createdAt: string;
 };

@@ -6,6 +6,26 @@ import { parseWatchlist, invalidateWatchlistCache } from "../parsers/watchlist.j
 import { parseCreatorInsights, invalidateCreatorInsightsCache } from "../parsers/creator-insights.js";
 import { updateCreatorInFile } from "./watchlist.js";
 
+async function callWithRetry(
+  client: Anthropic,
+  params: Anthropic.MessageCreateParamsNonStreaming,
+  options: { timeout: number },
+  maxRetries = 2,
+): Promise<Anthropic.Message> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await client.messages.create(params, options);
+    } catch (err) {
+      const isRateLimit = err instanceof Anthropic.RateLimitError;
+      if (!isRateLimit || attempt === maxRetries) throw err;
+      const delay = Math.pow(2, attempt + 1) * 1000;
+      console.log(`[creator-analysis-ai] Rate limited, retrying in ${delay / 1000}s (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error("Unreachable");
+}
+
 function buildSystemPrompt(
   brand: string,
   hookPatterns: string,
@@ -98,7 +118,85 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
     console.warn("[creator-analysis-ai] ANTHROPIC_API_KEY not set.");
   }
 
-  // POST /:handle/analyze
+  // POST /:handle/trigger - Primary endpoint: uses n8n workflow, falls back to direct API
+  router.post("/:handle/trigger", async (req, res) => {
+    const rawHandle = req.params.handle;
+    const handle = rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`;
+    const cleanHandle = handle.replace("@", "").toLowerCase();
+    const webhookUrl = process.env.N8N_CREATOR_ANALYSIS_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+      // No n8n configured - forward to direct API fallback
+      console.log("[creator-analysis-ai] No n8n webhook configured, using direct API fallback");
+      req.url = `/${rawHandle}/analyze`;
+      req.params.handle = rawHandle;
+      return router(req, res, () => {
+        res.status(404).json({ error: "Analysis endpoint not found" });
+      });
+    }
+
+    try {
+      // Load creator context from watchlist
+      const creators = parseWatchlist(watchlistPath);
+      const creator = creators.find((c) => c.handle.toLowerCase() === handle.toLowerCase());
+
+      // Call n8n webhook (synchronous - waits for workflow to complete)
+      console.log(`[creator-analysis-ai] Triggering n8n workflow for ${handle}`);
+      const n8nResponse = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          handle,
+          platform: creator?.platform || "",
+          followers: creator?.followers || "",
+          whyTracking: creator?.whyTracking || "",
+          contentStyle: creator?.contentStyle || "",
+        }),
+        signal: AbortSignal.timeout(240_000),
+      });
+
+      if (!n8nResponse.ok) {
+        const errText = await n8nResponse.text().catch(() => "Unknown error");
+        throw new Error(`n8n workflow failed (${n8nResponse.status}): ${errText}`);
+      }
+
+      const result = await n8nResponse.json() as { success?: boolean; markdown?: string; handle?: string; analyzedAt?: string };
+
+      if (!result.markdown) {
+        throw new Error("n8n workflow returned no markdown");
+      }
+
+      // Strip preamble
+      let markdown = result.markdown;
+      const headerIdx = markdown.indexOf("\n# ");
+      if (headerIdx > 0) markdown = markdown.slice(headerIdx + 1);
+
+      // Save to creator-insights
+      fs.mkdirSync(creatorInsightsDir, { recursive: true });
+      const insightPath = path.join(creatorInsightsDir, `${cleanHandle}.md`);
+      fs.writeFileSync(insightPath, markdown);
+      invalidateCreatorInsightsCache();
+
+      // Update lastAnalyzed in watchlist.md
+      const today = new Date().toISOString().split("T")[0];
+      if (creator) {
+        updateCreatorInFile(watchlistPath, handle, { lastAnalyzed: today });
+        invalidateWatchlistCache();
+      }
+
+      // Parse the saved insight for structured response
+      const updatedInsights = parseCreatorInsights(creatorInsightsDir);
+      const newInsight = updatedInsights.get(cleanHandle);
+
+      res.json({ success: true, handle, insight: newInsight });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Analysis failed";
+      console.error("[creator-analysis-ai] n8n trigger error:", message);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // POST /:handle/analyze - Direct API fallback (used when n8n not configured)
   router.post("/:handle/analyze", async (req, res) => {
     if (!client) {
       res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY in .env" });
@@ -131,57 +229,30 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
       }
 
       // Try with web_search tool first, fall back to without
+      // web_search_20250305 is a server-side tool - the API executes searches internally
+      // and returns results in a single response (no client-side tool-use loop needed)
       let finalText = "";
       try {
-        const response = await client.messages.create({
+        const response = await callWithRetry(client, {
           model: "claude-sonnet-4-6",
           max_tokens: 4096,
           system: systemPrompt,
           tools: [{ type: "web_search_20250305", name: "web_search" }],
           messages: [{ role: "user", content: userContent }],
-        });
+        }, { timeout: 120_000 });
 
-        // Handle multi-turn tool use loop
-        type MessageParam = { role: "user" | "assistant"; content: string | Anthropic.ContentBlockParam[] };
-        const messages: MessageParam[] = [{ role: "user", content: userContent }];
-        let currentResponse = response;
-
-        while (currentResponse.stop_reason === "tool_use") {
-          messages.push({ role: "assistant", content: currentResponse.content as Anthropic.ContentBlockParam[] });
-
-          const toolResults: Anthropic.ToolResultBlockParam[] = [];
-          for (const block of currentResponse.content) {
-            if (block.type === "tool_use") {
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: block.id,
-                content: "Search completed",
-              });
-            }
-          }
-          messages.push({ role: "user", content: toolResults });
-
-          currentResponse = await client.messages.create({
-            model: "claude-sonnet-4-6",
-            max_tokens: 4096,
-            system: systemPrompt,
-            tools: [{ type: "web_search_20250305", name: "web_search" }],
-            messages: messages as Anthropic.MessageParam[],
-          });
-        }
-
-        for (const block of currentResponse.content) {
+        for (const block of response.content) {
           if (block.type === "text") finalText += block.text;
         }
       } catch (toolError) {
         // Fallback: no web search
         console.warn("[creator-analysis-ai] web_search not available, falling back:", toolError instanceof Error ? toolError.message : "unknown");
-        const response = await client.messages.create({
+        const response = await callWithRetry(client, {
           model: "claude-sonnet-4-6",
           max_tokens: 4096,
           system: systemPrompt,
           messages: [{ role: "user", content: userContent + "\n\n(Note: Web search is not available. Use your training knowledge and the provided context to analyze this creator.)" }],
-        });
+        }, { timeout: 90_000 });
 
         for (const block of response.content) {
           if (block.type === "text") finalText += block.text;
@@ -192,6 +263,10 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
         res.status(500).json({ error: "No analysis generated" });
         return;
       }
+
+      // Strip AI preamble (e.g. "Let me compile...") before the markdown header
+      const headerIdx = finalText.indexOf("\n# ");
+      if (headerIdx > 0) finalText = finalText.slice(headerIdx + 1);
 
       // Save to creator-insights
       fs.mkdirSync(creatorInsightsDir, { recursive: true });
@@ -216,6 +291,11 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
         insight: newInsight,
       });
     } catch (error) {
+      if (error instanceof Anthropic.RateLimitError) {
+        console.warn("[creator-analysis-ai] Rate limited after retries");
+        res.status(429).json({ error: "Rate limited. Wait a minute and try again." });
+        return;
+      }
       const message = error instanceof Error ? error.message : "Analysis failed";
       console.error("[creator-analysis-ai] Error:", message);
       res.status(500).json({ error: message });

@@ -17,8 +17,11 @@ import {
   Bookmark,
   Palette,
   History,
+  Lightbulb,
+  RefreshCw,
+  Shield,
 } from "lucide-react";
-import type { Idea, IdeaCategory, FormatId, ConversationMessage, VaultHook, VaultStyle, ScriptVersion } from "../shared/types.js";
+import type { Idea, IdeaCategory, FormatId, ConversationMessage, VaultHook, VaultStyle, ScriptVersion, IdeaConcept } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
@@ -61,6 +64,197 @@ const PLATFORM_STYLES: Record<string, { accent: string; bg: string; border: stri
   Instagram: { accent: "text-pink-700", bg: "bg-pink-50", border: "border-pink-200" },
   TikTok: { accent: "text-slate-900", bg: "bg-slate-50", border: "border-slate-300" },
   YouTube: { accent: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
+};
+
+// ─── Concept Framework Section ──────────────────────────────────────────────
+
+type ConceptSectionProps = {
+  concept: IdeaConcept | null;
+  isLoading: boolean;
+  isGenerating: boolean;
+  isRefining: boolean;
+  onGenerate: () => void;
+  onRefine: (feedback?: string) => void;
+  onApprove: (approved: boolean) => void;
+  error: Error | null;
+};
+
+const ScoreBar: React.FC<{ label: string; score: number; max?: number }> = ({ label, score, max = 10 }) => {
+  const pct = (score / max) * 100;
+  const color = score < 5 ? "bg-rose-400" : score < 7 ? "bg-amber-400" : "bg-emerald-400";
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between">
+        <span className="text-[9px] font-bold text-slate-500">{label}</span>
+        <span className="text-[9px] font-black text-slate-700">{score}/{max}</span>
+      </div>
+      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+};
+
+const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isGenerating, isRefining, onGenerate, onRefine, onApprove, error }) => {
+  const [refineFeedback, setRefineFeedback] = useState("");
+  const [showRefine, setShowRefine] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
+        <p className="text-xs text-violet-400">Loading concept...</p>
+      </div>
+    );
+  }
+
+  if (!concept) {
+    return (
+      <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-1">
+              <Lightbulb size={10} /> Concept Validation
+            </p>
+            <p className="text-xs text-violet-600 mt-1">Generate a one-sentence concept and validate it before scripting.</p>
+          </div>
+          <button
+            onClick={onGenerate}
+            disabled={isGenerating}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-600 text-white text-[10px] font-bold hover:bg-violet-700 disabled:opacity-50"
+          >
+            {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            {isGenerating ? "Generating..." : "Generate Concept"}
+          </button>
+        </div>
+        {error && <p className="text-xs text-rose-500 mt-2">{error.message}</p>}
+      </div>
+    );
+  }
+
+  const feedback = concept.aiFeedback ? (() => { try { return JSON.parse(concept.aiFeedback); } catch { return null; } })() as { strengths?: string[]; weaknesses?: string[]; suggestions?: string[] } | null : null;
+
+  return (
+    <div className={cn(
+      "border rounded-xl p-4 space-y-3",
+      concept.approved ? "bg-emerald-50 border-emerald-200" : "bg-violet-50 border-violet-200",
+    )}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-1 mb-1">
+            <Lightbulb size={10} /> One-Sentence Concept
+            {concept.approved && (
+              <span className="inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[8px] font-bold">
+                <Shield size={8} /> Approved
+              </span>
+            )}
+          </p>
+          <p className="text-sm font-medium text-slate-900">{concept.oneSentence}</p>
+        </div>
+        {/* Overall score circle */}
+        <div className={cn(
+          "flex-shrink-0 w-12 h-12 rounded-full flex flex-col items-center justify-center border-2",
+          (concept.overallScore ?? 0) >= 7 ? "border-emerald-400 bg-emerald-50 text-emerald-700" :
+          (concept.overallScore ?? 0) >= 5 ? "border-amber-400 bg-amber-50 text-amber-700" :
+          "border-rose-400 bg-rose-50 text-rose-700",
+        )}>
+          <span className="text-lg font-black leading-none">{concept.overallScore ?? "?"}</span>
+          <span className="text-[7px] font-bold">/10</span>
+        </div>
+      </div>
+
+      {/* Score bars */}
+      <div className="grid grid-cols-2 gap-2">
+        <ScoreBar label="Technical Interest" score={concept.technicalInterestScore ?? 0} />
+        <ScoreBar label="Emotional Resonance" score={concept.emotionalResonanceScore ?? 0} />
+        <ScoreBar label="10s Explainability" score={concept.tenSecondExplainabilityScore ?? 0} />
+        <ScoreBar label="Visual Payoff" score={concept.visualPayoffScore ?? 0} />
+      </div>
+
+      {/* AI Feedback */}
+      {feedback && (
+        <div className="space-y-1.5">
+          {feedback.strengths && feedback.strengths.length > 0 && (
+            <div className="flex gap-1.5 items-start">
+              <span className="text-[10px] text-emerald-600 font-bold flex-shrink-0">Strengths:</span>
+              <span className="text-[10px] text-slate-600">{feedback.strengths.join(". ")}</span>
+            </div>
+          )}
+          {feedback.weaknesses && feedback.weaknesses.length > 0 && (
+            <div className="flex gap-1.5 items-start">
+              <span className="text-[10px] text-amber-600 font-bold flex-shrink-0">Improve:</span>
+              <span className="text-[10px] text-slate-600">{feedback.weaknesses.join(". ")}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Refined version suggestion */}
+      {concept.refinedVersion && !concept.approved && (
+        <div className="bg-white border border-violet-200 rounded-lg p-2.5">
+          <p className="text-[9px] font-bold text-violet-500 mb-0.5">AI Suggestion:</p>
+          <p className="text-xs text-slate-700 italic">{concept.refinedVersion}</p>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-2">
+        {!concept.approved && (concept.overallScore ?? 0) >= 7 && (
+          <button
+            onClick={() => onApprove(true)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[10px] font-bold hover:bg-emerald-700"
+          >
+            <Check size={10} /> Approve Concept
+          </button>
+        )}
+        {concept.approved && (
+          <button
+            onClick={() => onApprove(false)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold hover:bg-slate-200"
+          >
+            Unapprove
+          </button>
+        )}
+        {!concept.approved && (
+          <button
+            onClick={() => setShowRefine(!showRefine)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 text-violet-600 text-[10px] font-bold hover:bg-violet-200"
+          >
+            <RefreshCw size={10} /> Refine
+          </button>
+        )}
+        <button
+          onClick={onGenerate}
+          disabled={isGenerating}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold hover:bg-slate-200 disabled:opacity-50"
+        >
+          {isGenerating ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+          Regenerate
+        </button>
+      </div>
+
+      {/* Refine input */}
+      {showRefine && (
+        <div className="flex gap-2">
+          <input
+            value={refineFeedback}
+            onChange={(e) => setRefineFeedback(e.target.value)}
+            placeholder="Optional feedback for refinement..."
+            className="flex-1 px-3 py-1.5 rounded-lg border border-violet-200 text-xs text-slate-700 focus:outline-none focus:border-violet-400"
+          />
+          <button
+            onClick={() => { onRefine(refineFeedback || undefined); setShowRefine(false); setRefineFeedback(""); }}
+            disabled={isRefining}
+            className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-[10px] font-bold hover:bg-violet-700 disabled:opacity-50"
+          >
+            {isRefining ? <Loader2 size={10} className="animate-spin" /> : "Refine"}
+          </button>
+        </div>
+      )}
+
+      {error && <p className="text-xs text-rose-500">{error.message}</p>}
+    </div>
+  );
 };
 
 export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated }) => {
@@ -118,6 +312,63 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
     queryKey: ["digest", idea.dateAdded],
     queryFn: () => fetch(`/api/ideas/digest/${idea.dateAdded}`).then((r) => r.json()),
     enabled: !!hasDigest && digestExpanded,
+  });
+
+  // Concept Framework
+  const conceptQuery = useQuery<{ concept: IdeaConcept | null }>({
+    queryKey: ["idea-concept", idea.topic],
+    queryFn: () => fetch(`/api/ideas-ai/concept/${encodeURIComponent(idea.topic)}`).then((r) => r.json()),
+  });
+
+  const generateConceptMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/ideas-ai/concept/${encodeURIComponent(idea.topic)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hookAngle: idea.hookAngle,
+          format: idea.suggestedFormat,
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed to generate concept");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea-concept", idea.topic] });
+    },
+  });
+
+  const refineConceptMutation = useMutation({
+    mutationFn: async (feedback?: string) => {
+      const r = await fetch(`/api/ideas-ai/concept/${encodeURIComponent(idea.topic)}/refine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentConcept: conceptQuery.data?.concept?.oneSentence,
+          feedback,
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Failed to refine concept");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea-concept", idea.topic] });
+    },
+  });
+
+  const approveConceptMutation = useMutation({
+    mutationFn: async (approved: boolean) => {
+      const r = await fetch(`/api/ideas-ai/concept/${encodeURIComponent(idea.topic)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      if (!r.ok) throw new Error("Failed to update");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["idea-concept", idea.topic] });
+    },
   });
 
   // Vault hooks
@@ -433,6 +684,18 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
         <div className="flex-1 overflow-y-auto">
           {activeTab === "context" && (
             <div className="p-4 md:p-6 space-y-6">
+              {/* Concept Framework */}
+              <ConceptSection
+                concept={conceptQuery.data?.concept ?? null}
+                isLoading={conceptQuery.isLoading}
+                isGenerating={generateConceptMutation.isPending}
+                isRefining={refineConceptMutation.isPending}
+                onGenerate={() => generateConceptMutation.mutate()}
+                onRefine={(feedback) => refineConceptMutation.mutate(feedback)}
+                onApprove={(approved) => approveConceptMutation.mutate(approved)}
+                error={(generateConceptMutation.error || refineConceptMutation.error) as Error | null}
+              />
+
               {/* Hook / Angle */}
               {idea.hookAngle && (
                 <div>

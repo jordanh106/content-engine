@@ -90,14 +90,6 @@ sqlite.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
-  CREATE TABLE IF NOT EXISTS composer_compositions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    video_code TEXT NOT NULL UNIQUE,
-    components_json TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-  );
-
   CREATE TABLE IF NOT EXISTS saved_captions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     video_code TEXT NOT NULL,
@@ -302,3 +294,120 @@ try {
     console.log("[db] Migrated script_versions: video_code is now nullable");
   }
 } catch (e) { console.warn("[db] script_versions migration:", e); }
+
+// ============================================
+// Kova-Inspired Features: New Tables
+// ============================================
+
+// Feature 2: Visual Style System
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS vault_visual_styles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    source_creator TEXT,
+    source_url TEXT,
+    source_breakdown_ids TEXT,
+    typography_system TEXT NOT NULL,
+    color_palette TEXT NOT NULL,
+    transition_rules TEXT,
+    set_design_rules TEXT,
+    music_guidelines TEXT,
+    motion_graphics_style TEXT,
+    do_not TEXT,
+    usage_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// Feature 3: Storyboard System
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS storyboards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT NOT NULL,
+    visual_style_id INTEGER,
+    one_sentence_concept TEXT,
+    story_structure TEXT,
+    total_duration_seconds INTEGER,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS storyboard_shots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    storyboard_id INTEGER NOT NULL REFERENCES storyboards(id) ON DELETE CASCADE,
+    shot_number INTEGER NOT NULL,
+    act TEXT,
+    duration_seconds REAL NOT NULL,
+    shot_type TEXT,
+    camera_movement TEXT,
+    cinema_studio_prompt TEXT,
+    script_line TEXT,
+    broll_type TEXT,
+    production_method TEXT NOT NULL DEFAULT 'real',
+    ai_enhancement_notes TEXT,
+    remotion_component TEXT,
+    notes TEXT,
+    order_index INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// Feature 4: AI Enhancement Prompt Workbench
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS ai_generation_prompts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    storyboard_shot_id INTEGER REFERENCES storyboard_shots(id) ON DELETE CASCADE,
+    video_code TEXT NOT NULL,
+    shot_number INTEGER,
+    technique TEXT NOT NULL,
+    tool TEXT,
+    model TEXT,
+    prompt_text TEXT NOT NULL,
+    prompt_version INTEGER NOT NULL DEFAULT 1,
+    source_description TEXT,
+    target_description TEXT,
+    result_notes TEXT,
+    result_rating INTEGER,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// Feature 5: One-Sentence Concept Framework
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS idea_concepts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    idea_topic TEXT NOT NULL,
+    one_sentence TEXT NOT NULL,
+    technical_interest_score INTEGER,
+    emotional_resonance_score INTEGER,
+    ten_second_explainability_score INTEGER,
+    visual_payoff_score INTEGER,
+    overall_score INTEGER,
+    ai_feedback TEXT,
+    refined_version TEXT,
+    approved INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// New indices
+sqlite.exec(`
+  CREATE INDEX IF NOT EXISTS idx_storyboards_video ON storyboards(video_code);
+  CREATE INDEX IF NOT EXISTS idx_storyboard_shots_storyboard ON storyboard_shots(storyboard_id);
+  CREATE INDEX IF NOT EXISTS idx_ai_prompts_video ON ai_generation_prompts(video_code);
+  CREATE INDEX IF NOT EXISTS idx_ai_prompts_shot ON ai_generation_prompts(storyboard_shot_id);
+  CREATE INDEX IF NOT EXISTS idx_idea_concepts_topic ON idea_concepts(idea_topic);
+`);
+
+// Feature 1: Deep DNA columns on video_breakdowns
+const dnaColumns = [
+  "typography_system", "story_structure", "aesthetic_keywords", "color_palette",
+  "set_design", "music_audio", "transition_style", "replication_plan",
+  "broll_types", "one_sentence_concept",
+];
+for (const col of dnaColumns) {
+  try { sqlite.exec(`ALTER TABLE video_breakdowns ADD COLUMN ${col} TEXT`); } catch { /* exists */ }
+}

@@ -1,7 +1,3 @@
-Excellent. I now have a thorough picture of @drjason (Dr. Jason Worrall) across all platforms. Here is the full competitive analysis:
-
----
-
 # Creator Analysis: @drjason
 
 **Platform:** YouTube (primary), Instagram, Podcast (Spotify/Apple)

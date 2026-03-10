@@ -2,7 +2,7 @@ import { Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, desc, like, and } from "drizzle-orm";
 import { db } from "../db.js";
-import { vaultHooks, vaultStyles, scriptVersions, performanceMetrics } from "../../shared/schema.js";
+import { vaultHooks, vaultStyles, vaultVisualStyles, videoBreakdowns, scriptVersions, performanceMetrics } from "../../shared/schema.js";
 import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import type { VaultHook, VaultStyle } from "../../shared/types.js";
 
@@ -702,6 +702,295 @@ Return ONLY the JSON array.`,
     } catch (error) {
       console.error("[vault] Hook adaptation error:", error);
       res.status(500).json({ error: "Failed to adapt hook" });
+    }
+  });
+
+  // =============================================
+  // VISUAL STYLES
+  // =============================================
+
+  // GET /api/vault/visual-styles - List all visual styles
+  router.get("/visual-styles", async (_req, res) => {
+    try {
+      const rows = db.select().from(vaultVisualStyles).orderBy(desc(vaultVisualStyles.createdAt)).all();
+      const styles = rows.map((r) => ({
+        ...r,
+        typographySystem: JSON.parse(r.typographySystem),
+        colorPalette: JSON.parse(r.colorPalette),
+        transitionRules: r.transitionRules ? JSON.parse(r.transitionRules) : null,
+        setDesignRules: r.setDesignRules ? JSON.parse(r.setDesignRules) : null,
+        musicGuidelines: r.musicGuidelines ? JSON.parse(r.musicGuidelines) : null,
+        motionGraphicsStyle: r.motionGraphicsStyle ? JSON.parse(r.motionGraphicsStyle) : null,
+        doNot: r.doNot ? JSON.parse(r.doNot) : null,
+        sourceBreakdownIds: r.sourceBreakdownIds ? JSON.parse(r.sourceBreakdownIds) : null,
+      }));
+      res.json({ visualStyles: styles, total: styles.length });
+    } catch (error) {
+      console.error("[vault] Error listing visual styles:", error);
+      res.status(500).json({ error: "Failed to list visual styles" });
+    }
+  });
+
+  // POST /api/vault/visual-styles - Create a visual style manually
+  router.post("/visual-styles", async (req, res) => {
+    try {
+      const { name, description, sourceCreator, sourceUrl, typographySystem, colorPalette, transitionRules, setDesignRules, musicGuidelines, motionGraphicsStyle, doNot } = req.body;
+      if (!name || !typographySystem || !colorPalette) {
+        res.status(400).json({ error: "name, typographySystem, and colorPalette are required" });
+        return;
+      }
+
+      const result = db
+        .insert(vaultVisualStyles)
+        .values({
+          name,
+          description: description || null,
+          sourceCreator: sourceCreator || null,
+          sourceUrl: sourceUrl || null,
+          typographySystem: typeof typographySystem === "string" ? typographySystem : JSON.stringify(typographySystem),
+          colorPalette: typeof colorPalette === "string" ? colorPalette : JSON.stringify(colorPalette),
+          transitionRules: transitionRules ? (typeof transitionRules === "string" ? transitionRules : JSON.stringify(transitionRules)) : null,
+          setDesignRules: setDesignRules ? (typeof setDesignRules === "string" ? setDesignRules : JSON.stringify(setDesignRules)) : null,
+          musicGuidelines: musicGuidelines ? (typeof musicGuidelines === "string" ? musicGuidelines : JSON.stringify(musicGuidelines)) : null,
+          motionGraphicsStyle: motionGraphicsStyle ? (typeof motionGraphicsStyle === "string" ? motionGraphicsStyle : JSON.stringify(motionGraphicsStyle)) : null,
+          doNot: doNot ? (typeof doNot === "string" ? doNot : JSON.stringify(doNot)) : null,
+        })
+        .returning()
+        .get();
+
+      res.json({
+        visualStyle: {
+          ...result,
+          typographySystem: JSON.parse(result.typographySystem),
+          colorPalette: JSON.parse(result.colorPalette),
+          transitionRules: result.transitionRules ? JSON.parse(result.transitionRules) : null,
+          setDesignRules: result.setDesignRules ? JSON.parse(result.setDesignRules) : null,
+          musicGuidelines: result.musicGuidelines ? JSON.parse(result.musicGuidelines) : null,
+          motionGraphicsStyle: result.motionGraphicsStyle ? JSON.parse(result.motionGraphicsStyle) : null,
+          doNot: result.doNot ? JSON.parse(result.doNot) : null,
+          sourceBreakdownIds: result.sourceBreakdownIds ? JSON.parse(result.sourceBreakdownIds) : null,
+        },
+      });
+    } catch (error) {
+      console.error("[vault] Error creating visual style:", error);
+      res.status(500).json({ error: "Failed to create visual style" });
+    }
+  });
+
+  // POST /api/vault/visual-styles/synthesize - AI blends breakdown DNA into composite style
+  router.post("/visual-styles/synthesize", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const { breakdownIds, name } = req.body as { breakdownIds: number[]; name?: string };
+      if (!breakdownIds || !Array.isArray(breakdownIds) || breakdownIds.length === 0) {
+        res.status(400).json({ error: "breakdownIds (non-empty array of numbers) is required" });
+        return;
+      }
+
+      // Fetch the breakdowns
+      const breakdowns = [];
+      for (const id of breakdownIds) {
+        const row = db.select().from(videoBreakdowns).where(eq(videoBreakdowns.id, id)).get();
+        if (row) breakdowns.push(row);
+      }
+
+      if (breakdowns.length === 0) {
+        res.status(404).json({ error: "No breakdowns found for the given IDs" });
+        return;
+      }
+
+      // Build context from breakdowns
+      const breakdownSummaries = breakdowns.map((b, i) => {
+        const parts = [`Breakdown ${i + 1} (${b.creatorHandle || "unknown creator"}):`];
+        if (b.typographySystem) parts.push(`  Typography: ${b.typographySystem}`);
+        if (b.colorPalette) parts.push(`  Colors: ${b.colorPalette}`);
+        if (b.transitionStyle) parts.push(`  Transitions: ${b.transitionStyle}`);
+        if (b.setDesign) parts.push(`  Set Design: ${b.setDesign}`);
+        if (b.musicAudio) parts.push(`  Music/Audio: ${b.musicAudio}`);
+        if (b.aestheticKeywords) parts.push(`  Aesthetic: ${b.aestheticKeywords}`);
+        if (b.visualFormat) parts.push(`  Visual Format: ${b.visualFormat}`);
+        if (b.visuals) parts.push(`  Visuals: ${b.visuals}`);
+        if (b.brollTypes) parts.push(`  B-Roll: ${b.brollTypes}`);
+        return parts.join("\n");
+      }).join("\n\n");
+
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        messages: [
+          {
+            role: "user",
+            content: `You are a visual style architect. Analyze these ${breakdowns.length} video breakdowns and synthesize their visual DNA into one coherent, actionable visual style guide.
+
+${breakdownSummaries}
+
+Blend the strongest elements from each breakdown into a unified style. Where breakdowns conflict, pick the approach that is more distinctive and reproducible. Be extremely specific and actionable. Use exact values (hex colors, pixel sizes, specific font names, exact timing in seconds) rather than vague descriptions.
+
+BAD: "Warm color palette"
+GOOD: { "primary": "#E8442A", "secondary": "#F5A623", "background": "#1A1A2E", "text": "#FFFFFF", "accent": "#00D4AA" }
+
+BAD: "Bold typography"
+GOOD: { "heading": "Bebas Neue, 72px, uppercase, letter-spacing 2px", "body": "Inter, 18px, line-height 1.6", "caption": "JetBrains Mono, 14px, opacity 0.7" }
+
+BAD: "Smooth transitions"
+GOOD: ["0.3s ease-out slide from right between scenes", "0.15s scale-up on text reveal", "Hard cut on beat drops, never dissolve"]
+
+Respond with JSON only:
+{
+  "name": "${name || "Synthesized Style"}",
+  "description": "One sentence capturing the overall visual identity",
+  "typographySystem": {
+    "heading": "Font, size, weight, case, spacing",
+    "body": "Font, size, weight, line-height",
+    "accent": "Font for callouts/numbers/stats",
+    "rules": ["2-3 specific typography rules"]
+  },
+  "colorPalette": {
+    "primary": "#hex",
+    "secondary": "#hex",
+    "background": "#hex",
+    "text": "#hex",
+    "accent": "#hex",
+    "rules": ["When to use each color"]
+  },
+  "transitionRules": ["3-5 specific transition rules with exact timing"],
+  "setDesignRules": ["3-5 rules about backgrounds, props, framing"],
+  "musicGuidelines": ["2-4 rules about music selection, tempo, audio mixing"],
+  "motionGraphicsStyle": {
+    "textAnimation": "How text enters/exits",
+    "graphicStyle": "Flat/3D/gradient/etc with specifics",
+    "timing": "Animation duration and easing",
+    "rules": ["2-3 motion graphics rules"]
+  },
+  "doNot": ["5-7 specific things to never do in this style"]
+}`,
+          },
+        ],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      // Save to database
+      const result = db
+        .insert(vaultVisualStyles)
+        .values({
+          name: parsed.name || name || "Synthesized Style",
+          description: parsed.description || null,
+          sourceCreator: breakdowns.map((b) => b.creatorHandle).filter(Boolean).join(", ") || null,
+          sourceBreakdownIds: JSON.stringify(breakdownIds),
+          typographySystem: JSON.stringify(parsed.typographySystem),
+          colorPalette: JSON.stringify(parsed.colorPalette),
+          transitionRules: parsed.transitionRules ? JSON.stringify(parsed.transitionRules) : null,
+          setDesignRules: parsed.setDesignRules ? JSON.stringify(parsed.setDesignRules) : null,
+          musicGuidelines: parsed.musicGuidelines ? JSON.stringify(parsed.musicGuidelines) : null,
+          motionGraphicsStyle: parsed.motionGraphicsStyle ? JSON.stringify(parsed.motionGraphicsStyle) : null,
+          doNot: parsed.doNot ? JSON.stringify(parsed.doNot) : null,
+        })
+        .returning()
+        .get();
+
+      res.json({
+        visualStyle: {
+          ...result,
+          typographySystem: parsed.typographySystem,
+          colorPalette: parsed.colorPalette,
+          transitionRules: parsed.transitionRules || null,
+          setDesignRules: parsed.setDesignRules || null,
+          musicGuidelines: parsed.musicGuidelines || null,
+          motionGraphicsStyle: parsed.motionGraphicsStyle || null,
+          doNot: parsed.doNot || null,
+          sourceBreakdownIds: breakdownIds,
+        },
+      });
+    } catch (error) {
+      console.error("[vault] Visual style synthesis error:", error);
+      res.status(500).json({ error: "Failed to synthesize visual style" });
+    }
+  });
+
+  // PUT /api/vault/visual-styles/:id - Update a visual style
+  router.put("/visual-styles/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, description, sourceCreator, sourceUrl, typographySystem, colorPalette, transitionRules, setDesignRules, musicGuidelines, motionGraphicsStyle, doNot } = req.body;
+
+      const updates: Record<string, unknown> = {};
+      if (name !== undefined) updates.name = name;
+      if (description !== undefined) updates.description = description;
+      if (sourceCreator !== undefined) updates.sourceCreator = sourceCreator;
+      if (sourceUrl !== undefined) updates.sourceUrl = sourceUrl;
+      if (typographySystem !== undefined) {
+        updates.typographySystem = typeof typographySystem === "string" ? typographySystem : JSON.stringify(typographySystem);
+      }
+      if (colorPalette !== undefined) {
+        updates.colorPalette = typeof colorPalette === "string" ? colorPalette : JSON.stringify(colorPalette);
+      }
+      if (transitionRules !== undefined) {
+        updates.transitionRules = transitionRules ? (typeof transitionRules === "string" ? transitionRules : JSON.stringify(transitionRules)) : null;
+      }
+      if (setDesignRules !== undefined) {
+        updates.setDesignRules = setDesignRules ? (typeof setDesignRules === "string" ? setDesignRules : JSON.stringify(setDesignRules)) : null;
+      }
+      if (musicGuidelines !== undefined) {
+        updates.musicGuidelines = musicGuidelines ? (typeof musicGuidelines === "string" ? musicGuidelines : JSON.stringify(musicGuidelines)) : null;
+      }
+      if (motionGraphicsStyle !== undefined) {
+        updates.motionGraphicsStyle = motionGraphicsStyle ? (typeof motionGraphicsStyle === "string" ? motionGraphicsStyle : JSON.stringify(motionGraphicsStyle)) : null;
+      }
+      if (doNot !== undefined) {
+        updates.doNot = doNot ? (typeof doNot === "string" ? doNot : JSON.stringify(doNot)) : null;
+      }
+
+      const result = db
+        .update(vaultVisualStyles)
+        .set(updates)
+        .where(eq(vaultVisualStyles.id, id))
+        .returning()
+        .get();
+
+      if (!result) {
+        res.status(404).json({ error: "Visual style not found" });
+        return;
+      }
+
+      res.json({
+        visualStyle: {
+          ...result,
+          typographySystem: JSON.parse(result.typographySystem),
+          colorPalette: JSON.parse(result.colorPalette),
+          transitionRules: result.transitionRules ? JSON.parse(result.transitionRules) : null,
+          setDesignRules: result.setDesignRules ? JSON.parse(result.setDesignRules) : null,
+          musicGuidelines: result.musicGuidelines ? JSON.parse(result.musicGuidelines) : null,
+          motionGraphicsStyle: result.motionGraphicsStyle ? JSON.parse(result.motionGraphicsStyle) : null,
+          doNot: result.doNot ? JSON.parse(result.doNot) : null,
+          sourceBreakdownIds: result.sourceBreakdownIds ? JSON.parse(result.sourceBreakdownIds) : null,
+        },
+      });
+    } catch (error) {
+      console.error("[vault] Error updating visual style:", error);
+      res.status(500).json({ error: "Failed to update visual style" });
+    }
+  });
+
+  // DELETE /api/vault/visual-styles/:id
+  router.delete("/visual-styles/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      db.delete(vaultVisualStyles).where(eq(vaultVisualStyles.id, id)).run();
+      res.json({ deleted: true });
+    } catch (error) {
+      console.error("[vault] Error deleting visual style:", error);
+      res.status(500).json({ error: "Failed to delete visual style" });
     }
   });
 

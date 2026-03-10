@@ -22,7 +22,6 @@ if (fs.existsSync(envPath)) {
 import { createVideosRouter } from "./routes/videos.js";
 import { createPipelineRouter } from "./routes/pipeline.js";
 import { createRendersRouter } from "./routes/renders.js";
-import { createComposerAiRouter } from "./routes/composer-ai.js";
 import { createMetricsRouter } from "./routes/metrics.js";
 import { createIdeasRouter } from "./routes/ideas.js";
 import { createIdeasAiRouter } from "./routes/ideas-ai.js";
@@ -42,6 +41,8 @@ import { createVaultRouter } from "./routes/vault.js";
 import { createCreatorVideosRouter } from "./routes/creator-videos.js";
 import { createSearchRouter } from "./routes/search.js";
 import { createAutomationRouter } from "./routes/automation.js";
+import { createStoryboardsRouter } from "./routes/storyboards.js";
+import { createAiPromptsRouter } from "./routes/ai-prompts.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -71,7 +72,6 @@ const formatsDir = path.join(repoRoot, "formats");
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
 app.use("/api/renders", createRendersRouter(contentLibraryPath, repoRoot, renderOutputDir));
-app.use("/api/composer", createComposerAiRouter(contentLibraryPath));
 app.use("/api/metrics", createMetricsRouter(contentLibraryPath));
 app.use("/api/ideas", createIdeasRouter(contentLibraryPath));
 app.use("/api/ideas-ai", createIdeasAiRouter(contentLibraryPath));
@@ -91,6 +91,8 @@ app.use("/api/vault", createVaultRouter(contentLibraryPath));
 app.use("/api/creator-videos", createCreatorVideosRouter(contentLibraryPath));
 app.use("/api/search", createSearchRouter(contentLibraryPath));
 app.use("/api/automation", createAutomationRouter());
+app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath));
+app.use("/api/ai-prompts", createAiPromptsRouter());
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

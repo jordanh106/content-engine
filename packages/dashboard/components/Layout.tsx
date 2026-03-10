@@ -190,7 +190,7 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   // Check if current view is in the "More" sheet items
-  const currentInMore = !MOBILE_CORE_VIEWS.has(currentView) && currentView !== "COMPOSER";
+  const currentInMore = !MOBILE_CORE_VIEWS.has(currentView);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">

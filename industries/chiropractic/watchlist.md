@@ -17,6 +17,7 @@ Chiropractors in the Woodstock / North Atlanta metro area competing for the same
 **Local content gaps to exploit:** None of these competitors are doing educational explainers, myth busters, prenatal/pediatric-specific content, or high-production short-form video. The entire Woodstock chiro market on social media is underserved.
 
 ---
+| @spinehealth.edu | TikTok |  |  |  |  | - |
 
 ## Chiro Content Leaders
 
@@ -24,9 +25,9 @@ National chiropractors who have cracked the algorithm. Study their hooks, format
 
 | Handle | Platform | Followers | Why Tracking | Content Style | Frequency | Last Analyzed |
 |--------|----------|-----------|-------------|---------------|-----------|---------------|
-| @dr.holdenstanfill | TikTok, YouTube, IG | 400K TikTok, 1.1M YouTube, 137K IG | "#1 Most Viral Chiro in St. Louis." Most relevant big creator because he mixes ASMR adjustments WITH family content (baby adjusting mom). His YouTube strategy is worth studying for long-form. | ASMR cracks, patient reactions, family moments, before/after transformations. High energy. | Daily across platforms | - |
+| @dr.holdenstanfill | TikTok, YouTube, IG | 400K TikTok, 1.1M YouTube, 137K IG | "#1 Most Viral Chiro in St. Louis." Most relevant big creator because he mixes ASMR adjustments WITH family content (baby adjusting mom). His YouTube strategy is worth studying for long-form. | ASMR cracks, patient reactions, family moments, before/after transformations. High energy. | Daily across platforms | 2026-03-09 |
 | @drjoshadams | TikTok, IG | 1.2M TikTok, 112K IG | Sports chiro with "CRACKED" brand. Master of humor-in-adjustments format. Study his comedy timing and how he brands a clinical practice as entertainment. | Humorous skits during adjustments, sports medicine demos, pop culture references. Upbeat editing. | Daily TikTok, 4-5x/week IG | - |
-| @dr.kimbra.runyan | Instagram | 124K IG | Evidence-based chiropractor focused on mobility routines. Closest content style to what Collective Family should aim for: educational, practical, no gimmicks. Has a mobility app. | Quick mobility routines, evidence-based tips, clean educational reels. Calm, authoritative tone. | 4-5x/week | - |
+| @dr.kimbra.runyan | Instagram | 124K IG | Evidence-based chiropractor focused on mobility routines. Closest content style to what Collective Family should aim for: educational, practical, no gimmicks. Has a mobility app. | Quick mobility routines, evidence-based tips, clean educational reels. Calm, authoritative tone. | 4-5x/week | 2026-03-09 |
 | @occhiropractor | TikTok, IG | 4.9M TikTok, 1M IG | Biggest chiro creator. Too large to compete with but study his patient transformation format and what makes people drive 1.5 hours to see him. His hook patterns convert viewers to patients. | Patient reactions, dramatic relief moments, before/after. High production. | Daily | - |
 
 **What to steal:** Holden Stanfill's family angle, Josh Adams' humor integration, Kimbra Runyan's educational authority, OC Chiropractor's patient transformation storytelling structure.
@@ -39,7 +40,7 @@ Creators serving the same specialty as Collective Family (prenatal, pediatric, w
 
 | Handle | Platform | Followers | Why Tracking | Content Style | Frequency | Last Analyzed |
 |--------|----------|-----------|-------------|---------------|-----------|---------------|
-| @mommaschiro | TikTok, IG | 143K IG, active TikTok | Largest prenatal/pediatric chiro creator. Webster certified, Huntington Beach CA. Content on breech babies turning, pregnancy pain relief, fertility journeys. Directly applicable to your prenatal audience segments (P1-P9). | Warm, clinical prenatal adjustments, pregnancy journey storytelling, educational captions. Mom-focused. | 3-4x/week | 2026-03-06 |
+| @mommaschiro | TikTok, IG | 143K IG, active TikTok | Largest prenatal/pediatric chiro creator. Webster certified, Huntington Beach CA. Content on breech babies turning, pregnancy pain relief, fertility journeys. Directly applicable to your prenatal audience segments (P1-P9). | Warm, clinical prenatal adjustments, pregnancy journey storytelling, educational captions. Mom-focused. | 3-4x/week | 2026-03-09 |
 | @younglifechirookc | Instagram | 7.3K IG | OKC pediatric & prenatal practice. Smaller but very aligned with Collective Family's positioning: whole family wellness, Webster certified, perinatal focus. Study their content at a similar growth stage. | Gentle pediatric adjustments, family wellness tips, prenatal care education. Relatable, growing practice. | 2-3x/week | - |
 | @thrivefamilychirojax | Instagram | Growing | Jacksonville family chiro led by Dr. Padilla. Unique angle: craniosacral therapy for infants AND in-home labor/birth support with chiropractic. Content gap inspiration for services you could highlight. | Pregnancy-through-postpartum care, infant craniosacral, birth support stories. Specialist feel. | 2-3x/week | - |
 

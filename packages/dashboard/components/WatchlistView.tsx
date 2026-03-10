@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight } from "lucide-react";
-import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView } from "../shared/types.js";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy } from "lucide-react";
+import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
 import { SkillButton } from "./ui/SkillButton.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
@@ -720,9 +720,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
   const analyzeMutation = useMutation({
     mutationFn: async (handle: string) => {
       const clean = handle.replace("@", "").toLowerCase();
-      const r = await fetch(`/api/creator-analysis/${clean}/analyze`, {
+      const r = await fetch(`/api/creator-analysis/${clean}/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(300_000),
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
@@ -1104,6 +1105,9 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
   const [sortBy, setSortBy] = useState<"outlierScore" | "views" | "publishedAt">("outlierScore");
   const [searchHandle, setSearchHandle] = useState("");
   const [expandedVideo, setExpandedVideo] = useState<number | null>(null);
+  const [analyzeUrlOpen, setAnalyzeUrlOpen] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [urlResult, setUrlResult] = useState<{ breakdown: VideoBreakdown; videoTitle: string; frameCount: number; hasTranscript: boolean } | null>(null);
 
   const params = new URLSearchParams();
   if (searchHandle) params.set("handle", searchHandle);
@@ -1141,10 +1145,77 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
     },
   });
 
+  const analyzeUrlMutation = useMutation({
+    mutationFn: async (videoUrl: string) => {
+      const r = await fetch("/api/creator-videos/analyze-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: videoUrl, save: true }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: "Analysis failed" }));
+        throw new Error(err.error || "Analysis failed");
+      }
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setUrlResult(data);
+    },
+  });
+
   const videos = data?.videos ?? [];
 
   return (
     <div className="space-y-4">
+      {/* Analyze URL */}
+      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-2xl p-4">
+        <button
+          onClick={() => { setAnalyzeUrlOpen(!analyzeUrlOpen); setUrlResult(null); }}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-purple-600 hover:text-purple-700"
+        >
+          <Link size={12} />
+          Analyze Any Video URL
+          <ChevronDown size={12} className={cn("transition-transform", analyzeUrlOpen && "rotate-180")} />
+        </button>
+        {analyzeUrlOpen && (
+          <div className="mt-3 space-y-3">
+            <div className="flex gap-2">
+              <input
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                placeholder="Paste YouTube, Instagram, or TikTok URL..."
+                className="flex-1 px-3 py-2 rounded-lg border border-purple-200 text-sm text-slate-700 focus:outline-none focus:border-purple-400 bg-white"
+              />
+              <button
+                onClick={() => { if (urlInput.trim()) analyzeUrlMutation.mutate(urlInput.trim()); }}
+                disabled={analyzeUrlMutation.isPending || !urlInput.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 text-white text-[10px] font-bold hover:bg-purple-700 disabled:opacity-50"
+              >
+                {analyzeUrlMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Dna size={12} />}
+                {analyzeUrlMutation.isPending ? "Analyzing..." : "Deep Analyze"}
+              </button>
+            </div>
+            {analyzeUrlMutation.isPending && (
+              <p className="text-xs text-purple-500">Downloading video, extracting frames, transcribing audio, and analyzing with AI. This may take 1-3 minutes...</p>
+            )}
+            {analyzeUrlMutation.isError && (
+              <p className="text-xs text-rose-500">{(analyzeUrlMutation.error as Error).message}</p>
+            )}
+            {urlResult && (
+              <div className="bg-white border border-purple-200 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-slate-900">{urlResult.videoTitle}</p>
+                  <span className="text-[9px] font-bold text-purple-500">
+                    {urlResult.frameCount} frames | {urlResult.hasTranscript ? "Transcribed" : "No transcript"}
+                  </span>
+                </div>
+                <DnaDisplay breakdown={urlResult.breakdown as VideoBreakdown} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Scan creators */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
@@ -1276,11 +1347,300 @@ const outlierColor = (score: number) => {
   return "bg-slate-100 text-slate-600 border-slate-200";
 };
 
+// ─── DNA Display Components ──────────────────────────────────────────────────
+
+function parseJson(val: string | null | undefined): unknown {
+  if (!val) return null;
+  try { return JSON.parse(val); } catch { return null; }
+}
+
+const ColorSwatch: React.FC<{ hex: string; label?: string }> = ({ hex, label }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(hex); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="flex items-center gap-1.5 group"
+      title={`Copy ${hex}`}
+    >
+      <div className="w-5 h-5 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: hex }} />
+      <span className="text-[10px] text-slate-500 group-hover:text-slate-700">
+        {copied ? "Copied!" : label || hex}
+      </span>
+    </button>
+  );
+};
+
+const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
+  const [dnaTab, setDnaTab] = useState<"overview" | "style" | "plan">("overview");
+  const story = parseJson(breakdown.storyStructure) as Record<string, { description?: string; timestamp?: string }> | null;
+  const aesthetics = parseJson(breakdown.aestheticKeywords) as string[] | null;
+  const typography = parseJson(breakdown.typographySystem) as Record<string, string> | null;
+  const colors = parseJson(breakdown.colorPalette) as Record<string, string> | null;
+  const setDesign = parseJson(breakdown.setDesign) as Record<string, unknown> | null;
+  const music = parseJson(breakdown.musicAudio) as Record<string, string> | null;
+  const transitions = parseJson(breakdown.transitionStyle) as Record<string, unknown> | null;
+  const replication = parseJson(breakdown.replicationPlan) as string[] | null;
+  const broll = parseJson(breakdown.brollTypes) as Record<string, string[]> | null;
+
+  const hasDeepDna = !!(story || aesthetics || typography || colors || replication);
+
+  if (!hasDeepDna) {
+    // Show basic 7-field breakdown
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {[
+          { label: "Topic", value: breakdown.topic },
+          { label: "Angle", value: breakdown.angle },
+          { label: "Hook Format", value: breakdown.hookFormat },
+          { label: "Story Style", value: breakdown.storyStyle },
+          { label: "Visual Format", value: breakdown.visualFormat },
+          { label: "Visuals", value: breakdown.visuals },
+          { label: "Audio", value: breakdown.audio },
+        ].filter((i) => i.value).map((item) => (
+          <div key={item.label} className="bg-slate-50 rounded-lg p-2">
+            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
+            <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* One-sentence concept banner */}
+      {breakdown.oneSentenceConcept && (
+        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-3">
+          <p className="text-[9px] font-black uppercase tracking-wider text-violet-400 mb-1">Core Concept</p>
+          <p className="text-sm font-medium text-violet-900">{breakdown.oneSentenceConcept}</p>
+        </div>
+      )}
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+        {(["overview", "style", "plan"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setDnaTab(tab)}
+            className={cn(
+              "px-3 py-1 rounded-md text-[10px] font-bold capitalize transition-colors",
+              dnaTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700",
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview tab */}
+      {dnaTab === "overview" && (
+        <div className="space-y-3">
+          {/* Basic 7-field grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {[
+              { label: "Topic", value: breakdown.topic },
+              { label: "Angle", value: breakdown.angle },
+              { label: "Hook Format", value: breakdown.hookFormat },
+              { label: "Story Style", value: breakdown.storyStyle },
+              { label: "Visual Format", value: breakdown.visualFormat },
+              { label: "Audio", value: breakdown.audio },
+            ].filter((i) => i.value).map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-lg p-2">
+                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
+                <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Story Structure Timeline */}
+          {story && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                <Film size={10} /> Story Structure
+              </p>
+              <div className="flex gap-1">
+                {["hook", "conflict", "build", "resolution", "cta"].map((act) => {
+                  const actData = story[act];
+                  const colors: Record<string, string> = {
+                    hook: "bg-rose-100 border-rose-200 text-rose-700",
+                    conflict: "bg-amber-100 border-amber-200 text-amber-700",
+                    build: "bg-sky-100 border-sky-200 text-sky-700",
+                    resolution: "bg-emerald-100 border-emerald-200 text-emerald-700",
+                    cta: "bg-violet-100 border-violet-200 text-violet-700",
+                  };
+                  return (
+                    <div key={act} className={cn("flex-1 rounded-lg border p-2", colors[act])}>
+                      <p className="text-[8px] font-black uppercase">{act}</p>
+                      {actData && (
+                        <p className="text-[10px] mt-0.5 opacity-80">
+                          {typeof actData === "string" ? actData : actData.description || ""}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Aesthetic keywords */}
+          {aesthetics && aesthetics.length > 0 && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Aesthetic Keywords</p>
+              <div className="flex flex-wrap gap-1">
+                {aesthetics.map((kw, i) => (
+                  <span key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-medium border border-purple-200">
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* B-Roll Types */}
+          {broll && (
+            <div className="grid grid-cols-3 gap-2">
+              {(["macro", "process", "reveal"] as const).map((type) => {
+                const items = broll[type];
+                if (!items || !Array.isArray(items) || items.length === 0) return null;
+                return (
+                  <div key={type} className="bg-slate-50 rounded-lg p-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{type} B-Roll</p>
+                    <div className="mt-1 space-y-0.5">
+                      {items.slice(0, 3).map((item, i) => (
+                        <p key={i} className="text-[10px] text-slate-600">{item}</p>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Style tab */}
+      {dnaTab === "style" && (
+        <div className="space-y-3">
+          {/* Color Palette */}
+          {colors && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+                <Palette size={10} /> Color Palette
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(colors).filter(([, v]) => v && v.startsWith("#")).map(([key, hex]) => (
+                  <ColorSwatch key={key} hex={hex} label={`${key}: ${hex}`} />
+                ))}
+              </div>
+              {colors.mood && (
+                <p className="text-[10px] text-slate-500 mt-1.5">Mood: {colors.mood}</p>
+              )}
+              {colors.grading && (
+                <p className="text-[10px] text-slate-500">Grading: {colors.grading}</p>
+              )}
+            </div>
+          )}
+
+          {/* Typography */}
+          {typography && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Typography</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(typography).map(([key, val]) => (
+                  <div key={key} className="bg-slate-50 rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
+                    <p className="text-[10px] text-slate-700 mt-0.5">{val}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Music/Audio */}
+          {music && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                <Music size={10} /> Music & Audio
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(music).map(([key, val]) => (
+                  <div key={key} className="bg-slate-50 rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
+                    <p className="text-[10px] text-slate-700 mt-0.5">{val}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Set Design */}
+          {setDesign && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Set Design</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(setDesign).map(([key, val]) => (
+                  <div key={key} className="bg-slate-50 rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-slate-400">{key}</p>
+                    <p className="text-[10px] text-slate-700 mt-0.5">
+                      {Array.isArray(val) ? val.join(", ") : String(val)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Transitions */}
+          {transitions && (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Transitions</p>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(transitions).map(([key, val]) => (
+                  <div key={key} className="bg-slate-50 rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-slate-400">{key}</p>
+                    <p className="text-[10px] text-slate-700 mt-0.5">
+                      {Array.isArray(val) ? val.join(", ") : String(val)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Plan tab */}
+      {dnaTab === "plan" && (
+        <div className="space-y-3">
+          {replication && replication.length > 0 ? (
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2">Replication Plan</p>
+              <div className="space-y-1.5">
+                {replication.map((step, i) => (
+                  <div key={i} className="flex items-start gap-2 bg-slate-50 rounded-lg p-2.5">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-black flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <p className="text-xs text-slate-700">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400">No replication plan available. Run Deep Analyze to generate one.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) => {
   const queryClient = useQueryClient();
   const platformColor = PLATFORM_COLORS[video.platform] ?? "bg-slate-200 text-slate-700";
 
-  const breakdownQuery = useQuery<{ breakdown: { topic: string; angle: string; hookFormat: string; storyStyle: string; visualFormat: string; visuals: string; audio: string } | null }>({
+  const breakdownQuery = useQuery<{ breakdown: VideoBreakdown | null }>({
     queryKey: ["video-breakdown", video.id],
     queryFn: () => fetch(`/api/creator-videos/${video.id}/breakdown`).then((r) => r.json()),
     enabled: isExpanded,
@@ -1290,6 +1650,20 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
     mutationFn: async () => {
       const r = await fetch(`/api/creator-videos/${video.id}/breakdown`, { method: "POST" });
       if (!r.ok) throw new Error("Analysis failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video-breakdown", video.id] });
+    },
+  });
+
+  const deepAnalyzeMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/creator-videos/${video.id}/deep-breakdown`, { method: "POST" });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: "Deep analysis failed" }));
+        throw new Error(err.error || "Deep analysis failed");
+      }
       return r.json();
     },
     onSuccess: () => {
@@ -1319,7 +1693,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
     },
   });
 
-  const breakdown = breakdownQuery.data?.breakdown;
+  const breakdown = breakdownQuery.data?.breakdown ?? null;
+  const hasDeepDna = breakdown && (breakdown.storyStructure || breakdown.colorPalette || breakdown.replicationPlan);
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-slate-300 transition-colors">
@@ -1336,9 +1711,16 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-900 line-clamp-2">
-            {video.videoTitle || "Untitled Video"}
-          </p>
+          <div className="flex items-start gap-2">
+            <p className="text-sm font-medium text-slate-900 line-clamp-2 flex-1">
+              {video.videoTitle || "Untitled Video"}
+            </p>
+            {hasDeepDna && (
+              <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[8px] font-bold">
+                <Dna size={8} /> DNA
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-slate-500">{video.creatorHandle}</span>
             <span className={`px-1.5 py-0 rounded-full text-[9px] font-bold ${platformColor}`}>
@@ -1402,37 +1784,45 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
           {breakdownQuery.isLoading ? (
             <p className="text-xs text-slate-400">Loading breakdown...</p>
           ) : breakdown ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                { label: "Topic", value: breakdown.topic },
-                { label: "Angle", value: breakdown.angle },
-                { label: "Hook Format", value: breakdown.hookFormat },
-                { label: "Story Style", value: breakdown.storyStyle },
-                { label: "Visual Format", value: breakdown.visualFormat },
-                { label: "Visuals", value: breakdown.visuals },
-                { label: "Audio", value: breakdown.audio },
-              ].map((item) => (
-                <div key={item.label} className="bg-slate-50 rounded-lg p-2">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
-                  <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
-                </div>
-              ))}
-            </div>
+            <DnaDisplay breakdown={breakdown} />
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs text-slate-400">No breakdown yet.</p>
               <button
                 onClick={() => analyzeMutation.mutate()}
-                disabled={analyzeMutation.isPending}
+                disabled={analyzeMutation.isPending || deepAnalyzeMutation.isPending}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold hover:bg-violet-100 disabled:opacity-50"
               >
                 {analyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                {analyzeMutation.isPending ? "Analyzing..." : "Generate Breakdown"}
+                {analyzeMutation.isPending ? "Analyzing..." : "Quick Breakdown"}
+              </button>
+              <button
+                onClick={() => deepAnalyzeMutation.mutate()}
+                disabled={deepAnalyzeMutation.isPending || analyzeMutation.isPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold hover:bg-purple-100 disabled:opacity-50"
+              >
+                {deepAnalyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Dna size={10} />}
+                {deepAnalyzeMutation.isPending ? "Deep Analyzing..." : "Deep Analyze"}
               </button>
             </div>
           )}
-          {analyzeMutation.isError && (
-            <p className="text-xs text-rose-500 mt-1">{(analyzeMutation.error as Error).message}</p>
+          {/* Re-analyze button when breakdown exists but no deep DNA */}
+          {breakdown && !hasDeepDna && (
+            <div className="mt-2">
+              <button
+                onClick={() => deepAnalyzeMutation.mutate()}
+                disabled={deepAnalyzeMutation.isPending}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold hover:bg-purple-100 disabled:opacity-50"
+              >
+                {deepAnalyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Dna size={10} />}
+                {deepAnalyzeMutation.isPending ? "Deep Analyzing..." : "Upgrade to Deep DNA"}
+              </button>
+            </div>
+          )}
+          {(analyzeMutation.isError || deepAnalyzeMutation.isError) && (
+            <p className="text-xs text-rose-500 mt-1">
+              {((analyzeMutation.error || deepAnalyzeMutation.error) as Error)?.message}
+            </p>
           )}
         </div>
       )}

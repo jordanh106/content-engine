@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check } from "lucide-react";
-import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea } from "../shared/types.js";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield } from "lucide-react";
+import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
@@ -337,6 +337,13 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
 
 const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick }) => {
   const meta = CATEGORY_META[idea.category];
+  const { data: conceptData } = useQuery<{ concept: IdeaConcept | null }>({
+    queryKey: ["idea-concept", idea.topic],
+    queryFn: () => fetch(`/api/ideas-ai/concept/${encodeURIComponent(idea.topic)}`).then((r) => r.json()),
+    staleTime: 60_000,
+  });
+  const concept = conceptData?.concept;
+
   return (
     <div
       onClick={onClick}
@@ -344,7 +351,19 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-900 text-sm">{idea.topic}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-slate-900 text-sm">{idea.topic}</p>
+            {concept?.approved && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[8px] font-bold flex-shrink-0">
+                <Shield size={8} /> Concept Ready
+              </span>
+            )}
+            {concept && !concept.approved && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[8px] font-bold flex-shrink-0">
+                {concept.overallScore ?? "?"}/10
+              </span>
+            )}
+          </div>
           {idea.hookAngle && (
             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{idea.hookAngle}</p>
           )}

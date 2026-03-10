@@ -2,6 +2,9 @@ import fs from "fs";
 import { Router } from "express";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
+import { eq } from "drizzle-orm";
+import { db } from "../db.js";
+import { ideaConcepts } from "../../shared/schema.js";
 import { parseIdeaBank } from "../parsers/idea-bank.js";
 import { parseConfig } from "../parsers/config.js";
 import type {
@@ -257,6 +260,264 @@ export function createIdeasAiRouter(contentLibraryPath: string) {
         error instanceof Error ? error.message : "Failed to generate captions";
       console.error("[ideas-ai] Caption error:", message);
       res.status(500).json({ error: message });
+    }
+  });
+
+  // ============================================
+  // One-Sentence Concept Framework (Feature 5)
+  // ============================================
+
+  const CONCEPT_PROMPT = `You are a concept architect for short-form video. Evaluate this video concept.
+
+A great one-sentence concept must be:
+1. TECHNICALLY INTERESTING (1-10): Contains a surprising fact, counterintuitive angle, or novel approach
+2. EMOTIONALLY RESONANT (1-10): Connects to a feeling viewers already have (fear, curiosity, hope)
+3. 10-SECOND EXPLAINABLE (1-10): Understood immediately, no backstory needed
+4. VISUAL PAYOFF (1-10): Something satisfying to SEE, not just hear
+
+Generate:
+1. One-sentence concept (under 20 words)
+2. Score each dimension 1-10 with brief rationale
+3. Overall score (average of 4 dimensions, rounded)
+4. Strengths and weaknesses
+5. If overall < 7: suggest a refined version that scores higher
+
+Return JSON:
+{
+  "oneSentence": "...",
+  "technicalInterestScore": 8,
+  "emotionalResonanceScore": 7,
+  "tenSecondExplainabilityScore": 9,
+  "visualPayoffScore": 6,
+  "overallScore": 7,
+  "aiFeedback": {
+    "strengths": ["..."],
+    "weaknesses": ["..."],
+    "suggestions": ["..."]
+  },
+  "refinedVersion": "..." or null
+}
+
+No emdashes. Return JSON only.`;
+
+  // GET /concept/:topic - Get saved concept
+  router.get("/concept/:topic", async (req, res) => {
+    try {
+      const topic = decodeURIComponent(req.params.topic);
+      const concepts = db
+        .select()
+        .from(ideaConcepts)
+        .where(eq(ideaConcepts.ideaTopic, topic))
+        .all();
+      res.json({ concept: concepts[0] || null });
+    } catch (error) {
+      console.error("[ideas-ai] Get concept error:", error);
+      res.status(500).json({ error: "Failed to get concept" });
+    }
+  });
+
+  // POST /concept/:topic - Generate concept
+  router.post("/concept/:topic", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const topic = decodeURIComponent(req.params.topic);
+      const { hookAngle, format, audience } = req.body;
+
+      const config = fs.existsSync(configPath) ? parseConfig(configPath) : null;
+      const brandVoice = fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 800) : "";
+
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1024,
+        system: `${CONCEPT_PROMPT}\n\nBRAND CONTEXT:\n${brandVoice}`,
+        messages: [{
+          role: "user",
+          content: `IDEA: Topic: "${topic}"${hookAngle ? ` | Hook: "${hookAngle}"` : ""}${format ? ` | Format: ${format}` : ""}${audience ? ` | Audience: ${audience}` : ""}
+${config ? `\nPractice: ${config.name}. Audiences: ${config.audiences.map((a) => a.label).join(", ")}` : ""}`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      // Save to DB (upsert)
+      db.delete(ideaConcepts).where(eq(ideaConcepts.ideaTopic, topic)).run();
+      const saved = db
+        .insert(ideaConcepts)
+        .values({
+          ideaTopic: topic,
+          oneSentence: parsed.oneSentence,
+          technicalInterestScore: parsed.technicalInterestScore,
+          emotionalResonanceScore: parsed.emotionalResonanceScore,
+          tenSecondExplainabilityScore: parsed.tenSecondExplainabilityScore,
+          visualPayoffScore: parsed.visualPayoffScore,
+          overallScore: parsed.overallScore,
+          aiFeedback: JSON.stringify(parsed.aiFeedback),
+          refinedVersion: parsed.refinedVersion || null,
+          approved: parsed.overallScore >= 7,
+        })
+        .returning()
+        .get();
+
+      res.json({ concept: saved });
+    } catch (error) {
+      console.error("[ideas-ai] Generate concept error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate concept" });
+    }
+  });
+
+  // POST /concept/:topic/refine - Refine concept with feedback
+  router.post("/concept/:topic/refine", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const topic = decodeURIComponent(req.params.topic);
+      const { currentConcept, feedback } = req.body;
+
+      if (!currentConcept) {
+        res.status(400).json({ error: "currentConcept is required" });
+        return;
+      }
+
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1024,
+        system: CONCEPT_PROMPT,
+        messages: [{
+          role: "user",
+          content: `Refine this concept for topic "${topic}".
+
+CURRENT CONCEPT: "${currentConcept}"
+${feedback ? `USER FEEDBACK: "${feedback}"` : ""}
+
+Create an improved one-sentence concept that scores higher. Re-score all 4 dimensions.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      // Update in DB
+      db.delete(ideaConcepts).where(eq(ideaConcepts.ideaTopic, topic)).run();
+      const saved = db
+        .insert(ideaConcepts)
+        .values({
+          ideaTopic: topic,
+          oneSentence: parsed.oneSentence,
+          technicalInterestScore: parsed.technicalInterestScore,
+          emotionalResonanceScore: parsed.emotionalResonanceScore,
+          tenSecondExplainabilityScore: parsed.tenSecondExplainabilityScore,
+          visualPayoffScore: parsed.visualPayoffScore,
+          overallScore: parsed.overallScore,
+          aiFeedback: JSON.stringify(parsed.aiFeedback),
+          refinedVersion: parsed.refinedVersion || null,
+          approved: parsed.overallScore >= 7,
+        })
+        .returning()
+        .get();
+
+      res.json({ concept: saved });
+    } catch (error) {
+      console.error("[ideas-ai] Refine concept error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to refine concept" });
+    }
+  });
+
+  // PUT /concept/:topic - Manually update concept (triggers re-scoring)
+  router.put("/concept/:topic", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable." });
+      return;
+    }
+
+    try {
+      const topic = decodeURIComponent(req.params.topic);
+      const { oneSentence, approved } = req.body;
+
+      if (approved !== undefined && !oneSentence) {
+        // Just toggling approval
+        const existing = db.select().from(ideaConcepts).where(eq(ideaConcepts.ideaTopic, topic)).all();
+        if (existing.length === 0) {
+          res.status(404).json({ error: "No concept found" });
+          return;
+        }
+        db.delete(ideaConcepts).where(eq(ideaConcepts.ideaTopic, topic)).run();
+        const saved = db
+          .insert(ideaConcepts)
+          .values({
+            ...existing[0],
+            id: undefined as unknown as number,
+            approved,
+          })
+          .returning()
+          .get();
+        res.json({ concept: saved });
+        return;
+      }
+
+      if (!oneSentence) {
+        res.status(400).json({ error: "oneSentence is required" });
+        return;
+      }
+
+      // Re-score with AI
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        system: CONCEPT_PROMPT,
+        messages: [{
+          role: "user",
+          content: `Score this concept for topic "${topic}": "${oneSentence}"`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+
+      db.delete(ideaConcepts).where(eq(ideaConcepts.ideaTopic, topic)).run();
+      const saved = db
+        .insert(ideaConcepts)
+        .values({
+          ideaTopic: topic,
+          oneSentence: oneSentence,
+          technicalInterestScore: parsed.technicalInterestScore,
+          emotionalResonanceScore: parsed.emotionalResonanceScore,
+          tenSecondExplainabilityScore: parsed.tenSecondExplainabilityScore,
+          visualPayoffScore: parsed.visualPayoffScore,
+          overallScore: parsed.overallScore,
+          aiFeedback: JSON.stringify(parsed.aiFeedback),
+          refinedVersion: null,
+          approved: approved ?? parsed.overallScore >= 7,
+        })
+        .returning()
+        .get();
+
+      res.json({ concept: saved });
+    } catch (error) {
+      console.error("[ideas-ai] Update concept error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update concept" });
     }
   });
 

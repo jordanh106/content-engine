@@ -26,7 +26,11 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 
 | Topic | Suggested Format | Hook Angle | Priority | Inspired By | Date Added |
 |-------|-----------------|------------|----------|-------------|------------|
-| | | | | | |
+| Silent Morning Spine Routine | E (Walkthrough) | Pattern-interrupt (no talking) | High | n8n Watchlist Intelligence | 2026-03-09 |
+| Gaming Posture Series for Teen Athletes | C (Demo) | Contrast Pattern: Wrong vs Right Gaming Posture | High | n8n Watchlist Intelligence | 2026-03-09 |
+| Gaming Posture Series for Teen Athletes | C (Demo) | Contrast Pattern: Wrong vs Right Gaming Posture | High | n8n Watchlist Intelligence | 2026-03-09 |
+| Gaming Posture Series: What Your Favorite Game is Doing to Your Spine | C (Demo) | Contrast Pattern | High | n8n Watchlist Intelligence | 2026-03-09 |
+| Pregnancy Spine Journey: Week-by-Week 3D Visualization | A (Explainer) | Pattern-interrupt | High | n8n Watchlist Intelligence | 2026-03-09 |
 
 ---
 
