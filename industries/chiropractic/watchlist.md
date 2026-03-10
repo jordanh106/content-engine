@@ -17,7 +17,6 @@ Chiropractors in the Woodstock / North Atlanta metro area competing for the same
 **Local content gaps to exploit:** None of these competitors are doing educational explainers, myth busters, prenatal/pediatric-specific content, or high-production short-form video. The entire Woodstock chiro market on social media is underserved.
 
 ---
-| @spinehealth.edu | TikTok |  |  |  |  | - |
 
 ## Chiro Content Leaders
 
@@ -60,6 +59,7 @@ Creators outside chiropractic whose content strategies, audience overlap, or for
 **What to steal:** DocJenFit's educational-to-platform pipeline (content to app/membership), Dr. Dan's interactive "test yourself" format that drives saves/shares.
 
 ---
+| @spinehealth.edu | TikTok |  |  |  |  | - |
 
 ## How to Use
 

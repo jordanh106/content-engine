@@ -1707,6 +1707,15 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 > [Direct to camera] What happens when you skip recovery between training sessions?
 
+
+#### A8: Spinal Disc Herniation Education
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] What happens when a disc in your spine herniates?
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

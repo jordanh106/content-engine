@@ -178,6 +178,15 @@ export function createWatchlistRouter(contentLibraryPath: string) {
     }
 
     const handle = body.handle.startsWith("@") ? body.handle : `@${body.handle}`;
+
+    // Prevent duplicate entries
+    const existing = parseWatchlist(watchlistPath);
+    const normalized = handle.replace("@", "").toLowerCase();
+    if (existing.some((c) => c.handle.replace("@", "").toLowerCase() === normalized)) {
+      res.status(409).json({ error: "Creator already on watchlist" });
+      return;
+    }
+
     const creator: WatchlistCreator = {
       handle,
       platform: body.platform,

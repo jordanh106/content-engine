@@ -157,7 +157,12 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
 
       if (!n8nResponse.ok) {
         const errText = await n8nResponse.text().catch(() => "Unknown error");
-        throw new Error(`n8n workflow failed (${n8nResponse.status}): ${errText}`);
+        console.warn(`[creator-analysis-ai] n8n failed (${n8nResponse.status}), falling back to direct API for ${handle}`);
+        req.url = `/${rawHandle}/analyze`;
+        req.params.handle = rawHandle;
+        return router(req, res, () => {
+          res.status(500).json({ error: `n8n failed and no fallback: ${errText}` });
+        });
       }
 
       const result = await n8nResponse.json() as { success?: boolean; markdown?: string; handle?: string; analyzedAt?: string };
@@ -192,7 +197,10 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Analysis failed";
       console.error("[creator-analysis-ai] n8n trigger error:", message);
-      res.status(500).json({ error: message });
+      const isBilling = message.toLowerCase().includes("credit") || message.toLowerCase().includes("balance");
+      res.status(isBilling ? 402 : 500).json({
+        error: isBilling ? `Anthropic API: ${message}. Check workspace spending limits at console.anthropic.com` : message,
+      });
     }
   });
 
@@ -298,7 +306,10 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
       }
       const message = error instanceof Error ? error.message : "Analysis failed";
       console.error("[creator-analysis-ai] Error:", message);
-      res.status(500).json({ error: message });
+      const isBilling = message.toLowerCase().includes("credit") || message.toLowerCase().includes("balance");
+      res.status(isBilling ? 402 : 500).json({
+        error: isBilling ? `Anthropic API: ${message}. Check workspace spending limits at console.anthropic.com` : message,
+      });
     }
   });
 

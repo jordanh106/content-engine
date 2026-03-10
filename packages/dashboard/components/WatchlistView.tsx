@@ -181,6 +181,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showLogMetrics, setShowLogMetrics] = useState<string | null>(null);
   const [benchmarkExpanded, setBenchmarkExpanded] = useState(false);
+  const [enrichingHandle, setEnrichingHandle] = useState<string | null>(null);
   const creators = data?.creators ?? [];
   const sections = data?.sections ?? [];
 
@@ -216,6 +217,29 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
 
   const [analysisResult, setAnalysisResult] = useState<{ strengths: string[]; gaps: string[]; opportunities: string[]; summary: string } | null>(null);
 
+  const enrichMutation = useMutation({
+    mutationFn: async (handle: string) => {
+      const clean = handle.replace("@", "").toLowerCase();
+      const r = await fetch(`/api/creator-analysis/${clean}/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(300_000),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
+        throw new Error(d.error || "Enrichment failed");
+      }
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      setEnrichingHandle(null);
+    },
+    onError: () => {
+      setEnrichingHandle(null);
+    },
+  });
+
   const addCreatorMutation = useMutation({
     mutationFn: async (body: WatchlistCreator & { section?: string }) => {
       const r = await fetch("/api/watchlist", {
@@ -224,11 +248,15 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
         body: JSON.stringify(body),
       });
       if (!r.ok) { const d = await r.json(); throw new Error(d.error || "Failed to add"); }
-      return r.json();
+      return r.json() as Promise<{ added: boolean; handle: string }>;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       setShowAddForm(false);
+      // Auto-enrich the new creator
+      const handle = result.handle;
+      setEnrichingHandle(handle);
+      enrichMutation.mutate(handle);
     },
   });
 
@@ -511,6 +539,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
               onToggle={() => setExpandedHandle(expandedHandle === creator.handle ? null : creator.handle)}
               onDelete={() => deleteCreatorMutation.mutate(creator.handle)}
               isDeleting={deleteCreatorMutation.isPending}
+              isEnriching={enrichingHandle === creator.handle}
             />
           ))}
         </div>
@@ -710,9 +739,10 @@ type CreatorCardProps = {
   onToggle: () => void;
   onDelete: () => void;
   isDeleting: boolean;
+  isEnriching?: boolean;
 };
 
-const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle, onDelete, isDeleting }) => {
+const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle, onDelete, isDeleting, isEnriching }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const queryClient = useQueryClient();
   const cleanHandle = creator.handle.replace("@", "").toLowerCase();
@@ -785,16 +815,16 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
         <div className="flex items-center gap-2">
           <button
             onClick={() => analyzeMutation.mutate(creator.handle)}
-            disabled={analyzeMutation.isPending}
+            disabled={analyzeMutation.isPending || isEnriching}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all",
-              analyzeMutation.isPending
+              (analyzeMutation.isPending || isEnriching)
                 ? "bg-violet-100 text-violet-500"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200",
             )}
           >
-            {analyzeMutation.isPending ? (
-              <><Loader2 size={12} className="animate-spin" /> Analyzing...</>
+            {(analyzeMutation.isPending || isEnriching) ? (
+              <><Loader2 size={12} className="animate-spin" /> {isEnriching ? "Enriching..." : "Analyzing..."}</>
             ) : (
               <><Radar size={12} /> Analyze</>
             )}

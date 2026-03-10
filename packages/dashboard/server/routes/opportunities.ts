@@ -15,8 +15,31 @@ import { computeSignals } from "../lib/opportunity-signals.js";
 import { FORMATS } from "../../shared/types.js";
 import type { ContentOpportunity, OpportunitiesResponse, IdeaCategory } from "../../shared/types.js";
 
-function stripCodeFences(text: string): string {
-  return text.replace(/^```(?:json)?\s*\n?/gm, "").replace(/\n?```\s*$/gm, "").trim();
+function extractJSON(text: string): string {
+  // Strip markdown code fences
+  let cleaned = text.replace(/^```(?:json)?\s*\n?/gm, "").replace(/\n?```\s*$/gm, "").trim();
+
+  // Find the first { or [ and last matching } or ]
+  const firstBrace = cleaned.indexOf("{");
+  const firstBracket = cleaned.indexOf("[");
+  let start = -1;
+  let end = -1;
+
+  if (firstBrace === -1 && firstBracket === -1) return cleaned;
+
+  if (firstBracket === -1 || (firstBrace !== -1 && firstBrace < firstBracket)) {
+    start = firstBrace;
+    end = cleaned.lastIndexOf("}");
+  } else {
+    start = firstBracket;
+    end = cleaned.lastIndexOf("]");
+  }
+
+  if (start !== -1 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
+  }
+
+  return cleaned.trim();
 }
 
 // In-memory cache with TTL
@@ -296,16 +319,30 @@ RULES:
       });
 
       const responseText = message.content[0].type === "text" ? message.content[0].text : "";
-      const cleaned = stripCodeFences(responseText);
+      const cleaned = extractJSON(responseText);
 
       let opportunities: ContentOpportunity[] = [];
       try {
         const parsed = JSON.parse(cleaned);
         opportunities = (parsed.opportunities ?? parsed) as ContentOpportunity[];
-      } catch {
-        console.error("[opportunities] Failed to parse AI response:", cleaned.slice(0, 200));
-        res.status(500).json({ error: "Failed to parse AI response" });
-        return;
+      } catch (parseErr) {
+        console.error("[opportunities] Failed to parse AI response. Raw length:", responseText.length, "Cleaned length:", cleaned.length);
+        console.error("[opportunities] Cleaned text (first 500):", cleaned.slice(0, 500));
+
+        // Last-ditch: try to find a JSON array in the response
+        const arrayMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (arrayMatch) {
+          try {
+            opportunities = JSON.parse(arrayMatch[0]) as ContentOpportunity[];
+            console.log("[opportunities] Recovered via array extraction, found", opportunities.length, "items");
+          } catch {
+            res.status(500).json({ error: "Failed to parse AI response. The AI returned malformed JSON." });
+            return;
+          }
+        } else {
+          res.status(500).json({ error: "Failed to parse AI response. The AI returned malformed JSON." });
+          return;
+        }
       }
 
       const result: OpportunitiesResponse = {
@@ -322,7 +359,10 @@ RULES:
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to generate opportunities";
       console.error("[opportunities] Error:", message);
-      res.status(500).json({ error: message });
+      const isBilling = message.toLowerCase().includes("credit") || message.toLowerCase().includes("balance");
+      res.status(isBilling ? 402 : 500).json({
+        error: isBilling ? `Anthropic API: ${message}. Check workspace spending limits at console.anthropic.com` : message,
+      });
     }
   });
 
@@ -431,7 +471,7 @@ RULES:
       });
 
       const responseText = message.content[0].type === "text" ? message.content[0].text : "";
-      const cleaned = stripCodeFences(responseText);
+      const cleaned = extractJSON(responseText);
 
       try {
         const parsed = JSON.parse(cleaned);

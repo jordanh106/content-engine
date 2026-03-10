@@ -17,6 +17,8 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | 5-Minute Office Recovery | F (Quick Tip) | Instant Desk Relief | High | n8n Content Intelligence | 2026-03-03 |
 | Chair Exercises for Spinal Decompression | C | Is sitting all day destroying your spine? | High | Opportunities AI | 2026-03-04 |
 | The Phone Position Destroying Your Neck | D | Your phone isn't the problem - this is | High | Opportunities AI | 2026-03-06 |
+| 5 Signs Your Pillow Is Ruining Your Neck | B (Checklist) | Your pillow might be the hidden cause of your neck pain | High | n8n Content Intelligence | 2026-03-10 |
+| Instant Desk Posture Fix | F (Quick Tip) | Transform your posture in 30 seconds | High | n8n Content Intelligence | 2026-03-10 |
 
 ---
 
@@ -47,6 +49,8 @@ Always relevant, not time-sensitive. Good for filling calendar gaps.
 | Tech neck exercises for teens | C (Demo) | Statistic: "Teens spend 7+ hours on screens daily" | Medium | Kids | 2026-03-02 |
 | Sleep Position Masterclass | B (Checklist) | Fix your sleep in 3 steps | Medium | n8n Content Intelligence | 2026-03-02 |
 | Sleep Posture Masterclass | A (Explainer) | Why You're Still Waking Up Stiff | High | n8n Content Intelligence | 2026-03-03 |
+| The Truth About Cracking Your Own Back | D (Myth Buster) | Why DIY adjustments can be dangerous | High | n8n Content Intelligence | 2026-03-10 |
+| Athletic Performance Recovery Protocol | A (Explainer) | Why athletes need chiropractic care | Medium | n8n Content Intelligence | 2026-03-10 |
 
 
 ---
@@ -61,6 +65,8 @@ Ideas from patient questions, DMs, comments, or in-office conversations.
 | Senior Mobility Guide | E (Walkthrough) | Age-proof your spine | Medium | n8n Content Intelligence | 2026-03-02 |
 | Pregnancy Pain Relief Series | E (Walkthrough) | Safe Exercises for Each Trimester | Medium | n8n Content Intelligence | 2026-03-03 |
 | Senior Mobility Success Story | G (Patient Story) | From Walker to Walking | Medium | n8n Content Intelligence | 2026-03-03 |
+| Pregnancy-Safe Adjustment Demonstration | C (Demo) | Safe chiropractic care during each trimester | High | n8n Content Intelligence | 2026-03-10 |
+| Senior's Guide to Better Sleep Posture | E (Walkthrough) | Age-specific tips for pain-free sleep | Medium | n8n Content Intelligence | 2026-03-10 |
 
 ---
 
@@ -71,6 +77,7 @@ Behind-the-scenes, humor, personal brand content, experimental formats.
 | Topic | Suggested Format | Hook Angle | Priority | Notes | Date Added |
 |-------|-----------------|------------|----------|-------|------------|
 | The AI Reveal: Before vs After | F (Quick Tip) or A (Explainer) | "Can you tell which shots are AI?" | High | Show finished Enhanced video, then toggle AI layers off to reveal raw footage. Builds trust, showcases production quality. Before/after reveals are inherently engaging. | 2026-03-10 |
+| Marathon Runner's Success Story | G (Patient Story) | From injury to personal best | Low | n8n Content Intelligence | 2026-03-10 |
 
 ---
 
@@ -83,3 +90,4 @@ Move ideas here after they've been promoted to the calendar. Keep for reference.
 | Pregnancy Pain Relief | C (Demo) | 2026-03-06 | |
 | Tech Neck Prevention Guide | A (Explainer) | 2026-03-06 | |
 | Desk Worker Revival | F (Quick Tip) | 2026-03-06 | |
+| Spinal Disc Herniation Education | A | 2026-03-10 | |
