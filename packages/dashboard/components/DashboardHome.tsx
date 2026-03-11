@@ -16,6 +16,7 @@ import {
   Eye,
   Heart,
   Clock,
+  Zap,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -606,6 +607,41 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Superfan Pipeline (Kallaway 90-Minute Rule) */}
+      {(() => {
+        const published = pipeline?.summary.PUBLISHED ?? 0;
+        const TARGET = 270;
+        const pct = Math.min(Math.round((published / TARGET) * 100), 100);
+        const estMinutes = Math.round(published * 25 / 60); // ~25s avg short-form video
+        return (
+          <section>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+              <Zap size={12} className="text-violet-500" />
+              Superfan Pipeline
+            </h2>
+            <div className="bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-bold text-slate-700">{published} / {TARGET} videos</p>
+                <p className="text-sm font-bold text-violet-600">{pct}%</p>
+              </div>
+              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-teal-500 transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10px] text-slate-400">~{estMinutes} min of content published</p>
+                <p className="text-[10px] text-slate-400">Goal: 90 min (superfan territory)</p>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                270 short-form videos ≈ 90 min of watched content. That's when casual viewers become superfans.
+              </p>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Content Health Score */}
       {healthData && (

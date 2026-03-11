@@ -6,6 +6,58 @@ Use this library when writing hooks in `/content-planner` and `/video-director`.
 
 ---
 
+## Kallaway Hook Framework
+
+### The 4-Component Alignment Rule
+
+Every hook has 4 components that must work together. Misalignment between any = viewer churn.
+
+1. **Visual Hook** (most important) - What viewers SEE first. Eyes process before ears.
+2. **Text Hook** - On-screen text overlay. Reinforces the visual.
+3. **Spoken Hook** - What you SAY (3rd in importance). Opens the curiosity loop.
+4. **Audio Hook** - Sound/music that supports the mood and energy.
+
+**Rule**: Start ideation with the strongest VISUAL, then write the spoken hook to match. Visuals lead words, not the other way around.
+
+### The 3-Part Hook Structure
+
+Apply to every hook. This is the micro-architecture of the first 3-5 seconds:
+
+1. **Context Lean**: State the topic + why it matters (0-2 seconds)
+2. **Pattern Interrupt**: Contrast word ("but", "actually", "except") that disrupts expectation
+3. **Contrarian Snapback**: Flip to an unexpected direction after the interrupt
+
+Example: "80% of desk workers have forward head posture. But the fix isn't what your PT told you. It starts with your feet."
+
+### The Re-hook Dance (Mid-Video Retention)
+
+Videos are not Hook → Body → CTA. They are:
+
+**Hook → Context → Conflict → REHOOK → Context → Conflict → REHOOK**
+
+Each rehook opens a new curiosity loop. More open loops simultaneously = longer retention (the "mental itch" effect). Viewers stay because they have unresolved questions stacking up.
+
+### 6 Hook Archetypes
+
+| Archetype | Strategy | Formula | Maps to Category Below |
+|-----------|----------|---------|----------------------|
+| Fortune Teller | Present → predict future | "[Thing] is about to [change]. Here's why." | Question, Statistic |
+| Experimenter | Test + reveal outcome | "I [tried] [X] for [time]. Here's what happened." | Emotional/Story |
+| Teacher | Pain point → method | "[N] things about [topic] that [claim]." | Question, "Did You Know" |
+| Magician | Unexpected visual → explain | "[Surprising visual]. That's not what you think." | Pattern Interrupt |
+| Investigator | Hidden element → reveal | "[Thing] is hiding something [nobody talks about]." | "Did You Know" |
+| Contrarian | Challenge belief → opposite | "[Common advice] is actually [wrong]. Here's why." | Myth/Contrarian |
+
+### Decision Framework
+
+Before creating any hook, answer:
+1. What is the strongest available **visual**?
+2. Which archetype creates the maximum **curiosity gap** for that visual?
+
+If neither answer is strong, rework or abandon the idea.
+
+---
+
 ## Question Hooks
 
 High watch time. Viewers stay to hear the answer.

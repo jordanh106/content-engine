@@ -33,6 +33,8 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 | Gaming Posture Series for Teen Athletes | C (Demo) | Contrast Pattern: Wrong vs Right Gaming Posture | High | n8n Watchlist Intelligence | 2026-03-09 |
 | Gaming Posture Series: What Your Favorite Game is Doing to Your Spine | C (Demo) | Contrast Pattern | High | n8n Watchlist Intelligence | 2026-03-09 |
 | Pregnancy Spine Journey: Week-by-Week 3D Visualization | A (Explainer) | Pattern-interrupt | High | n8n Watchlist Intelligence | 2026-03-09 |
+| Gamer's Neck Challenge | C (Demo) | Your teen does this for 6 hours daily. Here's the 30-second fix | High | n8n Watchlist Intelligence | 2026-03-11 |
+| 3 Generations, 1 Adjustment | G (Patient Story) | Watch how we treat grandma, mom, and daughter in one visit | High | n8n Watchlist Intelligence | 2026-03-11 |
 
 ---
 

@@ -15,6 +15,10 @@ const HOOK_PATTERNS = [
   /^(myth|fact|truth):/i,
 ];
 
+// Kallaway 3-Part Hook Structure detection
+const PATTERN_INTERRUPT_WORDS = /\b(but|however|yet|actually|except|turns out|here'?s the thing|the (truth|reality|problem) is|what (most|nobody))\b/i;
+const CONTRARIAN_MARKERS = /\b(wrong|backwards|opposite|instead|not what you think|might surprise|won'?t believe|isn'?t what|different from|contrary|myth)\b/i;
+
 const CTA_PATTERNS = [
   /save this/i,
   /follow for/i,
@@ -45,15 +49,26 @@ export function scoreCaption(caption: string, platform: string): ScoreBreakdown 
   const hookLine = lines[0] || "";
   const limits = PLATFORM_LIMITS[platform];
 
-  // Hook strength (0-25)
+  // Hook strength (0-25) - Kallaway 3-Part Structure
   let hook = 0;
+
+  // 1. Context Lean (0-10): First line establishes topic + why it matters
   const matchesPattern = HOOK_PATTERNS.some((p) => p.test(hookLine));
-  if (matchesPattern) hook += 12;
-  if (limits && hookLine.length <= limits.hookVisible && hookLine.length > 0) hook += 8;
-  else if (hookLine.length > 0) hook += 3;
-  // Contains number or question (pattern interrupt)
-  if (/\d/.test(hookLine)) hook += 3;
-  if (/\?/.test(hookLine)) hook += 2;
+  if (matchesPattern) hook += 5; // Known hook pattern
+  if (limits && hookLine.length <= limits.hookVisible && hookLine.length > 0) hook += 3; // Fits visible area
+  else if (hookLine.length > 0) hook += 1;
+  if (hookLine.length >= 10 && hookLine.length <= 120) hook += 2; // Good length for context lean
+
+  // 2. Pattern Interrupt (0-10): Contrast word that disrupts expectation
+  const first3Lines = lines.slice(0, 3).join(" ");
+  if (PATTERN_INTERRUPT_WORDS.test(first3Lines)) hook += 7;
+  else if (/\?/.test(hookLine)) hook += 4; // Question as interrupt
+  else if (/\d/.test(hookLine)) hook += 3; // Number as interrupt
+
+  // 3. Contrarian Snapback (0-5): Flips to unexpected direction
+  if (CONTRARIAN_MARKERS.test(first3Lines)) hook += 5;
+  else if (lines.length >= 2 && PATTERN_INTERRUPT_WORDS.test(lines[1] || "")) hook += 2;
+
   hook = Math.min(hook, 25);
 
   // CTA presence (0-20)
@@ -63,18 +78,26 @@ export function scoreCaption(caption: string, platform: string): ScoreBreakdown 
   if (ctaMatches.length >= 2) cta += 6;
   cta = Math.min(cta, 20);
 
-  // Readability (0-20) - sentence variety and appropriate grade level
+  // Readability (0-20) - sentence variety, rhythm, and appropriate grade level
   let readability = 0;
   const sentences = caption.split(/[.!?]+/).filter((s) => s.trim().length > 0);
   const avgWords = sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / Math.max(sentences.length, 1);
   // Optimal average sentence length is 8-15 words
-  if (avgWords >= 5 && avgWords <= 20) readability += 10;
-  else if (avgWords >= 3 && avgWords <= 25) readability += 5;
-  // Varied sentence lengths
-  if (sentences.length >= 2) {
+  if (avgWords >= 5 && avgWords <= 20) readability += 8;
+  else if (avgWords >= 3 && avgWords <= 25) readability += 4;
+  // Rhythm score: reward sentence length variation (Kallaway pacing principle)
+  if (sentences.length >= 3) {
     const lengths = sentences.map((s) => s.trim().split(/\s+/).length);
-    const variance = lengths.some((l) => Math.abs(l - avgWords) > 3);
-    if (variance) readability += 5;
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const stdDev = Math.sqrt(lengths.reduce((sum, l) => sum + (l - mean) ** 2, 0) / lengths.length);
+    // Good rhythm = stdDev > 2 (varied sentence lengths)
+    if (stdDev >= 3) readability += 7; // Great rhythm variation
+    else if (stdDev >= 2) readability += 5; // Good rhythm
+    else if (stdDev >= 1) readability += 2; // Monotonous
+    // else 0 - all same length
+  } else if (sentences.length >= 2) {
+    const lengths = sentences.map((s) => s.trim().split(/\s+/).length);
+    if (Math.abs(lengths[0] - lengths[1]) > 3) readability += 4;
     else readability += 2;
   }
   // Line breaks for readability

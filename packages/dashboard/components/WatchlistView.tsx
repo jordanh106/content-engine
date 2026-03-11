@@ -36,6 +36,16 @@ const PLATFORM_COLORS: Record<string, string> = {
   X: "bg-slate-900 text-white",
 };
 
+const RELEVANT_PLATFORMS = new Set(["instagram", "tiktok", "youtube", "x", "twitter"]);
+
+function parsePlatforms(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((p) => p.replace(/\(primary\)/i, "").replace(/x\/twitter/i, "X").trim())
+    .filter((p) => p && RELEVANT_PLATFORMS.has(p.toLowerCase()))
+    .filter((v, i, a) => a.indexOf(v) === i);
+}
+
 // ============================
 // Competitor Content Gaps
 // ============================
@@ -223,7 +233,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       const r = await fetch(`/api/creator-analysis/${clean}/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(300_000),
+        signal: AbortSignal.timeout(180_000),
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
@@ -357,10 +367,10 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-sm font-bold text-teal-800">Your Channel</p>
-                    <p className="text-[10px] font-medium text-teal-600">@collective_family</p>
+                    <p className="text-[10px] font-medium text-teal-600">@collectivechiro</p>
                   </div>
                   <button
-                    onClick={() => setShowLogMetrics("@collective_family")}
+                    onClick={() => setShowLogMetrics("@collectivechiro")}
                     className="text-[10px] font-bold text-teal-600 hover:text-teal-800"
                   >
                     Log Snapshot
@@ -566,6 +576,16 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                 >
                   <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
                 </button>
+                {syncMutation.isSuccess && (
+                  <span className="text-[10px] text-emerald-600 font-medium">
+                    {(syncMutation.data as { wasNew?: boolean })?.wasNew ? "New report synced!" : "Up to date"}
+                  </span>
+                )}
+                {syncMutation.isError && (
+                  <span className="text-[10px] text-red-500 font-medium">
+                    {(syncMutation.error as Error)?.message || "Sync failed"}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -753,7 +773,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
       const r = await fetch(`/api/creator-analysis/${clean}/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(300_000),
+        signal: AbortSignal.timeout(180_000),
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
@@ -769,7 +789,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
     },
   });
 
-  const platformColor = PLATFORM_COLORS[creator.platform] ?? "bg-slate-200 text-slate-700";
+  const platforms = parsePlatforms(creator.platform);
   const isStale = !creator.lastAnalyzed || creator.lastAnalyzed.trim() === "";
 
   return (
@@ -789,9 +809,13 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
             <p className="text-xs text-slate-500 mt-0.5">{creator.followers} followers</p>
           )}
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${platformColor}`}>
-          {creator.platform}
-        </span>
+        <div className="flex flex-wrap gap-1 justify-end">
+          {platforms.map((p) => (
+            <span key={p} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${PLATFORM_COLORS[p] ?? "bg-slate-200 text-slate-700"}`}>
+              {p}
+            </span>
+          ))}
+        </div>
       </div>
 
       {creator.whyTracking && (

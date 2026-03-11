@@ -1,12 +1,41 @@
 import fs from "fs";
 import { Router } from "express";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { RateLimitError, APIError } from "@anthropic-ai/sdk";
 import { eq, desc, sql } from "drizzle-orm";
 import { db } from "../db.js";
 import { channelSnapshots, performanceMetrics } from "../../shared/schema.js";
 import { parseCreatorInsights } from "../parsers/creator-insights.js";
 import { parseWatchlist } from "../parsers/watchlist.js";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callWithRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isRateLimit = error instanceof RateLimitError ||
+        (error instanceof APIError && error.status === 429);
+      if (isRateLimit && attempt < maxRetries) {
+        const retryAfter = error instanceof APIError
+          ? Number(error.headers?.get("retry-after")) || 0
+          : 0;
+        const waitSec = retryAfter > 0 ? retryAfter : 15 * (attempt + 1);
+        console.log(`[${label}] Rate limited, retrying in ${waitSec}s (attempt ${attempt + 1}/${maxRetries})...`);
+        await sleep(waitSec * 1000);
+        continue;
+      }
+      if (isRateLimit) {
+        throw new Error("Rate limit reached. Please wait a minute and try again.");
+      }
+      throw error;
+    }
+  }
+  throw new Error("Unexpected retry exhaustion");
+}
 
 function stripCodeFences(text: string): string {
   let cleaned = text.trim();
@@ -78,7 +107,7 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
 
   // GET /api/benchmarking/compare - your metrics vs all tracked channels
   router.get("/compare", (_req, res) => {
-    // Your aggregate metrics from performanceMetrics
+    // Your aggregate metrics from performanceMetrics (video content only, exclude static posts with 0 views)
     const yourStats = db
       .select({
         avgViews: sql<number>`COALESCE(AVG(${performanceMetrics.views}), 0)`,
@@ -88,6 +117,7 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
         totalEntries: sql<number>`COUNT(*)`,
       })
       .from(performanceMetrics)
+      .where(sql`${performanceMetrics.views} > 0`)
       .get();
 
     const avgViews = Math.round(Number(yourStats?.avgViews) || 0);
@@ -111,6 +141,9 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
     const publishedResult = db.all(sql`SELECT COUNT(*) as count FROM video_status WHERE current_status = 'PUBLISHED'`);
     const totalPublished = Number((publishedResult[0] as Record<string, unknown>)?.count) || 0;
 
+    // Our own handles (excluded from competitor list)
+    const ownHandles = new Set(["@collectivechiro", "@CollectiveFamilyChiro"]);
+
     // Get latest snapshot for each competitor handle
     const allSnapshots = db
       .select()
@@ -120,7 +153,7 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
 
     const latestByHandle: Record<string, typeof allSnapshots[0]> = {};
     for (const s of allSnapshots) {
-      if (!latestByHandle[s.handle]) {
+      if (!latestByHandle[s.handle] && !ownHandles.has(s.handle)) {
         latestByHandle[s.handle] = s;
       }
     }
@@ -145,6 +178,9 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
       };
     });
 
+    // Get our own latest snapshot for follower count
+    const ownSnapshot = allSnapshots.find((s) => ownHandles.has(s.handle));
+
     res.json({
       yourMetrics: {
         avgViews,
@@ -152,6 +188,7 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
         avgSaveRate,
         postsPerWeek,
         totalPublished,
+        followers: ownSnapshot?.followers || null,
       },
       competitors,
     });
@@ -222,12 +259,15 @@ ${comparisonData?.competitors ? comparisonData.competitors.map((c: Record<string
 
 What are our strengths, gaps, and opportunities compared to these competitors?`;
 
-      const response = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userContent }],
-      });
+      const response = await callWithRetry(
+        () => client!.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userContent }],
+        }),
+        "benchmarking",
+      );
 
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") {

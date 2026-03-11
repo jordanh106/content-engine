@@ -19,6 +19,11 @@ import {
   Upload,
   ArrowRight,
   CalendarPlus,
+  Wand2,
+  Bookmark,
+  Zap,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 import type { ConversationMessage } from "../shared/types.js";
 import type { SavedCaption, FormatId, ProductionStatus, DashboardView } from "../shared/types.js";
@@ -220,23 +225,11 @@ type VideoSummary = {
   format: FormatId;
   status: ProductionStatus;
   scriptPreview: string;
+  audienceLabel?: string;
 };
 
 type CaptionsResponse = {
   captions: SavedCaption[];
-};
-
-type PipelineVideo = {
-  code: string;
-  title: string;
-  format: FormatId;
-  audience: string;
-  audienceLabel: string;
-  daysInStage: number;
-};
-
-type PipelineResponse = {
-  stages: Record<ProductionStatus, PipelineVideo[]>;
 };
 
 type CaptionStudioProps = {
@@ -285,6 +278,82 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
   const [schedulePlatform, setSchedulePlatform] = useState("instagram_reels");
   const [scheduleSuccess, setScheduleSuccess] = useState(false);
 
+  // Freeform caption mode state
+  const [freeformDesc, setFreeformDesc] = useState("");
+  const [freeformMood, setFreeformMood] = useState("");
+  const [freeformTags, setFreeformTags] = useState("");
+  const [freeformPlatforms, setFreeformPlatforms] = useState<Set<string>>(
+    new Set(["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"]),
+  );
+  const [freeformVisualHook, setFreeformVisualHook] = useState("");
+  const [freeformTextOverlay, setFreeformTextOverlay] = useState("");
+  const [freeformAudioContext, setFreeformAudioContext] = useState("");
+  const [showAlignmentFields, setShowAlignmentFields] = useState(false);
+  const [freeformResult, setFreeformResult] = useState<{
+    captions: Array<{ platform: string; caption: string }>;
+    videoCode: string;
+  } | null>(null);
+  const [freeformContext, setFreeformContext] = useState<{
+    description: string;
+    mood?: string;
+    tags?: string[];
+    platforms?: string[];
+  } | null>(null);
+
+  const freeformMutation = useMutation({
+    mutationFn: async (params: { description: string; mood?: string; platforms?: string[]; tags?: string[] }) => {
+      const r = await fetch("/api/captions/generate-freeform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      if (!r.ok) { const err = await r.json(); throw new Error(err.error || "Failed"); }
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setFreeformResult(data);
+      if (data.videoCode) {
+        setSelectedVideo(data.videoCode);
+      }
+      queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["captions"] });
+    },
+  });
+
+  // Hook Lab state
+  type HookVariant = { text: string; type: string; score: number; breakdown?: { contextLean: string; patternInterrupt: string; snapback: string } };
+  const [hookLabOpen, setHookLabOpen] = useState(false);
+  const [hookVariants, setHookVariants] = useState<HookVariant[]>([]);
+  const hookMutation = useMutation({
+    mutationFn: async (params: { title?: string; description?: string; audience?: string; format?: string }) => {
+      const r = await fetch("/api/captions/generate-hooks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      if (!r.ok) { const err = await r.json(); throw new Error(err.error || "Failed"); }
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setHookVariants(data.hooks || []);
+      setHookLabOpen(true);
+    },
+  });
+
+  // Templates state
+  const { data: templatesData } = useQuery<{ templates: Array<{ id: number; name: string; platform: string; template: string; format: string; usageCount: number }> }>({
+    queryKey: ["caption-templates"],
+    queryFn: () => fetch("/api/captions/templates").then((r) => r.json()),
+  });
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  // Hashtag groups state
+  const { data: hashtagGroupsData } = useQuery<{ groups: Array<{ id: number; name: string; hashtags: string; category: string }> }>({
+    queryKey: ["hashtag-groups"],
+    queryFn: () => fetch("/api/captions/hashtag-groups").then((r) => r.json()),
+  });
+  const [showHashtagGroups, setShowHashtagGroups] = useState(false);
+
   const scheduleMutation = useMutation({
     mutationFn: (params: { videoCode: string; date: string; platform: string }) =>
       fetch("/api/calendar/schedule-video", {
@@ -301,30 +370,23 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
     },
   });
 
-  // Fetch pipeline to get videos in ASSEMBLED/SCHEDULED/PUBLISHED
-  const { data: pipelineData } = useQuery<PipelineResponse>({
-    queryKey: ["pipeline"],
-    queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
+  // Fetch all videos from content library (not gated by pipeline status)
+  const { data: allVideosData } = useQuery<VideoSummary[]>({
+    queryKey: ["videos"],
+    queryFn: () => fetch("/api/videos").then((r) => r.json()),
   });
 
-  // Build video list from pipeline stages that need captions
   const captionableVideos: VideoSummary[] = React.useMemo(() => {
-    if (!pipelineData?.stages) return [];
-    const stages: ProductionStatus[] = ["ASSEMBLED", "SCHEDULED", "PUBLISHED"];
-    const videos: VideoSummary[] = [];
-    for (const stage of stages) {
-      for (const v of pipelineData.stages[stage] || []) {
-        videos.push({
-          code: v.code,
-          title: v.title,
-          format: v.format,
-          status: stage,
-          scriptPreview: "",
-        });
-      }
-    }
-    return videos;
-  }, [pipelineData]);
+    if (!allVideosData) return [];
+    return allVideosData.map((v) => ({
+      code: v.code,
+      title: v.title,
+      format: v.format,
+      status: v.status || ("SCRIPTED" as ProductionStatus),
+      scriptPreview: v.scriptPreview || "",
+      audienceLabel: v.audienceLabel,
+    }));
+  }, [allVideosData]);
 
   // Fetch captions for selected video
   const { data: captionsData } = useQuery<CaptionsResponse>({
@@ -344,7 +406,6 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
   const { data: allCaptionCounts } = useQuery<Record<string, number>>({
     queryKey: ["caption-counts"],
     queryFn: () => fetch("/api/captions/counts").then((r) => r.json()),
-    enabled: captionableVideos.length > 0,
   });
 
   // Generate mutation (supports optional platforms filter)
@@ -439,14 +500,26 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
     setChatHistory(newHistory);
     setChatInput("");
     try {
-      const r = await fetch("/api/captions/generate", {
+      const isFreeform = selectedVideo.startsWith("CUSTOM-");
+      const url = isFreeform ? "/api/captions/generate-freeform" : "/api/captions/generate";
+      const body = isFreeform
+        ? {
+            videoCode: selectedVideo,
+            description: freeformContext?.description || prompt,
+            mood: freeformContext?.mood,
+            platforms: freeformContext?.platforms,
+            tags: freeformContext?.tags,
+            conversationHistory: newHistory,
+          }
+        : {
+            videoCode: selectedVideo,
+            prompt,
+            conversationHistory: newHistory,
+          };
+      const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoCode: selectedVideo,
-          prompt,
-          conversationHistory: newHistory,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await r.json();
       if (r.ok) {
@@ -467,10 +540,15 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
     if (!selectedVideo) return;
     setChatLoading(true);
     try {
+      const isFreeform = selectedVideo.startsWith("CUSTOM-");
       const r = await fetch("/api/captions/suggest-hashtags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoCode: selectedVideo, platform: "instagram_reels" }),
+        body: JSON.stringify({
+          videoCode: selectedVideo,
+          platform: "instagram_reels",
+          ...(isFreeform && freeformContext ? { caption: freeformContext.description } : {}),
+        }),
       });
       const data = await r.json();
       if (r.ok) setHashtagSuggestions(data.hashtags || []);
@@ -559,13 +637,11 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
     });
   };
 
-  const CHAT_CHIPS = [
-    "Make it more casual",
-    "Add a question hook",
-    "Shorter for TikTok",
-    "Add a save-worthy CTA",
-    "More emojis",
-    "Remove hashtags",
+  const CHAT_CHIP_GROUPS = [
+    { label: "Hook", chips: ["Stronger opening hook", "Open loop / curiosity gap", "Question hook", "Pattern interrupt", "Add a contrarian snapback", "Try a different archetype"] },
+    { label: "Value", chips: ["More educational", "Make it more casual", "Add a personal touch", "Shorter"] },
+    { label: "CTA", chips: ["Save-worthy CTA", "Comment-driving CTA", "Follow CTA"] },
+    { label: "Platform", chips: ["Optimize for TikTok", "More SEO for YouTube", "Remove hashtags", "Add a mid-caption rehook"] },
   ];
 
   const captions = captionsData?.captions || [];
@@ -597,12 +673,12 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
         <div className="lg:w-80 shrink-0">
           <div className="bg-white border border-slate-200 rounded-2xl p-4">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
-              Videos Ready for Captions
+              Content Library
             </p>
 
             {/* Status filter */}
-            <div className="flex gap-1 mb-3">
-              {["all", "ASSEMBLED", "SCHEDULED", "PUBLISHED"].map((s) => (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {["all", "SCRIPTED", "RECORDING", "GENERATING", "ASSEMBLED", "SCHEDULED", "PUBLISHED"].map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
@@ -623,8 +699,8 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {captionableVideos.length === 0 && (
                 <EmptyState
                   icon={<MessageSquareText size={24} className="text-slate-400" />}
-                  headline="No videos ready for captions"
-                  description="Move videos to ASSEMBLED, SCHEDULED, or PUBLISHED stage in the pipeline first. You can still analyze video files directly."
+                  headline="No videos found"
+                  description="Add videos to your content library to generate captions."
                   compact
                 />
               )}
@@ -711,15 +787,153 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
         {/* Caption Workspace */}
         <div data-tour="caption-workspace" className="flex-1 min-w-0">
           {!selectedVideo ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-              <MessageSquareText size={48} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-lg font-serif font-bold text-slate-600 mb-2">Select a Video</p>
-              <p className="text-sm text-slate-400 mb-6">
-                Choose a video from the list to generate and manage captions
-              </p>
-              <div className="border-t border-slate-100 pt-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
-                  Or analyze any video file
+            <div className="space-y-4">
+              {/* Describe Your Video - freeform caption generation */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Wand2 size={18} className="text-teal-600" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Describe Your Video
+                  </p>
+                </div>
+                <p className="text-sm text-slate-500 mb-4">
+                  Generate captions for any video, even outside your content library. Describe what's in it, the hook, and any trending sound or format.
+                </p>
+                <textarea
+                  value={freeformDesc}
+                  onChange={(e) => setFreeformDesc(e.target.value)}
+                  placeholder="Example: I filmed a reaction to a viral chiropractic compilation with the 'oh no' sound. Text overlay says 'When patients say they crack their own neck' and I slowly turn to look at the camera."
+                  className="w-full p-3 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  rows={4}
+                />
+
+                {/* Mood chips */}
+                <div className="mt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Mood / Tone</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Educational", "Humorous", "Inspirational", "Casual", "Trending", "Professional"].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setFreeformMood(freeformMood === m ? "" : m)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors",
+                          freeformMood === m
+                            ? "bg-teal-600 text-white"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Platform selection */}
+                <div className="mt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Platforms</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          const next = new Set(freeformPlatforms);
+                          if (next.has(key)) next.delete(key); else next.add(key);
+                          setFreeformPlatforms(next);
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors",
+                          freeformPlatforms.has(key)
+                            ? "bg-teal-600 text-white"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div className="mt-3">
+                  <input
+                    value={freeformTags}
+                    onChange={(e) => setFreeformTags(e.target.value)}
+                    placeholder="Tags (comma-separated): chiropractic, humor, trending"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Hook Alignment (Kallaway 4-Component) */}
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowAlignmentFields(!showAlignmentFields)}
+                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-violet-500 hover:text-violet-700 transition-colors"
+                  >
+                    <Zap size={12} />
+                    Hook Alignment (Advanced)
+                    <ChevronDown size={12} className={cn("transition-transform", showAlignmentFields && "rotate-180")} />
+                  </button>
+                  {showAlignmentFields && (
+                    <div className="mt-2 space-y-2 p-3 bg-violet-50/50 rounded-xl border border-violet-100">
+                      <p className="text-[10px] text-violet-500 mb-1">Align your 4 hook components for maximum impact. Visual is most important.</p>
+                      <input
+                        value={freeformVisualHook}
+                        onChange={(e) => setFreeformVisualHook(e.target.value)}
+                        placeholder="Visual hook: What's the first thing viewers SEE?"
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                      />
+                      <input
+                        value={freeformTextOverlay}
+                        onChange={(e) => setFreeformTextOverlay(e.target.value)}
+                        placeholder="Text overlay: What text appears on screen?"
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                      />
+                      <input
+                        value={freeformAudioContext}
+                        onChange={(e) => setFreeformAudioContext(e.target.value)}
+                        placeholder="Audio: Trending sound, original voiceover, ASMR..."
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={() => {
+                    if (!freeformDesc.trim()) return;
+                    const tags = freeformTags ? freeformTags.split(",").map((t) => t.trim()).filter(Boolean) : undefined;
+                    const params: Record<string, unknown> = {
+                      description: freeformDesc,
+                      mood: freeformMood || undefined,
+                      platforms: [...freeformPlatforms],
+                      tags,
+                    };
+                    if (freeformVisualHook) params.visualHook = freeformVisualHook;
+                    if (freeformTextOverlay) params.textOverlay = freeformTextOverlay;
+                    if (freeformAudioContext) params.audioContext = freeformAudioContext;
+                    setFreeformContext({ description: freeformDesc, mood: freeformMood || undefined, tags, platforms: [...freeformPlatforms] });
+                    freeformMutation.mutate(params as { description: string; mood?: string; platforms?: string[]; tags?: string[] });
+                  }}
+                  disabled={freeformMutation.isPending || !freeformDesc.trim()}
+                  className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors disabled:opacity-50"
+                >
+                  {freeformMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={14} />
+                  )}
+                  {freeformMutation.isPending ? "Generating..." : "Generate Captions"}
+                </button>
+                {freeformMutation.isError && (
+                  <p className="text-xs text-red-500 mt-2">{(freeformMutation.error as Error)?.message}</p>
+                )}
+              </div>
+
+              {/* Or select from library / analyze video */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center">
+                <p className="text-sm text-slate-400 mb-3">
+                  Or select a video from the Content Library on the left
                 </p>
                 <button
                   onClick={() => setShowUpload(true)}
@@ -727,7 +941,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-teal-200 bg-teal-50 text-teal-700 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-colors disabled:opacity-50"
                 >
                   {analysisLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                  {analysisLoading ? analysisStep : "Analyze Video"}
+                  {analysisLoading ? analysisStep : "Analyze Video File"}
                 </button>
               </div>
             </div>
@@ -742,14 +956,35 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                       {videoDetail?.format ? `${videoDetail.format} - ${FORMATS[videoDetail.format as FormatId]?.name || ""}` : ""}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <button
+                      onClick={() => {
+                        if (videoDetail) hookMutation.mutate({
+                          title: videoDetail.title,
+                          audience: videoDetail.audienceLabel,
+                          format: videoDetail.format,
+                        });
+                      }}
+                      disabled={hookMutation.isPending}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-violet-200 text-violet-600 text-[10px] font-black uppercase tracking-widest hover:bg-violet-50 transition-colors disabled:opacity-50"
+                    >
+                      {hookMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                      Hook Lab
+                    </button>
+                    <button
+                      onClick={() => setShowTemplates(!showTemplates)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                    >
+                      <FileText size={12} />
+                      Templates
+                    </button>
                     <button
                       onClick={() => setShowUpload(true)}
                       disabled={analysisLoading}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors disabled:opacity-50"
                     >
-                      {analysisLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                      {analysisLoading ? analysisStep : "Analyze Video"}
+                      {analysisLoading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                      {analysisLoading ? analysisStep : "Analyze"}
                     </button>
                     <button
                       onClick={() => {
@@ -787,10 +1022,110 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                   </div>
                 )}
 
+                {/* Script-first generation badge */}
+                {videoDetail && !selectedVideo?.startsWith("CUSTOM-") && (
+                  <div className="mt-2">
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full",
+                      ["SCRIPTED", "RECORDING", "GENERATING"].includes(videoDetail.status || "")
+                        ? "bg-violet-50 text-violet-600"
+                        : "bg-emerald-50 text-emerald-600",
+                    )}>
+                      <Sparkles size={10} />
+                      {["SCRIPTED", "RECORDING", "GENERATING"].includes(videoDetail.status || "")
+                        ? "Generates from script"
+                        : "Generates from script + production data"}
+                    </span>
+                  </div>
+                )}
+
                 {generateMutation.isError && (
                   <p className="text-sm text-red-600 mt-2">{generateMutation.error.message}</p>
                 )}
               </div>
+
+              {/* Hook Lab Panel */}
+              {hookLabOpen && hookVariants.length > 0 && (
+                <div className="bg-white border border-violet-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Zap size={14} className="text-violet-500" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Hook Lab</p>
+                    </div>
+                    <button onClick={() => setHookLabOpen(false)} className="text-slate-400 hover:text-slate-600">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-3">6 Kallaway archetypes. Click to copy. Each uses a different hook psychology.</p>
+                  <div className="space-y-2">
+                    {hookVariants.map((hook, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { navigator.clipboard.writeText(hook.text); }}
+                        className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-violet-200 hover:bg-violet-50/50 transition-colors group"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm text-slate-700 font-medium">{hook.text}</p>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                              hook.score >= 25 ? "bg-emerald-100 text-emerald-700" :
+                              hook.score >= 18 ? "bg-amber-100 text-amber-700" :
+                              "bg-red-100 text-red-700",
+                            )}>
+                              {hook.score}/33
+                            </span>
+                            <Copy size={12} className="text-slate-300 group-hover:text-violet-500 transition-colors" />
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider mt-1 inline-block">{hook.type}</span>
+                        {hook.breakdown && (
+                          <div className="mt-2 pt-2 border-t border-slate-50 space-y-0.5">
+                            <p className="text-[10px] text-slate-400"><span className="font-bold text-teal-600">Context:</span> {hook.breakdown.contextLean}</p>
+                            <p className="text-[10px] text-slate-400"><span className="font-bold text-amber-600">Interrupt:</span> {hook.breakdown.patternInterrupt}</p>
+                            <p className="text-[10px] text-slate-400"><span className="font-bold text-rose-600">Snapback:</span> {hook.breakdown.snapback}</p>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Templates Dropdown */}
+              {showTemplates && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <FileText size={14} className="text-slate-500" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Saved Templates</p>
+                    </div>
+                    <button onClick={() => setShowTemplates(false)} className="text-slate-400 hover:text-slate-600">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {!templatesData?.templates?.length ? (
+                    <p className="text-xs text-slate-400">No templates saved yet. Save a caption as a template using the bookmark icon on any caption card.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {templatesData.templates.map((t) => (
+                        <div key={t.id} className="p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-slate-700">{t.name}</span>
+                            <div className="flex items-center gap-1.5">
+                              {t.platform && (
+                                <span className="text-[10px] font-bold text-slate-400">{PLATFORM_LABELS[t.platform] || t.platform}</span>
+                              )}
+                              <span className="text-[10px] text-slate-300">Used {t.usageCount}x</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2">{t.template}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* AI Chat Refinement */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4">
@@ -807,26 +1142,42 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
                 {chatOpen && (
                   <div className="mt-3 space-y-3">
-                    {/* Suggestion chips */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {CHAT_CHIPS.map((chip) => (
-                        <button
-                          key={chip}
-                          onClick={() => handleChatSubmit(chip)}
-                          disabled={chatLoading}
-                          className="px-2.5 py-1 rounded-full border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                        >
-                          {chip}
-                        </button>
+                    {/* Suggestion chips grouped by Hook-Value-CTA structure */}
+                    <div className="space-y-2">
+                      {CHAT_CHIP_GROUPS.map((group) => (
+                        <div key={group.label}>
+                          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-300 mb-1">{group.label}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {group.chips.map((chip) => (
+                              <button
+                                key={chip}
+                                onClick={() => handleChatSubmit(chip)}
+                                disabled={chatLoading}
+                                className="px-2 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                              >
+                                {chip}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ))}
-                      <button
-                        onClick={handleSuggestHashtags}
-                        disabled={chatLoading}
-                        className="px-2.5 py-1 rounded-full border border-teal-200 text-[10px] font-bold text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50 flex items-center gap-1"
-                      >
-                        <Hash size={10} />
-                        Suggest Hashtags
-                      </button>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={handleSuggestHashtags}
+                          disabled={chatLoading}
+                          className="px-2.5 py-1 rounded-full border border-teal-200 text-[10px] font-bold text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        >
+                          <Hash size={10} />
+                          Suggest Hashtags
+                        </button>
+                        <button
+                          onClick={() => setShowHashtagGroups(!showHashtagGroups)}
+                          className="px-2.5 py-1 rounded-full border border-slate-200 text-[10px] font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center gap-1"
+                        >
+                          <Bookmark size={10} />
+                          Saved Groups
+                        </button>
+                      </div>
                     </div>
 
                     {/* Hashtag suggestions */}
@@ -855,6 +1206,41 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         >
                           Copy all
                         </button>
+                      </div>
+                    )}
+
+                    {/* Saved Hashtag Groups */}
+                    {showHashtagGroups && (
+                      <div className="p-3 bg-slate-50 rounded-xl">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Saved Hashtag Groups</p>
+                        {!hashtagGroupsData?.groups?.length ? (
+                          <p className="text-xs text-slate-400">No groups saved yet. Suggest hashtags first, then save them as a group.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {hashtagGroupsData.groups.map((g) => {
+                              const tags: string[] = (() => { try { return JSON.parse(g.hashtags); } catch { return []; } })();
+                              return (
+                                <div key={g.id} className="p-2 bg-white rounded-lg border border-slate-100">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-slate-700">{g.name}</span>
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(tags.join(" "))}
+                                      className="text-[10px] font-bold text-teal-600 hover:underline"
+                                    >
+                                      Copy all
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {tags.slice(0, 8).map((tag) => (
+                                      <span key={tag} className="text-[10px] text-slate-500">{tag}</span>
+                                    ))}
+                                    {tags.length > 8 && <span className="text-[10px] text-slate-400">+{tags.length - 8}</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -915,6 +1301,41 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Publish Kit view */}
               {workspaceTab === "publish" && (
                 <div className="space-y-3">
+                  {/* Coverage progress bar */}
+                  {(() => {
+                    const covered = platforms.filter((p) => captions.some((c) => c.platform === p)).length;
+                    const approved = platforms.filter((p) => captions.some((c) => c.platform === p && (c.status === "approved" || c.status === "posted"))).length;
+                    return (
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Platform Coverage</p>
+                          <span className="text-sm font-bold text-slate-700">{covered}/4 platforms</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all", approved === 4 ? "bg-emerald-500" : "bg-teal-500")}
+                            style={{ width: `${(covered / 4) * 100}%` }}
+                          />
+                        </div>
+                        <div className="flex gap-1.5 mt-2">
+                          {platforms.map((p) => {
+                            const has = captions.some((c) => c.platform === p);
+                            const isApproved = captions.some((c) => c.platform === p && (c.status === "approved" || c.status === "posted"));
+                            return (
+                              <span key={p} className={cn(
+                                "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                isApproved ? "bg-emerald-100 text-emerald-700" :
+                                has ? "bg-amber-100 text-amber-700" :
+                                "bg-red-50 text-red-400",
+                              )}>
+                                {PLATFORM_LABELS[p]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {platforms.map((plat) => {
                     const platCaps = captions.filter((c) => c.platform === plat);
                     const approved = platCaps.find((c) => c.status === "approved") || platCaps[0];
@@ -992,6 +1413,23 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     >
                       <Check size={14} />
                       Mark All Posted
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (selectedVideo) {
+                          fetch("/api/captions/bulk-status", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ videoCode: selectedVideo, status: "approved" }),
+                          }).then(() => {
+                            queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-colors"
+                    >
+                      <Check size={14} />
+                      Approve All Drafts
                     </button>
                   </div>
                 </div>

@@ -106,6 +106,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "heading", text: "Concept Scoring" },
       { type: "paragraph", text: "When developing an idea, generate a one-sentence concept scored on 4 dimensions: Technical Interest, Emotional Resonance, 10-Second Explainability, and Visual Payoff. Ideas scoring 7+ are auto-approved." },
       { type: "tip", label: "Sync n8n", text: "'Sync n8n' pulls new ideas discovered by your automated weekly digest workflow. Only adds ideas not already in the bank." },
+      { type: "heading", text: "Angle Spinner" },
+      { type: "paragraph", text: "On any idea, click 'Spin 6 Angles' to generate 6 alternate video concepts, one per Kallaway archetype (Fortune Teller, Experimenter, Teacher, Magician, Investigator, Contrarian). Each angle includes a title, description, and suggested format. Use this to explore different creative directions before committing to a script." },
       { type: "navigate", label: "Go to Ideas", targetView: "IDEAS" },
     ],
   },
@@ -282,22 +284,31 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "Caption Studio",
     phase: "publish",
     relatedView: "CAPTIONS",
-    summary: "AI-generated captions optimized for each platform's constraints.",
-    keywords: ["captions", "hashtags", "instagram", "tiktok", "youtube", "generate", "publish"],
+    summary: "AI-generated captions with Kallaway hook archetypes, freeform mode, Hook Lab, and multi-variant generation.",
+    keywords: ["captions", "hashtags", "instagram", "tiktok", "youtube", "generate", "publish", "freeform", "hook lab", "kallaway", "archetype", "variant", "refinement", "template"],
     content: [
+      { type: "heading", text: "Two Modes" },
+      { type: "paragraph", text: "Library Mode: Select a video from your content library and generate captions from its script. Freeform Mode: Click 'Describe Your Video' to generate captions for any content, including memes, trending sounds, and visual-only posts. Describe the video, pick a mood, select platforms, and add tags." },
+      { type: "heading", text: "Multi-Variant Generation" },
+      { type: "paragraph", text: "Each generation creates 2 caption variants per platform, each using a different Kallaway hook archetype (Teacher, Contrarian, Fortune Teller, etc.). Variants are labeled with their archetype so you can compare approaches before approving." },
+      { type: "heading", text: "Hook Alignment (Advanced)" },
+      { type: "paragraph", text: "In freeform mode, expand the Hook Alignment section to add Visual Hook, Text Overlay, and Audio Context fields. These follow Kallaway's 4-component alignment: Visual leads (most important), then text, then spoken, then audio. The AI uses these to write captions that match your video's hook structure." },
+      { type: "heading", text: "Hook Lab" },
+      { type: "paragraph", text: "Click Hook Lab to generate 6 hooks, one per Kallaway archetype. Each hook shows a 3-part structure breakdown: Context Lean (sets up the topic), Pattern Interrupt (disrupts expectation), and Contrarian Snapback (flips to the unexpected). Click any hook to copy it." },
+      { type: "heading", text: "AI Refinement" },
+      { type: "paragraph", text: "After generating, use the AI Refinement chat to iterate. Chips are grouped by category: Hook (stronger hook, contrarian snapback, different archetype), Value (more value, simplify), CTA (stronger CTA, add urgency), and Platform (shorter for TikTok, add hashtags). Type freeform requests too." },
+      { type: "heading", text: "Quality Scoring" },
+      { type: "paragraph", text: "Every caption is scored 0-100 across 6 dimensions: Hook (Kallaway 3-part structure detection), CTA presence, Readability (sentence rhythm variation), Hashtags (platform-appropriate count), Emoji density, and Length (platform limit ratio)." },
+      { type: "heading", text: "Templates & Hashtag Groups" },
+      { type: "paragraph", text: "Save any caption as a reusable template. Save and insert hashtag groups for consistent tagging across posts." },
+      { type: "heading", text: "Publish Kit" },
+      { type: "paragraph", text: "The platform coverage bar shows which platforms have approved captions. Use bulk approve, copy all, or mark as posted from the Publish Kit section." },
       { type: "heading", text: "Platform Limits" },
       { type: "table", headers: ["Platform", "Max Length", "Visible"], rows: [
         ["Instagram Reels", "2,200 chars", "First 125"],
         ["TikTok", "4,000 chars", "First 100"],
         ["YouTube Shorts", "100 chars", "All"],
         ["YouTube Long-form", "5,000 chars", "First 200"],
-      ]},
-      { type: "steps", title: "How to use:", items: [
-        "Select a video by code",
-        "Click 'Generate All' to create captions for all platforms simultaneously",
-        "Each caption gets a quality score (hook, CTA, readability, hashtags, emoji, length)",
-        "Edit inline, save variants for A/B testing",
-        "Mark as 'approved' or 'posted'",
       ]},
       { type: "navigate", label: "Go to Captions", targetView: "CAPTIONS" },
     ],
@@ -400,6 +411,34 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "tip", label: "Manual skills", text: "For deeper research, use Claude Code skills: /last30days, /viral-scout, /creator-analysis, /content-planner." },
     ],
   },
+  {
+    id: "kallaway-hooks",
+    title: "Kallaway Hook Framework",
+    phase: "reference",
+    relatedView: null,
+    summary: "6 hook archetypes, 4-component alignment, and the 3-part structure for scroll-stopping content.",
+    keywords: ["kallaway", "hooks", "archetype", "alignment", "visual", "contrarian", "fortune teller", "experimenter", "teacher", "magician", "investigator", "rehook", "superfan"],
+    content: [
+      { type: "heading", text: "4-Component Alignment" },
+      { type: "paragraph", text: "Visual (most important) > Text Overlay > Spoken Word > Audio/Music. Start with the strongest visual, then write the spoken hook to match. The visual hook is what stops the scroll; everything else reinforces it." },
+      { type: "heading", text: "3-Part Hook Structure" },
+      { type: "paragraph", text: "Every strong hook follows three beats: Context Lean (establish the topic and why it matters), Pattern Interrupt (a contrast word or twist that disrupts expectation), and Contrarian Snapback (flip to the unexpected direction). Example: 'Most people stretch before workouts [context]. But stretching cold muscles [interrupt] actually increases your injury risk [snapback].'" },
+      { type: "heading", text: "6 Hook Archetypes" },
+      { type: "table", headers: ["Archetype", "Strategy", "Formula"], rows: [
+        ["Fortune Teller", "Predict the future", "In [timeframe], [surprising prediction]"],
+        ["Experimenter", "Test and reveal", "I tried [thing] for [duration], here's what happened"],
+        ["Teacher", "Explain simply", "[Number] [things] about [topic] you need to know"],
+        ["Magician", "Transform expectations", "Watch [ordinary thing] become [extraordinary result]"],
+        ["Investigator", "Uncover hidden truths", "The real reason [common belief] is [surprising truth]"],
+        ["Contrarian", "Challenge consensus", "Everyone says [common advice], but [opposite] works better"],
+      ]},
+      { type: "heading", text: "Re-hook Dance" },
+      { type: "paragraph", text: "Hook > Context > Conflict > Rehook (repeated). Each rehook opens a new curiosity loop before closing the previous one. More open loops = longer retention. For YouTube Long-form, use 3-5 rehooks throughout the video." },
+      { type: "heading", text: "90-Minute Superfan Rule" },
+      { type: "paragraph", text: "~270 short-form videos = ~90 minutes of watched content = superfan territory. When a viewer has watched 90 minutes of your content, they become a committed follower. The Superfan Progress tracker on the Home dashboard tracks your progress toward this goal." },
+      { type: "tip", label: "Where this is used", text: "The Hook Lab and Angle Spinner both use this framework. Caption scoring evaluates the 3-part structure. Understanding the archetypes helps you choose better angles and write stronger hooks." },
+    ],
+  },
 ];
 
 export type ViewHelpData = {
@@ -438,6 +477,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "Tonight's Session",
         detail:
           "Recommends the most efficient next batch of work based on which pipeline stage has the most videos for one audience.",
+      },
+      {
+        label: "Superfan Pipeline",
+        detail:
+          "The progress tracker shows how many published videos you have toward the 270-video goal (90 min of content = superfan territory).",
       },
     ],
   },
@@ -509,6 +553,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "Categories",
         detail:
           "Trending (hot now), Competitor (from watching others), Evergreen (always relevant), Audience (from questions/pain points), Personal (your ideas).",
+      },
+      {
+        label: "Angle Spinner",
+        detail:
+          "Click 'Spin 6 Angles' on any idea to see it through 6 Kallaway hook archetypes. Each angle is a ready-to-film concept with a suggested format.",
       },
     ],
   },
@@ -636,22 +685,27 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
   CAPTIONS: {
     title: "Caption Studio",
     description:
-      "Generate, manage, and store social media captions for your videos. AI-powered generation with format-aware hook patterns and platform-specific optimization.",
+      "Generate multi-variant captions with Kallaway hook archetypes, use Hook Lab for structure breakdowns, or describe any video for freeform captions.",
     tips: [
       {
-        label: "Generate All",
+        label: "Freeform Mode",
         detail:
-          "One click generates captions for all 4 platforms (Instagram, TikTok, YouTube Shorts, YouTube Long) using your video's script and hook patterns.",
+          "Don't have a library video? Use 'Describe Your Video' to generate captions for any content, including memes, trending sounds, and visual-only posts.",
       },
       {
-        label: "Status Tracking",
+        label: "Hook Lab",
         detail:
-          "Mark captions as Draft, Approved, or Posted to track which posts are ready to publish.",
+          "Click Hook Lab to generate 6 hooks using Kallaway's archetypes. Each shows a 3-part breakdown (Context Lean, Pattern Interrupt, Contrarian Snapback). Click to copy.",
       },
       {
-        label: "Variants",
+        label: "Multi-Variant",
         detail:
-          "Generate multiple caption variants per platform for A/B testing. Each generation adds a new variant.",
+          "Each generation creates 2 variants per platform using different hook archetypes. Compare approaches before approving.",
+      },
+      {
+        label: "Refinement",
+        detail:
+          "Use the AI Refinement chips grouped by Hook, Value, CTA, and Platform to iterate. Try 'Add a contrarian snapback' or 'Try a different archetype'.",
       },
     ],
   },
@@ -701,6 +755,21 @@ export const FEATURE_HINTS: Record<string, HintData> = {
       "7 weighted dimensions produce the overall score. Expand any opportunity to see the breakdown.",
     side: "bottom",
   },
+  "freeform-mode": {
+    content:
+      "No library video? Describe any video and generate captions from scratch.",
+    side: "bottom",
+  },
+  "hook-lab": {
+    content:
+      "6 Kallaway archetypes, each with a 3-part structure breakdown. Click any hook to copy it.",
+    side: "bottom",
+  },
+  "angle-spinner": {
+    content:
+      "Spin any idea through 6 hook archetypes to explore different creative angles.",
+    side: "bottom",
+  },
 };
 
 // ============================================
@@ -739,7 +808,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     targetSelector: '[data-tour="caption-workspace"]',
     title: "Caption Studio",
-    content: "Generate captions for all platforms with one click. Edit, approve, and track status.",
+    content: "Generate 2 caption variants per platform, use Hook Lab for Kallaway archetypes, or describe any video for freeform captions.",
     side: "bottom",
     view: "CAPTIONS",
   },
@@ -762,6 +831,22 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
 // ============================================
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.2.0",
+    date: "2026-03-11",
+    title: "Kallaway Hook Framework & Caption Studio Overhaul",
+    items: [
+      "Caption Studio: 2 variants per platform using different Kallaway hook archetypes",
+      "Freeform captions: Describe any video to generate captions without a library entry",
+      "Hook Lab: 6 Kallaway archetypes with 3-part structure breakdown",
+      "Hook Alignment: Visual, text, and audio context fields for better caption alignment",
+      "Caption scoring: Now evaluates Kallaway 3-Part Hook Structure and rhythm variation",
+      "Idea Bank: Angle Spinner generates 6 archetype-based video concepts per idea",
+      "Dashboard Home: Superfan Progress tracker (270 videos = 90 min = superfan territory)",
+      "New refinement chips: contrarian snapback, different archetype, mid-caption rehook",
+      "hook-patterns.md: Complete Kallaway framework documentation",
+    ],
+  },
   {
     version: "1.1.0",
     date: "2026-03-05",

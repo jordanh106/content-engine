@@ -20,6 +20,7 @@ import {
   Lightbulb,
   RefreshCw,
   Shield,
+  Zap,
 } from "lucide-react";
 import type { Idea, IdeaCategory, FormatId, ConversationMessage, VaultHook, VaultStyle, ScriptVersion, IdeaConcept } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
@@ -285,6 +286,26 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [hookVars, setHookVars] = useState<Record<string, string>>({});
+
+  // Angle Spinner (Kallaway archetypes)
+  type AngleVariant = { archetype: string; title: string; description: string; suggestedFormat: string };
+  const [angles, setAngles] = useState<AngleVariant[]>([]);
+  const [anglesOpen, setAnglesOpen] = useState(false);
+  const anglesMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/ideas-ai/angles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: idea.topic, hookAngle: idea.hookAngle, format: idea.suggestedFormat }),
+      });
+      if (!r.ok) { const err = await r.json(); throw new Error(err.error || "Failed"); }
+      return r.json();
+    },
+    onSuccess: (data) => {
+      setAngles(data.angles || []);
+      setAnglesOpen(true);
+    },
+  });
 
   const hasChanges = editedPriority !== idea.priority || editedFormat !== idea.suggestedFormat;
   const hasDigest = idea.source?.toLowerCase().includes("n8n") && idea.dateAdded;
@@ -707,6 +728,53 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   </div>
                 </div>
               )}
+
+              {/* Angle Spinner (Kallaway Archetypes) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Angle Spinner
+                  </p>
+                  <button
+                    onClick={() => anglesMutation.mutate()}
+                    disabled={anglesMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold uppercase tracking-widest hover:bg-violet-100 transition-colors disabled:opacity-50"
+                  >
+                    {anglesMutation.isPending ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Zap size={12} />
+                    )}
+                    {anglesMutation.isPending ? "Spinning..." : angles.length > 0 ? "Respin" : "Spin 6 Angles"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mb-2">Generate 6 alternate video angles using Kallaway's hook archetypes.</p>
+                {anglesMutation.isError && (
+                  <p className="text-xs text-red-500 mb-2">{(anglesMutation.error as Error)?.message}</p>
+                )}
+                {anglesOpen && angles.length > 0 && (
+                  <div className="space-y-2">
+                    {angles.map((angle, i) => (
+                      <div key={i} className="p-3 bg-white border border-slate-200 rounded-xl hover:border-violet-200 transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-700">{angle.title}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{angle.description}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                              {angle.archetype}
+                            </span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-600">
+                              {angle.suggestedFormat}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Digest Source */}
               {hasDigest && (

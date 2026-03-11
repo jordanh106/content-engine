@@ -521,5 +521,70 @@ Create an improved one-sentence concept that scores higher. Re-score all 4 dimen
     }
   });
 
+  // POST /angles - Generate 6 Kallaway archetype angles for an idea
+  router.post("/angles", async (req, res) => {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    const { topic, hookAngle, format } = req.body as {
+      topic?: string;
+      hookAngle?: string;
+      format?: string;
+    };
+
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+
+    try {
+      const brandVoice = fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 800) : "";
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{
+          role: "user",
+          content: `Generate 6 different video angles for this content idea, one for each Kallaway Hook Archetype. Each angle should be a specific video title/hook that uses that archetype's psychology.
+
+IDEA: ${topic}
+${hookAngle ? `CURRENT HOOK ANGLE: ${hookAngle}` : ""}
+${format ? `SUGGESTED FORMAT: ${format}` : ""}
+${brandVoice ? `BRAND CONTEXT: ${brandVoice.slice(0, 400)}` : ""}
+
+THE 6 ARCHETYPES:
+1. FORTUNE TELLER: Present reality, predict future transformation. "[Thing] is about to [change]."
+2. EXPERIMENTER: Frame as personal test/experiment. "I tried [X] for [time], here's what happened."
+3. TEACHER: Pain point to method/solution. "[N] things about [topic] that [claim]."
+4. MAGICIAN: Lead with unexpected visual, then explain. "[Surprising visual]. That's not what you think."
+5. INVESTIGATOR: Hidden element, progressive reveal. "[Thing] is hiding something [nobody talks about]."
+6. CONTRARIAN: Challenge common belief. "[Common advice] is actually [wrong]."
+
+RULES:
+- No emdashes. Use commas, periods, or restructure.
+- Each angle should feel like a complete, ready-to-film video concept.
+- Include a suggested format (A-G) for each angle.
+
+Respond with JSON only:
+{"angles": [{"archetype": "Fortune Teller", "title": "video title/hook", "description": "1-sentence concept", "suggestedFormat": "D"}, ...]}`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+      res.json(parsed);
+    } catch (error) {
+      console.error("[ideas-ai] Angles error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate angles" });
+    }
+  });
+
   return router;
 }
