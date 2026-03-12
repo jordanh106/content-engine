@@ -18,7 +18,14 @@ function stripCodeFences(text: string): string {
   if (cleaned.startsWith("```")) {
     cleaned = cleaned
       .replace(/^```(?:json)?\s*\n?/, "")
-      .replace(/\n?```\s*$/, "");
+      .replace(/\n?```\s*$/, "")
+      .trim();
+  }
+  // If the result still isn't a JSON object (e.g. Claude responded with prose),
+  // extract the first {...} block from the original text
+  if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return match[0];
   }
   return cleaned;
 }
