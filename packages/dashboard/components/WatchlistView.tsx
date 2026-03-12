@@ -57,7 +57,12 @@ type GapData = {
   totalCompetitorTopics: number;
 };
 
-const CompetitorGaps: React.FC = () => {
+type CompetitorGapsProps = {
+  onAddIdea: (topic: string) => void;
+  addedTopic: string | null;
+};
+
+const CompetitorGaps: React.FC<CompetitorGapsProps> = ({ onAddIdea, addedTopic }) => {
   const [expanded, setExpanded] = useState(false);
   const { data } = useQuery<GapData>({
     queryKey: ["competitor-gaps"],
@@ -72,27 +77,50 @@ const CompetitorGaps: React.FC = () => {
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-500 mb-2 px-1 hover:text-sky-700 transition-colors"
       >
-        <Search size={12} />
+        <Zap size={12} />
         Blue Ocean Topics ({data.blueOcean.length})
         <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
       </button>
 
       {expanded && (
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 space-y-3">
-          <p className="text-xs text-sky-700">
-            Topics your competitors cover that you don't. These are potential content gaps to fill.
-          </p>
+          <div>
+            <p className="text-xs text-sky-700">
+              Topics your competitors cover that you don't — content gaps you could own.
+            </p>
+            <p className="text-[10px] text-sky-500 mt-1">
+              Based on {data.totalCompetitorTopics} analyzed competitor video{data.totalCompetitorTopics !== 1 ? "s" : ""}.
+              {data.totalCompetitorTopics < 10 && (
+                <span className="ml-1">Analyze more creator videos in the Videos tab to surface better opportunities.</span>
+              )}
+            </p>
+          </div>
           {data.blueOcean.length > 0 ? (
             <div className="space-y-2">
               {data.blueOcean.slice(0, 10).map((gap, i) => (
-                <div key={i} className="bg-white border border-sky-100 rounded-lg p-2.5 flex items-start justify-between">
-                  <div>
+                <div key={i} className="bg-white border border-sky-100 rounded-lg p-2.5 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800">{gap.topic}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       Covered by: {gap.creators.slice(0, 3).map((c) => `@${c}`).join(", ")}
                       {gap.count > 1 && ` (${gap.count} videos)`}
                     </p>
                   </div>
+                  <button
+                    onClick={() => onAddIdea(gap.topic)}
+                    className={cn(
+                      "shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
+                      addedTopic === gap.topic
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-teal-50 text-teal-700 hover:bg-teal-100",
+                    )}
+                  >
+                    {addedTopic === gap.topic ? (
+                      <><Check size={10} /> Added</>
+                    ) : (
+                      <><Plus size={10} /> Add to Ideas</>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
@@ -528,7 +556,22 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       )}
 
       {/* Competitor Content Gaps */}
-      <CompetitorGaps />
+      <CompetitorGaps
+        onAddIdea={(topic) =>
+          addIdeaMutation.mutate({
+            topic,
+            suggestedFormat: null,
+            hookAngle: null,
+            priority: "medium",
+            source: "Blue Ocean / Competitor Gap",
+            category: "competitor",
+            inspiredBy: null,
+            whyNonObvious: null,
+            targetAudience: null,
+          } as unknown as WatchlistIntelIdea)
+        }
+        addedTopic={addedIdea}
+      />
 
       {/* Creator Cards */}
       {isLoading ? (
