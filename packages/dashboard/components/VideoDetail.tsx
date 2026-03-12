@@ -2057,7 +2057,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
           fetch(`/api/ai-prompts/${code}`).then((r) => (r.ok ? r.json() : { prompts: [] })),
           fetch(`/api/vault/visual-styles`).then((r) => (r.ok ? r.json() : { styles: [] })),
         ]);
-        setStoryboard(sbRes?.storyboard ?? sbRes ?? null);
+        setStoryboard(sbRes?.storyboard ?? null);
         setAiPrompts(promptsRes?.prompts ?? []);
         setVisualStyles(stylesRes?.styles ?? []);
       } catch {
@@ -2204,7 +2204,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                   storyboard.status === "completed" && "bg-teal-50 text-teal-700",
                 )}
               >
-                {storyboard.status.replace("_", " ")}
+                {storyboard.status?.replace("_", " ") ?? storyboard.status}
               </span>
             </div>
             {storyboard.oneSentenceConcept && (
