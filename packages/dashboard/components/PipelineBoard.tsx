@@ -12,7 +12,7 @@ import {
   closestCorners,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import { ChevronRight, Filter, CheckSquare, Square, ArrowRight } from "lucide-react";
+import { ChevronRight, Filter, CheckSquare, Square, ArrowRight, Zap, AlertTriangle } from "lucide-react";
 import type {
   PipelineResponse,
   PipelineVideo,
@@ -200,6 +200,15 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   const { data, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
     queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
+  });
+
+  const { data: velocityData } = useQuery<{
+    transitions: Array<{ fromStatus: string; toStatus: string; avgDays: number; count: number }>;
+    bottleneck: { stage: string; avgDays: number } | null;
+    completedVideos: number;
+  }>({
+    queryKey: ["pipeline-velocity"],
+    queryFn: () => fetch("/api/analytics/velocity").then((r) => r.json()),
   });
 
   // Compute unique audiences from pipeline data
@@ -392,7 +401,26 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
   if (isLoading || !data) {
     return (
-      <div className="text-center py-12 text-slate-400">Loading...</div>
+      <div className="p-4 md:p-6 animate-pulse">
+        <div className="h-7 bg-slate-200 rounded w-32 mb-2" />
+        <div className="h-4 bg-slate-100 rounded w-48 mb-6" />
+        <div className="hidden md:flex gap-3 overflow-x-auto pb-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="w-64 flex-shrink-0">
+              <div className="h-3 bg-slate-200 rounded w-20 mb-3" />
+              <div className="bg-slate-50 rounded-2xl p-2 min-h-[200px] space-y-2">
+                {[...Array(i < 1 ? 4 : 1)].map((_, j) => (
+                  <div key={j} className="bg-white rounded-xl p-3 space-y-2">
+                    <div className="h-3 bg-slate-200 rounded w-16" />
+                    <div className="h-3 bg-slate-100 rounded w-full" />
+                    <div className="h-5 bg-slate-100 rounded w-12" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -407,6 +435,36 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           {data.total} videos across {PRODUCTION_STATUSES.length} stages
         </p>
       </div>
+
+      {/* Velocity + Bottleneck banners */}
+      {(velocityData?.completedVideos ?? 0) > 0 || velocityData?.bottleneck ? (
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          {(velocityData?.completedVideos ?? 0) > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-200 rounded-xl text-xs">
+              <Zap size={13} className="text-teal-500 shrink-0" />
+              <span className="text-teal-800 font-medium">
+                <span className="font-bold">{velocityData!.completedVideos}</span> video{velocityData!.completedVideos !== 1 ? "s" : ""} published all-time
+              </span>
+            </div>
+          )}
+          {velocityData?.bottleneck && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs">
+              <AlertTriangle size={13} className="text-amber-500 shrink-0" />
+              <span className="text-amber-800">
+                <span className="font-bold">Bottleneck:</span> {velocityData.bottleneck.stage} ({velocityData.bottleneck.avgDays}d avg)
+              </span>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate("SESSION")}
+                  className="ml-auto text-amber-700 font-bold hover:text-amber-900 transition-colors whitespace-nowrap"
+                >
+                  Start Session →
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-4">

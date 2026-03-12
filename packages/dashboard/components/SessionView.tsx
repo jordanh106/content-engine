@@ -215,26 +215,40 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                 Smart Batches
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {recommendations.batches.map((batch) => (
-                  <button
-                    key={batch.audience}
-                    onClick={() => setSelectedCodes(new Set(batch.videos.map((v) => v.code)))}
-                    className={cn(
-                      "border rounded-xl p-3 text-left transition-all",
-                      batch.videos.every((v) => selectedCodes.has(v.code))
-                        ? "border-amber-300 bg-amber-50"
-                        : "border-slate-200 bg-white hover:border-amber-200",
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-800">{batch.audience}</span>
-                      <span className="text-[10px] text-slate-400">{batch.estimatedMinutes} min</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500">
-                      {batch.count} videos, Formats: {batch.formats.join(", ")}
-                    </p>
-                  </button>
-                ))}
+                {recommendations.batches.map((batch) => {
+                  const isSelected = batch.videos.every((v) => selectedCodes.has(v.code));
+                  return (
+                    <button
+                      key={batch.audience}
+                      onClick={() => setSelectedCodes(new Set(batch.videos.map((v) => v.code)))}
+                      className={cn(
+                        "border rounded-xl p-4 text-left transition-all",
+                        isSelected
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-slate-200 bg-white hover:border-amber-200",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <span className="text-sm font-bold text-slate-800">{batch.audience}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Clock size={11} className="text-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-500">~{batch.estimatedMinutes} min</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-black text-amber-700">{batch.count} video{batch.count !== 1 ? "s" : ""}</span>
+                        <span className="text-[10px] text-slate-400">·</span>
+                        <span className="text-[10px] text-slate-500">Formats: {batch.formats.join(", ")}</span>
+                      </div>
+                      {batch.reason && (
+                        <p className="text-[10px] text-slate-500 italic">{batch.reason}</p>
+                      )}
+                      {isSelected && (
+                        <p className="text-[10px] font-bold text-amber-600 mt-1.5">Selected ✓</p>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -413,6 +427,30 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                 ~{activeSession.items.length > 0 ? Math.round(elapsed / activeSession.items.length / 60) : 0}m per video
               </span>
             </div>
+            {completedCodes.size > 0 && (
+              <div className="mt-4 pt-4 border-t border-emerald-200 text-left space-y-1.5">
+                {activeSession.sessionType === "voiceover" && (
+                  <p className="text-xs text-emerald-700">
+                    <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> moved to Recording. Next: Generation Night to create motion graphics.
+                  </p>
+                )}
+                {activeSession.sessionType === "generation" && (
+                  <p className="text-xs text-emerald-700">
+                    <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> moved to Generating. Next: Assembly Night to combine footage and export.
+                  </p>
+                )}
+                {activeSession.sessionType === "assembly" && (
+                  <p className="text-xs text-emerald-700">
+                    <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> are now Assembled and ready to schedule. Add them to your calendar.
+                  </p>
+                )}
+                {!["voiceover", "generation", "assembly"].includes(activeSession.sessionType) && (
+                  <p className="text-xs text-emerald-700">
+                    <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> completed. Check your pipeline for the next step.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <button

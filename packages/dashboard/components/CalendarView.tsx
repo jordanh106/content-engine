@@ -233,17 +233,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
             {totalGaps > 0 && (
               <FeatureHint id="calendar-gaps" content={FEATURE_HINTS["calendar-gaps"].content} side="bottom">
                 <button
-                  onClick={() => onNavigate?.("OPPORTUNITIES")}
+                  onClick={() => {
+                    const firstGap = gapsData?.gaps?.[0];
+                    if (firstGap) {
+                      setShowAddModal({ date: formatDate(new Date()), platform: firstGap.platform });
+                    } else {
+                      onNavigate?.("OPPORTUNITIES");
+                    }
+                  }}
                   className="text-amber-600 ml-2 hover:text-amber-700 hover:underline transition-colors"
                 >
                   <AlertTriangle size={12} className="inline mr-0.5" />
-                  {totalGaps} cadence gap{totalGaps !== 1 ? "s" : ""} - fill from opportunities
+                  {totalGaps} cadence gap{totalGaps !== 1 ? "s" : ""} - schedule now
                 </button>
               </FeatureHint>
             )}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {totalGaps > 0 && (
+            <button
+              onClick={() => {
+                const gap = gapsData?.gaps?.[0];
+                if (gap) setShowAddModal({ date: formatDate(new Date()), platform: gap.platform });
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-teal-700 transition-colors"
+            >
+              <Plus size={12} />
+              Fill Calendar
+            </button>
+          )}
           {/* View mode toggle */}
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5 mr-2">
             <button

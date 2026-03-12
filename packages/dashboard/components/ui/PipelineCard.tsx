@@ -35,8 +35,12 @@ export const PipelineCard: React.FC<PipelineCardProps> = ({
           {video.daysInStage > 0 && (
             <span
               className={cn(
-                "text-[10px] font-bold",
-                video.daysInStage > 7 ? "text-amber-500" : "text-slate-400",
+                "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                video.daysInStage > 7
+                  ? "text-rose-600 bg-rose-50"
+                  : video.daysInStage > 3
+                    ? "text-amber-600 bg-amber-50"
+                    : "text-slate-400",
               )}
             >
               {video.daysInStage}d

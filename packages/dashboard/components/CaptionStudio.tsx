@@ -71,6 +71,7 @@ const ScoreBadge: React.FC<{ score: ScoreBreakdown }> = ({ score }) => {
   const color = score.total >= 80 ? "bg-emerald-100 text-emerald-700 border-emerald-200"
     : score.total >= 50 ? "bg-amber-100 text-amber-700 border-amber-200"
     : "bg-red-100 text-red-700 border-red-200";
+  const context = score.total >= 80 ? "Strong" : score.total >= 65 ? "Above avg" : score.total >= 50 ? "Average" : "Needs work";
 
   const categories = [
     { label: "Hook", value: score.hook, max: 25 },
@@ -89,7 +90,7 @@ const ScoreBadge: React.FC<{ score: ScoreBreakdown }> = ({ score }) => {
         onClick={() => setShowBreakdown(!showBreakdown)}
         className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border tabular-nums", color)}
       >
-        {score.total}
+        {score.total} · {context}
       </button>
       {showBreakdown && (
         <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-xl p-3 shadow-xl min-w-[180px]">
@@ -1381,6 +1382,20 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                       </div>
                     );
                   })}
+
+                  {/* Schedule CTA */}
+                  {onNavigate && captions.some((c) => c.status === "approved") && (
+                    <button
+                      onClick={() => onNavigate("CALENDAR")}
+                      className="flex items-center justify-between w-full px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100 transition-colors group text-left mb-2"
+                    >
+                      <div>
+                        <span className="text-sm font-semibold text-teal-800">Schedule this video</span>
+                        <span className="block text-xs text-teal-600 mt-0.5">Add to your content calendar to plan your publish date</span>
+                      </div>
+                      <ArrowRight size={16} className="text-teal-600 group-hover:translate-x-0.5 transition-transform shrink-0 ml-3" />
+                    </button>
+                  )}
 
                   {/* Bulk actions */}
                   <div className="flex gap-2">

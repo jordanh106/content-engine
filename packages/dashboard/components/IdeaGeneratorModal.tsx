@@ -9,8 +9,14 @@ import {
   CheckCircle2,
   Lightbulb,
 } from "lucide-react";
-import type { GeneratedIdea, IdeaCategory, ConversationMessage } from "../shared/types.js";
+import type { GeneratedIdea, IdeaCategory, ConversationMessage, FormatId } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { FormatBadge } from "./ui/FormatBadge.js";
+
+function extractFormatId(raw: string): FormatId | null {
+  const match = raw?.trim().match(/^([A-G])\b/);
+  return (match ? match[1] : null) as FormatId | null;
+}
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -62,9 +68,12 @@ const IdeaPreviewCard: React.FC<{
     )}
     <div className="flex items-center justify-between mt-2">
       <div className="flex flex-wrap gap-1.5">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-          {idea.suggestedFormat}
-        </span>
+        {idea.suggestedFormat && (() => {
+          const fmtId = extractFormatId(idea.suggestedFormat);
+          return fmtId
+            ? <FormatBadge format={fmtId} />
+            : <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{idea.suggestedFormat}</span>;
+        })()}
         <span
           className={cn(
             "px-2 py-0.5 rounded-full text-[10px] font-bold",

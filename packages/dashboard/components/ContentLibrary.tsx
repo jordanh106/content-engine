@@ -190,13 +190,39 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
 
       {/* Video grid */}
       {videosLoading ? (
-        <div className="text-center py-12 text-slate-400">Loading...</div>
+        <div className="space-y-8 animate-pulse">
+          {[...Array(2)].map((_, g) => (
+            <section key={g}>
+              <div className="h-3 bg-slate-200 rounded w-32 mb-3" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="h-4 bg-slate-200 rounded w-3/4" />
+                    <div className="h-3 bg-slate-100 rounded w-full" />
+                    <div className="h-3 bg-slate-100 rounded w-5/6" />
+                    <div className="flex gap-1.5">
+                      <div className="h-5 bg-slate-100 rounded-full w-8" />
+                      <div className="h-5 bg-slate-100 rounded-full w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : grouped.length === 0 ? (
         <EmptyState
           icon={<Search size={24} className="text-slate-400" />}
           headline="No videos match"
           description="Try adjusting your filters or search query to find what you're looking for."
-          action={{ label: "Clear Filters", onClick: () => window.location.reload() }}
+          action={{ label: "Clear Filters", onClick: () => {
+            setSearch("");
+            setAudienceFilter(null);
+            setFormatFilter(null);
+            setRemotionOnly(false);
+            setStyleFilter(null);
+            setSortBy("default");
+          }}}
         />
       ) : (
         <div className="space-y-8">

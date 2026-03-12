@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield } from "lucide-react";
-import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept } from "../shared/types.js";
+import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
+import { FormatBadge } from "./ui/FormatBadge.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
@@ -24,6 +25,12 @@ const PRIORITY_COLORS: Record<string, string> = {
   Medium: "bg-amber-100 text-amber-700",
   Low: "bg-slate-100 text-slate-600",
 };
+
+// Extract clean FormatId (A-G) from strings like "C (Demo)" or "D (Myth Buster)"
+function extractFormatId(raw: string): FormatId | null {
+  const match = raw?.trim().match(/^([A-G])\b/);
+  return (match ? match[1] : null) as FormatId | null;
+}
 
 type IdeasResponse = { ideas: Idea[]; total: number };
 type SummaryResponse = { counts: Record<string, number>; total: number };
@@ -368,11 +375,12 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick
             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{idea.hookAngle}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
-            {idea.suggestedFormat && (
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                {idea.suggestedFormat}
-              </span>
-            )}
+            {idea.suggestedFormat && (() => {
+              const fmtId = extractFormatId(idea.suggestedFormat);
+              return fmtId
+                ? <FormatBadge format={fmtId} />
+                : <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{idea.suggestedFormat}</span>;
+            })()}
             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", meta.color)}>
               {meta.label}
             </span>

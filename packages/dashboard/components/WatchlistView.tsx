@@ -838,32 +838,38 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
       <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
+            onClick={onToggle}
+            disabled={!creator.hasInsight}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-all border",
+              creator.hasInsight
+                ? "border-violet-200 text-violet-600 hover:bg-violet-50"
+                : "border-slate-200 text-slate-300 cursor-not-allowed",
+            )}
+          >
+            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {isExpanded ? "Hide" : "View"} Analysis
+          </button>
+          <button
             onClick={() => analyzeMutation.mutate(creator.handle)}
             disabled={analyzeMutation.isPending || isEnriching}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all",
               (analyzeMutation.isPending || isEnriching)
                 ? "bg-violet-100 text-violet-500"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                : creator.hasInsight
+                  ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "bg-violet-600 text-white hover:bg-violet-700",
             )}
           >
             {(analyzeMutation.isPending || isEnriching) ? (
               <><Loader2 size={12} className="animate-spin" /> {isEnriching ? "Enriching..." : "Analyzing..."}</>
             ) : (
-              <><Radar size={12} /> Analyze</>
+              <><Radar size={12} /> {creator.hasInsight ? "Re-analyze" : "Analyze"}</>
             )}
           </button>
           {analyzeMutation.isError && (
             <span className="text-[10px] text-rose-500">{(analyzeMutation.error as Error)?.message}</span>
-          )}
-          {creator.hasInsight && (
-            <button
-              onClick={onToggle}
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700"
-            >
-              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-              {isExpanded ? "Hide" : "View"} Analysis
-            </button>
           )}
         </div>
         <div className="flex items-center gap-2">

@@ -18,6 +18,7 @@ import {
   ArrowUpRight,
   AlertTriangle,
   ChevronDown,
+  ChevronUp,
   ExternalLink,
   Plus,
   Check,
@@ -47,6 +48,7 @@ import type {
 import { cn } from "../utils/cn.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
+import { Tooltip as UITooltip } from "./ui/Tooltip.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 const FORMAT_COLORS: Record<string, string> = {
@@ -152,24 +154,46 @@ const SparkBar: React.FC<{ dimensions: ContentOpportunity["dimensions"] }> = ({ 
   ];
   const dimMap = new Map(dimensions.map((d) => [d.dimension, d.score]));
 
-  return (
-    <div className="flex gap-0.5 items-end h-4">
+  const tooltipContent = (
+    <div className="space-y-1.5 min-w-[180px]">
       {ordered.map((dim) => {
         const score = dimMap.get(dim) ?? 0;
-        const height = Math.max(2, Math.round((score / 100) * 16));
+        const meta = DIMENSION_META[dim];
         return (
-          <div
-            key={dim}
-            className="w-1.5 rounded-full"
-            style={{
-              height: `${height}px`,
-              backgroundColor: DIMENSION_META[dim].color,
-              opacity: score >= 50 ? 1 : 0.4,
-            }}
-          />
+          <div key={dim} className="flex items-center justify-between gap-3">
+            <span className="text-[11px] text-slate-300">{meta.label}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${score}%`, backgroundColor: meta.color }} />
+              </div>
+              <span className="text-[11px] font-bold text-white w-6 text-right">{score}</span>
+            </div>
+          </div>
         );
       })}
     </div>
+  );
+
+  return (
+    <UITooltip content={tooltipContent} side="left">
+      <div className="flex gap-0.5 items-end h-4 cursor-default">
+        {ordered.map((dim) => {
+          const score = dimMap.get(dim) ?? 0;
+          const height = Math.max(2, Math.round((score / 100) * 16));
+          return (
+            <div
+              key={dim}
+              className="w-1.5 rounded-full"
+              style={{
+                height: `${height}px`,
+                backgroundColor: DIMENSION_META[dim].color,
+                opacity: score >= 50 ? 1 : 0.4,
+              }}
+            />
+          );
+        })}
+      </div>
+    </UITooltip>
   );
 };
 
@@ -181,46 +205,76 @@ const OpportunityCard: React.FC<{
   opportunity: ContentOpportunity;
   onClick: () => void;
 }> = ({ opportunity, onClick }) => {
+  const [showWhy, setShowWhy] = useState(false);
   const tags = getValidationTags(opportunity);
   const formatInfo = FORMATS[opportunity.suggestedFormat as FormatId];
+  const topEvidence = opportunity.evidence.slice(0, 2);
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer"
-    >
-      <div className="flex items-start gap-3">
-        <ScoreBadge score={opportunity.overallScore} />
-        <div className="flex-1 min-w-0">
-          <h3 className="font-serif font-bold text-slate-900 text-sm md:text-base leading-tight">
-            {opportunity.topic}
-          </h3>
-          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{opportunity.whyNow}</p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {formatInfo && (
-              <span
-                className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full text-white"
-                style={{ backgroundColor: FORMAT_COLORS[opportunity.suggestedFormat] ?? "#94a3b8" }}
-              >
-                {opportunity.suggestedFormat}: {formatInfo.shortName}
+    <div className="bg-white border border-slate-200 rounded-2xl hover:border-teal-300 hover:shadow-sm transition-all">
+      <button
+        onClick={onClick}
+        className="w-full text-left p-4 md:p-5"
+      >
+        <div className="flex items-start gap-3">
+          <ScoreBadge score={opportunity.overallScore} />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-serif font-bold text-slate-900 text-sm md:text-base leading-tight">
+              {opportunity.topic}
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{opportunity.whyNow}</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {formatInfo && (
+                <span
+                  className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: FORMAT_COLORS[opportunity.suggestedFormat] ?? "#94a3b8" }}
+                >
+                  {opportunity.suggestedFormat}: {formatInfo.shortName}
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                {formatPlatformName(opportunity.targetPlatform)}
               </span>
-            )}
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-              {formatPlatformName(opportunity.targetPlatform)}
-            </span>
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
+          <SparkBar dimensions={opportunity.dimensions} />
         </div>
-        <SparkBar dimensions={opportunity.dimensions} />
-      </div>
-    </button>
+      </button>
+      {opportunity.evidence.length > 0 && (
+        <div className="border-t border-slate-100">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowWhy(!showWhy); }}
+            className="w-full flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors text-left"
+          >
+            {showWhy ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            Why this? ({opportunity.evidence.length} signal{opportunity.evidence.length !== 1 ? "s" : ""})
+          </button>
+          {showWhy && (
+            <div className="px-4 pb-3 space-y-1.5">
+              {topEvidence.map((e, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                  <span className="shrink-0 mt-0.5">{EVIDENCE_ICONS[e.type] ?? <Globe size={12} />}</span>
+                  <span className="line-clamp-2">{e.title}: {e.detail}</span>
+                </div>
+              ))}
+              {opportunity.evidence.length > 2 && (
+                <button onClick={onClick} className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors">
+                  +{opportunity.evidence.length - 2} more signals →
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -1077,26 +1131,31 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             )}
           </p>
         </div>
-        <button
-          onClick={() => generateMutation.mutate()}
-          disabled={generateMutation.isPending}
-          className={cn(
-            "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors shrink-0",
-            generateMutation.isPending
-              ? "bg-slate-100 text-slate-400 cursor-wait"
-              : "bg-teal-600 text-white hover:bg-teal-700",
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <button
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
+              generateMutation.isPending
+                ? "bg-slate-100 text-slate-400 cursor-wait"
+                : "bg-teal-600 text-white hover:bg-teal-700",
+            )}
+          >
+            {generateMutation.isPending ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> Analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles size={14} /> Generate Opportunities
+              </>
+            )}
+          </button>
+          {generatedAgo && (
+            <span className="text-[10px] text-slate-400">Updated {generatedAgo}</span>
           )}
-        >
-          {generateMutation.isPending ? (
-            <>
-              <Loader2 size={14} className="animate-spin" /> Analyzing...
-            </>
-          ) : (
-            <>
-              <Sparkles size={14} /> Generate Opportunities
-            </>
-          )}
-        </button>
+        </div>
       </div>
 
       {/* Data source badges */}

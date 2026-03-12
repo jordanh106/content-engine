@@ -155,9 +155,19 @@ function determineWhatsNext(
       };
     }
 
+    // Find the largest audience batch
+    const byAudience = new Map<string, { label: string; count: number }>();
+    for (const v of scriptedVideos) {
+      const entry = byAudience.get(v.audience) ?? { label: v.audienceLabel, count: 0 };
+      entry.count++;
+      byAudience.set(v.audience, entry);
+    }
+    const topBatch = Array.from(byAudience.values()).sort((a, b) => b.count - a.count)[0];
+    const batchNote = topBatch ? ` ${topBatch.count} in ${topBatch.label} is the most concentrated batch.` : "";
+
     return {
       headline: `${scripted} scripts ready for recording`,
-      description: "Batch record voiceovers in one focused session. Group by audience category for the most efficient workflow.",
+      description: `Batch record voiceovers in one focused session. Group by audience category for the most efficient workflow.${batchNote}`,
       cta: "Start Recording Session",
       target: "SESSION",
       gradient: "from-amber-50 to-yellow-50",
@@ -600,7 +610,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </>
             ) : (
               <>
-                <p className="text-2xl font-bold text-slate-900">---</p>
+                <p className="text-sm text-slate-400 italic">No data yet</p>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Top Performer</p>
               </>
             )}
@@ -635,9 +645,19 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 <p className="text-[10px] text-slate-400">~{estMinutes} min of content published</p>
                 <p className="text-[10px] text-slate-400">Goal: 90 min (superfan territory)</p>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                270 short-form videos ≈ 90 min of watched content. That's when casual viewers become superfans.
-              </p>
+              {published === 0 ? (
+                <button
+                  onClick={() => onNavigate("PIPELINE")}
+                  className="mt-3 w-full flex items-center justify-between px-3 py-2 bg-violet-50 border border-violet-200 rounded-xl hover:bg-violet-100 transition-colors group text-left"
+                >
+                  <span className="text-xs font-semibold text-violet-700">Publish your first video to start your superfan journey</span>
+                  <ArrowRight size={13} className="text-violet-500 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
+                </button>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-1">
+                  270 short-form videos ≈ 90 min of watched content. That's when casual viewers become superfans.
+                </p>
+              )}
             </div>
           </section>
         );
@@ -657,17 +677,19 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </span>
               <span className="text-sm text-slate-400">/100</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {Object.entries(healthData.dimensions).map(([key, dim]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500 w-24 shrink-0 capitalize">{key}</span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-semibold text-slate-600 capitalize">{key}</span>
+                    <span className="text-[10px] text-slate-400">{dim.detail}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${dim.score >= dim.max * 0.75 ? "bg-emerald-500" : dim.score >= dim.max * 0.5 ? "bg-amber-500" : "bg-rose-500"}`}
                       style={{ width: `${(dim.score / dim.max) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] text-slate-400 w-20 text-right truncate">{dim.detail}</span>
                 </div>
               ))}
             </div>

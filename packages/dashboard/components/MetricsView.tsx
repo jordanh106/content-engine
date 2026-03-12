@@ -450,7 +450,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
   const hookLibrary = intelData?.hookLibrary ?? [];
   const counts = intelData?.counts ?? { redditThreads: 0, xPosts: 0, webResults: 0, hookPatterns: 0 };
   const performers = topPerformers?.topPerformers ?? [];
-  const formats = byFormat?.byFormat ?? [];
+  // Always include all 7 formats so charts render complete bars even when sparse
+  const ALL_FORMAT_IDS = ["A", "B", "C", "D", "E", "F", "G"];
+  const rawFormats = byFormat?.byFormat ?? [];
+  const formatMap = new Map(rawFormats.map((f) => [f.format, f]));
+  const formats = ALL_FORMAT_IDS.map((id) => formatMap.get(id) ?? {
+    format: id,
+    avgViews: 0,
+    engagementRate: 0,
+    saveRate: 0,
+    totalVideos: 0,
+  });
   const platforms = byPlatform?.byPlatform ?? [];
   const trends = trendsData?.trends ?? [];
   const hasPerformanceData = performers.length > 0;
@@ -518,14 +528,15 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             onClick={handleAnalyze}
             disabled={insightsLoading}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0",
+              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0 border",
               insightsLoading
-                ? "bg-violet-100 text-violet-400 cursor-wait"
-                : "bg-violet-600 text-white hover:bg-violet-700",
+                ? "border-violet-200 text-violet-400 cursor-wait bg-white"
+                : "border-violet-300 text-violet-600 bg-white hover:bg-violet-50",
             )}
+            title="Synthesize existing research data into strategic recommendations"
           >
             {insightsLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-            {insightsLoading ? "Analyzing..." : "Analyze Strategy"}
+            {insightsLoading ? "Analyzing..." : "Synthesize Data"}
           </button>
         </div>
 
@@ -628,22 +639,29 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 Hook Patterns
               </p>
             </div>
-            <div className="space-y-2.5">
-              {intel.hookPatterns.map((hook, i) => (
-                <div key={i}>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{hook.type}</span>
-                    <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", platformPillClass(hook.platform))}>
-                      {hook.platform}
-                    </span>
-                    <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", PRIORITY_STYLES[hook.priority] ?? PRIORITY_STYLES.Medium)}>
-                      {hook.priority}
-                    </span>
+            {intel.hookPatterns.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-xs text-slate-400">No hook patterns found in this research digest.</p>
+                <p className="text-[10px] text-slate-300 mt-1">Run research above or use /viral-scout to surface hook patterns.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {intel.hookPatterns.map((hook, i) => (
+                  <div key={i}>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{hook.type}</span>
+                      <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", platformPillClass(hook.platform))}>
+                        {hook.platform}
+                      </span>
+                      <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", PRIORITY_STYLES[hook.priority] ?? PRIORITY_STYLES.Medium)}>
+                        {hook.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 italic">"{hook.text}"</p>
                   </div>
-                  <p className="text-sm text-slate-700 italic">"{hook.text}"</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Content Gaps */}
@@ -934,11 +952,16 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                             setAddedRecIndex(i);
                             setTimeout(() => setAddedRecIndex(null), 2000);
                           }}
-                          disabled={addRecMutation.isPending}
-                          className="shrink-0 mt-1 hover:text-teal-600 transition-colors"
-                          title="Add to Idea Bank"
+                          disabled={addRecMutation.isPending || addedRecIndex === i}
+                          className={cn(
+                            "shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
+                            addedRecIndex === i
+                              ? "bg-teal-50 text-teal-600"
+                              : "bg-teal-600 text-white hover:bg-teal-700",
+                          )}
                         >
-                          {addedRecIndex === i ? <Check size={16} className="text-teal-500" /> : <ArrowUpRight size={16} className="text-slate-300" />}
+                          {addedRecIndex === i ? <Check size={12} /> : <Plus size={12} />}
+                          {addedRecIndex === i ? "Added" : "Add to Ideas"}
                         </button>
                       </div>
                     ))}
@@ -1150,8 +1173,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           </td>
                           <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalViews ?? 0).toLocaleString()}</td>
                           <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0).toLocaleString()}</td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{p.engagementRate}%</td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{p.saveRate}%</td>
+                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{p.engagementRate > 0 ? `${p.engagementRate}%` : "—"}</td>
+                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0) > 0 ? `${p.saveRate}%` : "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1162,26 +1185,38 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {formats.length > 0 && (
-                <section className="bg-white border border-slate-200 rounded-2xl p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                     Avg Views by Format
                   </p>
-                  <ResponsiveContainer width="100%" height={240}>
-                    <BarChart data={formats}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
-                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Avg Views"]} />
-                      <Bar dataKey="avgViews" radius={[6, 6, 0, 0]}>
-                        {formats.map((entry) => (
-                          <Cell key={entry.format} fill={FORMAT_COLORS[entry.format] ?? "#94a3b8"} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </section>
-              )}
+                  {rawFormats.length < 3 && (
+                    <span className="text-[10px] text-slate-400 italic">Publish more formats to compare</span>
+                  )}
+                </div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={formats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
+                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Avg Views"]} />
+                    <Bar dataKey="avgViews" radius={[6, 6, 0, 0]}>
+                      {formats.map((entry) => (
+                        <Cell key={entry.format} fill={entry.avgViews > 0 ? (FORMAT_COLORS[entry.format] ?? "#94a3b8") : "#e2e8f0"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                {(() => {
+                  const topFmt = [...formats].filter((f) => f.avgViews > 0).sort((a, b) => b.avgViews - a.avgViews)[0];
+                  if (!topFmt) return null;
+                  return (
+                    <p className="text-[11px] text-slate-500 mt-3 italic">
+                      Format {topFmt.format} leads with {topFmt.avgViews.toLocaleString()} avg views. Prioritize more {FORMATS[topFmt.format as keyof typeof FORMATS]?.name ?? topFmt.format} videos to maximize reach.
+                    </p>
+                  );
+                })()}
+              </section>
 
               {platforms.length > 0 && (
                 <section className="bg-white border border-slate-200 rounded-2xl p-5">
@@ -1215,23 +1250,35 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* Engagement Rate by Format */}
-            {formats.length > 0 && (
-              <section className="bg-white border border-slate-200 rounded-2xl p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+            <section className="bg-white border border-slate-200 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Engagement & Save Rate by Format
                 </p>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={formats}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
-                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined, name: string | undefined) => [`${value ?? 0}%`, name === "engagementRate" ? "Engagement Rate" : "Save Rate"]} />
-                    <Bar dataKey="engagementRate" fill="#0d9488" name="engagementRate" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="saveRate" fill="#7c3aed" name="saveRate" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
+                {rawFormats.length < 3 && (
+                  <span className="text-[10px] text-slate-400 italic">Publish more formats to compare</span>
+                )}
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={formats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined, name: string | undefined) => [`${value ?? 0}%`, name === "engagementRate" ? "Engagement Rate" : "Save Rate"]} />
+                  <Bar dataKey="engagementRate" fill="#0d9488" name="engagementRate" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="saveRate" fill="#7c3aed" name="saveRate" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              {(() => {
+                const topEng = [...formats].filter((f) => f.engagementRate > 0).sort((a, b) => b.engagementRate - a.engagementRate)[0];
+                const topSave = [...formats].filter((f) => f.saveRate > 0).sort((a, b) => b.saveRate - a.saveRate)[0];
+                if (!topEng && !topSave) return null;
+                const note = topSave
+                  ? `Format ${topSave.format} drives the most saves (${topSave.saveRate}%) — ideal for evergreen content worth bookmarking.`
+                  : `Format ${topEng!.format} has your highest engagement rate (${topEng!.engagementRate}%) — audiences respond well to this format.`;
+                return <p className="text-[11px] text-slate-500 mt-3 italic">{note}</p>;
+              })()}
+            </section>
 
             {/* Production Velocity */}
             {velocityData && velocityData.transitions.length > 0 && (
@@ -1252,13 +1299,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={velocityData.transitions} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} unit="d" />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} unit="d" domain={[0, Math.min(30, Math.max(7, ...velocityData.transitions.map((t) => t.avgDays ?? 0)) * 1.1)]} />
                     <YAxis
                       type="category"
                       dataKey="fromStatus"
                       tick={{ fontSize: 10, fill: "#64748b" }}
                       width={90}
-                      tickFormatter={(v: string) => `${v.slice(0, 4)}...`}
+                      tickFormatter={(v: string) => v.slice(0, 6)}
                     />
                     <Tooltip
                       contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
@@ -1279,12 +1326,16 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                {velocityData.bottleneck && (
-                  <p className="text-xs text-rose-600 mt-2">
-                    <AlertTriangle size={12} className="inline mr-1" />
-                    Bottleneck: {velocityData.bottleneck.stage} ({velocityData.bottleneck.avgDays}d avg)
+                {velocityData.bottleneck ? (
+                  <p className="text-[11px] text-rose-600 mt-3 italic">
+                    <AlertTriangle size={11} className="inline mr-1" />
+                    Bottleneck at {velocityData.bottleneck.stage} ({velocityData.bottleneck.avgDays}d avg). Consider a focused session to clear this stage.
                   </p>
-                )}
+                ) : velocityData.avgDaysTotal > 0 ? (
+                  <p className="text-[11px] text-slate-500 mt-3 italic">
+                    Average {velocityData.avgDaysTotal}d from start to publish. Batch sessions reduce this significantly.
+                  </p>
+                ) : null}
               </section>
             )}
 
@@ -1357,8 +1408,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                             </span>
                             {p.onTrack ? (
                               <CheckCircle2 size={14} className="text-emerald-500" />
-                            ) : (
+                            ) : p.avgPerWeek === 0 ? (
                               <XCircle size={14} className="text-rose-400" />
+                            ) : (
+                              <XCircle size={14} className="text-amber-400" />
                             )}
                           </div>
                         </div>
@@ -1377,7 +1430,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                                 key={p.platform}
                                 className={cn(
                                   "rounded px-1 py-0.5 mt-0.5 font-bold",
-                                  p.onTrack ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-600",
+                                  p.onTrack ? "bg-emerald-50 text-emerald-700" : p.actual === 0 ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600",
                                 )}
                               >
                                 {p.actual}
