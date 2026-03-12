@@ -19,6 +19,10 @@ packages/remotion-studio/.remotion/
 .DS_Store
 Thumbs.db
 
+# Database
+*.sqlite3
+*.sqlite
+
 # Cache
 .cache/
 *.log
