@@ -261,7 +261,8 @@ Respond with JSON only:
       });
     } catch (error) {
       console.error("[creator-videos] Scan error:", error);
-      res.status(500).json({ error: "Failed to scan creator videos" });
+      const message = error instanceof Error ? error.message : "Failed to scan creator videos";
+      res.status(500).json({ error: message });
     }
   });
 
@@ -508,6 +509,12 @@ Respond with JSON:
       console.error("[creator-videos] Outlier detection error:", error);
       res.status(500).json({ error: "Failed to detect outliers" });
     }
+  });
+
+  // DELETE /api/creator-videos/breakdowns - Clear all video breakdown topic data
+  router.delete("/breakdowns", (_req, res) => {
+    db.delete(videoBreakdowns).run();
+    res.json({ cleared: true });
   });
 
   // GET /api/creator-videos/competitor-gaps - Topics they cover that you don't

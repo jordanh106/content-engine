@@ -64,23 +64,39 @@ type CompetitorGapsProps = {
 
 const CompetitorGaps: React.FC<CompetitorGapsProps> = ({ onAddIdea, addedTopic }) => {
   const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
   const { data } = useQuery<GapData>({
     queryKey: ["competitor-gaps"],
     queryFn: () => fetch("/api/creator-videos/competitor-gaps").then((r) => r.json()),
+  });
+  const clearMutation = useMutation({
+    mutationFn: () => fetch("/api/creator-videos/breakdowns", { method: "DELETE" }).then((r) => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["competitor-gaps"] }),
   });
 
   if (!data || (data.blueOcean.length === 0 && data.overlap.length === 0)) return null;
 
   return (
     <div className="mb-4">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-500 mb-2 px-1 hover:text-sky-700 transition-colors"
-      >
-        <Zap size={12} />
-        Blue Ocean Topics ({data.blueOcean.length})
-        <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
-      </button>
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-500 hover:text-sky-700 transition-colors"
+        >
+          <Zap size={12} />
+          Blue Ocean Topics ({data.blueOcean.length})
+          <ChevronDown size={12} className={cn("transition-transform", expanded && "rotate-180")} />
+        </button>
+        {expanded && (
+          <button
+            onClick={() => clearMutation.mutate()}
+            title="Clear all topic data"
+            className="ml-auto text-slate-300 hover:text-rose-400 transition-colors"
+          >
+            <Trash2 size={11} />
+          </button>
+        )}
+      </div>
 
       {expanded && (
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 space-y-3">
