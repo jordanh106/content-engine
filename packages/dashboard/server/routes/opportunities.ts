@@ -227,6 +227,13 @@ PERFORMANCE-DRIVEN PRIORITIZATION:
 - If a format consistently outperforms (2x+ avg views), prioritize opportunities that naturally fit that format
 - Match top performer audience segments when evidence supports it
 
+PLATFORM ALGORITHM CONTEXT (current as of early 2026):
+- Instagram Reels: Watch time is the #1 ranking signal. The critical threshold is second 3 -- if viewers bail before second 3, reach gets suppressed. Sends-per-reach (DM shares) is the second-most weighted signal. Likes have minimal algorithmic weight.
+- Format implications for Instagram Reels: Formats A (Explainer, 30-45s) and E (Walkthrough, 45-60s) build higher completion rates and watch time for educational health content. Format F (6-15s QuickTip) builds minimal watch time signal on Reels; prefer TikTok for Format F opportunities.
+- TikTok: Discovery-first algorithm. Even small accounts can reach new audiences. Shares and comments are highly weighted. Geolocation surfaces local service content to nearby users. Format F performs well here.
+- When a topic naturally fits Format A or E, prefer instagram_reels as targetPlatform. When a topic fits Format F, prefer tiktok.
+- Boost Format Fit score by 15 points for Format A or E opportunities targeting instagram_reels (they leverage the watch time advantage).
+
 AUDIENCE-SPECIFIC RESEARCH GUIDANCE:
 When evaluating topics, consider the unique needs of each audience beyond what trends on Reddit/X:
 - Prenatal: pregnancy discomfort, Webster technique, birth preparation, postpartum recovery

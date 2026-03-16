@@ -10,6 +10,7 @@ const SESSION_STATUS_MAP: Record<SessionType, { from: ProductionStatus; to: Prod
   voiceover: { from: "SCRIPTED", to: "RECORDING" },
   generation: { from: "RECORDING", to: "GENERATING" },
   assembly: { from: "GENERATING", to: "ASSEMBLED" },
+  quick_win: { from: "SCRIPTED", to: "RECORDING" },
 };
 
 export function createSessionsRouter(contentLibraryPath: string) {
@@ -51,7 +52,7 @@ export function createSessionsRouter(contentLibraryPath: string) {
   router.get("/available-videos", (req, res) => {
     const type = req.query.type as SessionType;
     if (!type || !SESSION_STATUS_MAP[type]) {
-      res.status(400).json({ error: "type must be voiceover, generation, or assembly" });
+      res.status(400).json({ error: "type must be voiceover, generation, assembly, or quick_win" });
       return;
     }
 

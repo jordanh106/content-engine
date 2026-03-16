@@ -524,7 +524,29 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                   <div className="border border-violet-200 bg-violet-50 rounded-xl p-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">Opportunities</p>
                     {analysisResult.opportunities.map((o, i) => (
-                      <p key={i} className="text-xs text-violet-800 mb-1">- {o}</p>
+                      <div key={i} className="flex items-start justify-between gap-2 mb-1.5">
+                        <p className="text-xs text-violet-800 flex-1">- {o}</p>
+                        <button
+                          onClick={() => addIdeaMutation.mutate({
+                            topic: o,
+                            suggestedFormat: null,
+                            hookAngle: null,
+                            priority: "medium",
+                            source: "Watchlist Analysis",
+                            category: "competitor",
+                          } as unknown as WatchlistIntelIdea)}
+                          disabled={addIdeaMutation.isPending || addedIdea === o}
+                          className={cn(
+                            "shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider transition-colors",
+                            addedIdea === o
+                              ? "bg-teal-100 text-teal-700"
+                              : "bg-violet-100 text-violet-700 hover:bg-teal-100 hover:text-teal-700",
+                          )}
+                        >
+                          {addedIdea === o ? <Check size={9} /> : <Plus size={9} />}
+                          {addedIdea === o ? "Added" : "Add"}
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

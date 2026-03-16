@@ -49,6 +49,10 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
+  Users,
+  Youtube,
+  Link2,
+  PlugZap,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -348,6 +352,68 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
     queryFn: () => fetchJson<CadenceResponse>("/api/analytics/cadence?weeks=4"),
   });
 
+  // YouTube connection
+  type YoutubeStatus = {
+    connected: boolean;
+    channelName?: string;
+    channelId?: string;
+    connectedAt?: string;
+    linkedVideos?: number;
+  };
+  type YoutubeMatchResult = {
+    channelVideosFound: number;
+    matched: number;
+    matches: Array<{ youtubeVideoId: string; youtubeTitle: string; videoCode: string; matchScore: number }>;
+  };
+
+  const { data: ytStatus, refetch: refetchYtStatus } = useQuery<YoutubeStatus>({
+    queryKey: ["youtube-status"],
+    queryFn: () => fetchJson<YoutubeStatus>("/api/metrics/youtube/status"),
+    staleTime: 60_000,
+  });
+  const [ytMatchResult, setYtMatchResult] = useState<YoutubeMatchResult | null>(null);
+  const [ytMatchExpanded, setYtMatchExpanded] = useState(false);
+  const ytMatchMutation = useMutation({
+    mutationFn: () => fetchJson<YoutubeMatchResult>("/api/metrics/youtube/match", { method: "POST" }),
+    onSuccess: (data) => {
+      setYtMatchResult(data);
+      setYtMatchExpanded(true);
+      refetchYtStatus();
+    },
+  });
+  const [ytSyncResult, setYtSyncResult] = useState<{ synced: number } | null>(null);
+  const ytSyncMutation = useMutation({
+    mutationFn: () => fetchJson<{ synced: number }>("/api/metrics/youtube/sync", { method: "POST" }),
+    onSuccess: (data) => {
+      setYtSyncResult(data);
+      queryClient.invalidateQueries({ queryKey: ["metrics"] });
+      setTimeout(() => setYtSyncResult(null), 4000);
+    },
+  });
+  const ytDisconnectMutation = useMutation({
+    mutationFn: () => fetch("/api/metrics/youtube/disconnect", { method: "DELETE" }).then((r) => r.json()),
+    onSuccess: () => {
+      refetchYtStatus();
+      setYtMatchResult(null);
+    },
+  });
+
+  // Attribution tracking
+  type AttributionRow = { id: number; monthKey: string; count: number };
+  const { data: attributionData, refetch: refetchAttribution } = useQuery<{ attributions: AttributionRow[]; total: number }>({
+    queryKey: ["metrics", "attribution"],
+    queryFn: () => fetchJson<{ attributions: AttributionRow[]; total: number }>("/api/metrics/attribution"),
+  });
+  const [tappedAttribution, setTappedAttribution] = useState(false);
+  const tapMutation = useMutation({
+    mutationFn: () => fetch("/api/metrics/attribution/tap", { method: "POST" }).then((r) => r.json()),
+    onSuccess: () => {
+      refetchAttribution();
+      setTappedAttribution(true);
+      setTimeout(() => setTappedAttribution(false), 2000);
+    },
+  });
+
   const handleSubmitMetric = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formCode.trim()) return;
@@ -437,6 +503,18 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       setResearchError(e instanceof Error ? e.message : "Failed to start research");
     }
   };
+
+  // Handle YouTube OAuth callback redirect (clears query param from URL)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("youtube_connected") || url.searchParams.has("youtube_error")) {
+      refetchYtStatus();
+      url.searchParams.delete("youtube_connected");
+      url.searchParams.delete("youtube_error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cleanup poll on unmount
   useEffect(() => {
@@ -972,6 +1050,171 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           )}
         </section>
       )}
+
+      {/* ================================================================ */}
+      {/* BUSINESS OUTCOMES ATTRIBUTION                                    */}
+      {/* ================================================================ */}
+
+      <section className="border border-slate-200 rounded-2xl p-5 bg-white">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Users size={14} className="text-teal-600" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Business Outcomes</p>
+            </div>
+            <p className="text-sm text-slate-600 mb-1">
+              When a patient says they found you on social, tap to log it.
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-slate-900">
+                {attributionData?.attributions.find((a) => a.monthKey === new Date().toISOString().slice(0, 7))?.count ?? 0}
+              </span>
+              <span className="text-sm text-slate-400">this month</span>
+              <span className="text-slate-300 mx-1">|</span>
+              <span className="text-sm font-semibold text-slate-600">{attributionData?.total ?? 0}</span>
+              <span className="text-sm text-slate-400">all-time</span>
+            </div>
+          </div>
+          <button
+            onClick={() => tapMutation.mutate()}
+            disabled={tapMutation.isPending}
+            className={cn(
+              "shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 transition-all",
+              tappedAttribution
+                ? "bg-teal-50 border-teal-300 text-teal-700"
+                : "bg-white border-slate-200 text-slate-600 hover:border-teal-300 hover:bg-teal-50 active:scale-95",
+            )}
+          >
+            {tappedAttribution ? (
+              <>
+                <Check size={22} className="text-teal-600" />
+                <span className="text-[10px] font-bold text-teal-600 mt-1">Logged</span>
+              </>
+            ) : (
+              <>
+                <Users size={22} />
+                <span className="text-[10px] font-bold mt-1 uppercase tracking-wider">Log it</span>
+              </>
+            )}
+          </button>
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* YOUTUBE AUTO-SYNC                                                */}
+      {/* ================================================================ */}
+
+      <section className="border border-slate-200 rounded-2xl p-5 bg-white">
+        <div className="flex items-center gap-2 mb-3">
+          <Youtube size={14} className="text-rose-500" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">YouTube Auto-Sync</p>
+          {ytStatus?.connected && (
+            <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <CheckCircle2 size={10} />
+              Connected
+            </span>
+          )}
+        </div>
+
+        {!ytStatus?.connected ? (
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-slate-600 mb-1">
+                Connect your YouTube channel to pull views, likes, and comments automatically.
+              </p>
+              <p className="text-xs text-slate-400">No manual metric entry for YouTube Shorts or Long-form.</p>
+            </div>
+            <a
+              href="/api/metrics/youtube/auth"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full bg-rose-600 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-rose-700 transition-colors"
+            >
+              <PlugZap size={12} />
+              Connect
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{ytStatus.channelName}</p>
+                <p className="text-xs text-slate-400">
+                  {ytStatus.linkedVideos ?? 0} videos linked
+                  {ytStatus.connectedAt && ` · connected ${new Date(ytStatus.connectedAt).toLocaleDateString()}`}
+                </p>
+              </div>
+              <button
+                onClick={() => ytDisconnectMutation.mutate()}
+                disabled={ytDisconnectMutation.isPending}
+                className="text-[10px] text-slate-400 hover:text-rose-500 transition-colors underline"
+              >
+                Disconnect
+              </button>
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => ytMatchMutation.mutate()}
+                disabled={ytMatchMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-700 hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-50"
+              >
+                {ytMatchMutation.isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <Link2 size={11} />
+                )}
+                {ytMatchMutation.isPending ? "Matching..." : "Auto-Match Videos"}
+              </button>
+              <button
+                onClick={() => ytSyncMutation.mutate()}
+                disabled={ytSyncMutation.isPending || (ytStatus.linkedVideos ?? 0) === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-teal-700 transition-colors disabled:opacity-50"
+              >
+                {ytSyncMutation.isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : ytSyncResult ? (
+                  <Check size={11} />
+                ) : (
+                  <RefreshCw size={11} />
+                )}
+                {ytSyncMutation.isPending
+                  ? "Syncing..."
+                  : ytSyncResult
+                    ? `Synced ${ytSyncResult.synced} videos`
+                    : "Sync Now"}
+              </button>
+            </div>
+
+            {ytMatchMutation.error && (
+              <p className="text-xs text-rose-600">{String(ytMatchMutation.error)}</p>
+            )}
+
+            {ytMatchResult && (
+              <div className="border border-slate-100 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setYtMatchExpanded((x) => !x)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <span>
+                    Matched {ytMatchResult.matched} of {ytMatchResult.channelVideosFound} channel videos
+                  </span>
+                  {ytMatchExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+                {ytMatchExpanded && (
+                  <div className="px-3 py-2 max-h-48 overflow-y-auto space-y-1">
+                    {ytMatchResult.matches.map((m) => (
+                      <div key={m.youtubeVideoId} className="flex items-start justify-between gap-2">
+                        <p className="text-xs text-slate-600 leading-snug flex-1 line-clamp-1">{m.youtubeTitle}</p>
+                        <span className="shrink-0 text-[10px] font-bold text-teal-700 font-mono">{m.videoCode}</span>
+                        <span className="shrink-0 text-[10px] text-slate-400">{m.matchScore}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* ================================================================ */}
       {/* PERFORMANCE METRICS SECTION                                      */}

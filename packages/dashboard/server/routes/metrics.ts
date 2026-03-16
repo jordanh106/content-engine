@@ -4,7 +4,7 @@ import path from "path";
 import { spawn } from "child_process";
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "../db.js";
-import { performanceMetrics } from "../../shared/schema.js";
+import { performanceMetrics, socialAttributions } from "../../shared/schema.js";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseViralInsights, listDigestDates } from "../parsers/viral-insights.js";
@@ -613,6 +613,43 @@ export function createMetricsRouter(contentLibraryPath: string) {
     }
 
     res.json({ totalViews, thisWeek: 0, topPerformer });
+  });
+
+  // GET /api/metrics/attribution - Get social attribution counts by month
+  router.get("/attribution", (_req, res) => {
+    const rows = db.select().from(socialAttributions).orderBy(socialAttributions.monthKey).all();
+    const total = rows.reduce((s, r) => s + r.count, 0);
+    res.json({ attributions: rows, total });
+  });
+
+  // POST /api/metrics/attribution/tap - Increment attribution count for current month
+  router.post("/attribution/tap", (_req, res) => {
+    const monthKey = new Date().toISOString().slice(0, 7); // "2026-03"
+    const existing = db
+      .select()
+      .from(socialAttributions)
+      .where(eq(socialAttributions.monthKey, monthKey))
+      .get();
+
+    if (existing) {
+      const updated = db
+        .update(socialAttributions)
+        .set({
+          count: existing.count + 1,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(socialAttributions.monthKey, monthKey))
+        .returning()
+        .get();
+      res.json({ attribution: updated });
+    } else {
+      const created = db
+        .insert(socialAttributions)
+        .values({ monthKey, count: 1 })
+        .returning()
+        .get();
+      res.json({ attribution: created });
+    }
   });
 
   // GET /api/metrics/:code - Get metrics for a specific video

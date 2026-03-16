@@ -44,6 +44,7 @@ import { createAutomationRouter } from "./routes/automation.js";
 import { createStoryboardsRouter } from "./routes/storyboards.js";
 import { createAiPromptsRouter } from "./routes/ai-prompts.js";
 import { createProductionCompanionRouter } from "./routes/production-companion.js";
+import { createYoutubeRouter } from "./routes/youtube.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -95,6 +96,7 @@ app.use("/api/automation", createAutomationRouter());
 app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath));
 app.use("/api/ai-prompts", createAiPromptsRouter());
 app.use("/api/produce", createProductionCompanionRouter(contentLibraryPath));
+app.use("/api/metrics/youtube", createYoutubeRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

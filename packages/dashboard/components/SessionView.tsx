@@ -32,7 +32,8 @@ type AvailableVideo = {
   audienceLabel: string;
 };
 
-const SESSION_TYPES: Array<{ type: SessionType; label: string; icon: React.ReactNode; description: string; statusFrom: string }> = [
+const SESSION_TYPES: Array<{ type: SessionType; label: string; icon: React.ReactNode; description: string; statusFrom: string; isQuickWin?: boolean }> = [
+  { type: "quick_win", label: "Quick Win", icon: <Zap size={20} />, description: "20-30 min. Review 1-2 captions or develop one idea. For overwhelmed weeks.", statusFrom: "SCRIPTED", isQuickWin: true },
   { type: "voiceover", label: "Voiceover", icon: <Mic size={20} />, description: "Record scripts for SCRIPTED videos", statusFrom: "SCRIPTED" },
   { type: "generation", label: "Generation", icon: <Sparkles size={20} />, description: "Generate graphics for RECORDING videos", statusFrom: "RECORDING" },
   { type: "assembly", label: "Assembly", icon: <Film size={20} />, description: "Assemble final cuts for GENERATING videos", statusFrom: "GENERATING" },
@@ -180,30 +181,58 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
               Session Type
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {SESSION_TYPES.map((st) => (
+            <div className="space-y-2">
+              {/* Quick Win — full-width, visually distinct */}
+              {SESSION_TYPES.filter((st) => st.isQuickWin).map((st) => (
                 <button
                   key={st.type}
                   onClick={() => { setSelectedType(st.type); setSelectedCodes(new Set()); }}
                   className={cn(
-                    "border rounded-2xl p-4 text-left transition-all",
+                    "w-full border rounded-2xl p-4 text-left transition-all",
                     selectedType === st.type
-                      ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
-                      : "border-slate-200 bg-white hover:border-teal-200",
+                      ? "border-amber-400 bg-amber-50 ring-2 ring-amber-100"
+                      : "border-amber-200 bg-amber-50/50 hover:border-amber-300",
                   )}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <div className={cn(
                       "w-8 h-8 rounded-xl flex items-center justify-center",
-                      selectedType === st.type ? "bg-teal-100 text-teal-600" : "bg-slate-100 text-slate-500",
+                      selectedType === st.type ? "bg-amber-100 text-amber-600" : "bg-amber-100 text-amber-500",
                     )}>
                       {st.icon}
                     </div>
                     <span className="text-sm font-bold text-slate-900">{st.label}</span>
+                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">20-30 min</span>
                   </div>
                   <p className="text-xs text-slate-500">{st.description}</p>
                 </button>
               ))}
+              {/* Standard session types */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {SESSION_TYPES.filter((st) => !st.isQuickWin).map((st) => (
+                  <button
+                    key={st.type}
+                    onClick={() => { setSelectedType(st.type); setSelectedCodes(new Set()); }}
+                    className={cn(
+                      "border rounded-2xl p-4 text-left transition-all",
+                      selectedType === st.type
+                        ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
+                        : "border-slate-200 bg-white hover:border-teal-200",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center",
+                        selectedType === st.type ? "bg-teal-100 text-teal-600" : "bg-slate-100 text-slate-500",
+                      )}>
+                        {st.icon}
+                      </div>
+                      <span className="text-sm font-bold text-slate-900">{st.label}</span>
+                    </div>
+                    <p className="text-xs text-slate-500">{st.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -444,7 +473,12 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                     <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> are now Assembled and ready to schedule. Add them to your calendar.
                   </p>
                 )}
-                {!["voiceover", "generation", "assembly"].includes(activeSession.sessionType) && (
+                {activeSession.sessionType === "quick_win" && (
+                  <p className="text-xs text-emerald-700">
+                    Quick win complete. Momentum maintained. You can always do more later.
+                  </p>
+                )}
+                {!["voiceover", "generation", "assembly", "quick_win"].includes(activeSession.sessionType) && (
                   <p className="text-xs text-emerald-700">
                     <span className="font-bold">{completedCodes.size} video{completedCodes.size !== 1 ? "s" : ""}</span> completed. Check your pipeline for the next step.
                   </p>

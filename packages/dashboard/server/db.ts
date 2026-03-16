@@ -428,3 +428,38 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS production_checklist (
   stage_transition TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 )`);
+
+// Migration: Create social_attributions table
+sqlite.exec(`CREATE TABLE IF NOT EXISTS social_attributions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  month_key TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Migration: Platform connections (OAuth tokens)
+sqlite.exec(`CREATE TABLE IF NOT EXISTS platform_connections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  platform TEXT NOT NULL UNIQUE,
+  access_token TEXT,
+  refresh_token TEXT,
+  token_expires_at TEXT,
+  channel_id TEXT,
+  channel_name TEXT,
+  connected_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Migration: YouTube video links
+sqlite.exec(`CREATE TABLE IF NOT EXISTS youtube_video_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  video_code TEXT NOT NULL,
+  youtube_video_id TEXT NOT NULL UNIQUE,
+  youtube_title TEXT,
+  match_score INTEGER,
+  match_method TEXT,
+  platform TEXT NOT NULL DEFAULT 'youtube_shorts',
+  last_synced_at TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);

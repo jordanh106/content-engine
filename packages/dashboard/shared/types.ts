@@ -706,7 +706,7 @@ export type CadenceResponse = {
 // Session Planner Types
 // ============================================
 
-export type SessionType = "voiceover" | "generation" | "assembly";
+export type SessionType = "voiceover" | "generation" | "assembly" | "quick_win";
 
 export type SessionItem = {
   videoCode: string;

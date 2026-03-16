@@ -77,6 +77,14 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
+export const socialAttributions = sqliteTable("social_attributions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  monthKey: text("month_key").notNull(), // "2026-03" format
+  count: integer("count").notNull().default(0),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
 export const savedCaptions = sqliteTable("saved_captions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   videoCode: text("video_code").notNull(),
@@ -322,6 +330,32 @@ export const contentWaterfall = sqliteTable("content_waterfall", {
   description: text("description"),
   status: text("status").notNull().default("idea"),
   performanceNote: text("performance_note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+// Platform Connections (OAuth tokens)
+
+export const platformConnections = sqliteTable("platform_connections", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  platform: text("platform").notNull().unique(), // "youtube", "instagram", "tiktok"
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: text("token_expires_at"),
+  channelId: text("channel_id"),
+  channelName: text("channel_name"),
+  connectedAt: text("connected_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
+export const youtubeVideoLinks = sqliteTable("youtube_video_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code").notNull(),
+  youtubeVideoId: text("youtube_video_id").notNull().unique(),
+  youtubeTitle: text("youtube_title"),
+  matchScore: integer("match_score"), // 0-100 word overlap
+  matchMethod: text("match_method"), // "auto" | "manual"
+  platform: text("platform").notNull().default("youtube_shorts"), // "youtube_shorts" | "youtube_long"
+  lastSyncedAt: text("last_synced_at"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

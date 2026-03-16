@@ -692,6 +692,41 @@ export function createAnalyticsRouter(contentLibraryPath: string) {
     });
   });
 
+  // GET /api/analytics/last-publish - Days since last published content
+  router.get("/last-publish", (_req, res) => {
+    // Check most recent PUBLISHED status change
+    const lastPublished = db
+      .select({ changedAt: statusHistory.changedAt })
+      .from(statusHistory)
+      .where(sql`${statusHistory.toStatus} = 'PUBLISHED'`)
+      .orderBy(desc(statusHistory.changedAt))
+      .limit(1)
+      .all();
+
+    if (lastPublished.length === 0 || !lastPublished[0].changedAt) {
+      // Also check videoStatus table for any PUBLISHED entries
+      const publishedVideos = db
+        .select({ updatedAt: videoStatus.statusUpdatedAt })
+        .from(videoStatus)
+        .where(sql`${videoStatus.currentStatus} = 'PUBLISHED'`)
+        .orderBy(desc(videoStatus.statusUpdatedAt))
+        .limit(1)
+        .all();
+
+      if (publishedVideos.length === 0 || !publishedVideos[0].updatedAt) {
+        return res.json({ daysSinceLastPublish: null, lastPublishDate: null });
+      }
+
+      const lastDate = new Date(publishedVideos[0].updatedAt);
+      const days = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      return res.json({ daysSinceLastPublish: days, lastPublishDate: publishedVideos[0].updatedAt });
+    }
+
+    const lastDate = new Date(lastPublished[0].changedAt);
+    const days = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    res.json({ daysSinceLastPublish: days, lastPublishDate: lastPublished[0].changedAt });
+  });
+
   // GET /api/analytics/production-timeline - Videos with projected completion dates
   router.get("/production-timeline", (_req, res) => {
     try {

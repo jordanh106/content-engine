@@ -161,6 +161,42 @@ Not opening hooks, but closing patterns that drive specific actions.
 
 ---
 
+## Watch Time Optimization (Instagram Algorithm Priority)
+
+Instagram's #1 ranking signal as of January 2025 (confirmed by Adam Mosseri) is **watch time**. The second-most weighted signal is **sends-per-reach** (how often viewers DM the video to someone else). Likes have minimal algorithmic weight.
+
+### The Second-3 Gate
+
+The most critical threshold is the **first 3 seconds**. If viewers bail before second 3, Instagram suppresses the reel's distribution. Design every hook to clear this gate.
+
+What clears the gate:
+- A visual that creates an immediate question ("why is that happening?")
+- An on-screen text hook that's incomplete (forces watching to get the answer)
+- A spoken hook that opens a loop in the first 2 words ("Most people don't know...")
+- Movement or change on screen (static openings fail the gate)
+
+What fails the gate:
+- Logo/intro animations (viewers leave instantly)
+- "Hey guys, today we're going to talk about..."
+- Title cards with no action
+- Slow fade-in with no immediate hook
+
+### Designing for Sends-per-Reach
+
+The second algorithm signal: people DMing the video to a friend. This triggers when content feels personally relevant to someone the viewer knows. Increase sends by:
+- Addressing a specific, recognizable condition ("if you wake up with a stiff neck every morning...")
+- Content that makes viewers think "this is literally my mom"
+- Clear, actionable information worth bookmarking
+- Emotional resonance (patient story formats)
+
+### Format Implications
+
+For **Instagram Reels**, prefer Formats A (Explainer, 30-45s) and E (Walkthrough, 45-60s). Longer educational content builds more total watch time and completion rate signal than Format F. Format F (6-15s) builds insufficient watch time signal on Reels.
+
+For **TikTok**, Format F performs well. The discovery algorithm rewards shares and comments over watch time completion.
+
+---
+
 ## Platform-Specific Hook Rules
 
 ### TikTok (6-15s sweet spot)
@@ -169,10 +205,13 @@ Not opening hooks, but closing patterns that drive specific actions.
 - Pattern interrupts get the most shares
 - 1-2 seconds max before the point
 - Trending sounds boost reach if relevant
+- Geolocation matters for local service businesses -- local content is actively surfaced to nearby users
 
-### Instagram Reels (15-30s sweet spot)
+### Instagram Reels (15-30s sweet spot, algorithm-optimized)
+- **Clear the second-3 gate** (see Watch Time Optimization above) -- this is the top priority
 - Visual-first hooks (movement, face close-up, before/after)
-- Saves-optimized CTAs ("save this") outperform like-optimized
+- Sends-optimized content ("tag someone who needs this") now outperforms saves-only CTAs
+- Saves-optimized CTAs ("save this") still very effective
 - Slower cuts outperform rapid cuts
 - Carousel-style info hooks do well (checklist format)
 - 3-5 niche hashtags + 2-3 broader

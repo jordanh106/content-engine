@@ -69,6 +69,7 @@ const STATUS_NAV: Record<ProductionStatus, DashboardView> = {
 function determineWhatsNext(
   pipeline: PipelineResponse | undefined,
   opportunities: OpportunitiesResponse | undefined,
+  daysSinceLastPublish: number | null,
 ): WhatsNextAction {
   const staleWarnings = opportunities?.staleWarnings ?? [];
   const hasOpps = (opportunities?.opportunities?.length ?? 0) > 0;
@@ -82,6 +83,35 @@ function determineWhatsNext(
       target: "OPPORTUNITIES",
       gradient: "from-teal-50 to-sky-50",
       borderColor: "border-teal-200",
+    };
+  }
+
+  // Recovery mode: no publish in 14+ days
+  if (daysSinceLastPublish !== null && daysSinceLastPublish >= 14) {
+    const scripted = pipeline.summary.SCRIPTED ?? 0;
+    const assembled = pipeline.summary.ASSEMBLED ?? 0;
+
+    let recoveryNote = "Start with one quick win to rebuild your momentum.";
+    let recoveryCta = "View Pipeline";
+    let recoveryTarget: DashboardView = "PIPELINE";
+
+    if (assembled > 0) {
+      recoveryNote = `${assembled} assembled video${assembled > 1 ? "s" : ""} just need scheduling. Fastest path back.`;
+      recoveryCta = "Schedule Videos";
+      recoveryTarget = "CALENDAR";
+    } else if (scripted > 0) {
+      recoveryNote = `${scripted} scripts are ready to record. Pick one audience category and do a quick session.`;
+      recoveryCta = "Start Session";
+      recoveryTarget = "SESSION";
+    }
+
+    return {
+      headline: `It's been ${daysSinceLastPublish} days since your last post`,
+      description: `No stress — everyone falls off the rhythm. ${recoveryNote}`,
+      cta: recoveryCta,
+      target: recoveryTarget,
+      gradient: "from-rose-50 to-orange-50",
+      borderColor: "border-rose-200",
     };
   }
 
@@ -467,13 +497,19 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     queryFn: () => fetch("/api/analytics/health-score").then((r) => r.json()),
   });
 
+  const { data: lastPublishData } = useQuery<{ daysSinceLastPublish: number | null; lastPublishDate: string | null }>({
+    queryKey: ["last-publish"],
+    queryFn: () => fetch("/api/analytics/last-publish").then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
   if (isLoading) {
     return (
       <div className="text-center py-12 text-slate-400">Loading...</div>
     );
   }
 
-  const whatsNext = determineWhatsNext(pipeline, opportunities);
+  const whatsNext = determineWhatsNext(pipeline, opportunities, lastPublishData?.daysSinceLastPublish ?? null);
 
   // Pipeline stages for stepper
   const stages: { status: ProductionStatus; label: string }[] = [
