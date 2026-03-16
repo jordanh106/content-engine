@@ -19,6 +19,9 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | The Phone Position Destroying Your Neck | D | Your phone isn't the problem - this is | High | Opportunities AI | 2026-03-06 |
 | 5 Signs Your Pillow Is Ruining Your Neck | B (Checklist) | Your pillow might be the hidden cause of your neck pain | High | n8n Content Intelligence | 2026-03-10 |
 | Instant Desk Posture Fix | F (Quick Tip) | Transform your posture in 30 seconds | High | n8n Content Intelligence | 2026-03-10 |
+| Tech Neck Prevention | B (Checklist) | 5 Signs Your Neck Needs Help | High | n8n Content Intelligence | 2026-03-16 |
+| Pregnancy Adjustment Safety | D (Myth Buster) | The Truth About Pregnancy Adjustments | High | n8n Content Intelligence | 2026-03-16 |
+| Sports Recovery Techniques | C (Demo) | What NFL Players Know About Recovery | Medium | n8n Content Intelligence | 2026-03-16 |
 
 ---
 
@@ -53,6 +56,7 @@ Always relevant, not time-sensitive. Good for filling calendar gaps.
 | Sleep Posture Masterclass | A (Explainer) | Why You're Still Waking Up Stiff | High | n8n Content Intelligence | 2026-03-03 |
 | The Truth About Cracking Your Own Back | D (Myth Buster) | Why DIY adjustments can be dangerous | High | n8n Content Intelligence | 2026-03-10 |
 | Athletic Performance Recovery Protocol | A (Explainer) | Why athletes need chiropractic care | Medium | n8n Content Intelligence | 2026-03-10 |
+| Sciatica Success Story | G (Patient Story) | From Cannot Walk to Pain Free | Medium | n8n Content Intelligence | 2026-03-16 |
 
 
 ---
@@ -69,6 +73,9 @@ Ideas from patient questions, DMs, comments, or in-office conversations.
 | Senior Mobility Success Story | G (Patient Story) | From Walker to Walking | Medium | n8n Content Intelligence | 2026-03-03 |
 | Pregnancy-Safe Adjustment Demonstration | C (Demo) | Safe chiropractic care during each trimester | High | n8n Content Intelligence | 2026-03-10 |
 | Senior's Guide to Better Sleep Posture | E (Walkthrough) | Age-specific tips for pain-free sleep | Medium | n8n Content Intelligence | 2026-03-10 |
+| WFH Posture Guide | E (Walkthrough) | Desk Setup Makeover | High | n8n Content Intelligence | 2026-03-16 |
+| Teen Athlete Care | A (Explainer) | Why Young Athletes Need Care | High | n8n Content Intelligence | 2026-03-16 |
+| Senior Balance Tips | F (Quick Tip) | 3-Second Balance Test | Medium | n8n Content Intelligence | 2026-03-16 |
 
 ---
 
