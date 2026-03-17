@@ -992,10 +992,11 @@ const ContentGapHeatMap: React.FC = () => {
                 {data.formats.map((f) => (
                   <th
                     key={f.id}
-                    className="text-[10px] font-bold pb-2 px-1"
-                    style={{ color: FORMAT_COLORS[f.id] || "#64748b" }}
+                    className="pb-2 px-1 text-center"
+                    title={`Format ${f.id}: ${f.name}`}
                   >
-                    {f.id}
+                    <span className="text-[10px] font-bold block" style={{ color: FORMAT_COLORS[f.id] || "#64748b" }}>{f.id}</span>
+                    <span className="text-[9px] text-slate-400 block leading-tight">{f.name}</span>
                   </th>
                 ))}
               </tr>

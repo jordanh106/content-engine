@@ -87,18 +87,27 @@ const HookAdaptButton: React.FC<{ hookId: number }> = ({ hookId }) => {
   const [adaptations, setAdaptations] = useState<Adaptation[] | null>(null);
   const [showAdapt, setShowAdapt] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [adaptError, setAdaptError] = useState<string | null>(null);
 
-  const adaptMutation = {
-    isPending: false,
-    mutate: async () => {
-      try {
-        const r = await fetch(`/api/vault/hooks/${hookId}/adapt`, { method: "POST", headers: { "Content-Type": "application/json" } });
-        if (!r.ok) return;
-        const data = await r.json();
-        setAdaptations(data.adaptations);
-        setShowAdapt(true);
-      } catch { /* ignore */ }
-    },
+  const handleAdapt = async () => {
+    setIsPending(true);
+    setAdaptError(null);
+    try {
+      const r = await fetch(`/api/vault/hooks/${hookId}/adapt`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({})) as { error?: string };
+        setAdaptError(body.error || "Adapt failed");
+        return;
+      }
+      const data = await r.json() as { adaptations: Adaptation[] };
+      setAdaptations(data.adaptations);
+      setShowAdapt(true);
+    } catch (e) {
+      setAdaptError(e instanceof Error ? e.message : "Adapt failed");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleCopyAdapt = (text: string, idx: number) => {
@@ -132,13 +141,17 @@ const HookAdaptButton: React.FC<{ hookId: number }> = ({ hookId }) => {
   }
 
   return (
-    <button
-      onClick={() => adaptMutation.mutate()}
-      className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors"
-    >
-      <Zap size={12} />
-      Adapt
-    </button>
+    <div className="flex flex-col items-start gap-1">
+      <button
+        onClick={handleAdapt}
+        disabled={isPending}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium hover:bg-teal-100 transition-colors disabled:opacity-50 disabled:cursor-wait"
+      >
+        <Zap size={12} className={isPending ? "animate-pulse" : ""} />
+        {isPending ? "Adapting…" : "Adapt"}
+      </button>
+      {adaptError && <p className="text-[10px] text-rose-500">{adaptError}</p>}
+    </div>
   );
 };
 

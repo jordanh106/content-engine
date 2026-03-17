@@ -663,8 +663,40 @@ Respond with JSON only:
   router.post("/hooks/:id/adapt", async (req, res) => {
     const hookId = parseInt(req.params.id);
     try {
-      const hook = db.select().from(vaultHooks).where(eq(vaultHooks.id, hookId)).get();
-      if (!hook) { res.status(404).json({ error: "Hook not found" }); return; }
+      // Try DB first (custom hooks have positive IDs)
+      const dbHook = db.select().from(vaultHooks).where(eq(vaultHooks.id, hookId)).get();
+
+      let hookPattern: string;
+      let hookExample: string | null;
+      let hookCategory: string;
+
+      if (dbHook) {
+        hookPattern = dbHook.pattern;
+        hookExample = dbHook.example;
+        hookCategory = dbHook.category;
+      } else {
+        // Library hooks have negative IDs — reconstruct from hook-patterns.md
+        const hookPatternsPath = contentLibraryPath.replace("content-library.md", "hook-patterns.md");
+        const categories = parseHookPatterns(hookPatternsPath);
+        let found: { pattern: string; example: string; category: string } | null = null;
+        let libraryId = -1;
+        outer: for (const cat of categories) {
+          for (const p of cat.patterns) {
+            libraryId--;
+            if (libraryId === hookId) {
+              found = { pattern: p.pattern, example: p.example, category: cat.name };
+              break outer;
+            }
+          }
+        }
+        if (!found) {
+          res.status(404).json({ error: "Hook not found" });
+          return;
+        }
+        hookPattern = found.pattern;
+        hookExample = found.example;
+        hookCategory = found.category;
+      }
 
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) { res.status(400).json({ error: "ANTHROPIC_API_KEY not set" }); return; }
@@ -677,10 +709,9 @@ Respond with JSON only:
           role: "user",
           content: `Adapt this hook pattern for a chiropractic/health & wellness content creator. Generate 3 adapted versions.
 
-Original hook: "${hook.pattern}"
-${hook.example ? `Example: "${hook.example}"` : ""}
-${hook.sourceCreator ? `Source creator: ${hook.sourceCreator}` : ""}
-Category: ${hook.category}
+Original hook: "${hookPattern}"
+${hookExample ? `Example: "${hookExample}"` : ""}
+Category: ${hookCategory}
 
 Create 3 adaptations that:
 - Keep the psychological trigger (curiosity, fear, authority, etc.)
@@ -698,7 +729,7 @@ Return ONLY the JSON array.`,
       let cleaned = textBlock.text.trim();
       if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
       const adaptations = JSON.parse(cleaned);
-      res.json({ originalHook: hook.pattern, adaptations });
+      res.json({ originalHook: hookPattern, adaptations });
     } catch (error) {
       console.error("[vault] Hook adaptation error:", error);
       res.status(500).json({ error: "Failed to adapt hook" });
