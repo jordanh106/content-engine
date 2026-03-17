@@ -152,7 +152,7 @@ Return 4-6 patterns, 4-6 topic hotspots, and 6-8 content ideas. Focus on what's 
 
       const responsePromise = client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 2000,
+        max_tokens: 4000,
         tools: [{
           type: "web_search_20250305" as const,
           name: "web_search" as const,
@@ -173,7 +173,12 @@ Return 4-6 patterns, 4-6 topic hotspots, and 6-8 content ideas. Focus on what's 
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
+      let parsed: ResearchResult;
+      try {
+        parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
+      } catch {
+        throw new Error("AI returned malformed JSON. Try again.");
+      }
       res.json(parsed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Research failed";
@@ -257,7 +262,7 @@ Return 4-5 patterns, 4-5 topic hotspots, 5-7 content ideas, and 2-4 watchlist su
 
       const responsePromise = client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 2000,
+        max_tokens: 4000,
         tools: [{
           type: "web_search_20250305" as const,
           name: "web_search" as const,
@@ -278,7 +283,12 @@ Return 4-5 patterns, 4-5 topic hotspots, 5-7 content ideas, and 2-4 watchlist su
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
+      let parsed: ResearchResult;
+      try {
+        parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
+      } catch {
+        throw new Error("AI returned malformed JSON. Try again.");
+      }
       res.json(parsed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Research failed";
