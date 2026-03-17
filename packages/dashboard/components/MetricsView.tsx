@@ -271,6 +271,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
   const [formComments, setFormComments] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [runNowRunning, setRunNowRunning] = useState(false);
+  const [runNowSec, setRunNowSec] = useState(0);
+  const [runNowMessage, setRunNowMessage] = useState<string | null>(null);
   const [trendPlatform, setTrendPlatform] = useState<string>("all");
   const [insightsData, setInsightsData] = useState<InsightsResponse | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
@@ -460,6 +463,30 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       setTimeout(() => setSyncMessage(null), 5000);
     }
     setSyncing(false);
+  };
+
+  const handleRunNow = async () => {
+    setRunNowRunning(true);
+    setRunNowSec(0);
+    setRunNowMessage(null);
+    const timer = setInterval(() => setRunNowSec((s) => s + 1), 1000);
+    try {
+      const data = await fetchJson<{ triggered?: boolean; detail?: { synced?: number }; error?: string }>("/api/n8n/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workflowType: "content-intel" }),
+      });
+      clearInterval(timer);
+      const synced = data.detail?.synced ?? 0;
+      setRunNowMessage(synced > 0 ? `Synced ${synced} metric${synced > 1 ? "s" : ""} from fresh run` : "Run complete. No new metrics.");
+      queryClient.invalidateQueries({ queryKey: ["metrics"] });
+      setTimeout(() => setRunNowMessage(null), 6000);
+    } catch (e) {
+      clearInterval(timer);
+      setRunNowMessage(e instanceof Error ? e.message : "Run failed");
+      setTimeout(() => setRunNowMessage(null), 6000);
+    }
+    setRunNowRunning(false);
   };
 
   const handleAnalyze = async () => {
@@ -1240,16 +1267,30 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             )}
             <button
               onClick={handleSync}
-              disabled={syncing}
+              disabled={syncing || runNowRunning}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
-                syncing
+                syncing || runNowRunning
                   ? "bg-slate-100 text-slate-400 cursor-wait"
                   : "bg-teal-600 text-white hover:bg-teal-700",
               )}
             >
               <RefreshCw size={12} className={syncing ? "animate-spin" : ""} />
               Sync
+            </button>
+            <button
+              onClick={handleRunNow}
+              disabled={runNowRunning || syncing}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
+                runNowRunning
+                  ? "bg-slate-100 text-slate-400 cursor-wait"
+                  : "bg-emerald-600 text-white hover:bg-emerald-700",
+              )}
+              title="Trigger n8n workflow now and sync results"
+            >
+              <Zap size={12} className={runNowRunning ? "animate-pulse" : ""} />
+              {runNowRunning ? `Running… ${runNowSec}s` : "Run Now"}
             </button>
             <button
               onClick={() => setShowEntryForm(!showEntryForm)}
@@ -1263,6 +1304,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
         {syncMessage && (
           <p className="text-xs text-teal-600 mt-2">{syncMessage}</p>
+        )}
+        {runNowMessage && (
+          <p className="text-xs text-emerald-600 mt-2">{runNowMessage}</p>
         )}
 
         {/* Manual Entry Form */}

@@ -1247,3 +1247,38 @@ export type QualityGateData = {
   fromStatus: ProductionStatus;
   toStatus: ProductionStatus;
 };
+
+// ============================================
+// Research Panel Types
+// ============================================
+
+export type ResearchResult = {
+  patterns: Array<{
+    name: string;
+    hookType: string;
+    example: string;
+    ourAdaptation: string;
+    formatMatch: string;
+    platform: string;
+    priority: "high" | "medium" | "low";
+  }>;
+  topicHotspots: Array<{
+    topic: string;
+    platform: string;
+    whyHot: string;
+    audienceMatch: string;
+  }>;
+  contentIdeas: Array<{
+    topic: string;
+    format: string;
+    hookAngle: string;
+    priority: "high" | "medium" | "low";
+    platform: string;
+  }>;
+  watchlistSuggestions?: Array<{
+    handle: string;
+    platform: string;
+    why: string;
+  }>;
+  summary: string;
+};

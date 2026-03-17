@@ -45,6 +45,8 @@ import { createStoryboardsRouter } from "./routes/storyboards.js";
 import { createAiPromptsRouter } from "./routes/ai-prompts.js";
 import { createProductionCompanionRouter } from "./routes/production-companion.js";
 import { createYoutubeRouter } from "./routes/youtube.js";
+import { createN8nRunnerRouter } from "./routes/n8n-runner.js";
+import { createResearchRouter } from "./routes/research.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -97,6 +99,8 @@ app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath));
 app.use("/api/ai-prompts", createAiPromptsRouter());
 app.use("/api/produce", createProductionCompanionRouter(contentLibraryPath));
 app.use("/api/metrics/youtube", createYoutubeRouter(contentLibraryPath));
+app.use("/api/n8n", createN8nRunnerRouter(contentLibraryPath));
+app.use("/api/research", createResearchRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

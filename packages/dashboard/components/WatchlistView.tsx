@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy } from "lucide-react";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
-import { SkillButton } from "./ui/SkillButton.js";
+import { ResearchPanel } from "./ResearchPanel.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
@@ -201,6 +201,40 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       setTimeout(() => syncMutation.reset(), 5000);
     },
   });
+
+  const [runNowSec, setRunNowSec] = useState(0);
+  const runNowMutation = useMutation({
+    mutationFn: async () => {
+      setRunNowSec(0);
+      const timer = setInterval(() => setRunNowSec((s) => s + 1), 1000);
+      try {
+        const r = await fetch("/api/n8n/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workflowType: "watchlist-intel" }),
+        });
+        clearInterval(timer);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({ error: `Server error ${r.status}` })) as { error?: string };
+          throw new Error(body.error || `Run failed: ${r.status}`);
+        }
+        return r.json();
+      } catch (e) {
+        clearInterval(timer);
+        throw e;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist-intel"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      setTimeout(() => runNowMutation.reset(), 6000);
+    },
+    onError: () => {
+      setTimeout(() => runNowMutation.reset(), 6000);
+    },
+  });
+
+  const [researchPanelType, setResearchPanelType] = useState<"viral-scout" | "competitor-research" | null>(null);
 
   const [addedIdea, setAddedIdea] = useState<string | null>(null);
   const addIdeaMutation = useMutation({
@@ -651,15 +685,32 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                 <span className="text-[10px] text-slate-400">{intelData.date}</span>
                 <button
                   onClick={() => syncMutation.mutate()}
-                  disabled={syncMutation.isPending}
+                  disabled={syncMutation.isPending || runNowMutation.isPending}
                   className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 disabled:opacity-50"
                   title="Sync latest report from n8n"
                 >
                   <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
                 </button>
+                <button
+                  onClick={() => runNowMutation.mutate()}
+                  disabled={runNowMutation.isPending || syncMutation.isPending}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+                  title="Trigger n8n workflow now"
+                >
+                  <Zap size={12} className={runNowMutation.isPending ? "animate-pulse" : ""} />
+                  {runNowMutation.isPending ? `${runNowSec}s` : "Run Now"}
+                </button>
                 {syncMutation.isSuccess && (
                   <span className="text-[10px] text-emerald-600 font-medium">
                     {(syncMutation.data as { wasNew?: boolean })?.wasNew ? "New report synced!" : "Up to date"}
+                  </span>
+                )}
+                {runNowMutation.isSuccess && (
+                  <span className="text-[10px] text-emerald-600 font-medium">Done!</span>
+                )}
+                {runNowMutation.isError && (
+                  <span className="text-[10px] text-red-500 font-medium">
+                    {(runNowMutation.error as Error)?.message || "Run failed"}
                   </span>
                 )}
                 {syncMutation.isError && (
@@ -775,14 +826,25 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                 Watchlist Intelligence
               </p>
             </div>
-            <button
-              onClick={() => syncMutation.mutate()}
-              disabled={syncMutation.isPending}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-violet-50 text-violet-600 hover:bg-violet-100 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
-              {syncMutation.isPending ? "Syncing..." : "Sync from n8n"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => syncMutation.mutate()}
+                disabled={syncMutation.isPending || runNowMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-violet-50 text-violet-600 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
+                {syncMutation.isPending ? "Syncing..." : "Sync"}
+              </button>
+              <button
+                onClick={() => runNowMutation.mutate()}
+                disabled={runNowMutation.isPending || syncMutation.isPending}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+                title="Trigger n8n workflow now and ingest results"
+              >
+                <Zap size={12} className={runNowMutation.isPending ? "animate-pulse" : ""} />
+                {runNowMutation.isPending ? `Running… ${runNowSec}s` : "Run Now"}
+              </button>
+            </div>
           </div>
           {syncMutation.isSuccess && (syncMutation.data as { synced: boolean })?.synced === false && (
             <p className="text-xs text-slate-500 mt-2">{(syncMutation.data as { message?: string })?.message || "No data found"}</p>
@@ -804,10 +866,28 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           Quick Actions
         </p>
         <div className="flex flex-wrap gap-2">
-          <SkillButton skill="/competitor-research" args="chiropractic" label="Competitor Research" icon={<Radar size={14} />} />
-          <SkillButton skill="/viral-scout" args="chiropractic" label="Viral Scout" icon={<Radar size={14} />} />
+          <button
+            onClick={() => setResearchPanelType("competitor-research")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+          >
+            <Radar size={14} />
+            Competitor Research
+          </button>
+          <button
+            onClick={() => setResearchPanelType("viral-scout")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+          >
+            <Radar size={14} />
+            Viral Scout
+          </button>
         </div>
       </div>
+
+      <ResearchPanel
+        open={researchPanelType !== null}
+        type={researchPanelType}
+        onClose={() => setResearchPanelType(null)}
+      />
       </>)}
 
       {watchlistTab === "videos" && (
