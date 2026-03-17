@@ -150,16 +150,22 @@ Respond with JSON only (no markdown):
 
 Return 4-6 patterns, 4-6 topic hotspots, and 6-8 content ideas. Focus on what's actionable for a small family chiropractic practice.`;
 
-      const response = await client.messages.create({
+      const responsePromise = client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 3000,
+        max_tokens: 2000,
         tools: [{
           type: "web_search_20250305" as const,
           name: "web_search" as const,
-          max_uses: 5,
+          max_uses: 3,
         }],
         messages: [{ role: "user", content: prompt }],
       }, { timeout: 90_000 });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Research timed out after 100s")), 100_000),
+      );
+
+      const response = await Promise.race([responsePromise, timeoutPromise]);
 
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") {
@@ -249,16 +255,22 @@ Respond with JSON only (no markdown):
 
 Return 4-5 patterns, 4-5 topic hotspots, 5-7 content ideas, and 2-4 watchlist suggestions. Prioritize gaps in the prenatal/pediatric/family wellness space.`;
 
-      const response = await client.messages.create({
+      const responsePromise = client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 3000,
+        max_tokens: 2000,
         tools: [{
           type: "web_search_20250305" as const,
           name: "web_search" as const,
-          max_uses: 5,
+          max_uses: 3,
         }],
         messages: [{ role: "user", content: prompt }],
       }, { timeout: 90_000 });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Research timed out after 100s")), 100_000),
+      );
+
+      const response = await Promise.race([responsePromise, timeoutPromise]);
 
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") {

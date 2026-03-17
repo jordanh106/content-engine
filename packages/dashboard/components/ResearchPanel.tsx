@@ -95,8 +95,11 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
 
   // Kick off research when panel opens
   const runResearch = useCallback(async (researchType: "viral-scout" | "competitor-research") => {
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 120_000); // 2-min client-side safety net
     try {
-      const r = await fetch(`/api/research/${researchType}`, { method: "POST" });
+      const r = await fetch(`/api/research/${researchType}`, { method: "POST", signal: controller.signal });
+      clearTimeout(abortTimer);
       if (!r.ok) {
         const body = await r.json().catch(() => ({ error: `Server error ${r.status}` }));
         throw new Error((body as { error?: string }).error || `Research failed: ${r.status}`);
@@ -104,7 +107,11 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
       const data = await r.json() as ResearchResult;
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Research failed");
+      clearTimeout(abortTimer);
+      const msg = err instanceof Error
+        ? (err.name === "AbortError" ? "Research timed out. Please try again." : err.message)
+        : "Research failed";
+      setError(msg);
     }
   }, []);
 
