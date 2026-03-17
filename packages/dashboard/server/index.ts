@@ -71,6 +71,12 @@ const contentLibraryPath = path.join(industryDir, "content-library.md");
 const configPath = path.join(industryDir, "config.json");
 const renderOutputDir = path.join(repoRoot, "packages", "dashboard", "data", "renders");
 const formatsDir = path.join(repoRoot, "formats");
+const dataDir = path.resolve(import.meta.dirname, "..", "data");
+
+// Static: storyboard frame images
+const storyboardImagesDir = path.join(dataDir, "storyboard-images");
+if (!fs.existsSync(storyboardImagesDir)) fs.mkdirSync(storyboardImagesDir, { recursive: true });
+app.use("/storyboard-images", express.static(storyboardImagesDir));
 
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
@@ -95,7 +101,7 @@ app.use("/api/vault", createVaultRouter(contentLibraryPath));
 app.use("/api/creator-videos", createCreatorVideosRouter(contentLibraryPath));
 app.use("/api/search", createSearchRouter(contentLibraryPath));
 app.use("/api/automation", createAutomationRouter());
-app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath));
+app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath, dataDir));
 app.use("/api/ai-prompts", createAiPromptsRouter());
 app.use("/api/produce", createProductionCompanionRouter(contentLibraryPath));
 app.use("/api/metrics/youtube", createYoutubeRouter(contentLibraryPath));

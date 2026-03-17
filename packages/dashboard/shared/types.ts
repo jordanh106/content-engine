@@ -1177,6 +1177,8 @@ export type StoryboardShot = {
   remotionComponent: string | null;
   notes: string | null;
   orderIndex: number;
+  imageUrl: string | null;
+  imageStyle: "sketch" | "photoreal" | "cartoon" | null;
   createdAt: string;
 };
 

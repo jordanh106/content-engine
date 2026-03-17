@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star, ChevronDown, ChevronRight, Video, Bot, AlertTriangle } from "lucide-react";
 import type {
@@ -403,6 +403,10 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
   const lines = video.script.split("\n");
   const [adaptedScript, setAdaptedScript] = useState<string | null>(null);
   const [adaptPlatform, setAdaptPlatform] = useState<string | null>(null);
+  const [adaptOpen, setAdaptOpen] = useState(false);
+  const adaptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleAdaptEnter = () => { if (adaptTimerRef.current) clearTimeout(adaptTimerRef.current); setAdaptOpen(true); };
+  const handleAdaptLeave = () => { adaptTimerRef.current = setTimeout(() => setAdaptOpen(false), 250); };
 
   const adaptMutation = useMutation({
     mutationFn: async (platform: string) => {
@@ -427,24 +431,26 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
           Voiceover Script
         </p>
         <div className="flex items-center gap-2">
-          <div className="relative group">
+          <div className="relative" onMouseEnter={handleAdaptEnter} onMouseLeave={handleAdaptLeave}>
             <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors">
               <Wand2 size={10} />
               Adapt
             </button>
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 hidden group-hover:block">
-              {ADAPT_PLATFORMS.map((p) => (
-                <button
-                  key={p.key}
-                  onClick={() => adaptMutation.mutate(p.key)}
-                  disabled={adaptMutation.isPending}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
-                >
-                  <span className="text-xs font-medium text-slate-800">{p.label}</span>
-                  <span className="block text-[10px] text-slate-400">{p.note}</span>
-                </button>
-              ))}
-            </div>
+            {adaptOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10">
+                {ADAPT_PLATFORMS.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => { adaptMutation.mutate(p.key); setAdaptOpen(false); }}
+                    disabled={adaptMutation.isPending}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
+                  >
+                    <span className="text-xs font-medium text-slate-800">{p.label}</span>
+                    <span className="block text-[10px] text-slate-400">{p.note}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <CopyButton text={adaptedScript || video.script} label="Copy Script" />
         </div>
@@ -2046,6 +2052,9 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
   const [expandedShots, setExpandedShots] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [generatingPromptShot, setGeneratingPromptShot] = useState<number | null>(null);
+  const [generatingFrameShots, setGeneratingFrameShots] = useState<Set<number>>(new Set());
+  const [frameStyles, setFrameStyles] = useState<Record<number, "sketch" | "photoreal" | "cartoon">>({});
+  const [frameError, setFrameError] = useState<Record<number, string>>({});
 
   // Fetch storyboard, prompts, and visual styles on mount
   React.useEffect(() => {
@@ -2111,6 +2120,32 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
       // silently handle
     } finally {
       setGeneratingPromptShot(null);
+    }
+  };
+
+  const handleGenerateFrame = async (shotId: number, style: "sketch" | "photoreal" | "cartoon") => {
+    setGeneratingFrameShots((prev) => new Set(prev).add(shotId));
+    setFrameError((prev) => { const n = { ...prev }; delete n[shotId]; return n; });
+    try {
+      const res = await fetch(`/api/storyboards/${code}/shots/${shotId}/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ style }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFrameError((prev) => ({ ...prev, [shotId]: (data as { error?: string }).error ?? "Generation failed" }));
+        return;
+      }
+      const { imageUrl } = data as { imageUrl: string };
+      setStoryboard((prev) => {
+        if (!prev?.shots) return prev;
+        return { ...prev, shots: prev.shots.map((s) => s.id === shotId ? { ...s, imageUrl, imageStyle: style } : s) };
+      });
+    } catch {
+      setFrameError((prev) => ({ ...prev, [shotId]: "Generation failed. Check GEMINI_API_KEY." }));
+    } finally {
+      setGeneratingFrameShots((prev) => { const n = new Set(prev); n.delete(shotId); return n; });
     }
   };
 
@@ -2270,7 +2305,46 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                           B-roll: {shot.brollType}
                         </span>
                       )}
+                      {/* Frame generation controls */}
+                      <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+                        {(["sketch", "photoreal", "cartoon"] as const).map((s) => {
+                          const active = (frameStyles[shot.id] ?? "sketch") === s;
+                          return (
+                            <button
+                              key={s}
+                              onClick={() => setFrameStyles((prev) => ({ ...prev, [shot.id]: s }))}
+                              className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors", active ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200")}
+                            >{s}</button>
+                          );
+                        })}
+                        <button
+                          onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? "sketch")}
+                          disabled={generatingFrameShots.has(shot.id)}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors disabled:opacity-50"
+                        >
+                          {generatingFrameShots.has(shot.id) ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                          Frame
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Generated frame image */}
+                    {shot.imageUrl && (
+                      <div className="relative mb-3 group/frame">
+                        <img src={shot.imageUrl} alt={`Shot ${shot.shotNumber} frame`} className="w-full max-w-[140px] rounded-xl object-cover aspect-[9/16]" />
+                        <button
+                          onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? shot.imageStyle ?? "sketch")}
+                          disabled={generatingFrameShots.has(shot.id)}
+                          className="absolute top-1 right-1 opacity-0 group-hover/frame:opacity-100 p-1 bg-white/80 backdrop-blur-sm rounded-lg text-slate-600 hover:text-violet-700 transition-all"
+                          title="Regenerate"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                      </div>
+                    )}
+                    {frameError[shot.id] && (
+                      <p className="text-[10px] text-rose-600 mb-2">{frameError[shot.id]}</p>
+                    )}
 
                     {/* Technique Context Badges */}
                     {(() => {

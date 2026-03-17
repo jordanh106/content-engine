@@ -431,6 +431,14 @@ try {
   sqlite.exec(`ALTER TABLE performance_metrics ADD COLUMN format_id TEXT`);
 } catch { /* column already exists */ }
 
+// Migration: Add image_url and image_style to storyboard_shots
+try {
+  sqlite.exec(`ALTER TABLE storyboard_shots ADD COLUMN image_url TEXT`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE storyboard_shots ADD COLUMN image_style TEXT`);
+} catch { /* column already exists */ }
+
 // Migration: Create production_checklist table
 sqlite.exec(`CREATE TABLE IF NOT EXISTS production_checklist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

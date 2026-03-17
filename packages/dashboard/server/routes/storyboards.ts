@@ -1,6 +1,8 @@
 import { Router } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { eq, and, asc } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
 import { db } from "../db.js";
 import { storyboards, storyboardShots, vaultVisualStyles, videoStatus } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
@@ -16,7 +18,7 @@ function stripCodeFences(text: string): string {
   return cleaned;
 }
 
-export function createStoryboardsRouter(contentLibraryPath: string) {
+export function createStoryboardsRouter(contentLibraryPath: string, dataDir?: string) {
   const router = Router();
 
   let client: Anthropic | null = null;
@@ -386,6 +388,90 @@ No emdashes.`;
     } catch (error) {
       console.error("[storyboards] Delete shot error:", error);
       res.status(500).json({ error: "Failed to delete shot" });
+    }
+  });
+
+  // POST /api/storyboards/:videoCode/shots/:shotId/generate-image
+  // Generates a director's sketch / storyboard frame using Google Imagen 3
+  router.post("/:videoCode/shots/:shotId/generate-image", async (req, res) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      res.status(503).json({ error: "Set GEMINI_API_KEY in .env to enable frame generation." });
+      return;
+    }
+
+    const shotId = parseInt(req.params.shotId);
+    const { videoCode } = req.params;
+    const style: "sketch" | "photoreal" | "cartoon" = req.body.style ?? "sketch";
+
+    try {
+      const shot = db.select().from(storyboardShots).where(eq(storyboardShots.id, shotId)).limit(1).all()[0];
+      if (!shot) {
+        res.status(404).json({ error: "Shot not found" });
+        return;
+      }
+
+      // Build scene description
+      const sceneDesc = shot.cinemaStudioPrompt
+        || [shot.shotType, shot.brollType ? `B-roll: ${shot.brollType}` : null, shot.scriptLine].filter(Boolean).join(". ")
+        || "Medical chiropractic treatment scene";
+
+      const stylePrefix: Record<string, string> = {
+        sketch: "Professional storyboard director's sketch. Clean line art, crisp outlines, minimal grey shading, white background. Shot framing and composition clearly visible.",
+        photoreal: "Cinematic single frame, photorealistic, shallow depth of field, professional medical lighting.",
+        cartoon: "Bold graphic illustration, flat colors with strong outlines, editorial cartoon style, high contrast.",
+      };
+
+      const prompt = `${stylePrefix[style]} ${sceneDesc}. Medical chiropractic clinic context. 9:16 vertical frame. No text overlays. No watermarks.`;
+
+      // Call Google Imagen 3 via REST API
+      const imageRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instances: [{ prompt }],
+            parameters: { sampleCount: 1, aspectRatio: "9:16" },
+          }),
+        },
+      );
+
+      if (!imageRes.ok) {
+        const errBody = await imageRes.text().catch(() => "");
+        console.error("[storyboards] Imagen error:", imageRes.status, errBody);
+        res.status(502).json({ error: `Imagen API error: ${imageRes.status}` });
+        return;
+      }
+
+      const imageData = await imageRes.json() as { predictions?: Array<{ bytesBase64Encoded?: string; mimeType?: string }> };
+      const prediction = imageData.predictions?.[0];
+      if (!prediction?.bytesBase64Encoded) {
+        res.status(500).json({ error: "No image returned from Imagen API" });
+        return;
+      }
+
+      // Save to disk
+      const imagesDir = dataDir ? path.join(dataDir, "storyboard-images") : path.resolve(import.meta.dirname, "..", "..", "data", "storyboard-images");
+      if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
+
+      const ext = prediction.mimeType?.includes("png") ? "png" : "jpg";
+      const filename = `${videoCode}-shot-${shotId}.${ext}`;
+      const filepath = path.join(imagesDir, filename);
+      fs.writeFileSync(filepath, Buffer.from(prediction.bytesBase64Encoded, "base64"));
+
+      const imageUrl = `/storyboard-images/${filename}`;
+
+      // Update DB
+      db.update(storyboardShots)
+        .set({ imageUrl, imageStyle: style } as Record<string, unknown>)
+        .where(eq(storyboardShots.id, shotId))
+        .run();
+
+      res.json({ imageUrl, style });
+    } catch (error) {
+      console.error("[storyboards] Generate image error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Image generation failed" });
     }
   });
 

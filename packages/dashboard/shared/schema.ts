@@ -289,6 +289,8 @@ export const storyboardShots = sqliteTable("storyboard_shots", {
   remotionComponent: text("remotion_component"),
   notes: text("notes"),
   orderIndex: integer("order_index").notNull(),
+  imageUrl: text("image_url"),
+  imageStyle: text("image_style"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
