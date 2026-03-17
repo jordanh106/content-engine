@@ -54,7 +54,7 @@ import {
   Link2,
   PlugZap,
 } from "lucide-react";
-import { FORMATS } from "../shared/types.js";
+import { FORMATS, HOOK_PATTERNS, HOOK_PATTERN_LABELS } from "../shared/types.js";
 import type {
   MetricsInsight,
   ContentRecommendation,
@@ -269,6 +269,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
   const [formSaves, setFormSaves] = useState("");
   const [formShares, setFormShares] = useState("");
   const [formComments, setFormComments] = useState("");
+  const [formHookPattern, setFormHookPattern] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [runNowRunning, setRunNowRunning] = useState(false);
@@ -431,6 +432,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         saves: parseInt(formSaves) || 0,
         shares: parseInt(formShares) || 0,
         comments: parseInt(formComments) || 0,
+        hookPatternUsed: formHookPattern || null,
       }),
     })
       .then((r) => r.json())
@@ -443,6 +445,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         setFormSaves("");
         setFormShares("");
         setFormComments("");
+        setFormHookPattern("");
       });
   };
 
@@ -1362,6 +1365,16 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 <MessageCircle size={14} className="text-slate-400" />
                 <input type="number" placeholder="Comments" value={formComments} onChange={(e) => setFormComments(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
+              <select
+                value={formHookPattern}
+                onChange={(e) => setFormHookPattern(e.target.value)}
+                className="col-span-2 md:col-span-2 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-600"
+              >
+                <option value="">Hook pattern (optional)</option>
+                {HOOK_PATTERNS.map((p) => (
+                  <option key={p} value={p}>{HOOK_PATTERN_LABELS[p]}</option>
+                ))}
+              </select>
             </div>
             <button
               type="submit"

@@ -3,7 +3,7 @@ import { Router } from "express";
 import path from "path";
 import { spawn } from "child_process";
 import Anthropic from "@anthropic-ai/sdk";
-import { db } from "../db.js";
+import { db, sqlite } from "../db.js";
 import { performanceMetrics, socialAttributions } from "../../shared/schema.js";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
@@ -652,6 +652,251 @@ export function createMetricsRouter(contentLibraryPath: string) {
     }
   });
 
+  // GET /api/metrics/pattern-analysis - Hook × format × platform performance matrix
+  router.get("/pattern-analysis", (_req, res) => {
+    // Hook pattern aggregations
+    const hookRows = sqlite.prepare(`
+      SELECT
+        LOWER(hook_pattern_used) as hook_pattern,
+        platform,
+        COUNT(*) as video_count,
+        AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as avg_save_rate,
+        AVG(CAST(shares AS FLOAT) / NULLIF(views, 0)) as avg_share_rate,
+        AVG(CAST(comments AS FLOAT) / NULLIF(views, 0)) as avg_comment_rate
+      FROM performance_metrics
+      WHERE hook_pattern_used IS NOT NULL AND views > 0
+      GROUP BY LOWER(hook_pattern_used), platform
+      ORDER BY avg_save_rate DESC
+    `).all() as Array<{
+      hook_pattern: string; platform: string; video_count: number;
+      avg_save_rate: number; avg_share_rate: number; avg_comment_rate: number;
+    }>;
+
+    const hookPatterns = hookRows.map((r) => {
+      const weightedEngagement = (0.4 * (r.avg_save_rate ?? 0)) + (0.3 * (r.avg_share_rate ?? 0)) + (0.3 * (r.avg_comment_rate ?? 0));
+      return {
+        hookPattern: r.hook_pattern,
+        platform: r.platform,
+        videoCount: r.video_count,
+        avgSaveRate: r.avg_save_rate ?? 0,
+        avgShareRate: r.avg_share_rate ?? 0,
+        avgCommentRate: r.avg_comment_rate ?? 0,
+        weightedEngagement,
+        confidence: r.video_count >= 5 ? "high" as const : r.video_count >= 3 ? "medium" as const : "low" as const,
+      };
+    });
+
+    // Format aggregations — derive formatId from video code prefix if not set
+    const formatRows = sqlite.prepare(`
+      SELECT
+        COALESCE(UPPER(format_id), UPPER(SUBSTR(video_code, 1, 1))) as format_id,
+        platform,
+        COUNT(*) as video_count,
+        AVG(views) as avg_views,
+        AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as avg_save_rate,
+        AVG(CAST(shares AS FLOAT) / NULLIF(views, 0)) as avg_share_rate,
+        AVG(CAST(comments AS FLOAT) / NULLIF(views, 0)) as avg_comment_rate
+      FROM performance_metrics
+      WHERE views > 0
+        AND UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))) IN ('A','B','C','D','E','F','G')
+      GROUP BY UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))), platform
+      ORDER BY avg_save_rate DESC
+    `).all() as Array<{
+      format_id: string; platform: string; video_count: number;
+      avg_views: number; avg_save_rate: number; avg_share_rate: number; avg_comment_rate: number;
+    }>;
+
+    const byFormat = formatRows.map((r) => ({
+      formatId: r.format_id,
+      platform: r.platform,
+      videoCount: r.video_count,
+      avgViews: Math.round(r.avg_views ?? 0),
+      avgSaveRate: r.avg_save_rate ?? 0,
+      weightedEngagement: (0.4 * (r.avg_save_rate ?? 0)) + (0.3 * (r.avg_share_rate ?? 0)) + (0.3 * (r.avg_comment_rate ?? 0)),
+    }));
+
+    // Coverage stats
+    const coverageRow = sqlite.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN hook_pattern_used IS NOT NULL THEN 1 ELSE 0 END) as with_hook,
+        SUM(CASE WHEN format_id IS NOT NULL OR UPPER(SUBSTR(video_code,1,1)) IN ('A','B','C','D','E','F','G') THEN 1 ELSE 0 END) as with_format
+      FROM performance_metrics
+    `).get() as { total: number; with_hook: number; with_format: number };
+
+    const coverage = {
+      totalVideos: coverageRow.total,
+      withHookPattern: coverageRow.with_hook,
+      withFormatId: coverageRow.with_format,
+      hookCoveragePct: coverageRow.total > 0 ? Math.round((coverageRow.with_hook / coverageRow.total) * 100) : 0,
+      formatCoveragePct: coverageRow.total > 0 ? Math.round((coverageRow.with_format / coverageRow.total) * 100) : 0,
+    };
+
+    // Top outliers by save rate
+    const outlierRows = sqlite.prepare(`
+      SELECT video_code, platform, views, saves,
+        CAST(saves AS FLOAT) / NULLIF(views, 0) as save_rate,
+        hook_pattern_used, format_id
+      FROM performance_metrics
+      WHERE views > 0
+      ORDER BY save_rate DESC
+      LIMIT 5
+    `).all() as Array<{
+      video_code: string; platform: string; views: number; saves: number;
+      save_rate: number; hook_pattern_used: string | null; format_id: string | null;
+    }>;
+
+    const topOutliers = outlierRows.map((r) => ({
+      videoCode: r.video_code,
+      platform: r.platform,
+      views: r.views,
+      saves: r.saves,
+      saveRate: r.save_rate ?? 0,
+      hookPatternUsed: r.hook_pattern_used,
+      formatId: r.format_id ?? (["A","B","C","D","E","F","G"].includes(r.video_code[0].toUpperCase()) ? r.video_code[0].toUpperCase() : null),
+    }));
+
+    // Data range
+    const rangeRow = sqlite.prepare(`
+      SELECT MIN(recorded_at) as earliest, MAX(recorded_at) as latest FROM performance_metrics
+    `).get() as { earliest: string | null; latest: string | null };
+
+    const dataRange = rangeRow.earliest ? {
+      earliest: rangeRow.earliest,
+      latest: rangeRow.latest!,
+      days: Math.round((new Date(rangeRow.latest!).getTime() - new Date(rangeRow.earliest).getTime()) / 86400000),
+    } : null;
+
+    const avgWeightedEngagement = hookPatterns.length > 0
+      ? hookPatterns.reduce((s, p) => s + p.weightedEngagement, 0) / hookPatterns.length
+      : 0;
+
+    res.json({ hookPatterns, byFormat, coverage, topOutliers, avgWeightedEngagement, dataRange });
+  });
+
+  // POST /api/metrics/strategy-analysis - AI-powered KEEP/PROMOTE/DEMOTE analysis
+  router.post("/strategy-analysis", async (_req, res) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const hookRows = sqlite.prepare(`
+        SELECT LOWER(hook_pattern_used) as hook_pattern, platform, COUNT(*) as n,
+          AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as save_rate
+        FROM performance_metrics WHERE hook_pattern_used IS NOT NULL AND views > 0
+        GROUP BY LOWER(hook_pattern_used), platform ORDER BY save_rate DESC
+      `).all() as Array<{ hook_pattern: string; platform: string; n: number; save_rate: number }>;
+
+      if (hookRows.length === 0) {
+        res.status(422).json({ error: "No hook pattern data yet. Tag some videos with hookPatternUsed first." });
+        return;
+      }
+
+      const hookSummary = hookRows.map((r) =>
+        `${r.hook_pattern} on ${r.platform}: ${(r.save_rate * 100).toFixed(1)}% save rate (n=${r.n})`
+      ).join("\n");
+
+      const hookPatternsContent = fs.existsSync(hookPatternsPath)
+        ? fs.readFileSync(hookPatternsPath, "utf-8").slice(0, 4000)
+        : "Hook patterns file not found.";
+
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2000,
+        messages: [{
+          role: "user",
+          content: `You are analyzing content performance data for a chiropractic practice's social media strategy.
+
+PERFORMANCE DATA (real audience metrics):
+${hookSummary}
+
+CURRENT hook-patterns.md emphasis (first 4000 chars):
+${hookPatternsContent}
+
+Compare the performance data to what hook-patterns.md currently emphasizes. Identify discrepancies.
+
+Respond with JSON only:
+{
+  "findings": [
+    {
+      "verdict": "KEEP|PROMOTE|DEMOTE|INVESTIGATE",
+      "hookPattern": "exact pattern name from data",
+      "platform": "Instagram|TikTok|YouTube|All",
+      "evidence": "specific data citation: e.g. '18.2% save rate (n=8), 2.1x above average'",
+      "confidence": "HIGH|MEDIUM|LOW",
+      "recommendation": "specific actionable change in 1-2 sentences"
+    }
+  ],
+  "summary": "2-3 sentence overview of biggest strategic opportunities"
+}
+
+Rules:
+- KEEP: current strategy matches data (evidence confirms it)
+- PROMOTE: data shows underemphasized pattern is winning (move it up)
+- DEMOTE: high-priority pattern in hook-patterns.md but underperforming in data
+- INVESTIGATE: less than 3 data points, inconclusive
+- Only include patterns that appear in the data
+- Be specific about save rates and n counts
+- Minimum 1 finding per verdict type if data supports it`,
+        }],
+      }, { timeout: 60_000 });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No response from AI" });
+        return;
+      }
+
+      let cleaned = textBlock.text.trim();
+      if (cleaned.startsWith("```")) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+      const parsed = JSON.parse(cleaned) as { findings: unknown[]; summary: string };
+      res.json({ ...parsed, generatedAt: new Date().toISOString() });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Strategy analysis failed";
+      console.error("[strategy-analysis] Error:", message);
+      res.status(500).json({ error: message });
+    }
+  });
+
+  // POST /api/metrics/strategy-log - Append analysis findings to strategy-optimizer/results.md
+  router.post("/strategy-log", (req, res) => {
+    const { findings, summary } = req.body as { findings: Array<{ verdict: string; hookPattern: string; platform: string; evidence: string; recommendation: string }>; summary: string };
+    if (!findings?.length) {
+      res.status(400).json({ error: "findings required" });
+      return;
+    }
+
+    const strategyDir = path.join(industryDir, "strategy-optimizer");
+    const resultsPath = path.join(strategyDir, "results.md");
+
+    try {
+      if (!fs.existsSync(strategyDir)) fs.mkdirSync(strategyDir, { recursive: true });
+
+      const date = new Date().toISOString().split("T")[0];
+      const entry = [
+        `\n## ${date} Strategy Analysis\n`,
+        `**Summary:** ${summary}\n`,
+        `### Findings\n`,
+        ...findings.map((f) => `- **${f.verdict}** ${f.hookPattern} on ${f.platform} — ${f.evidence}\n  → ${f.recommendation}`),
+        "",
+      ].join("\n");
+
+      const existing = fs.existsSync(resultsPath) ? fs.readFileSync(resultsPath, "utf-8") : "";
+      const updated = existing.includes("*No runs yet*") ? existing.replace("*No runs yet. Run \"strategy optimizer\" to generate the first entry.*", entry.trim()) : existing + entry;
+      fs.writeFileSync(resultsPath, updated);
+
+      res.json({ saved: true, path: resultsPath });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : "Failed to save" });
+    }
+  });
+
   // GET /api/metrics/:code - Get metrics for a specific video
   // IMPORTANT: Must be after all named routes to avoid catching /trends, /bulk, etc.
   router.get("/:code", (req, res) => {
@@ -669,7 +914,7 @@ export function createMetricsRouter(contentLibraryPath: string) {
   // POST /api/metrics/:code - Add a metrics entry for a video
   router.post("/:code", (req, res) => {
     const code = req.params.code.toUpperCase();
-    const { platform, views, likes, saves, shares, comments, watchTimeSeconds, recordedAt } = req.body;
+    const { platform, views, likes, saves, shares, comments, watchTimeSeconds, recordedAt, hookPatternUsed } = req.body;
 
     if (!platform) {
       res.status(400).json({ error: "platform is required" });
@@ -688,6 +933,7 @@ export function createMetricsRouter(contentLibraryPath: string) {
         shares: shares ?? 0,
         comments: comments ?? 0,
         watchTimeSeconds: watchTimeSeconds ?? null,
+        hookPatternUsed: hookPatternUsed ?? null,
       })
       .returning()
       .get();

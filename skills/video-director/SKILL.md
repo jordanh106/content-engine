@@ -106,6 +106,19 @@ Pattern: [Statistic Hook or Myth Hook]
 
 Tag each variation with its hook pattern type for performance tracking.
 
+At the bottom of the production plan, include a metadata block for feedback loop tracking:
+
+```
+## Production Metadata
+
+hookPatternUsed: [primary hook pattern type, e.g. "question", "myth_contrarian", "statistic", "story_emotional", "pattern_interrupt", "did_you_know"]
+formatId: [A|B|C|D|E|F|G]
+targetPlatform: [Instagram|TikTok|YouTube]
+sourceIdeaTopic: [the exact topic string from idea-bank.md, if this came from an idea bank entry, otherwise "original"]
+```
+
+This block enables the strategy optimizer to link production decisions to performance outcomes. When the video is published and metrics are recorded, the dashboard can populate `hookPatternUsed` and `formatId` in the performance_metrics table.
+
 ### Step 3c: Platform-Specific Hook Optimization
 
 Adjust the hook based on the target platform:

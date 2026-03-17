@@ -188,6 +188,7 @@ export const DASHBOARD_VIEWS = [
   "CAPTIONS",
   "VAULT",
   "METRICS",
+  "STRATEGY",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -1281,4 +1282,91 @@ export type ResearchResult = {
     why: string;
   }>;
   summary: string;
+};
+
+// ============================================
+// Performance Review / Pattern Analysis Types
+// ============================================
+
+export const HOOK_PATTERNS = [
+  "question",
+  "myth_contrarian",
+  "statistic",
+  "story_emotional",
+  "pattern_interrupt",
+  "did_you_know",
+] as const;
+export type HookPatternType = (typeof HOOK_PATTERNS)[number];
+
+export const HOOK_PATTERN_LABELS: Record<HookPatternType, string> = {
+  question: "Question",
+  myth_contrarian: "Myth / Contrarian",
+  statistic: "Statistic",
+  story_emotional: "Story / Emotional",
+  pattern_interrupt: "Pattern Interrupt",
+  did_you_know: "Did You Know",
+};
+
+export type HookPatternStat = {
+  hookPattern: string;
+  platform: string;
+  videoCount: number;
+  avgSaveRate: number;
+  avgShareRate: number;
+  avgCommentRate: number;
+  weightedEngagement: number;
+  confidence: "high" | "medium" | "low";
+};
+
+export type FormatPatternStat = {
+  formatId: string;
+  platform: string;
+  videoCount: number;
+  avgViews: number;
+  avgSaveRate: number;
+  weightedEngagement: number;
+};
+
+export type PatternCoverage = {
+  totalVideos: number;
+  withHookPattern: number;
+  withFormatId: number;
+  hookCoveragePct: number;
+  formatCoveragePct: number;
+};
+
+export type OutlierVideo = {
+  videoCode: string;
+  platform: string;
+  views: number;
+  saves: number;
+  saveRate: number;
+  hookPatternUsed: string | null;
+  formatId: string | null;
+};
+
+export type PatternAnalysisResponse = {
+  hookPatterns: HookPatternStat[];
+  byFormat: FormatPatternStat[];
+  coverage: PatternCoverage;
+  topOutliers: OutlierVideo[];
+  avgWeightedEngagement: number;
+  dataRange: { earliest: string; latest: string; days: number } | null;
+};
+
+export type StrategyFindingVerdict = "KEEP" | "PROMOTE" | "DEMOTE" | "INVESTIGATE";
+
+export type StrategyFinding = {
+  verdict: StrategyFindingVerdict;
+  hookPattern: string;
+  platform: string;
+  evidence: string;
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  recommendation: string;
+};
+
+export type StrategyAnalysisResponse = {
+  findings: StrategyFinding[];
+  summary: string;
+  generatedAt: string;
 };

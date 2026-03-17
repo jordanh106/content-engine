@@ -22,6 +22,14 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | Tech Neck Prevention | B (Checklist) | 5 Signs Your Neck Needs Help | High | n8n Content Intelligence | 2026-03-16 |
 | Pregnancy Adjustment Safety | D (Myth Buster) | The Truth About Pregnancy Adjustments | High | n8n Content Intelligence | 2026-03-16 |
 | Sports Recovery Techniques | C (Demo) | What NFL Players Know About Recovery | Medium | n8n Content Intelligence | 2026-03-16 |
+| What a Real Infant Adjustment Looks Like (Myth vs. Reality) | E | People think we crack babies' backs. Here's what we actually do — and why it works. | high | Viral Scout | 2026-03-17 |
+| 3 Signs Your Newborn Might Have Birth Trauma Stress | A | 84% of newborns carry spinal stress from delivery. Here are 3 signs most parents miss. | high | Viral Scout | 2026-03-17 |
+| Webster Technique: Can Chiropractic Really Help a Breech Baby? | A | She was scheduled for a C-section at 36 weeks. Then she found out about this technique. | high | Viral Scout | 2026-03-17 |
+| Why Your Baby's Colic Might Be a Nervous System Problem | A | If your baby cries for hours and nothing works — it might not be gas. Here's what's actually happening. | high | Viral Scout | 2026-03-17 |
+| Your Teen's Spine Looks 40 Years Old — Here's Why | D | We scanned a 15-year-old's spine last week. The degeneration looked like a 40-year-old's. This is why. | high | Viral Scout | 2026-03-17 |
+| The 4th Trimester: What Happens to Your Body After Birth (And What to Do About It) | A | Everyone talks about recovery after birth. Nobody talks about what happens to your spine and pelvis for the next 12 weeks. | high | Viral Scout | 2026-03-17 |
+| Is My Kid's ADHD Actually a Nervous System Problem? | A | Before you accept that focus struggles are just 'how your child is wired' — watch this. | medium | Viral Scout | 2026-03-17 |
+| Labor & Delivery: How Chiropractic Actually Shortens Labor Time | B | Chiropractic during pregnancy has been linked to 25–31% shorter labor times. Here's the science behind why. | medium | Viral Scout | 2026-03-17 |
 
 ---
 
@@ -38,6 +46,13 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 | Pregnancy Spine Journey: Week-by-Week 3D Visualization | A (Explainer) | Pattern-interrupt | High | n8n Watchlist Intelligence | 2026-03-09 |
 | Gamer's Neck Challenge | C (Demo) | Your teen does this for 6 hours daily. Here's the 30-second fix | High | n8n Watchlist Intelligence | 2026-03-11 |
 | 3 Generations, 1 Adjustment | G (Patient Story) | Watch how we treat grandma, mom, and daughter in one visit | High | n8n Watchlist Intelligence | 2026-03-11 |
+| What We Actually Do to a Newborn (Infant Adjustment Transparency Video) | E | Everyone's seen the scary baby chiropractic videos. Here's what a gentle, safe newborn adjustment really looks like at our office. | high | Competitor Research | 2026-03-17 |
+| The Webster Technique Explained in 60 Seconds | A | Your baby is breech at 34 weeks. Before your OB talks C-section, watch this. | high | Competitor Research | 2026-03-17 |
+| Is Your Child's Behavior a Nervous System Problem? (3 Signs to Watch For) | D | If your kid has meltdowns, trouble focusing, or sleep issues — this might be why. Here are 3 signs their nervous system needs support. | high | Competitor Research | 2026-03-17 |
+| Prenatal ASMR Adjustment Walkthrough (30-Week Mom) | E | SOUND ON — 30-week prenatal adjustment at Collective Family Chiropractic in Woodstock, GA. | high | Competitor Research | 2026-03-17 |
+| What No One Tells You About the Fourth Trimester (Postpartum Body Reset) | A | Your OB cleared you at 6 weeks postpartum. But your pelvis, SI joints, and upper back are still a mess. Here's what's actually going on. | high | Competitor Research | 2026-03-17 |
+| Woodstock Mom: From Colic to Sleeping 6 Hours (Patient Story) | B | This Woodstock mom was running on 90 minutes of sleep a night. Her 6-week-old had colic. Then she came to see us. | medium | Competitor Research | 2026-03-17 |
+| A Morning at Collective Family: Newborn to Grandma (Day-in-the-Life) | B | 7:30am — a 10-day-old newborn. 9:00am — a 32-week pregnant mom. 11:00am — a 74-year-old grandma. This is a Tuesday at Collective Family Chiropractic. | medium | Competitor Research | 2026-03-17 |
 
 ---
 

@@ -16,6 +16,7 @@ const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 
 export const db = drizzle(sqlite, { schema });
+export { sqlite };
 
 // Create tables if they don't exist
 sqlite.exec(`
@@ -415,6 +416,19 @@ for (const col of dnaColumns) {
 // Migration: Add production_style column to video_status
 try {
   sqlite.exec(`ALTER TABLE video_status ADD COLUMN production_style TEXT`);
+} catch { /* column already exists */ }
+
+// Migration: Add source_idea_topic to video_status (feedback loop)
+try {
+  sqlite.exec(`ALTER TABLE video_status ADD COLUMN source_idea_topic TEXT`);
+} catch { /* column already exists */ }
+
+// Migration: Add hook_pattern_used and format_id to performance_metrics (feedback loop)
+try {
+  sqlite.exec(`ALTER TABLE performance_metrics ADD COLUMN hook_pattern_used TEXT`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE performance_metrics ADD COLUMN format_id TEXT`);
 } catch { /* column already exists */ }
 
 // Migration: Create production_checklist table

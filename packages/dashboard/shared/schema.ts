@@ -15,6 +15,7 @@ export const videoStatus = sqliteTable("video_status", {
   assembledAt: text("assembled_at"),
   publishedAt: text("published_at"),
   productionStyle: text("production_style"),
+  sourceIdeaTopic: text("source_idea_topic"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });
@@ -74,6 +75,9 @@ export const performanceMetrics = sqliteTable("performance_metrics", {
   shares: integer("shares").default(0),
   comments: integer("comments").default(0),
   watchTimeSeconds: integer("watch_time_seconds"),
+  // Feedback loop fields: link performance back to hook patterns and formats
+  hookPatternUsed: text("hook_pattern_used"),
+  formatId: text("format_id"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

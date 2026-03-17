@@ -19,6 +19,7 @@ import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
 import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
 import { FieldManual } from "./FieldManual.js";
+import { PerformanceReviewView } from "./PerformanceReviewView.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -127,6 +128,7 @@ const AppInner: React.FC = () => {
         {view === "WATCHLIST" && <WatchlistView onNavigate={handleNavigate} />}
         {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
         {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
+        {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
 
         {selectedVideoCode && (
           <VideoDetail

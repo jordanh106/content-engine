@@ -16,6 +16,7 @@ import {
   ChevronDown,
   X,
   Bell,
+  Brain,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView } from "../shared/types.js";
@@ -65,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
     phase: "measure",
     items: [
       { view: "METRICS", label: "Metrics", icon: <TrendingUp size={18} /> },
+      { view: "STRATEGY", label: "Strategy", icon: <Brain size={18} /> },
     ],
   },
 ];

@@ -709,6 +709,28 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  STRATEGY: {
+    title: "Strategy",
+    description:
+      "See which hook patterns and formats are performing best across platforms. Run AI analysis to get KEEP / PROMOTE / DEMOTE recommendations.",
+    tips: [
+      {
+        label: "Hook Pattern Matrix",
+        detail:
+          "The table shows weighted engagement (save rate + share rate + comment rate) by hook type and platform. Green cells are above average.",
+      },
+      {
+        label: "Improving Coverage",
+        detail:
+          "Tag metric entries with a hook pattern in the Metrics form. The more entries tagged, the more accurate the matrix becomes.",
+      },
+      {
+        label: "AI Analysis",
+        detail:
+          "Click 'Analyze Strategy' to compare your performance data against hook-patterns.md. The AI identifies patterns that are winning or losing relative to their current emphasis.",
+      },
+    ],
+  },
 };
 
 export const FEATURE_HINTS: Record<string, HintData> = {
