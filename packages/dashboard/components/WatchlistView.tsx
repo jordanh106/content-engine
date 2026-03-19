@@ -237,6 +237,29 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   const [researchPanelType, setResearchPanelType] = useState<"viral-scout" | "competitor-research" | null>(null);
 
   const [addedIdea, setAddedIdea] = useState<string | null>(null);
+  const [addedCreators, setAddedCreators] = useState<Set<string>>(new Set());
+  const addRisingCreatorMutation = useMutation({
+    mutationFn: async (creator: RisingCreator) => {
+      const r = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          handle: creator.handle,
+          platform: creator.platform,
+          followers: creator.followers || "",
+          whyTracking: creator.whyWatch,
+        }),
+      });
+      if (r.status === 409) return { alreadyExists: true };
+      if (!r.ok) throw new Error("Failed to add creator");
+      return r.json();
+    },
+    onSuccess: (_result, creator) => {
+      setAddedCreators((prev) => new Set(prev).add(creator.handle));
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+  });
+
   const addIdeaMutation = useMutation({
     mutationFn: async (idea: WatchlistIntelIdea) => {
       const r = await fetch("/api/ideas/ingest", {
@@ -361,7 +384,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   });
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+    <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -785,34 +808,137 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
 
             {/* Rising Creators */}
             {intelData.risingCreators?.length > 0 && (
-              <div>
+              <div className="mb-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
                   Rising Creators
                 </p>
-                <div className="space-y-2">
-                  {intelData.risingCreators.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <UserPlus size={12} className="text-teal-500" />
-                        <span className="text-sm font-medium text-slate-900">{c.handle}</span>
-                        <span className="text-[10px] text-slate-400">{c.platform}</span>
-                        {c.followers && <span className="text-[10px] text-slate-400">{c.followers}</span>}
+                <div className="space-y-3">
+                  {intelData.risingCreators.map((c, i) => {
+                    const isTopPick = intelData.selfImprovementNotes?.mostActionableCreators?.some(
+                      (h) => h.replace("@", "").toLowerCase() === c.handle.replace("@", "").toLowerCase()
+                    );
+                    const isAlreadyTracking = data?.creators?.some(
+                      (wc) => wc.handle.replace("@", "").toLowerCase() === c.handle.replace("@", "").toLowerCase()
+                    );
+                    const isAdded = addedCreators.has(c.handle);
+                    const highPriorityIdeas = intelData.ideas?.filter((idea) => idea.priority === "High") ?? [];
+                    return (
+                      <div key={i} className="bg-slate-50 rounded-xl p-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                            <span className="text-sm font-semibold text-slate-900">{c.handle}</span>
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                              PLATFORM_COLORS[c.platform] || "bg-slate-100 text-slate-600"
+                            )}>
+                              {c.platform}
+                            </span>
+                            {c.followers && c.followers !== "Unknown" && (
+                              <span className="text-[10px] text-slate-400">{c.followers}</span>
+                            )}
+                            {isTopPick && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">
+                                ★ Top Pick
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <a
+                              href={getCreatorProfileUrl(c.handle, c.platform)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-slate-300 hover:text-teal-600 transition-colors"
+                              title="View profile"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                            {isAlreadyTracking ? (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700">
+                                <Check size={10} /> Tracking
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => addRisingCreatorMutation.mutate(c)}
+                                disabled={addRisingCreatorMutation.isPending || isAdded}
+                                className={cn(
+                                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
+                                  isAdded
+                                    ? "bg-teal-100 text-teal-700"
+                                    : "bg-teal-50 text-teal-600 hover:bg-teal-100"
+                                )}
+                                title="Add to Watchlist"
+                              >
+                                {isAdded ? <Check size={10} /> : <UserPlus size={10} />}
+                                {isAdded ? "Added" : "Watchlist"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed mb-2">{c.whyWatch}</p>
+                        {highPriorityIdeas.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200">
+                            <p className="text-[10px] text-slate-400 mb-1.5">Ideas from this scan:</p>
+                            <div className="space-y-1">
+                              {highPriorityIdeas.slice(0, 3).map((idea, j) => (
+                                <div key={j} className="flex items-center justify-between gap-2">
+                                  <span className="text-[11px] text-slate-700 flex-1 min-w-0 truncate">{idea.topic}</span>
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {idea.suggestedFormat && (
+                                      <span className="text-[9px] font-mono text-slate-400">{idea.suggestedFormat.split(" ")[0]}</span>
+                                    )}
+                                    <button
+                                      onClick={() => addIdeaMutation.mutate(idea)}
+                                      disabled={addIdeaMutation.isPending || addedIdea === idea.topic}
+                                      className={cn(
+                                        "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
+                                        addedIdea === idea.topic
+                                          ? "bg-teal-100 text-teal-700"
+                                          : "bg-slate-100 text-slate-500 hover:bg-teal-50 hover:text-teal-600"
+                                      )}
+                                    >
+                                      {addedIdea === idea.topic ? <Check size={9} /> : <Plus size={9} />}
+                                      {addedIdea === idea.topic ? "Added" : "Ideas"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-xs text-slate-500 text-right max-w-[200px] truncate">{c.whyWatch}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Self-Improvement Focus */}
-            {intelData.selfImprovementNotes?.nextScanFocus && (
+            {/* Scout Notes */}
+            {intelData.selfImprovementNotes && (
+              intelData.selfImprovementNotes.nextScanFocus ||
+              (intelData.selfImprovementNotes.bestQueries?.length ?? 0) > 0
+            ) && (
               <div className="mt-4 pt-3 border-t border-slate-100">
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1.5 mb-2">
                   <TrendingUp size={12} className="text-teal-500" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Next Scan Focus</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Scout Notes</p>
                 </div>
-                <p className="text-xs text-slate-500">{intelData.selfImprovementNotes.nextScanFocus}</p>
+                {(intelData.selfImprovementNotes.bestQueries?.length ?? 0) > 0 && (
+                  <div className="mb-2">
+                    <p className="text-[10px] text-slate-400 mb-1">Best queries this scan:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {intelData.selfImprovementNotes.bestQueries.map((q, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600 font-mono">
+                          {q}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {intelData.selfImprovementNotes.nextScanFocus && (
+                  <p className="text-xs text-slate-500">
+                    Next focus: {intelData.selfImprovementNotes.nextScanFocus}
+                  </p>
+                )}
               </div>
             )}
           </div>

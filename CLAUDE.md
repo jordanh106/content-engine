@@ -141,6 +141,11 @@ No auth. Localhost only. Solo internal tool accessed from desktop and phone.
 - API routes: `/api/metrics`, `/api/ideas`, `/api/watchlist`
 - Parsers: `idea-bank.ts`, `watchlist.ts` with file-watching cache invalidation
 
+**Additional features shipped**:
+- **Inspiration Inbox**: Frictionless raw-idea capture layer in IdeasView. SQLite-only (`inspiration_inbox` table, no markdown file). Statuses: inbox / developed / dismissed. Develop action writes to `idea-bank.md`.
+- **Trend Pulse widget**: Home screen widget surfacing latest n8n Content Intelligence digest. Shows trending topics, hook patterns, content gaps. One-click "+ Add to Ideas". Auto-hidden if no digest file exists.
+- **Carousel Waterfall tier**: Auto-Generate in Waterfall tab produces 12 derivatives (was 10). Two new carousel items: Instagram (7-slide) + LinkedIn (6-slide) with AI-generated slide outlines. Carousel cards in WaterfallTab show expandable slide-by-slide briefs.
+
 **Phases 3-4 PENDING**:
 - Phase 3: Session Planner (batch production checklist with timer, auto-advance status on completion)
 - Phase 4: Calendar (week/month views across IG Reels / YT Shorts / TikTok / YT Long, gap detection, drag-to-reschedule)
@@ -153,10 +158,11 @@ config.json         ──parser──→  Audiences, conditions, platforms
 production-plans/   ──parser──→  Generated production plans
 idea-bank.md        ──parser──→  Content ideas (staged for planning)
 watchlist.md        ──parser──→  Tracked creators
+viral-insights/     ──parser──→  Weekly n8n digest (Trend Pulse widget)
                                          ↓
                                Express API enriches with:
                                          ↓
-SQLite DB           ──query──→   Status, dates, calendar, sessions, metrics
+SQLite DB           ──query──→   Status, dates, calendar, sessions, metrics, inbox
 ```
 
 ### SQLite Tables
@@ -167,6 +173,7 @@ SQLite DB           ──query──→   Status, dates, calendar, sessions, me
 - `production_sessions` - Batch session tracking (type, duration, videos completed)
 - `session_items` - Checklist items within a session
 - `performance_metrics` - Post-publish metrics (views, likes, saves, shares, comments)
+- `inspiration_inbox` - Raw idea captures (content, source_url, status: inbox/developed/dismissed)
 
 ### Design System
 

@@ -439,6 +439,75 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "tip", label: "Where this is used", text: "The Hook Lab and Angle Spinner both use this framework. Caption scoring evaluates the 3-part structure. Understanding the archetypes helps you choose better angles and write stronger hooks." },
     ],
   },
+  {
+    id: "inspiration-inbox",
+    title: "Inspiration Inbox",
+    phase: "discover",
+    relatedView: "IDEAS",
+    summary: "Frictionless raw-idea capture — dump anything without structure, develop it into the Idea Bank when ready.",
+    keywords: ["inbox", "capture", "inspiration", "ideas", "raw", "develop", "dismiss"],
+    content: [
+      { type: "paragraph", text: "The Inspiration Inbox sits above the Idea Bank in the Ideas view. It's a friction-free capture layer for raw ideas, screenshots, links, phrases, or anything that sparks inspiration — no required fields, no structure needed." },
+      { type: "heading", text: "Capturing Ideas" },
+      { type: "steps", title: "How to capture", items: [
+        "Open the Ideas view and expand the Inspiration Inbox at the top.",
+        "Type any raw thought in the text box — a topic, a hook, a competitor video title, anything.",
+        "Optionally paste a source URL (link to a video or article that inspired the idea).",
+        "Press ⌘+Enter or click Capture to save it.",
+      ]},
+      { type: "heading", text: "Developing Ideas" },
+      { type: "paragraph", text: "Each inbox item has two actions: Develop and Dismiss. Click Develop to expand an inline form where you can set a topic name, category (trending, competitor, evergreen, audience, personal), and priority. Confirming writes the idea directly to the Idea Bank markdown file and removes it from the inbox." },
+      { type: "tip", label: "Dismiss", text: "Dismiss removes the item from the inbox without creating an Idea Bank entry — useful for quick captures you later decide aren't worth pursuing." },
+    ],
+  },
+  {
+    id: "trend-pulse",
+    title: "Trend Pulse",
+    phase: "discover",
+    relatedView: "HOME",
+    summary: "Live trending signals on the Home screen, pulled from the n8n weekly digest — with one-click 'Add to Ideas'.",
+    keywords: ["trend pulse", "trending", "home", "digest", "n8n", "ideas", "hook patterns", "content gaps"],
+    content: [
+      { type: "paragraph", text: "The Trend Pulse widget appears on the Home screen between Quick Stats and the Superfan Pipeline. It surfaces the latest data from the n8n Content Intelligence weekly digest without requiring you to open any files." },
+      { type: "heading", text: "What It Shows" },
+      { type: "table", headers: ["Section", "Content"], rows: [
+        ["Trending Now", "Top trending topics from the digest, with platform tags"],
+        ["Hook Patterns Spotted", "Copy-ready hook text patterns performing well right now"],
+        ["Content Gaps", "Underserved angles competitors are missing"],
+      ]},
+      { type: "heading", text: "Actions" },
+      { type: "steps", title: "Available actions", items: [
+        "Click '+ Idea' next to a trending topic to add it directly to the Inspiration Inbox.",
+        "Click 'Copy' on a hook pattern to copy the hook text to your clipboard.",
+        "The digest date label shows when the data was last updated by n8n.",
+      ]},
+      { type: "tip", label: "Automatic", text: "The Trend Pulse widget is hidden entirely if no digest file exists. It appears automatically after the first n8n Content Intelligence workflow run (Mondays at 8am)." },
+    ],
+  },
+  {
+    id: "carousel-waterfall",
+    title: "Content Waterfall — Carousel Tier",
+    phase: "produce",
+    relatedView: "LIBRARY",
+    summary: "Auto-Generate now produces 12 derivatives including 2 carousel slide outlines (Instagram + LinkedIn).",
+    keywords: ["carousel", "waterfall", "auto-generate", "instagram", "linkedin", "slides", "derivative"],
+    content: [
+      { type: "paragraph", text: "The Waterfall Auto-Generate function produces 12 derivatives per video — 10 video/text shorts plus 2 carousel outlines. Carousels are the highest-engagement format on Instagram (0.55% avg engagement) and are now first-class content in the pipeline." },
+      { type: "heading", text: "What's Generated" },
+      { type: "table", headers: ["Platform", "Format", "Slides"], rows: [
+        ["Instagram", "Educational breakdown", "7 slides — bold hook cover, 5 insight slides (max 15 words each), CTA + Save prompt"],
+        ["LinkedIn", "Professional insight post", "6 slides — bold claim, 4 evidence/step slides, key takeaway + follow CTA"],
+      ]},
+      { type: "heading", text: "Slide Outline Cards" },
+      { type: "steps", title: "Using carousel cards", items: [
+        "After Auto-Generate, a Carousels section appears below Text posts in the Waterfall tab.",
+        "Carousel cards show the slide-by-slide outline by default — click the chevron to collapse.",
+        "Each slide is listed with its slide number and the suggested copy (max 12 words per slide).",
+        "Status (Idea / Created / Published) is tracked the same as other waterfall items.",
+      ]},
+      { type: "tip", label: "Idempotent", text: "Running Auto-Generate again skips carousel items that already exist (carousel::instagram and carousel::linkedin are unique keys). Only new items are created." },
+    ],
+  },
 ];
 
 export type ViewHelpData = {

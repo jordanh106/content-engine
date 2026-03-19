@@ -11,12 +11,15 @@ import { parseConfig } from "../parsers/config.js";
 import { FORMATS } from "../../shared/types.js";
 import type { ConversationMessage } from "../../shared/types.js";
 
-function stripCodeFences(text: string): string {
+function extractJSON(text: string): string {
   let cleaned = text.trim();
   if (cleaned.startsWith("```")) {
-    cleaned = cleaned
-      .replace(/^```(?:json)?\s*\n?/, "")
-      .replace(/\n?```\s*$/, "");
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+  }
+  // If Claude wrapped JSON in prose, extract the first {...} or [...] block
+  if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return match[0];
   }
   return cleaned;
 }
@@ -312,7 +315,7 @@ ${video.script.slice(0, 1500)}`;
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text)) as {
+      const parsed = JSON.parse(extractJSON(textBlock.text)) as {
         captions: Array<{ platform: string; caption: string; variant?: string; hookArchetype?: string }>;
         message: string;
       };
@@ -430,7 +433,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
         res.status(500).json({ error: "No response" });
         return;
       }
-      const tags = JSON.parse(stripCodeFences(text.text));
+      const tags = JSON.parse(extractJSON(text.text));
       res.json({ hashtags: tags });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed";
@@ -544,7 +547,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
           continue;
         }
 
-        const parsed = JSON.parse(stripCodeFences(textBlock.text));
+        const parsed = JSON.parse(extractJSON(textBlock.text));
         const platformKeyMap: Record<string, string> = {
           instagram: "instagram_reels",
           tiktok: "tiktok",
@@ -779,7 +782,7 @@ VIDEO DESCRIPTION: ${description}`;
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text)) as {
+      const parsed = JSON.parse(extractJSON(textBlock.text)) as {
         captions: Array<{ platform: string; caption: string; variant?: string; hookArchetype?: string }>;
         message: string;
       };
@@ -903,7 +906,7 @@ Respond with JSON only:
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+      const parsed = JSON.parse(extractJSON(textBlock.text));
       res.json(parsed);
     } catch (error) {
       console.error("[captions] Generate-hooks error:", error);
@@ -1019,7 +1022,7 @@ Respond with JSON only:
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+      const parsed = JSON.parse(extractJSON(textBlock.text));
       res.json(parsed);
     } catch (error) {
       console.error("[captions] Virality score error:", error);

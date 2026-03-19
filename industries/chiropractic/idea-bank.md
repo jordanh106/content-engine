@@ -30,6 +30,17 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | The 4th Trimester: What Happens to Your Body After Birth (And What to Do About It) | A | Everyone talks about recovery after birth. Nobody talks about what happens to your spine and pelvis for the next 12 weeks. | high | Viral Scout | 2026-03-17 |
 | Is My Kid's ADHD Actually a Nervous System Problem? | A | Before you accept that focus struggles are just 'how your child is wired' — watch this. | medium | Viral Scout | 2026-03-17 |
 | Labor & Delivery: How Chiropractic Actually Shortens Labor Time | B | Chiropractic during pregnancy has been linked to 25–31% shorter labor times. Here's the science behind why. | medium | Viral Scout | 2026-03-17 |
+| Pregnancy Chiropractic |  |  | High |  | 2026-03-18 |
+| Teen Athletes |  |  | High |  | 2026-03-18 |
+| Webster Technique: Can Chiropractic Really Help a Breech Baby? | A (Explainer) | Pregnancy chiropractic trending at 40k+ views with high engagement due to safety concerns. Educational format addresses specific technique questions found in social discussions. | High | AI Strategy Recommendation | 2026-03-19 |
+| What Actually Happens at a Baby's First Chiropractic Visit | E | 'People see baby chiropractor videos online and think we're cracking their spines. Let me show you what really happens.' — Real walkthrough of a gentle infant adjustment with narration and visible nervous system explanation. Directly addresses the viral controversy with trust and transparency. | high | Viral Scout | 2026-03-19 |
+| 3 Signs Your Child's Nervous System Is Overwhelmed | A | 'If your child struggles with sleep, focus, or big emotions — this isn't a behavior problem. It's a nervous system problem.' — List-style education video connecting dysregulation symptoms to spinal stress, with simple chiropractic nervous system explanation. | high | Viral Scout | 2026-03-19 |
+| Satisfying Prenatal Adjustment Clip (ASMR-Style) | E | '32 weeks pregnant and her back finally let go.' — Short, sound-forward adjustment clip of a prenatal patient with text overlay describing what's being released. No voiceover. Let the crack, the exhale, and the patient's relief carry the video. | high | Viral Scout | 2026-03-19 |
+| Hard Pill: Your Morning Back Pain Isn't From Sleeping Wrong | A | 'Hard pill to swallow: You don't wake up stiff because of your mattress. You wake up stiff because your spine has been compensating for months.' — Quick-cut education video on cumulative spinal stress with a clear call to action to get checked. | high | Viral Scout | 2026-03-19 |
+| Postpartum Body: What No One Tells You About Recovery | B | 'What I wish someone had told me about postpartum recovery: your pelvis, your neck, and your nervous system are all screaming for help — and you don't have to white-knuckle through it.' — Story-driven video covering the real physical toll of delivery and how chiropractic supports healing. | high | Viral Scout | 2026-03-19 |
+| Is Your Teen Athlete's Body Ready for Their Sport? | B | 'If your teen athlete is constantly tight, getting recurring injuries, or never fully recovering between games — this is the video you share with their coach.' — Sports-forward education piece on spinal alignment, nerve function, and performance, tied to spring sports season. | medium | Viral Scout | 2026-03-19 |
+| 5 Things We Wish Everyone Knew Before Their First Chiropractic Visit | C | 'Most people wait years too long to get adjusted. Here are 5 things we wish every new patient already knew.' — Myth-busting listicle format that clears up 'you have to go forever,' 'it's just for back pain,' and 'it's dangerous' — building trust with skeptical cold audiences. | medium | Viral Scout | 2026-03-19 |
+| What Happens to a Senior's Spine If They Stop Moving | A | 'The biggest mistake aging adults make isn't exercising too much — it's stopping movement altogether. Here's what that does to your spine.' — Education-forward content with empathetic framing for the senior audience, connecting chiropractic care to long-term mobility and quality of life. | medium | Viral Scout | 2026-03-19 |
 
 ---
 
@@ -53,6 +64,11 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 | What No One Tells You About the Fourth Trimester (Postpartum Body Reset) | A | Your OB cleared you at 6 weeks postpartum. But your pelvis, SI joints, and upper back are still a mess. Here's what's actually going on. | high | Competitor Research | 2026-03-17 |
 | Woodstock Mom: From Colic to Sleeping 6 Hours (Patient Story) | B | This Woodstock mom was running on 90 minutes of sleep a night. Her 6-week-old had colic. Then she came to see us. | medium | Competitor Research | 2026-03-17 |
 | A Morning at Collective Family: Newborn to Grandma (Day-in-the-Life) | B | 7:30am — a 10-day-old newborn. 9:00am — a 32-week pregnant mom. 11:00am — a 74-year-old grandma. This is a Tuesday at Collective Family Chiropractic. | medium | Competitor Research | 2026-03-17 |
+| Build a prenatal and pediatric content series that functions as our 'Webster Technique equivalent.' @mommaschiro has recursed on Webster for years without evolving it, which means there is audience appetite for that content type but a ceiling on their execution. A 6-part series covering one adjustment per family life stage, newborn through grandparent, shot in a single clinic day, could establish us as the family-breadth authority in a way no single-niche competitor can match. |  |  | medium | Watchlist Analysis | 2026-03-19 |
+| Launch a save-optimized format immediately. A repeatable post type such as '3 things to do before your child's first adjustment' or 'Prenatal stretches for trimester 2, with a professional guardrail at the end' mirrors @drjoshadams's DIY-plus-disclaimer structure. Target 1 save-optimized post per week at minimum. Benchmark against our current near-zero save rate and aim to reach a 5 percent save-to-reach ratio within 60 days. |  |  | medium | Watchlist Analysis | 2026-03-19 |
+| Develop a recurring cast structure using real patients or family members who appear across multiple posts. This does not require daily posting like @dr.holdenstanfill. Even 1 recurring character, a prenatal mom documented across trimesters, a toddler shown at 6 months then 12 months, creates narrative continuity that rewards returning viewers and gives new viewers a reason to scroll back through prior content. This closes the serialization gap against all competitors simultaneously. |  |  | medium | Watchlist Analysis | 2026-03-19 |
+| Gamer's Neck POV Series | C (Demo) | Your gaming setup is aging your spine by 10 years | High | n8n Watchlist Intelligence | 2026-03-19 |
+| Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-19 |
 
 ---
 
@@ -72,6 +88,10 @@ Always relevant, not time-sensitive. Good for filling calendar gaps.
 | The Truth About Cracking Your Own Back | D (Myth Buster) | Why DIY adjustments can be dangerous | High | n8n Content Intelligence | 2026-03-10 |
 | Athletic Performance Recovery Protocol | A (Explainer) | Why athletes need chiropractic care | Medium | n8n Content Intelligence | 2026-03-10 |
 | Sciatica Success Story | G (Patient Story) | From Cannot Walk to Pain Free | Medium | n8n Content Intelligence | 2026-03-16 |
+| 5 Backpack Habits Slowly Damaging Your Kid's Spine | B (Checklist) | Your kid wears a backpack 5 days a week. Here are 5 things that are making it way worse than it needs to be. | High | AI Idea Generator | 2026-03-18 |
+| Why Kids Heal Faster Than Adults (And How to Keep It That Way) | A (Explainer) | Kids bounce back from almost anything. Here is the one thing that slows that down without parents ever knowing. | Medium | AI Idea Generator | 2026-03-18 |
+| Is Your Child Complaining of Growing Pains? It Might Be Something Else. | D (Myth Buster) | Doctors call it growing pains. But growing does not actually cause pain. So what is really going on? | High | AI Idea Generator | 2026-03-18 |
+| How to Check Your Child's Posture at Home in 60 Seconds | C (Demo) | You do not need an X-ray to know if your kid's posture is off. Here is a simple 3-point check any parent can do right now. | Medium | AI Idea Generator | 2026-03-18 |
 
 
 ---
@@ -115,3 +135,6 @@ Move ideas here after they've been promoted to the calendar. Keep for reference.
 | Tech Neck Prevention Guide | A (Explainer) | 2026-03-06 | |
 | Desk Worker Revival | F (Quick Tip) | 2026-03-06 | |
 | Spinal Disc Herniation Education | A | 2026-03-10 | |
+| When Should My Child First See a Chiropractor? | A (Explainer) | 2026-03-18 | |
+| Why Your Kid's Backpack is Causing Shoulder Problems | A | 2026-03-19 | |
+- **Why lower back pain returns every morning** | Format: | Hook: | Priority: High | Source: Inspiration Inbox | Date: 2026-03-18 | Category: evergreen

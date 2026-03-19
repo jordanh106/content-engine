@@ -1095,7 +1095,7 @@ export type WaterfallEntry = {
   id: number;
   sourceVideoCode: string;
   derivedVideoCode: string | null;
-  tier: "source" | "cutdown" | "short" | "text";
+  tier: "source" | "cutdown" | "short" | "text" | "carousel";
   platform: string | null;
   description: string | null;
   status: "idea" | "created" | "published";
@@ -1255,36 +1255,79 @@ export type QualityGateData = {
 // Research Panel Types
 // ============================================
 
-export type ResearchResult = {
-  patterns: Array<{
-    name: string;
-    hookType: string;
-    example: string;
-    ourAdaptation: string;
-    formatMatch: string;
-    platform: string;
-    priority: "high" | "medium" | "low";
-  }>;
-  topicHotspots: Array<{
-    topic: string;
-    platform: string;
-    whyHot: string;
-    audienceMatch: string;
-  }>;
-  contentIdeas: Array<{
-    topic: string;
+export type ViralScoutResult = {
+  summary: string;
+  reelTape: Array<{
+    mechanic: string;
+    whatHappensOnScreen: string;
+    whyItStops: string;
+    hookText: string;
+    ourVersion: string;
+    timeToExecute: "15min" | "30min" | "1hr";
     format: string;
-    hookAngle: string;
-    priority: "high" | "medium" | "low";
     platform: string;
   }>;
-  watchlistSuggestions?: Array<{
+  shelfLifeRadar: Array<{
+    topic: string;
+    trendPhase: "emerging" | "peak" | "cooling";
+    windowDays: number;
+    signalSource: string;
+    audienceMatch: string;
+    platformBet: string;
+  }>;
+  weeklySteal: Array<{
+    videoTitle: string;
+    hook: string;
+    structure: string;
+    format: string;
+    estimatedRuntime: string;
+    platform: string;
+    whyThisWeek: string;
+  }>;
+};
+
+export type CompetitorResearchResult = {
+  summary: string;
+  territoryMap: {
+    claim: Array<{
+      territory: string;
+      whyUnclaimed: string;
+      ownershipAngle: string;
+      format: string;
+      seriesPotential: boolean;
+    }>;
+    contest: Array<{
+      territory: string;
+      whoOwnsIt: string;
+      ourDifferentiator: string;
+    }>;
+    avoid: Array<{
+      territory: string;
+      why: string;
+    }>;
+  };
+  positioningGaps: Array<{
+    gapName: string;
+    gapDescription: string;
+    whoMissesIt: string[];
+    ourOwnershipPlay: string;
+    audienceLanguage: string;
+    timeToOwn: "weeks" | "months" | "long-term";
+  }>;
+  creatorDossiers: Array<{
     handle: string;
     platform: string;
-    why: string;
+    strength: string;
+    blindspot: string;
+    ourCounter: string;
+    topicsTheyOwn: string[];
+    topicsTheyIgnore: string[];
+    addToWatchlist: boolean;
   }>;
-  summary: string;
 };
+
+// Legacy union type for backward compatibility
+export type ResearchResult = ViralScoutResult | CompetitorResearchResult;
 
 // ============================================
 // Performance Review / Pattern Analysis Types
@@ -1371,4 +1414,12 @@ export type StrategyAnalysisResponse = {
   findings: StrategyFinding[];
   summary: string;
   generatedAt: string;
+};
+
+export type InboxItem = {
+  id: number;
+  content: string;
+  sourceUrl: string | null;
+  status: "inbox" | "developed" | "dismissed";
+  createdAt: string;
 };

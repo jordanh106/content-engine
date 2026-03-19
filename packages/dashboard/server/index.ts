@@ -47,6 +47,8 @@ import { createProductionCompanionRouter } from "./routes/production-companion.j
 import { createYoutubeRouter } from "./routes/youtube.js";
 import { createN8nRunnerRouter } from "./routes/n8n-runner.js";
 import { createResearchRouter } from "./routes/research.js";
+import { createViralInsightsRouter } from "./routes/viral-insights.js";
+import { createInboxRouter } from "./routes/inbox.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -72,6 +74,7 @@ const configPath = path.join(industryDir, "config.json");
 const renderOutputDir = path.join(repoRoot, "packages", "dashboard", "data", "renders");
 const formatsDir = path.join(repoRoot, "formats");
 const dataDir = path.resolve(import.meta.dirname, "..", "data");
+const viralInsightsDir = path.join(industryDir, "viral-insights");
 
 // Static: storyboard frame images
 const storyboardImagesDir = path.join(dataDir, "storyboard-images");
@@ -107,13 +110,14 @@ app.use("/api/produce", createProductionCompanionRouter(contentLibraryPath));
 app.use("/api/metrics/youtube", createYoutubeRouter(contentLibraryPath));
 app.use("/api/n8n", createN8nRunnerRouter(contentLibraryPath));
 app.use("/api/research", createResearchRouter(contentLibraryPath));
+app.use("/api/viral-insights", createViralInsightsRouter(viralInsightsDir));
+app.use("/api/inbox", createInboxRouter(contentLibraryPath));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change
 const ideaBankPath = path.join(industryDir, "idea-bank.md");
 const watchlistPath = path.join(industryDir, "watchlist.md");
 
-const viralInsightsDir = path.join(industryDir, "viral-insights");
 const hookPatternsPath = path.join(industryDir, "hook-patterns.md");
 
 const creatorInsightsDir = path.join(industryDir, "creator-insights");

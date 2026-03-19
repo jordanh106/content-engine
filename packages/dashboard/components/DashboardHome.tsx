@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   FileText,
@@ -17,12 +17,17 @@ import {
   Heart,
   Clock,
   Zap,
+  Signal,
+  Copy,
+  Plus,
+  Check,
 } from "lucide-react";
 import type {
   PipelineResponse,
   ProductionStatus,
   DashboardView,
   OpportunitiesResponse,
+  IntelDigest,
 } from "../shared/types.js";
 
 type DashboardHomeProps = {
@@ -503,6 +508,37 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: pulseData } = useQuery<{ digest: IntelDigest | null }>({
+    queryKey: ["viral-insights-latest"],
+    queryFn: () => fetch("/api/viral-insights/latest").then((r) => r.json()),
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const [copiedHook, setCopiedHook] = useState<string | null>(null);
+  const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
+
+  const addIdeaMutation = useMutation({
+    mutationFn: async (topic: string) => {
+      const res = await fetch("/api/ideas/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ideas: [{ topic, category: "trending", priority: "High" }] }),
+      });
+      if (!res.ok) throw new Error("Failed to add idea");
+      return topic;
+    },
+    onSuccess: (topic) => {
+      setAddedTopics((prev) => new Set([...prev, topic]));
+      setTimeout(() => {
+        setAddedTopics((prev) => {
+          const next = new Set(prev);
+          next.delete(topic);
+          return next;
+        });
+      }, 3000);
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="text-center py-12 text-slate-400">Loading...</div>
@@ -653,6 +689,132 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Trend Pulse */}
+      {pulseData?.digest && (() => {
+        const digest = pulseData.digest;
+        const topics = digest.trendingTopics.slice(0, 4);
+        const hooks = digest.hookPatterns.slice(0, 2);
+        const gaps = digest.contentGaps.slice(0, 2);
+        const dateLabel = digest.date
+          ? new Date(digest.date).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+          : "";
+        return (
+          <section>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+              <Signal size={12} className="text-teal-500" />
+              Trend Pulse
+            </h2>
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+                <span className="text-[10px] text-slate-400">
+                  {dateLabel ? `From ${dateLabel} digest` : "Latest digest"} · n8n auto-updated
+                </span>
+                <button
+                  onClick={() => onNavigate("IDEAS")}
+                  className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  View All Ideas →
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {/* Trending Topics */}
+                {topics.length > 0 && (
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Trending Now</p>
+                    <div className="space-y-2">
+                      {topics.map((t, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-slate-800">{t.topic}</span>
+                            {t.platforms.length > 0 && (
+                              <div className="flex gap-1 mt-0.5 flex-wrap">
+                                {t.platforms.map((p) => (
+                                  <span key={p} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 uppercase tracking-wide">
+                                    {p}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => addIdeaMutation.mutate(t.topic)}
+                            disabled={addIdeaMutation.isPending || addedTopics.has(t.topic)}
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100"
+                          >
+                            {addedTopics.has(t.topic) ? <Check size={10} /> : <Plus size={10} />}
+                            {addedTopics.has(t.topic) ? "Added" : "Idea"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hook Patterns */}
+                {hooks.length > 0 && (
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Hook Patterns Spotted</p>
+                    <div className="space-y-2">
+                      {hooks.map((h, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-slate-700 italic line-clamp-1">"{h.text}"</p>
+                            <div className="flex gap-1 mt-0.5">
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 uppercase">{h.type}</span>
+                              <span className="text-[9px] text-slate-400">{h.platform}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(h.text);
+                              setCopiedHook(h.text);
+                              setTimeout(() => setCopiedHook(null), 2000);
+                            }}
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
+                          >
+                            {copiedHook === h.text ? <Check size={10} /> : <Copy size={10} />}
+                            {copiedHook === h.text ? "Copied" : "Copy"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Gaps */}
+                {gaps.length > 0 && (
+                  <div className="px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Content Gaps</p>
+                    <div className="space-y-2">
+                      {gaps.map((g, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-slate-800">{g.area}</span>
+                            {g.description && (
+                              <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{g.description}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => addIdeaMutation.mutate(g.area)}
+                            disabled={addIdeaMutation.isPending || addedTopics.has(g.area)}
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100"
+                          >
+                            {addedTopics.has(g.area) ? <Check size={10} /> : <Plus size={10} />}
+                            {addedTopics.has(g.area) ? "Added" : "Idea"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Superfan Pipeline (Kallaway 90-Minute Rule) */}
       {(() => {

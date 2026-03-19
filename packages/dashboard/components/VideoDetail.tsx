@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star, ChevronDown, ChevronRight, Video, Bot, AlertTriangle } from "lucide-react";
+import { X, FileText, Camera, Sparkles, Wand2, Loader2, CircleAlert, Download, Play, Layers, Clock, ListChecks, RefreshCw, Send, Copy, Check, GitBranch, Plus, Trash2, Zap, Film, Star, ChevronDown, ChevronUp, ChevronRight, Video, Bot, AlertTriangle } from "lucide-react";
 import type {
   VideoDetailResponse,
   RenderJob,
@@ -1697,7 +1697,13 @@ const TIER_META: Record<string, { label: string; color: string }> = {
   cutdown: { label: "Cutdown", color: "bg-sky-100 text-sky-700" },
   short: { label: "Short", color: "bg-violet-100 text-violet-700" },
   text: { label: "Text", color: "bg-amber-100 text-amber-700" },
+  carousel: { label: "Carousels", color: "bg-violet-100 text-violet-700" },
 };
+
+function parseSlides(description: string): string[] {
+  const matches = [...description.matchAll(/Slide \d+:\s*([^.]+\.?)/gi)];
+  return matches.length > 0 ? matches.map((m) => m[1].trim()) : [];
+}
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   idea: { label: "Idea", color: "text-slate-500" },
@@ -1785,6 +1791,33 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
     },
   });
 
+  const [autoGenResult, setAutoGenResult] = useState<{ created: number; skipped: number } | null>(null);
+  const [expandedCarousels, setExpandedCarousels] = useState<Set<number>>(new Set());
+  const autoGenMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/waterfall/auto-generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Failed to auto-generate waterfall");
+      return r.json() as Promise<{ created: number; skipped: number; items: Array<{ id: number; tier: string }> }>;
+    },
+    onSuccess: (data) => {
+      setAutoGenResult({ created: data.created, skipped: data.skipped });
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+      setTimeout(() => setAutoGenResult(null), 4000);
+      // Auto-expand newly created carousel items
+      const newCarouselIds = data.items.filter((i) => i.tier === "carousel").map((i) => i.id);
+      if (newCarouselIds.length > 0) {
+        setExpandedCarousels((prev) => {
+          const next = new Set(prev);
+          newCarouselIds.forEach((id) => next.add(id));
+          return next;
+        });
+      }
+    },
+  });
+
   const addSuggestionMutation = useMutation({
     mutationFn: async (s: RepurposeSuggestion) => {
       const r = await fetch(`/api/videos/${code}/waterfall`, {
@@ -1813,6 +1846,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
     cutdown: items.filter((i) => i.tier === "cutdown"),
     short: items.filter((i) => i.tier === "short"),
     text: items.filter((i) => i.tier === "text"),
+    carousel: items.filter((i) => i.tier === "carousel"),
   };
 
   return (
@@ -1826,15 +1860,22 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             Track derivative content from this source video
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => suggestMutation.mutate()}
-            disabled={suggestMutation.isPending}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 disabled:opacity-50 transition-colors"
+            onClick={() => autoGenMutation.mutate()}
+            disabled={autoGenMutation.isPending}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+            title="Matt Gray system: generates 10 derivatives (3 IG, 2 TikTok, 2 YT Shorts, 3 text)"
           >
-            {suggestMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-            AI Suggest
+            {autoGenMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+            Auto-Generate
           </button>
+          {autoGenResult && (
+            <span className="text-[10px] text-emerald-600 font-semibold">
+              {autoGenResult.created > 0 ? `+${autoGenResult.created} created` : `Already generated`}
+              {autoGenResult.skipped > 0 && autoGenResult.created > 0 ? ` · ${autoGenResult.skipped} skipped` : ""}
+            </span>
+          )}
           <button
             onClick={() => setShowAdd(!showAdd)}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
@@ -2010,6 +2051,79 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
               </div>
             );
           })}
+
+          {/* Carousel tier */}
+          {grouped.carousel.length > 0 && (() => {
+            const meta = TIER_META.carousel;
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="h-px flex-1 bg-slate-100" />
+                  <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", meta.color)}>
+                    {meta.label} ({grouped.carousel.length})
+                  </span>
+                  <div className="h-px flex-1 bg-slate-100" />
+                </div>
+                <div className="space-y-1.5">
+                  {grouped.carousel.map((item) => {
+                    const statusMeta = STATUS_META[item.status] || STATUS_META.idea;
+                    const slides = parseSlides(item.description ?? "");
+                    const isExpanded = expandedCarousels.has(item.id);
+                    return (
+                      <div key={item.id} className="border border-violet-200 rounded-xl bg-violet-50/30 overflow-hidden">
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 uppercase shrink-0">
+                            Carousel
+                          </span>
+                          {item.platform && (
+                            <span className="text-[9px] font-bold text-slate-400 flex-1">{item.platform}</span>
+                          )}
+                          <button
+                            onClick={() => {
+                              const next = item.status === "idea" ? "created" : item.status === "created" ? "published" : "idea";
+                              updateStatusMutation.mutate({ id: item.id, status: next });
+                            }}
+                            className={cn("text-[9px] font-bold shrink-0", statusMeta.color)}
+                          >
+                            {statusMeta.label}
+                          </button>
+                          <button
+                            onClick={() => deleteMutation.mutate(item.id)}
+                            className="text-slate-300 hover:text-rose-500 transition-colors shrink-0"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => setExpandedCarousels((prev) => {
+                              const next = new Set(prev);
+                              isExpanded ? next.delete(item.id) : next.add(item.id);
+                              return next;
+                            })}
+                            className="text-slate-400 hover:text-violet-600 transition-colors shrink-0"
+                          >
+                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+                        </div>
+                        {isExpanded && slides.length > 0 && (
+                          <div className="px-3 pb-3 space-y-1 border-t border-violet-100 pt-2">
+                            {slides.map((slide, i) => (
+                              <div key={i} className="flex gap-2 text-xs">
+                                <span className="font-bold text-violet-400 shrink-0 w-12 text-[10px]">Slide {i + 1}</span>
+                                <span className="text-slate-700 text-[11px]">{slide}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {isExpanded && slides.length === 0 && (
+                          <p className="px-3 pb-3 text-xs text-slate-600 border-t border-violet-100 pt-2">{item.description}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
@@ -2055,6 +2169,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
   const [generatingFrameShots, setGeneratingFrameShots] = useState<Set<number>>(new Set());
   const [frameStyles, setFrameStyles] = useState<Record<number, "sketch" | "photoreal" | "cartoon">>({});
   const [frameError, setFrameError] = useState<Record<number, string>>({});
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Fetch storyboard, prompts, and visual styles on mount
   React.useEffect(() => {
@@ -2088,7 +2203,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
       });
       if (res.ok) {
         const data = await res.json();
-        setStoryboard(data.storyboard ?? data);
+        setStoryboard({ ...data.storyboard, shots: data.shots ?? [] });
         // Refresh prompts
         const promptsRes = await fetch(`/api/ai-prompts/${code}`).then((r) =>
           r.ok ? r.json() : { prompts: [] },
@@ -2331,7 +2446,13 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                     {/* Generated frame image */}
                     {shot.imageUrl && (
                       <div className="relative mb-3 group/frame">
-                        <img src={shot.imageUrl} alt={`Shot ${shot.shotNumber} frame`} className="w-full max-w-[140px] rounded-xl object-cover aspect-[9/16]" />
+                        <img
+                          src={shot.imageUrl}
+                          alt={`Shot ${shot.shotNumber} frame`}
+                          className="w-full max-w-[140px] rounded-xl object-cover aspect-[9/16] cursor-zoom-in hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxUrl(shot.imageUrl!)}
+                          title="Click to expand"
+                        />
                         <button
                           onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? shot.imageStyle ?? "sketch")}
                           disabled={generatingFrameShots.has(shot.id)}
@@ -2544,6 +2665,28 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
           <p className="text-xs text-slate-400">
             Generate a storyboard to plan your shots, production methods, and AI prompts.
           </p>
+        </div>
+      )}
+
+      {/* Image lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={lightboxUrl}
+              alt="Storyboard frame"
+              className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
+            />
+            <button
+              onClick={() => setLightboxUrl(null)}
+              className="absolute top-3 right-3 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -485,3 +485,20 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS youtube_video_links (
   last_synced_at TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 )`);
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS inspiration_inbox (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content TEXT NOT NULL,
+  source_url TEXT,
+  status TEXT NOT NULL DEFAULT 'inbox',
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_inspiration_inbox_status ON inspiration_inbox(status)`);
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS research_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL,
+  data TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_research_reports_type ON research_reports(type, created_at)`);

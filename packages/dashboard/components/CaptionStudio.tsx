@@ -1045,6 +1045,13 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 )}
               </div>
 
+              {/* Hook Lab Error */}
+              {hookMutation.isError && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-600">
+                  <span>Hook Lab failed: {(hookMutation.error as Error).message || "Try again."}</span>
+                </div>
+              )}
+
               {/* Hook Lab Panel */}
               {hookLabOpen && hookVariants.length > 0 && (
                 <div className="bg-white border border-violet-200 rounded-2xl p-4">

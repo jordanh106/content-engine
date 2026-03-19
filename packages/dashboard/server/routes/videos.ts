@@ -235,6 +235,95 @@ export function createVideosRouter(
     }
   });
 
+  // POST /api/videos/:code/waterfall/auto-generate - Matt Gray system: 1 video → 10 derivatives
+  router.post("/:code/waterfall/auto-generate", async (req, res) => {
+    const { code } = req.params;
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      const scriptExcerpt = video.script?.slice(0, 400) ?? video.title;
+      const format = video.format ?? "A";
+
+      // Matt Gray formula: deterministic 10-item template
+      const TEMPLATE: Array<{ tier: "short" | "text" | "carousel"; platform: string; role: string; platformVoice: string }> = [
+        { tier: "short", platform: "instagram", role: "Hook cut — first 5s hook moment (15–30s)", platformVoice: "Fast, visual, hook in frame 1" },
+        { tier: "short", platform: "instagram", role: "Value cut — core educational moment (20–30s)", platformVoice: "Educational, save-worthy, text overlays help" },
+        { tier: "short", platform: "instagram", role: "CTA cut — closing + call to action (15–20s)", platformVoice: "Warm, direct, clear next step" },
+        { tier: "short", platform: "tiktok", role: "Hook cut — punchy opener for TikTok (15–30s)", platformVoice: "Entertaining, curiosity-first, trending audio friendly" },
+        { tier: "short", platform: "tiktok", role: "Value cut — most shareable insight (20–30s)", platformVoice: "Surprising fact or counterintuitive claim works best" },
+        { tier: "short", platform: "youtube_shorts", role: "Hook cut — strong open, retention-optimised (30–45s)", platformVoice: "Slightly longer, more educational than TikTok" },
+        { tier: "short", platform: "youtube_shorts", role: "Value cut — standalone educational clip (30–60s)", platformVoice: "Can be slower-paced, subscribe CTA at end" },
+        { tier: "text", platform: "x", role: "X thread — 7-tweet breakdown of the core concept", platformVoice: "Tweet 1 is the hook, tweets 2-6 are numbered insights, tweet 7 is CTA" },
+        { tier: "text", platform: "linkedin", role: "LinkedIn post — single insight with personal angle", platformVoice: "Professional, story-led, 3-5 short paragraphs, no hashtag spam" },
+        { tier: "text", platform: "instagram", role: "IG caption — scroll-stopping caption for grid post", platformVoice: "First line is hook, body is value, end with question for comments" },
+        { tier: "carousel", platform: "instagram", role: "IG Carousel — 7-slide educational breakdown", platformVoice: "Slide 1: bold hook/cover. Slides 2-6: one insight per slide, max 15 words each. Slide 7: CTA + save prompt." },
+        { tier: "carousel", platform: "linkedin", role: "LinkedIn Carousel — 6-slide professional insight post", platformVoice: "Slide 1: bold claim. Slides 2-5: one evidence point or step per slide. Slide 6: key takeaway + follow CTA." },
+      ];
+
+      // Load existing waterfall to skip duplicates (same tier + platform)
+      const existing = db.select().from(contentWaterfall)
+        .where(eq(contentWaterfall.sourceVideoCode, code))
+        .all();
+      const existingKeys = new Set(existing.map((e) => `${e.tier}::${e.platform}`));
+
+      const toCreate = TEMPLATE.filter((t) => !existingKeys.has(`${t.tier}::${t.platform}`));
+
+      if (toCreate.length === 0) {
+        res.json({ created: 0, skipped: TEMPLATE.length, items: existing });
+        return;
+      }
+
+      // Use Claude Haiku to write platform-specific descriptions in parallel
+      const anthropic = new Anthropic();
+
+      const descriptions = await Promise.all(
+        toCreate.map(async (t) => {
+          try {
+            const isCarousel = t.tier === "carousel";
+            const slideCount = t.platform === "instagram" ? 7 : 6;
+            const promptContent = isCarousel
+              ? `Video: "${video.title}" (chiropractic health content)\nScript excerpt: "${scriptExcerpt}"\n\nWrite a ${slideCount}-slide ${t.platform} carousel outline based on this video.\nFormat exactly as: "Slide 1: [text]. Slide 2: [text]. Slide 3: [text]..." — max 12 words per slide, no bullet points.\n${t.platformVoice}\nRespond with only the slide outline, no preamble.`
+              : `Video: "${video.title}" (Format ${format} — chiropractic health content)\nDerivative: ${t.role}\nPlatform voice: ${t.platformVoice}\nScript excerpt: "${scriptExcerpt}"\n\nWrite a single specific sentence describing exactly what to clip or write for this derivative. Be concrete — mention the moment, angle, or content approach. No preamble.`;
+            const msg = await anthropic.messages.create({
+              model: "claude-haiku-4-5-20251001",
+              max_tokens: isCarousel ? 300 : 120,
+              messages: [{ role: "user", content: promptContent }],
+            });
+            return (msg.content[0] as { text: string }).text.trim();
+          } catch {
+            return t.role;
+          }
+        })
+      );
+
+      // Insert all new items
+      const inserted = toCreate.map((t, i) =>
+        db.insert(contentWaterfall).values({
+          sourceVideoCode: code,
+          tier: t.tier,
+          platform: t.platform,
+          description: descriptions[i],
+          status: "idea",
+        }).returning().get()
+      );
+
+      const allItems = db.select().from(contentWaterfall)
+        .where(eq(contentWaterfall.sourceVideoCode, code))
+        .orderBy(desc(contentWaterfall.createdAt))
+        .all();
+
+      res.json({ created: inserted.length, skipped: TEMPLATE.length - toCreate.length, items: allItems });
+    } catch (error) {
+      console.error("[videos] Waterfall auto-generate error:", error);
+      res.status(500).json({ error: "Failed to auto-generate waterfall" });
+    }
+  });
+
   // POST /api/videos/:code/adapt-script - Rewrite script for a specific platform
   router.post("/:code/adapt-script", async (req, res) => {
     let client: Anthropic | null = null;

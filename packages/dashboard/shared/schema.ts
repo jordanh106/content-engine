@@ -377,3 +377,11 @@ export const productionChecklist = sqliteTable("production_checklist", {
   stageTransition: text("stage_transition"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
+
+export const inspirationInbox = sqliteTable("inspiration_inbox", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  content: text("content").notNull(),
+  sourceUrl: text("source_url"),
+  status: text("status").notNull().default("inbox"), // "inbox" | "developed" | "dismissed"
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});

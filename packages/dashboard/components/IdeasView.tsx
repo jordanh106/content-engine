@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield } from "lucide-react";
-import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId } from "../shared/types.js";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield, Inbox, Link, X, ChevronDown, ChevronUp, Send } from "lucide-react";
+import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId, InboxItem } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
@@ -37,6 +37,257 @@ type SummaryResponse = { counts: Record<string, number>; total: number };
 
 type IdeasViewProps = {
   onNavigate?: (view: DashboardView) => void;
+};
+
+// ============================================================
+// Inspiration Inbox
+// ============================================================
+
+const CATEGORY_OPTIONS: { value: IdeaCategory; label: string }[] = [
+  { value: "trending", label: "Trending" },
+  { value: "competitor", label: "Competitor" },
+  { value: "evergreen", label: "Evergreen" },
+  { value: "audience", label: "Audience" },
+  { value: "personal", label: "Personal" },
+];
+
+type DevelopState = { itemId: number; topic: string; category: IdeaCategory; priority: "High" | "Medium" | "Low" } | null;
+
+const InspirationInbox: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [collapsed, setCollapsed] = useState(false);
+  const [input, setInput] = useState("");
+  const [urlInput, setUrlInput] = useState("");
+  const [showUrl, setShowUrl] = useState(false);
+  const [developing, setDeveloping] = useState<DevelopState>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data } = useQuery<{ items: InboxItem[] }>({
+    queryKey: ["inbox"],
+    queryFn: () => fetch("/api/inbox").then((r) => r.json()),
+  });
+
+  const items = data?.items ?? [];
+  const pendingCount = items.filter((i) => i.status === "inbox").length;
+
+  const captureMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/inbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: input.trim(), sourceUrl: urlInput.trim() || undefined }),
+      });
+      if (!res.ok) throw new Error("Failed to capture");
+    },
+    onSuccess: () => {
+      setInput("");
+      setUrlInput("");
+      setShowUrl(false);
+      queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    },
+  });
+
+  const dismissMutation = useMutation({
+    mutationFn: (id: number) => fetch(`/api/inbox/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inbox"] }),
+  });
+
+  const developMutation = useMutation({
+    mutationFn: (dev: NonNullable<DevelopState>) =>
+      fetch(`/api/inbox/${dev.itemId}/develop`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: dev.topic, category: dev.category, priority: dev.priority }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      setDeveloping(null);
+      queryClient.invalidateQueries({ queryKey: ["inbox"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+    },
+  });
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && input.trim()) {
+      captureMutation.mutate();
+    }
+  };
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Inbox size={15} className="text-amber-500" />
+          <span className="text-sm font-bold text-slate-800">Inspiration Inbox</span>
+          {pendingCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+              {pendingCount}
+            </span>
+          )}
+        </div>
+        {collapsed ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronUp size={14} className="text-slate-400" />}
+      </button>
+
+      {!collapsed && (
+        <div className="border-t border-slate-100">
+          {/* Capture input */}
+          <div className="px-4 py-3 space-y-2">
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="What caught your eye? Drop a link, a phrase, a thought... (⌘+Enter to save)"
+                rows={2}
+                className="w-full text-sm text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
+              />
+            </div>
+            {showUrl && (
+              <div className="flex items-center gap-2">
+                <Link size={12} className="text-slate-400 shrink-0" />
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="Source URL (optional)"
+                  className="flex-1 text-xs text-slate-700 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowUrl((v) => !v)}
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1"
+              >
+                <Link size={10} />
+                {showUrl ? "Hide URL" : "+ Add URL"}
+              </button>
+              <button
+                onClick={() => captureMutation.mutate()}
+                disabled={!input.trim() || captureMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send size={10} />
+                Capture
+              </button>
+            </div>
+          </div>
+
+          {/* Inbox items */}
+          {items.filter((i) => i.status === "inbox").length > 0 && (
+            <div className="border-t border-slate-100 divide-y divide-slate-50">
+              {items
+                .filter((i) => i.status === "inbox")
+                .map((item) => (
+                  <div key={item.id} className="px-4 py-3">
+                    {developing?.itemId === item.id ? (
+                      // Develop form (inline)
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={developing.topic}
+                          onChange={(e) => setDeveloping({ ...developing, topic: e.target.value })}
+                          className="w-full text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          placeholder="Topic for idea bank"
+                          autoFocus
+                        />
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={developing.category}
+                            onChange={(e) => setDeveloping({ ...developing, category: e.target.value as IdeaCategory })}
+                            className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          >
+                            {CATEGORY_OPTIONS.map((c) => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={developing.priority}
+                            onChange={(e) => setDeveloping({ ...developing, priority: e.target.value as "High" | "Medium" | "Low" })}
+                            className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          >
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => developMutation.mutate(developing)}
+                            disabled={!developing.topic.trim() || developMutation.isPending}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors"
+                          >
+                            <Check size={10} />
+                            Add to Idea Bank
+                          </button>
+                          <button
+                            onClick={() => setDeveloping(null)}
+                            className="px-3 py-1.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Normal item view
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-slate-800 leading-snug">{item.content}</p>
+                          {item.sourceUrl && (
+                            <a
+                              href={item.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-teal-600 hover:underline mt-0.5 block truncate"
+                            >
+                              {item.sourceUrl}
+                            </a>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setDeveloping({
+                              itemId: item.id,
+                              topic: item.content.slice(0, 120),
+                              category: "personal",
+                              priority: "Medium",
+                            })}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
+                          >
+                            <Plus size={10} />
+                            Develop
+                          </button>
+                          <button
+                            onClick={() => dismissMutation.mutate(item.id)}
+                            className="w-6 h-6 rounded-full flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-400 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {items.filter((i) => i.status === "inbox").length === 0 && (
+            <div className="px-4 py-3 text-center text-xs text-slate-400 border-t border-slate-100">
+              Inbox empty — capture something above
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
@@ -133,6 +384,9 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
           </FeatureHint>
         </div>
       </div>
+
+      {/* Inspiration Inbox */}
+      <InspirationInbox />
 
       {/* Category Filter Chips */}
       <div className="flex flex-wrap gap-2">

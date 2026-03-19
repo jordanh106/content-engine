@@ -1716,6 +1716,76 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 > [Direct to camera] What happens when a disc in your spine herniates?
 
+
+#### A9: When Should My Child First See a Chiropractor?
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> HOOK:
+> [Direct to camera, empathetic] Most parents wait until their kid is in pain to bring them to a chiropractor. But honestly? The best time to start is way before that.
+>
+> BODY:
+> [Warm, educational] Here's what's actually happening. Birth is tough on little bodies. Even the gentlest delivery can cause tension in your baby's spine and nervous system. And as they grow, learning to crawl, walk, ride bikes, play sports, there's a lot happening to their developing spine.
+>
+> [Reassuring, matter-of-fact] Here's why early care matters. When we check kids regularly, we can spot small issues before they become big problems. Think of it like dental checkups, but for their spine and nervous system. We're not waiting for cavities, we're preventing them.
+>
+> [Confident, supportive] The truth is, there's no "too early" when it comes to gentle chiropractic care. I adjust babies just days old, and it's incredibly gentle. We're talking about pressure you'd use to check if a tomato is ripe. That's it.
+>
+> CTA:
+> [Warm, inviting] If you've been wondering when to bring your little one in, the answer is now. Follow for more tips on keeping your whole family healthy.
+>
+> DELIVERY CUES:
+> - Direct to camera, empathetic
+> - Warm, educational
+> - Reassuring, matter-of-fact
+> - Confident, supportive
+> - Warm, inviting
+>
+> DURATION: 42 seconds
+
+
+#### A10: Why Your Kid's Backpack is Causing Shoulder Problems
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Why do your kid's shoulders hurt every day after school?
+
+
+#### A11: Why Your Kid's Backpack is Causing Shoulder Problems
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> HOOK:
+> [Direct to camera, matter-of-fact] Hard pill to swallow: buying your kid a "better" backpack is making their shoulder problems worse.
+>
+> BODY:
+> [Warm, educational] Here's what's actually happening. When kids carry heavy backpacks, even the fancy ergonomic ones, their shoulders roll forward and their head pushes out. This creates something called upper crossed syndrome.
+>
+> [Slightly concerned but reassuring] And here's why that matters. Those tight chest muscles and weak upper back muscles don't just hurt today, they're setting your child up for chronic neck pain, headaches, and posture problems that can last into adulthood.
+>
+> [Empowering, practical] The real solution isn't a different backpack. It's teaching your kids simple shoulder blade squeezes and wall angels to reverse that forward head posture. Do these 3 times a day, 10 reps each.
+>
+> [Warm, inviting] If your child complains about shoulder pain after school, we can help identify exactly what's going wrong and give you a specific plan to fix it.
+>
+> CTA:
+> [Friendly, conversational] If your kid's shoulders hurt every day after school, share this with another parent who's dealing with the same thing. They'll thank you later.
+>
+> DELIVERY CUES:
+> - [Direct to camera, matter-of-fact]
+> - [Warm, educational]
+> - [Slightly concerned but reassuring]
+> - [Empowering, practical]
+> - [Warm, inviting]
+> - [Friendly, conversational]
+>
+> DURATION: 38 seconds
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

@@ -1,13 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseContentLibrary } from "../parsers/content-library.js";
-import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import { parseWatchlist } from "../parsers/watchlist.js";
-import type { ResearchResult } from "../../shared/types.js";
+import { sqlite } from "../db.js";
 
-function stripCodeFences(text: string): string {
+function extractJSON(text: string): string {
   let cleaned = text.trim();
   if (cleaned.startsWith("```")) {
     cleaned = cleaned
@@ -32,11 +31,9 @@ export function createResearchRouter(contentLibraryPath: string) {
 
   function loadContext(): {
     configSummary: string;
-    hookSummary: string;
     librarySummary: string;
     watchlistSummary: string;
   } {
-    // Config
     let configSummary = "";
     try {
       const configPath = path.join(industryDir, "config.json");
@@ -53,19 +50,6 @@ Audiences: ${(config.audiences || []).map((a) => a.label).join(", ")}`;
       configSummary = "Industry: chiropractic";
     }
 
-    // Hook patterns
-    let hookSummary = "";
-    try {
-      const patterns = parseHookPatterns(path.join(industryDir, "hook-patterns.md"));
-      hookSummary = patterns
-        .slice(0, 4)
-        .map((cat) => `${cat.name}: ${cat.patterns.slice(0, 2).map((p) => `"${p.example}"`).join(", ")}`)
-        .join("\n");
-    } catch {
-      hookSummary = "";
-    }
-
-    // Content library (titles only for gap detection)
     let librarySummary = "";
     try {
       const videos = parseContentLibrary(contentLibraryPath);
@@ -74,226 +58,245 @@ Audiences: ${(config.audiences || []).map((a) => a.label).join(", ")}`;
       librarySummary = "";
     }
 
-    // Watchlist
     let watchlistSummary = "";
     try {
       const creators = parseWatchlist(path.join(industryDir, "watchlist.md"));
       watchlistSummary = creators
-        .map((c) => `@${c.handle} (${c.platform}, ${c.followers} followers) - ${c.whyTracking?.slice(0, 100)}`)
+        .map((c) => `@${c.handle} (${c.platform}, ${c.followers} followers)`)
         .join("\n");
     } catch {
       watchlistSummary = "";
     }
 
-    return { configSummary, hookSummary, librarySummary, watchlistSummary };
+    return { configSummary, librarySummary, watchlistSummary };
+  }
+
+  async function callClaudeStream(
+    prompt: string,
+    req: Request,
+    res: Response,
+    routeName: string
+  ): Promise<void> {
+    if (!client) {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    // Send SSE headers immediately — resolves fetch() on client before Anthropic call
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const sendEvent = (data: Record<string, unknown>) => {
+      if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    const stream = client.messages.stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: 6000,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    // Abort Anthropic stream when client disconnects (panel closed, navigate away)
+    req.on("close", () => stream.abort());
+
+    let fullText = "";
+    let lastProgressChars = 0;
+
+    stream.on("text", (textChunk: string) => {
+      fullText += textChunk;
+      if (fullText.length - lastProgressChars >= 100) {
+        sendEvent({ type: "progress", chars: fullText.length });
+        lastProgressChars = fullText.length;
+      }
+    });
+
+    try {
+      await stream.finalMessage();
+      const parsed = JSON.parse(extractJSON(fullText));
+      sendEvent({ type: "result", data: parsed });
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      if (!isAbort) {
+        const status = (err as { status?: number }).status;
+        const msg = status === 429
+          ? "Rate limited — wait 30 seconds and try again."
+          : err instanceof Error ? err.message : "Research failed";
+        console.error(`[research/${routeName}] Error:`, msg);
+        sendEvent({ type: "error", message: msg });
+      }
+    } finally {
+      if (!res.writableEnded) res.end();
+    }
   }
 
   // POST /api/research/viral-scout
-  router.post("/viral-scout", async (_req, res) => {
-    if (!client) {
-      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
-      return;
-    }
+  router.post("/viral-scout", async (req, res) => {
+    const { configSummary, librarySummary } = loadContext();
 
-    try {
-      const { configSummary, hookSummary, librarySummary } = loadContext();
-
-      const prompt = `You are a content strategist specializing in chiropractic social media. Search for the most viral and trending chiropractic content right now across TikTok, Instagram Reels, and YouTube Shorts.
+    const prompt = `You are a field scout who just spent 4 hours studying chiropractic and family wellness content on TikTok, Instagram, and YouTube. This is your field report — present tense, urgent. Describe what you OBSERVED. Show mechanics in action. Write hooks as verbatim text. Give concrete adaptations, not suggestions.
 
 CONTEXT:
 ${configSummary}
 
-EXISTING CONTENT (don't suggest duplicates):
-${librarySummary.slice(0, 3000)}
-
-PROVEN HOOK PATTERNS WE USE:
-${hookSummary}
-
-Search for:
-1. Viral chiropractic videos from the last 2-4 weeks (views, engagement patterns)
-2. Trending topics and hooks working right now in the chiropractic niche
-3. Prenatal/pediatric chiropractic content that's performing well
-4. Hook types and formats driving saves/shares in health/wellness content
+EXISTING CONTENT (avoid duplicating):
+${librarySummary.slice(0, 1000)}
 
 Respond with JSON only (no markdown):
 {
-  "summary": "2-3 sentence overview of what's trending right now",
-  "patterns": [
+  "summary": "2-3 sentences — what is hitting RIGHT NOW in chiropractic/wellness content?",
+  "reelTape": [
     {
-      "name": "pattern name",
-      "hookType": "question|statistic|myth|story|challenge",
-      "example": "exact hook text example from research",
-      "ourAdaptation": "how we'd adapt this for Collective Family Chiropractic",
-      "formatMatch": "A|B|C|D|E|F|G",
-      "platform": "TikTok|Instagram|YouTube",
-      "priority": "high|medium|low"
+      "mechanic": "mechanic name",
+      "whatHappensOnScreen": "exact scene description — camera, action, text, cuts",
+      "whyItStops": "psychological reason it stops scroll",
+      "hookText": "verbatim hook line",
+      "ourVersion": "CFC adaptation — specific",
+      "timeToExecute": "15min|30min|1hr",
+      "format": "A|B|C|D|E|F|G",
+      "platform": "TikTok|Instagram|YouTube"
     }
   ],
-  "topicHotspots": [
+  "shelfLifeRadar": [
     {
       "topic": "topic name",
-      "platform": "where it's trending",
-      "whyHot": "why this is resonating right now",
-      "audienceMatch": "which of our audiences this serves"
+      "trendPhase": "emerging|peak|cooling",
+      "windowDays": 14,
+      "signalSource": "why you believe this phase",
+      "audienceMatch": "which CFC audience",
+      "platformBet": "best platform right now"
     }
   ],
-  "contentIdeas": [
+  "weeklySteal": [
     {
-      "topic": "specific video topic",
+      "videoTitle": "compelling video title",
+      "hook": "verbatim first 3 seconds",
+      "structure": "Hook (3s) → ... → CTA (5s)",
       "format": "A|B|C|D|E|F|G",
-      "hookAngle": "the opening hook to use",
-      "priority": "high|medium|low",
-      "platform": "primary platform"
+      "estimatedRuntime": "e.g. 38 seconds",
+      "platform": "TikTok|Instagram|YouTube",
+      "whyThisWeek": "why film this now"
     }
   ]
 }
 
-Return 4-6 patterns, 4-6 topic hotspots, and 6-8 content ideas. Focus on what's actionable for a small family chiropractic practice.`;
+Return exactly 3 reelTape items, 4 shelfLifeRadar items, and 3 weeklySteal items. Focus on prenatal, pediatric, and family wellness.`;
 
-      const responsePromise = client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4000,
-        tools: [{
-          type: "web_search_20250305" as const,
-          name: "web_search" as const,
-          max_uses: 3,
-        }],
-        messages: [{ role: "user", content: prompt }],
-      }, { timeout: 90_000 });
-
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Research timed out after 100s")), 100_000),
-      );
-
-      const response = await Promise.race([responsePromise, timeoutPromise]);
-
-      const textBlock = response.content.find((b) => b.type === "text");
-      if (!textBlock || textBlock.type !== "text") {
-        res.status(500).json({ error: "No response from AI" });
-        return;
-      }
-
-      let parsed: ResearchResult;
-      try {
-        parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
-      } catch {
-        throw new Error("AI returned malformed JSON. Try again.");
-      }
-      res.json(parsed);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Research failed";
-      console.error("[research/viral-scout] Error:", message);
-      res.status(500).json({ error: message });
-    }
+    await callClaudeStream(prompt, req, res, "viral-scout");
   });
 
   // POST /api/research/competitor-research
-  router.post("/competitor-research", async (_req, res) => {
-    if (!client) {
-      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
-      return;
-    }
+  router.post("/competitor-research", async (req, res) => {
+    const { configSummary, librarySummary, watchlistSummary } = loadContext();
 
-    try {
-      const { configSummary, hookSummary, librarySummary, watchlistSummary } = loadContext();
+    const prompt = `You are a market strategist presenting a war room briefing on the prenatal/pediatric chiropractic content landscape. Your client is Collective Family Chiropractic — Webster-certified, Woodstock GA, specializing in prenatal and pediatric care.
 
-      const prompt = `You are a content strategist doing competitive intelligence for Collective Family Chiropractic, a family chiropractic practice in Woodstock, GA specializing in prenatal and pediatric care.
+Map content territory: unclaimed, contested, oversaturated. Identify specific creators missing specific things. Generate strategic positions, not content ideas. "Here's a topic" is an idea. "Here's the angle only we can own and how to execute it" is a position.
 
 CONTEXT:
 ${configSummary}
 
-CURRENT WATCHLIST (creators we already track):
-${watchlistSummary.slice(0, 2000)}
+WATCHLIST (already tracking):
+${watchlistSummary.slice(0, 800)}
 
-EXISTING CONTENT (for gap detection):
-${librarySummary.slice(0, 2000)}
-
-PROVEN HOOK PATTERNS:
-${hookSummary}
-
-Research:
-1. What are top chiropractic creators posting RIGHT NOW that's getting high engagement?
-2. What content gaps exist in the prenatal/pediatric chiropractic space?
-3. Are there any rising creators in the chiropractic or family wellness niche worth watching?
-4. What formats and hooks are working for health/wellness creators this month?
-5. What are local Woodstock/North Atlanta health practices doing on social (or NOT doing)?
+EXISTING CONTENT:
+${librarySummary.slice(0, 800)}
 
 Respond with JSON only (no markdown):
 {
-  "summary": "2-3 sentence competitive landscape overview",
-  "patterns": [
+  "summary": "2-3 sentences — what is the actual competitive opportunity right now?",
+  "territoryMap": {
+    "claim": [
+      {
+        "territory": "territory name",
+        "whyUnclaimed": "why no one owns this",
+        "ownershipAngle": "how CFC executes and claims it",
+        "format": "A|B|C|D|E|F|G",
+        "seriesPotential": true
+      }
+    ],
+    "contest": [
+      {
+        "territory": "territory name",
+        "whoOwnsIt": "@handle1, @handle2",
+        "ourDifferentiator": "what CFC does that they cannot"
+      }
+    ],
+    "avoid": [
+      {
+        "territory": "territory name",
+        "why": "why this is a trap"
+      }
+    ]
+  },
+  "positioningGaps": [
     {
-      "name": "pattern name",
-      "hookType": "question|statistic|myth|story|challenge",
-      "example": "exact hook text from a competitor's content",
-      "ourAdaptation": "how we'd use this at Collective Family",
-      "formatMatch": "A|B|C|D|E|F|G",
-      "platform": "TikTok|Instagram|YouTube",
-      "priority": "high|medium|low"
+      "gapName": "gap name",
+      "gapDescription": "what's missing and why it matters",
+      "whoMissesIt": ["@handle1"],
+      "ourOwnershipPlay": "concrete content play CFC makes",
+      "audienceLanguage": "exact words audience uses searching for this",
+      "timeToOwn": "weeks|months|long-term"
     }
   ],
-  "topicHotspots": [
-    {
-      "topic": "topic name",
-      "platform": "where it's trending",
-      "whyHot": "why competitors are doing this well",
-      "audienceMatch": "which audience this targets"
-    }
-  ],
-  "contentIdeas": [
-    {
-      "topic": "specific video concept",
-      "format": "A|B|C|D|E|F|G",
-      "hookAngle": "opening hook",
-      "priority": "high|medium|low",
-      "platform": "primary platform"
-    }
-  ],
-  "watchlistSuggestions": [
+  "creatorDossiers": [
     {
       "handle": "@handle",
       "platform": "Instagram|TikTok|YouTube",
-      "why": "why they're worth tracking"
+      "strength": "what they do well",
+      "blindspot": "their specific weakness",
+      "ourCounter": "how CFC exploits this gap",
+      "topicsTheyOwn": ["topic1", "topic2"],
+      "topicsTheyIgnore": ["topic1", "topic2"],
+      "addToWatchlist": true
     }
   ]
 }
 
-Return 4-5 patterns, 4-5 topic hotspots, 5-7 content ideas, and 2-4 watchlist suggestions. Prioritize gaps in the prenatal/pediatric/family wellness space.`;
+Return 2-3 claim territories, 2 contest territories, 2 avoid territories, 2-3 positioningGaps, and 2 creatorDossiers. Be specific — name real creators, describe exact gaps.`;
 
-      const responsePromise = client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4000,
-        tools: [{
-          type: "web_search_20250305" as const,
-          name: "web_search" as const,
-          max_uses: 3,
-        }],
-        messages: [{ role: "user", content: prompt }],
-      }, { timeout: 90_000 });
+    await callClaudeStream(prompt, req, res, "competitor-research");
+  });
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Research timed out after 100s")), 100_000),
-      );
+  // POST /api/research/save
+  router.post("/save", (req, res) => {
+    const { type, data } = req.body as { type?: string; data?: unknown };
+    if (!type || !data) {
+      res.status(400).json({ error: "type and data required" });
+      return;
+    }
+    try {
+      const stmt = sqlite.prepare("INSERT INTO research_reports (type, data) VALUES (?, ?)");
+      const result = stmt.run(type, JSON.stringify(data));
+      res.json({ id: result.lastInsertRowid });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to save report" });
+    }
+  });
 
-      const response = await Promise.race([responsePromise, timeoutPromise]);
+  // GET /api/research/history?type=viral-scout&limit=10
+  router.get("/history", (req, res) => {
+    const type = req.query.type as string | undefined;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
+    try {
+      const rows = type
+        ? sqlite.prepare("SELECT id, type, created_at FROM research_reports WHERE type = ? ORDER BY created_at DESC LIMIT ?").all(type, limit)
+        : sqlite.prepare("SELECT id, type, created_at FROM research_reports ORDER BY created_at DESC LIMIT ?").all(limit);
+      res.json(rows);
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch history" });
+    }
+  });
 
-      const textBlock = response.content.find((b) => b.type === "text");
-      if (!textBlock || textBlock.type !== "text") {
-        res.status(500).json({ error: "No response from AI" });
-        return;
-      }
-
-      let parsed: ResearchResult;
-      try {
-        parsed = JSON.parse(stripCodeFences(textBlock.text)) as ResearchResult;
-      } catch {
-        throw new Error("AI returned malformed JSON. Try again.");
-      }
-      res.json(parsed);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Research failed";
-      console.error("[research/competitor-research] Error:", message);
-      res.status(500).json({ error: message });
+  // GET /api/research/report/:id
+  router.get("/report/:id", (req, res) => {
+    try {
+      const row = sqlite.prepare("SELECT * FROM research_reports WHERE id = ?").get(req.params.id) as { id: number; type: string; data: string; created_at: string } | undefined;
+      if (!row) { res.status(404).json({ error: "Report not found" }); return; }
+      res.json({ ...row, data: JSON.parse(row.data) });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch report" });
     }
   });
 

@@ -87,6 +87,36 @@ High credibility. Numbers stop the scroll.
 
 ---
 
+## Social Currency / Hard Pill Hooks
+
+Highest shareability. Counterintuitive truths that make the viewer look smart and informed when they share. Matt Gray's "Hard pill to swallow" format reached 2M views. Works because sharing feels like giving a gift to someone who needs to hear this.
+
+| Pattern | Example | Best Format | Platform | Optimizes |
+|---------|---------|-------------|----------|-----------|
+| "Hard pill to swallow: [counterintuitive health truth]." | "Hard pill to swallow: Your back pain isn't from the gym. It's from your chair." | D, F | TikTok | Shares, comments |
+| "Hard pill to swallow: [common remedy] is making [condition] worse." | "Hard pill to swallow: Resting is making your disc injury worse, not better." | D, F | TikTok | Comments |
+| "Hard pill to swallow: Your [symptom] has nothing to do with your [assumed cause]." | "Hard pill to swallow: Most neck pain has nothing to do with your neck." | D, A | Instagram Reels | Shares |
+| "Hard pill to swallow: You've been [common action] wrong for [time]." | "Hard pill to swallow: You've been stretching the wrong thing for years." | D, C | TikTok | Saves, comments |
+| "Nobody wants to hear this, but [counterintuitive truth]." | "Nobody wants to hear this, but posture braces make posture worse." | D | TikTok | Comments |
+| "The [uncomfortable truth] about [topic] nobody talks about." | "The uncomfortable truth about back pain nobody talks about." | A, D | Instagram Reels | Saves |
+
+---
+
+## Regret / "If I Could Go Back" Hooks
+
+Highest engagement multiplier. Matt Gray's data: 5x normal engagement — his single best-performing hook type. Vulnerability + practical value. Works because everyone relates to wishing they'd known something sooner, and they share it so others don't make the same mistake.
+
+| Pattern | Example | Best Format | Platform | Optimizes |
+|---------|---------|-------------|----------|-----------|
+| "If I could go back and [action] earlier, here's what I'd do differently." | "If I could go back and start chiropractic care earlier, here's what I'd change." | G, A | Instagram Reels | Saves, shares |
+| "What I wish I knew about [topic] before [painful experience]." | "What I wish I knew about neck pain before I spent years on medication." | G, A | Instagram Reels | Saves |
+| "If I knew this about [topic] at [younger age], [better outcome]." | "If I knew this about posture at 25, my 40s would look very different." | A, G | Instagram Reels | Shares |
+| "[Time period] ago, I thought [wrong belief]. I was wrong." | "Two years ago I thought cracking my own neck was fine. I was wrong." | D, G | TikTok | Comments, saves |
+| "The one thing I wish I'd done differently for my [condition]." | "The one thing I wish I'd done differently for my back pain." | G, A | Instagram Reels | Saves |
+| "If your [family member] is dealing with [condition], show them this." | "If your parent is dealing with sciatica, show them this." | A, G | Instagram Reels | Shares |
+
+---
+
 ## Myth/Contrarian Hooks
 
 High comments. People love to debate.

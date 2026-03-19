@@ -394,9 +394,9 @@ No emdashes.`;
   // POST /api/storyboards/:videoCode/shots/:shotId/generate-image
   // Generates a director's sketch / storyboard frame using Google Imagen 3
   router.post("/:videoCode/shots/:shotId/generate-image", async (req, res) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      res.status(503).json({ error: "Set GEMINI_API_KEY in .env to enable frame generation." });
+      res.status(503).json({ error: "Set OPENAI_API_KEY in .env to enable frame generation." });
       return;
     }
 
@@ -411,10 +411,32 @@ No emdashes.`;
         return;
       }
 
-      // Build scene description
-      const sceneDesc = shot.cinemaStudioPrompt
-        || [shot.shotType, shot.brollType ? `B-roll: ${shot.brollType}` : null, shot.scriptLine].filter(Boolean).join(". ")
-        || "Medical chiropractic treatment scene";
+      // Use Claude Haiku to synthesize a safe, vivid visual description from all shot metadata.
+      // This avoids feeding raw script text to DALL-E (content policy) and camera specs
+      // being mistaken for scene content.
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const metaSummary = [
+        `Video: "${videoCode}" — chiropractic health educational content`,
+        shot.act ? `Narrative act: ${shot.act}` : null,
+        shot.shotType ? `Shot type: ${shot.shotType}` : null,
+        shot.brollType && shot.brollType !== "NULL" ? `B-roll subject: ${shot.brollType}` : null,
+        shot.cameraMovement ? `Camera movement: ${shot.cameraMovement}` : null,
+        shot.cinemaStudioPrompt ? `Cinematography notes: ${shot.cinemaStudioPrompt}` : null,
+        shot.notes ? `Scene notes: ${shot.notes}` : null,
+        shot.scriptLine ? `Spoken line (theme reference only): "${shot.scriptLine}"` : null,
+      ].filter(Boolean).join("\n");
+
+      const claudeRes = await anthropic.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
+        messages: [{
+          role: "user",
+          content: `You are writing a visual scene description for a storyboard frame image generator. Based on the shot metadata below, write a concise, vivid visual description (2-3 sentences) of what is visible in the frame — people, setting, objects, lighting, composition, camera angle. Use neutral clinical language. Never quote patient symptoms verbatim. Do not mention camera brand names.\n\n${metaSummary}\n\nRespond with only the visual description, no preamble.`,
+        }],
+      });
+
+      const sceneDesc = (claudeRes.content[0] as { text: string }).text.trim();
 
       const stylePrefix: Record<string, string> = {
         sketch: "Professional storyboard director's sketch. Clean line art, crisp outlines, minimal grey shading, white background. Shot framing and composition clearly visible.",
@@ -422,32 +444,32 @@ No emdashes.`;
         cartoon: "Bold graphic illustration, flat colors with strong outlines, editorial cartoon style, high contrast.",
       };
 
-      const prompt = `${stylePrefix[style]} ${sceneDesc}. Medical chiropractic clinic context. 9:16 vertical frame. No text overlays. No watermarks.`;
+      const prompt = `${stylePrefix[style]} ${sceneDesc} 9:16 vertical frame. No text overlays. No watermarks.`;
 
-      // Call Google Imagen 3 via REST API
-      const imageRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instances: [{ prompt }],
-            parameters: { sampleCount: 1, aspectRatio: "9:16" },
-          }),
-        },
-      );
+      // Call DALL-E 3 via OpenAI API
+      const imageRes = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt,
+          n: 1,
+          size: "1024x1792",
+          response_format: "b64_json",
+        }),
+      });
 
       if (!imageRes.ok) {
         const errBody = await imageRes.text().catch(() => "");
-        console.error("[storyboards] Imagen error:", imageRes.status, errBody);
-        res.status(502).json({ error: `Imagen API error: ${imageRes.status}` });
+        console.error("[storyboards] DALL-E error:", imageRes.status, errBody);
+        res.status(502).json({ error: `Image API error: ${imageRes.status}` });
         return;
       }
 
-      const imageData = await imageRes.json() as { predictions?: Array<{ bytesBase64Encoded?: string; mimeType?: string }> };
-      const prediction = imageData.predictions?.[0];
-      if (!prediction?.bytesBase64Encoded) {
-        res.status(500).json({ error: "No image returned from Imagen API" });
+      const imageData = await imageRes.json() as { data?: Array<{ b64_json?: string }> };
+      const b64 = imageData.data?.[0]?.b64_json;
+      if (!b64) {
+        res.status(500).json({ error: "No image returned from DALL-E" });
         return;
       }
 
@@ -455,10 +477,9 @@ No emdashes.`;
       const imagesDir = dataDir ? path.join(dataDir, "storyboard-images") : path.resolve(import.meta.dirname, "..", "..", "data", "storyboard-images");
       if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir, { recursive: true });
 
-      const ext = prediction.mimeType?.includes("png") ? "png" : "jpg";
-      const filename = `${videoCode}-shot-${shotId}.${ext}`;
+      const filename = `${videoCode}-shot-${shotId}.png`;
       const filepath = path.join(imagesDir, filename);
-      fs.writeFileSync(filepath, Buffer.from(prediction.bytesBase64Encoded, "base64"));
+      fs.writeFileSync(filepath, Buffer.from(b64, "base64"));
 
       const imageUrl = `/storyboard-images/${filename}`;
 
