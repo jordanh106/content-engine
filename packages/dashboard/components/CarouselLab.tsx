@@ -128,17 +128,17 @@ function wordCount(text: string) {
 function WordCountBadge({ text, targets }: { text: string; targets: [number, number] }) {
   const count = wordCount(text);
   const [min, max] = targets;
-  if (!text.trim()) return <span className="text-[9px] text-slate-300">{min}–{max} words optimal</span>;
-  if (count >= min && count <= max) return <span className="text-[9px] text-emerald-500 font-bold">{count} words ✓</span>;
-  if (count < min) return <span className="text-[9px] text-slate-400">{count} / {min}+ words</span>;
-  return <span className="text-[9px] text-amber-500 font-bold">{count} words (aim for {max})</span>;
+  if (!text.trim()) return <span className="text-[11px] text-slate-300">{min}–{max} words optimal</span>;
+  if (count >= min && count <= max) return <span className="text-[11px] text-emerald-500 font-bold">{count} words ✓</span>;
+  if (count < min) return <span className="text-[11px] text-slate-400">{count} / {min}+ words</span>;
+  return <span className="text-[11px] text-amber-500 font-bold">{count} words (aim for {max})</span>;
 }
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 
 function Stars({ count, max = 5 }: { count: number; max?: number }) {
   return (
-    <span className="text-[9px] text-amber-400 tracking-tight">
+    <span className="text-[10px] text-amber-400 tracking-tight">
       {"★".repeat(count)}{"☆".repeat(max - count)}
     </span>
   );
@@ -220,9 +220,9 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
       </div>
 
       {/* Edit fields */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <div>
-          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
             Heading <span className="text-slate-300 normal-case tracking-normal font-normal">(max 8 words)</span>
           </label>
           <input
@@ -230,11 +230,11 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             value={heading}
             onChange={handleChange(setHeading)}
             placeholder="Bold, attention-grabbing headline"
-            className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
+            className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
           />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
             Body <span className="text-slate-300 normal-case tracking-normal font-normal">(max 20 words)</span>
           </label>
           <textarea
@@ -242,11 +242,11 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             onChange={handleChange(setBodyText)}
             placeholder="Supporting detail or key insight"
             rows={2}
-            className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
+            className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
           />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
             Visual Direction
           </label>
           <input
@@ -254,7 +254,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             value={visualSuggestion}
             onChange={handleChange(setVisualSuggestion)}
             placeholder="What should this slide look like?"
-            className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
+            className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
           />
         </div>
         {dirty && (
@@ -262,13 +262,13 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
             >
-              {saving ? <Loader2 size={9} className="animate-spin" /> : null}
+              {saving ? <Loader2 size={10} className="animate-spin" /> : null}
               Save
             </button>
-            <button onClick={handleRevert} className="text-[10px] text-slate-400 hover:text-slate-600 flex items-center gap-0.5">
-              <RotateCcw size={8} /> Revert
+            <button onClick={handleRevert} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+              <RotateCcw size={10} /> Revert
             </button>
           </div>
         )}
@@ -305,20 +305,20 @@ function CarouselCard({ carousel, isActive, onSelect }: CarouselCardProps) {
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-bold text-slate-800 leading-snug line-clamp-2">{title}</p>
+        <p className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{title}</p>
         <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">
           {platConfig?.abbr ?? carousel.platform.slice(0, 2).toUpperCase()}
         </span>
       </div>
       <div className="flex items-center gap-2 mt-1.5">
         <span className={cn(
-          "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+          "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
           STATUS_STYLES[carousel.status]?.color ?? "bg-slate-100 text-slate-500"
         )}>
           {STATUS_STYLES[carousel.status]?.label ?? carousel.status}
         </span>
-        <span className="text-[9px] text-slate-400">{carousel.slideCount} slides</span>
-        <span className="text-[9px] text-slate-400">{new Date(carousel.createdAt).toLocaleDateString()}</span>
+        <span className="text-[10px] text-slate-400">{carousel.slideCount} slides</span>
+        <span className="text-[10px] text-slate-400">{new Date(carousel.createdAt).toLocaleDateString()}</span>
       </div>
     </button>
   );
@@ -626,7 +626,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left: Library + Spark Starters ──────────────────────────────── */}
-      <div className="w-[220px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-hidden">
+      <div className="w-[260px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-hidden">
         <div className="p-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <LayoutGrid size={14} className="text-violet-600" />
@@ -638,24 +638,24 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           {carousels.length === 0 ? (
             /* Empty state: Spark Starters fill the panel */
             <div className="space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 pt-1">Spark Starters</p>
-              <p className="text-[9px] text-slate-400 leading-relaxed">Tap any to pre-fill the form and jump straight to generating.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 pt-1">Spark Starters</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">Tap any to pre-fill the form and jump straight to generating.</p>
               {SPARK_STARTERS.map((spark) => {
                 const meta = ARCHETYPE_META[spark.archetype];
                 return (
                   <button
                     key={spark.topic}
                     onClick={() => applySparkStarter(spark)}
-                    className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                    className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
                   >
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-[11px]">{spark.icon}</span>
-                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 group-hover:text-violet-600">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-sm">{spark.icon}</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 group-hover:text-violet-600">
                         {spark.archetype}
                       </span>
                     </div>
-                    <p className="text-[10px] font-semibold text-slate-700 line-clamp-2 leading-snug">{spark.topic}</p>
-                    <p className="text-[9px] text-slate-400 mt-0.5 truncate">{meta.descriptor}</p>
+                    <p className="text-xs font-semibold text-slate-700 line-clamp-3 leading-snug">{spark.topic}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">{meta.descriptor}</p>
                   </button>
                 );
               })}
@@ -672,16 +672,16 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 />
               ))}
               <div className="pt-1 border-t border-slate-200">
-                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1.5">Spark Starters</p>
-                <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1.5">Spark Starters</p>
+                <div className="space-y-1.5">
                   {SPARK_STARTERS.map((spark) => (
                     <button
                       key={spark.topic}
                       onClick={() => applySparkStarter(spark)}
-                      className="w-full text-left px-2.5 py-2 rounded-lg border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
                     >
-                      <span className="text-[11px] shrink-0">{spark.icon}</span>
-                      <p className="text-[9px] font-semibold text-slate-600 line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
+                      <span className="text-sm shrink-0">{spark.icon}</span>
+                      <p className="text-[11px] font-semibold text-slate-600 line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
                     </button>
                   ))}
                 </div>
@@ -742,7 +742,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     key={m}
                     onClick={() => setMode(m)}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                      "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                       mode === m
                         ? "bg-violet-600 text-white border-violet-600"
                         : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
@@ -759,14 +759,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                   {/* Platform */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">Platform</label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Platform</label>
+                    <div className="flex flex-wrap gap-2">
                       {PLATFORM_OPTIONS.map((opt, i) => (
                         <button
                           key={i}
                           onClick={() => handlePlatformChange(opt)}
                           className={cn(
-                            "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                            "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
                               ? "bg-violet-600 text-white border-violet-600"
                               : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
@@ -785,45 +785,45 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     side="bottom"
                   >
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-2">
+                      <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">
                         Your Voice <span className="text-slate-300 normal-case tracking-normal font-normal">(pick your hook archetype)</span>
                       </label>
 
                       {archetype ? (
                         /* Collapsed — show selected archetype */
-                        <div className="flex items-start gap-3 p-3 rounded-xl border border-violet-200 bg-violet-50">
-                          <span className="text-xl">{ARCHETYPE_META[archetype].icon}</span>
+                        <div className="flex items-start gap-3 p-4 rounded-xl border border-violet-200 bg-violet-50">
+                          <span className="text-2xl">{ARCHETYPE_META[archetype].icon}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-black text-violet-800 capitalize">{archetype}</p>
-                            <p className="text-[10px] text-violet-600">{ARCHETYPE_META[archetype].descriptor}</p>
-                            <p className="text-[9px] italic text-slate-500 mt-0.5 line-clamp-1">
+                            <p className="text-sm font-black text-violet-800 capitalize">{archetype}</p>
+                            <p className="text-xs text-violet-600">{ARCHETYPE_META[archetype].descriptor}</p>
+                            <p className="text-[11px] italic text-slate-500 mt-1 line-clamp-1">
                               e.g. "{ARCHETYPE_META[archetype].exampleHook}"
                             </p>
                           </div>
                           <button
                             onClick={() => setArchetype("")}
-                            className="text-[9px] font-bold text-violet-500 hover:text-violet-700 shrink-0 mt-0.5"
+                            className="text-xs font-bold text-violet-500 hover:text-violet-700 shrink-0 mt-0.5"
                           >
                             Change
                           </button>
                         </div>
                       ) : (
                         /* Expanded 2x3 card grid */
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2.5">
                           {ARCHETYPES.map((a) => {
                             const meta = ARCHETYPE_META[a.id];
                             return (
                               <button
                                 key={a.id}
                                 onClick={() => setArchetype(a.id)}
-                                className="text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                                className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
                               >
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                  <span className="text-base">{meta.icon}</span>
-                                  <span className="text-[10px] font-black text-slate-700 group-hover:text-violet-700">{a.label}</span>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-xl">{meta.icon}</span>
+                                  <span className="text-sm font-black text-slate-700 group-hover:text-violet-700">{a.label}</span>
                                 </div>
-                                <p className="text-[9px] text-slate-500 leading-relaxed mb-1">{meta.descriptor}</p>
-                                <p className="text-[9px] italic text-slate-400 line-clamp-2">"{meta.exampleHook}"</p>
+                                <p className="text-xs text-slate-500 leading-relaxed mb-1.5">{meta.descriptor}</p>
+                                <p className="text-[11px] italic text-slate-400 line-clamp-2">"{meta.exampleHook}"</p>
                               </button>
                             );
                           })}
@@ -837,11 +837,11 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     <div className="space-y-4 animate-in fade-in duration-200">
                       {/* Audience */}
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Audience</label>
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">Audience</label>
                         <select
                           value={audience}
                           onChange={(e) => setAudience(e.target.value)}
-                          className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
+                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
                         >
                           <option value="">Any audience</option>
                           {audiences.map((a) => (
@@ -852,8 +852,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                       {/* Topic with word count */}
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Topic</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Topic</label>
                           <WordCountBadge text={topic} targets={wordTargets.topic} />
                         </div>
                         <textarea
@@ -861,7 +861,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           onChange={(e) => setTopic(e.target.value)}
                           placeholder="e.g. Text neck and forward head posture"
                           rows={2}
-                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                          className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
                         />
                       </div>
                     </div>
@@ -872,8 +872,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     <div className="space-y-4 animate-in fade-in duration-200">
                       {/* Cover Hook with quick-fill */}
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">
                             Cover Hook <span className="text-slate-300 normal-case tracking-normal font-normal">(optional)</span>
                           </label>
                           <WordCountBadge text={hookLine} targets={wordTargets.hook} />
@@ -883,15 +883,15 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           value={hookLine}
                           onChange={(e) => setHookLine(e.target.value)}
                           placeholder="e.g. Your neck will pay for your phone habit."
-                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                          className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
                         />
 
                         {/* Hook pattern quick-fill */}
                         <button
                           onClick={() => setShowHookPatterns((v) => !v)}
-                          className="mt-1.5 flex items-center gap-1 text-[9px] font-bold text-violet-500 hover:text-violet-700"
+                          className="mt-2 flex items-center gap-1 text-xs font-bold text-violet-500 hover:text-violet-700"
                         >
-                          <ChevronDown size={10} className={cn("transition-transform", showHookPatterns && "rotate-180")} />
+                          <ChevronDown size={11} className={cn("transition-transform", showHookPatterns && "rotate-180")} />
                           Use a proven pattern
                         </button>
 
@@ -901,23 +901,23 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                               <div
                                 key={pat.id}
                                 className={cn(
-                                  "flex items-start gap-3 px-3 py-2.5 hover:bg-violet-50 transition-colors",
+                                  "flex items-start gap-3 px-3 py-3 hover:bg-violet-50 transition-colors",
                                   i < HOOK_PATTERNS.length - 1 && "border-b border-slate-100"
                                 )}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-0.5">
                                     <Stars count={pat.stars} />
-                                    <span className="text-[9px] font-bold text-slate-600">{pat.name}</span>
+                                    <span className="text-xs font-bold text-slate-600">{pat.name}</span>
                                   </div>
-                                  <p className="text-[9px] italic text-slate-500 line-clamp-1">"{pat.template}"</p>
+                                  <p className="text-[11px] italic text-slate-500 line-clamp-1">"{pat.template}"</p>
                                 </div>
                                 <button
                                   onClick={() => {
                                     setHookLine(pat.template);
                                     setShowHookPatterns(false);
                                   }}
-                                  className="shrink-0 text-[9px] font-bold text-violet-500 hover:text-violet-700 mt-0.5"
+                                  className="shrink-0 text-xs font-bold text-violet-500 hover:text-violet-700 mt-0.5"
                                 >
                                   Use
                                 </button>
@@ -929,13 +929,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                       {/* Talking points */}
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">
-                          Content Points <span className="text-slate-300 normal-case tracking-normal font-normal">(one per slide, 3-5 recommended)</span>
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">
+                          Content Points
                         </label>
-                        <div className="space-y-1.5">
+                        <p className="text-[11px] text-slate-400 mb-2">One per slide, 3-5 recommended</p>
+                        <div className="space-y-2">
                           {talkingPoints.map((pt, i) => (
                             <div key={i} className="flex gap-2 items-center">
-                              <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{i + 1}.</span>
+                              <span className="text-xs font-bold text-slate-400 w-5 shrink-0">{i + 1}.</span>
                               <input
                                 type="text"
                                 value={pt}
@@ -945,14 +946,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                   setTalkingPoints(next);
                                 }}
                                 placeholder={DEFAULT_POINTS[i] ?? `Point ${i + 1}`}
-                                className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
+                                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
                               />
                               {talkingPoints.length > 1 && (
                                 <button
                                   onClick={() => setTalkingPoints(talkingPoints.filter((_, j) => j !== i))}
                                   className="text-slate-300 hover:text-rose-400"
                                 >
-                                  <X size={10} />
+                                  <X size={12} />
                                 </button>
                               )}
                             </div>
@@ -960,7 +961,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           {talkingPoints.length < 6 && (
                             <button
                               onClick={() => setTalkingPoints([...talkingPoints, ""])}
-                              className="text-[10px] text-violet-500 hover:text-violet-700 font-bold"
+                              className="text-xs text-violet-500 hover:text-violet-700 font-bold"
                             >
                               + Add point
                             </button>
@@ -970,7 +971,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                       {/* CTA — ranked presets + custom */}
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-2">Call to Action</label>
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Call to Action</label>
                         <div className="border border-slate-200 rounded-xl overflow-hidden">
                           {CTA_TEMPLATES.map((cta, i) => {
                             const isSelected = ctaMode === "preset" && ctaText === cta.text;
@@ -979,23 +980,23 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                 key={cta.id}
                                 onClick={() => { setCtaMode("preset"); setCtaText(cta.text); }}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                                  "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
                                   i < CTA_TEMPLATES.length && "border-b border-slate-100",
                                   isSelected ? "bg-violet-50" : "bg-white hover:bg-slate-50"
                                 )}
                               >
                                 <div className={cn(
-                                  "w-3 h-3 rounded-full border-2 shrink-0 transition-colors",
+                                  "w-3.5 h-3.5 rounded-full border-2 shrink-0 transition-colors",
                                   isSelected ? "border-violet-600 bg-violet-600" : "border-slate-300"
                                 )} />
                                 <div className="flex-1 min-w-0">
-                                  <p className={cn("text-[10px] font-semibold", isSelected ? "text-violet-800" : "text-slate-700")}>
+                                  <p className={cn("text-sm font-semibold", isSelected ? "text-violet-800" : "text-slate-700")}>
                                     {cta.text}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <Stars count={cta.stars} />
-                                  <span className="text-[8px] text-slate-400">{cta.platform}</span>
+                                  <span className="text-[10px] text-slate-400">{cta.platform}</span>
                                 </div>
                               </button>
                             );
@@ -1005,15 +1006,15 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           <button
                             onClick={() => setCtaMode("custom")}
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                              "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
                               ctaMode === "custom" ? "bg-violet-50" : "bg-white hover:bg-slate-50"
                             )}
                           >
                             <div className={cn(
-                              "w-3 h-3 rounded-full border-2 shrink-0",
+                              "w-3.5 h-3.5 rounded-full border-2 shrink-0",
                               ctaMode === "custom" ? "border-violet-600 bg-violet-600" : "border-slate-300"
                             )} />
-                            <span className="text-[10px] font-semibold text-slate-500">Custom…</span>
+                            <span className="text-sm font-semibold text-slate-500">Custom…</span>
                           </button>
                         </div>
 
@@ -1023,7 +1024,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             value={ctaMode === "custom" ? ctaText : ""}
                             onChange={(e) => setCtaText(e.target.value)}
                             placeholder="Write your own call to action"
-                            className="mt-2 w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                            className="mt-2 w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
                           />
                         )}
                       </div>
@@ -1037,7 +1038,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       isGenerating ||
                       !topic.trim() && !hookLine.trim()
                     }
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isGenerating ? (
                       <><Loader2 size={12} className="animate-spin" /> Generating…</>
@@ -1052,14 +1053,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 <>
                   {/* Platform for from-video */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">Platform</label>
-                    <div className="flex flex-wrap gap-1.5">
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Platform</label>
+                    <div className="flex flex-wrap gap-2">
                       {PLATFORM_OPTIONS.map((opt, i) => (
                         <button
                           key={i}
                           onClick={() => handlePlatformChange(opt)}
                           className={cn(
-                            "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                            "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
                               ? "bg-violet-600 text-white border-violet-600"
                               : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
@@ -1073,7 +1074,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Search Video Library</label>
+                      <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">Search Video Library</label>
                       <input
                         type="text"
                         value={videoSearch}
@@ -1105,7 +1106,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   <button
                     onClick={() => fromVideoMutation.mutate()}
                     disabled={isGenerating || !selectedVideoCode}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isGenerating ? (
                       <><Loader2 size={12} className="animate-spin" /> Generating…</>
