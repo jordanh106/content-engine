@@ -551,6 +551,37 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "tip", label: "Idempotent", text: "Running Auto-Generate again skips carousel items that already exist (carousel::instagram and carousel::linkedin are unique keys). Only new items are created." },
     ],
   },
+  {
+    id: "carousel-lab",
+    title: "Carousel Lab",
+    phase: "produce",
+    relatedView: "CAROUSEL_LAB",
+    summary: "Create, edit, and push carousels to Canva using Kallaway-structured slide frameworks.",
+    keywords: ["carousel", "slides", "instagram", "linkedin", "canva", "hook archetype", "rehook", "fresh start", "from video", "generate", "export", "slide editor"],
+    content: [
+      { type: "paragraph", text: "Carousel Lab is a standalone creation environment in the Produce section. It replaces the basic carousel auto-generation in the Waterfall tab with a full creation workflow." },
+      { type: "heading", text: "Two Creation Modes" },
+      { type: "table", headers: ["Mode", "Input", "Best For"], rows: [
+        ["Fresh Start", "Topic + audience + hook archetype", "Original carousel ideas not tied to a specific video"],
+        ["From Video", "Pick a video from your library", "Extending a video's content into a shareable carousel format"],
+      ]},
+      { type: "heading", text: "Kallaway Carousel Structure" },
+      { type: "steps", title: "Instagram 7-slide structure", items: [
+        "Slide 1 — Cover: Hook in your chosen archetype (Fortuneteller, Contrarian, etc.)",
+        "Slides 2-4 — Content: One insight per slide, max 20 words body",
+        "Slide 5 — Rehook: Mid-carousel pattern interrupt — restarts curiosity, does not summarize",
+        "Slide 6 — Resolution: The actual fix, takeaway, or answer",
+        "Slide 7 — CTA: Save prompt + action (link in bio, book a consult)",
+      ]},
+      { type: "tip", label: "Rehook vs Summary", text: "The Rehook slide must open a loop, not close one. 'Here's what most people miss' works. 'To summarize' kills the scroll." },
+      { type: "heading", text: "Slide Editor" },
+      { type: "paragraph", text: "After generation, click any slide tab to edit heading, body copy, and visual direction. Changes persist to the database immediately. Use Revert to undo unsaved changes." },
+      { type: "heading", text: "Push to Canva" },
+      { type: "paragraph", text: "Click 'Push to Canva' to get the command: /carousel-lab push [id]. Run it in Claude Code. The skill uses Canva MCP to create a real designed presentation with your brand kit, then saves the URL to the dashboard. The 'Open in Canva' link appears automatically." },
+      { type: "callout", variant: "info", text: "Instagram: download each slide as PNG from Canva. LinkedIn: export as PDF — LinkedIn converts it to a swipeable carousel." },
+      { type: "navigate", label: "Go to Carousel Lab", targetView: "CAROUSEL_LAB" },
+    ],
+  },
 ];
 
 export type ViewHelpData = {
@@ -898,6 +929,38 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  CAROUSEL_LAB: {
+    title: "Carousel Lab",
+    description:
+      "Create, edit, and push carousels to Canva. Two modes: Fresh Start builds from any topic; From Video adapts an existing script.",
+    tips: [
+      {
+        label: "Fresh vs From Video",
+        detail:
+          "Fresh Start generates a carousel from any topic, audience, and hook archetype. From Video adapts a script you already wrote — your hook and key points carry over without adding new information.",
+      },
+      {
+        label: "Rehook Slide",
+        detail:
+          "Instagram carousels include a Rehook slide at slide 5. This is not a summary — it's a loop-open that restarts curiosity mid-scroll. Without it, viewers stop swiping after slide 4.",
+      },
+      {
+        label: "Slide Editor",
+        detail:
+          "Click any slide tab to edit its heading, body copy, and visual direction. Changes save directly to the database. Use Revert to undo unsaved changes.",
+      },
+      {
+        label: "Push to Canva",
+        detail:
+          "After saving your carousel, run /carousel-lab push [id] in Claude Code. Canva MCP creates a designed presentation with your brand kit and saves the URL here automatically.",
+      },
+      {
+        label: "Analytics Panel",
+        detail:
+          "The right panel shows your carousel composite score (save rate × 0.4 + share × 0.3 + engagement × 0.2 + CTR × 0.1), by-platform breakdown, and current template/strategy versions.",
+      },
+    ],
+  },
 };
 
 export const FEATURE_HINTS: Record<string, HintData> = {
@@ -1009,6 +1072,21 @@ export const FEATURE_HINTS: Record<string, HintData> = {
       "Kallaway archetype derived from hook category. Use this to spot which types you are over- or under-using.",
     side: "right",
   },
+  "carousel-archetype": {
+    content:
+      "Pick the Kallaway archetype for your cover slide. Fortuneteller and Contrarian perform best on Instagram. Teacher and Investigator work well on LinkedIn.",
+    side: "bottom",
+  },
+  "carousel-slide-editor": {
+    content:
+      "Edit each slide's heading, body copy, and visual direction. Changes save directly to the database — use Revert to undo.",
+    side: "top",
+  },
+  "carousel-canva-push": {
+    content:
+      "After saving, run /carousel-lab push [id] in Claude Code to create a real Canva design with your brand kit. The URL appears here when done.",
+    side: "top",
+  },
 };
 
 // ============================================
@@ -1065,6 +1143,7 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
   { id: "visit-calendar", label: "Explore your calendar", eventId: "visit-calendar", targetView: "CALENDAR" },
   { id: "use-idea-lab", label: "Generate a script in Idea Lab", eventId: "use-idea-lab", targetView: "IDEAS" },
   { id: "check-opportunities", label: "Review your scored content opportunities", eventId: "check-opportunities", targetView: "OPPORTUNITIES" },
+  { id: "create-carousel", label: "Create your first carousel in Carousel Lab", eventId: "create-carousel", targetView: "CAROUSEL_LAB" },
 ];
 
 // ============================================
@@ -1072,6 +1151,21 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
 // ============================================
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.4.0",
+    date: "2026-03-20",
+    title: "Carousel Lab",
+    items: [
+      "Carousel Lab: dedicated standalone view in Produce section",
+      "Fresh Start mode: create carousels without a source video (topic, audience, hook archetype)",
+      "From Video mode: AI adapts your existing script into carousel format",
+      "Slide editor: edit heading, body copy, and visual direction per slide after generation",
+      "Kallaway Rehook slide: required mid-carousel loop re-open on Instagram",
+      "Canva MCP export via /carousel-lab Claude Code skill",
+      "Analytics panel: composite score, by-platform breakdown, template/strategy version tracking",
+      "Cmd+K 'Generate Carousel' now navigates directly to Carousel Lab",
+    ],
+  },
   {
     version: "1.3.0",
     date: "2026-03-20",

@@ -22,6 +22,7 @@ import { GuidedTour } from "./ui/GuidedTour.js";
 import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
 import { FieldManual } from "./FieldManual.js";
 import { PerformanceReviewView } from "./PerformanceReviewView.js";
+import { CarouselLab } from "./CarouselLab.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -132,6 +133,7 @@ const AppInner: React.FC = () => {
         {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
         {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
         {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
+        {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
 
         {selectedVideoCode && (
           <VideoDetail

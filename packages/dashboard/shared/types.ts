@@ -189,6 +189,7 @@ export const DASHBOARD_VIEWS = [
   "VAULT",
   "METRICS",
   "STRATEGY",
+  "CAROUSEL_LAB",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -1475,6 +1476,94 @@ export type ScriptDraft = {
   productionNotes: string;
 };
 
+
+// ============================================
+// Carousel & Thumbnail Types
+// ============================================
+
+export const CAROUSEL_PLATFORMS = ["instagram", "linkedin", "tiktok", "youtube_thumbnail"] as const;
+export type CarouselPlatform = (typeof CAROUSEL_PLATFORMS)[number];
+
+export const CAROUSEL_ASPECT_RATIOS = ["1:1", "4:5", "9:16", "16:9"] as const;
+export type CarouselAspectRatio = (typeof CAROUSEL_ASPECT_RATIOS)[number];
+
+export const CAROUSEL_STATUSES = ["generating", "completed", "failed"] as const;
+export type CarouselStatus = (typeof CAROUSEL_STATUSES)[number];
+
+export type CarouselSlide = {
+  id: number;
+  carouselId: number;
+  slideIndex: number;
+  slideType: "cover" | "content" | "rehook" | "cta";
+  imagePath: string | null;
+  filename: string | null;
+  heading: string | null;
+  bodyText: string | null;
+  visualSuggestion: string | null;
+  createdAt: string;
+};
+
+export type GeneratedCarousel = {
+  id: number;
+  videoCode: string | null;
+  ideaTopic: string | null;
+  platform: CarouselPlatform;
+  aspectRatio: CarouselAspectRatio;
+  slideCount: number;
+  hookLine: string | null;
+  talkingPoints: string[];
+  ctaText: string | null;
+  status: CarouselStatus;
+  generationSource: "manual" | "scheduled";
+  templateVersion: string | null;
+  strategyVersion: string | null;
+  compositeScore: number | null;
+  n8nExecutionId: string | null;
+  hookArchetype: string | null;
+  audience: string | null;
+  canvaDesignId: string | null;
+  canvaDesignUrl: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  slides?: CarouselSlide[];
+};
+
+export type CarouselGenerateRequest = {
+  videoCode?: string;
+  ideaTopic?: string;
+  platform: CarouselPlatform;
+  aspectRatio: CarouselAspectRatio;
+  hookLine: string;
+  talkingPoints: string[];
+  ctaText: string;
+};
+
+export type CarouselPlatformConfig = {
+  platform: CarouselPlatform;
+  aspectRatio: CarouselAspectRatio;
+  width: number;
+  height: number;
+  label: string;
+};
+
+export const CAROUSEL_PLATFORM_CONFIGS: CarouselPlatformConfig[] = [
+  { platform: "instagram", aspectRatio: "1:1", width: 1080, height: 1080, label: "Instagram (Square)" },
+  { platform: "instagram", aspectRatio: "4:5", width: 1080, height: 1350, label: "Instagram (Portrait)" },
+  { platform: "linkedin", aspectRatio: "1:1", width: 1080, height: 1080, label: "LinkedIn" },
+  { platform: "tiktok", aspectRatio: "9:16", width: 1080, height: 1920, label: "TikTok" },
+  { platform: "youtube_thumbnail", aspectRatio: "16:9", width: 1280, height: 720, label: "YouTube Thumbnail" },
+];
+
+export type CarouselMetricsScore = {
+  compositeScore: number;
+  sampleSize: number;
+  breakdown: {
+    saveRate: number;
+    shareRate: number;
+    engagementRate: number;
+    ctr: number;
+  };
+};
 
 export type CreatorPersona = {
   id: number;

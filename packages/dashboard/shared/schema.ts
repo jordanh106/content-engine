@@ -416,3 +416,46 @@ export const dismissedOpportunities = sqliteTable("dismissed_opportunities", {
   reason: text("reason").notNull().default("not_relevant"), // "already_covered" | "not_relevant" | "oversaturated"
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
+
+// ============================================
+// Generated Carousels & Thumbnails
+// ============================================
+
+export const generatedCarousels = sqliteTable("generated_carousels", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoCode: text("video_code"),
+  ideaTopic: text("idea_topic"),
+  platform: text("platform").notNull(), // "instagram" | "linkedin" | "tiktok" | "youtube_thumbnail"
+  aspectRatio: text("aspect_ratio").notNull(), // "1:1" | "4:5" | "9:16" | "16:9"
+  slideCount: integer("slide_count").notNull(),
+  hookLine: text("hook_line"),
+  talkingPoints: text("talking_points"), // JSON array
+  ctaText: text("cta_text"),
+  status: text("status").notNull().default("generating"), // "generating" | "completed" | "failed"
+  generationSource: text("generation_source").notNull().default("manual"), // "manual" | "scheduled"
+  templateVersion: text("template_version"), // git commit hash of templates used
+  strategyVersion: text("strategy_version"), // git commit hash of carousel-strategy.md
+  compositeScore: real("composite_score"), // cached engagement score
+  n8nExecutionId: text("n8n_execution_id"),
+  hookArchetype: text("hook_archetype"), // Kallaway archetype used for cover slide
+  audience: text("audience"),            // target audience segment
+  canvaDesignId: text("canva_design_id"),
+  canvaDesignUrl: text("canva_design_url"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  completedAt: text("completed_at"),
+});
+
+export const carouselSlides = sqliteTable("carousel_slides", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  carouselId: integer("carousel_id")
+    .notNull()
+    .references(() => generatedCarousels.id, { onDelete: "cascade" }),
+  slideIndex: integer("slide_index").notNull(),
+  slideType: text("slide_type").notNull(), // "cover" | "content" | "rehook" | "cta"
+  imagePath: text("image_path"),
+  filename: text("filename"),
+  heading: text("heading"),          // editable slide heading
+  bodyText: text("body_text"),       // editable slide body copy
+  visualSuggestion: text("visual_suggestion"), // editable visual direction
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});

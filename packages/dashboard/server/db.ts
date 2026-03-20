@@ -588,3 +588,57 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS dismissed_opportunities (
   reason TEXT NOT NULL DEFAULT 'not_relevant',
   created_at TEXT DEFAULT (datetime('now'))
 )`);
+
+// Carousel & Thumbnail Generation
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS generated_carousels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_code TEXT,
+    idea_topic TEXT,
+    platform TEXT NOT NULL,
+    aspect_ratio TEXT NOT NULL,
+    slide_count INTEGER NOT NULL,
+    hook_line TEXT,
+    talking_points TEXT,
+    cta_text TEXT,
+    status TEXT NOT NULL DEFAULT 'generating',
+    generation_source TEXT NOT NULL DEFAULT 'manual',
+    template_version TEXT,
+    strategy_version TEXT,
+    composite_score REAL,
+    n8n_execution_id TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS carousel_slides (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    carousel_id INTEGER NOT NULL REFERENCES generated_carousels(id) ON DELETE CASCADE,
+    slide_index INTEGER NOT NULL,
+    slide_type TEXT NOT NULL,
+    image_path TEXT,
+    filename TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_carousels_video ON generated_carousels(video_code);
+  CREATE INDEX IF NOT EXISTS idx_carousels_status ON generated_carousels(status);
+  CREATE INDEX IF NOT EXISTS idx_carousel_slides_carousel ON carousel_slides(carousel_id);
+`);
+
+// Carousel Lab: add new columns if they don't exist yet (idempotent migrations)
+const addColumnIfMissing = (table: string, column: string, type: string) => {
+  try {
+    sqlite.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`).run();
+  } catch {
+    // Column already exists — ignore
+  }
+};
+
+addColumnIfMissing("generated_carousels", "hook_archetype", "TEXT");
+addColumnIfMissing("generated_carousels", "audience", "TEXT");
+addColumnIfMissing("generated_carousels", "canva_design_id", "TEXT");
+addColumnIfMissing("generated_carousels", "canva_design_url", "TEXT");
+addColumnIfMissing("carousel_slides", "heading", "TEXT");
+addColumnIfMissing("carousel_slides", "body_text", "TEXT");
+addColumnIfMissing("carousel_slides", "visual_suggestion", "TEXT");

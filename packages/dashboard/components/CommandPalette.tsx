@@ -19,6 +19,7 @@ import {
   FileText,
   Hash,
   User,
+  Layers,
 } from "lucide-react";
 import type { DashboardView } from "../shared/types.js";
 
@@ -168,6 +169,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: "gen-opps", label: "Generate Opportunities", icon: <Zap size={16} />, action: () => nav("OPPORTUNITIES"), group: "actions", keywords: "ai analyze score" },
     { id: "run-research", label: "Run Research", icon: <Search size={16} />, action: () => nav("METRICS"), group: "actions", keywords: "last30days reddit x" },
     { id: "start-session", label: "Start Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "actions", keywords: "record batch produce" },
+    { id: "gen-carousel", label: "Generate Carousel", icon: <Layers size={16} />, action: () => nav("CAROUSEL_LAB"), group: "actions", keywords: "carousel thumbnail instagram linkedin tiktok slides" },
     { id: "export-backup", label: "Export Backup", icon: <FileText size={16} />, action: () => {
       window.open("/api/analytics/backup", "_blank");
       onOpenChange(false);

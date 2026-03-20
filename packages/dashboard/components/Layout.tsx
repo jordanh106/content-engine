@@ -18,6 +18,7 @@ import {
   Bell,
   Brain,
   Users,
+  LayoutGrid,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
@@ -53,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
       { view: "LIBRARY", label: "Library", icon: <Library size={18} /> },
       { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={18} /> },
       { view: "SESSION", label: "Session", icon: <Timer size={18} /> },
+      { view: "CAROUSEL_LAB", label: "Carousel Lab", icon: <LayoutGrid size={18} /> },
     ],
   },
   {
