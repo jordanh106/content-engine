@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutGrid, Plus, ChevronRight, RotateCcw, Copy, Check, ExternalLink,
-  BarChart2, Layers, X, Loader2, Image, ChevronDown, ChevronUp,
+  BarChart2, Layers, X, Loader2, Image, ChevronDown,
 } from "lucide-react";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
@@ -14,39 +14,62 @@ import type { GeneratedCarousel, CarouselSlide, DashboardView } from "../shared/
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ARCHETYPES = [
-  { id: "teacher", label: "Teacher", desc: "Educates the viewer on an important topic" },
-  { id: "fortuneteller", label: "Fortuneteller", desc: "Predicts a future outcome or consequence" },
-  { id: "contrarian", label: "Contrarian", desc: "Challenges a common belief or practice" },
-  { id: "experimenter", label: "Experimenter", desc: "Tests or demonstrates something surprising" },
-  { id: "magician", label: "Magician", desc: "Reveals a transformation or hidden fix" },
-  { id: "investigator", label: "Investigator", desc: "Uncovers a hidden truth or root cause" },
+  { id: "teacher",      label: "Teacher"      },
+  { id: "fortuneteller",label: "Fortuneteller"},
+  { id: "contrarian",   label: "Contrarian"   },
+  { id: "experimenter", label: "Experimenter" },
+  { id: "magician",     label: "Magician"     },
+  { id: "investigator", label: "Investigator" },
 ] as const;
 
 type ArchetypeId = (typeof ARCHETYPES)[number]["id"];
 
-const PLATFORM_OPTIONS = [
-  { platform: "instagram", aspectRatio: "4:5", label: "Instagram (Portrait)", slides: 7, abbr: "IG" },
-  { platform: "instagram", aspectRatio: "1:1", label: "Instagram (Square)", slides: 7, abbr: "IG" },
-  { platform: "linkedin", aspectRatio: "1:1", label: "LinkedIn", slides: 6, abbr: "LI" },
-  { platform: "tiktok", aspectRatio: "9:16", label: "TikTok", slides: 7, abbr: "TT" },
-] as const;
-
-type PlatformOption = (typeof PLATFORM_OPTIONS)[number];
-
-const SLIDE_TYPE_STYLES: Record<string, { label: string; color: string }> = {
-  cover:   { label: "Cover",   color: "bg-violet-100 text-violet-700 border-violet-200" },
-  content: { label: "Content", color: "bg-slate-100 text-slate-600 border-slate-200" },
-  rehook:  { label: "Rehook",  color: "bg-sky-100 text-sky-700 border-sky-200" },
-  cta:     { label: "CTA",     color: "bg-teal-100 text-teal-700 border-teal-200" },
+const ARCHETYPE_META: Record<ArchetypeId, { icon: string; descriptor: string; exampleHook: string }> = {
+  teacher:      { icon: "📚", descriptor: "Pain point → clear method",   exampleHook: "5 things your doctor wants you to know about [topic]" },
+  fortuneteller:{ icon: "🔮", descriptor: "Present → predict future",    exampleHook: "[Topic] is about to change. Here's why." },
+  contrarian:   { icon: "⚡", descriptor: "Challenge the common belief", exampleHook: "Stop believing this about [topic]" },
+  experimenter: { icon: "🧪", descriptor: "Test + reveal the result",    exampleHook: "I tried [X] for [Y time]. Here's what happened." },
+  magician:     { icon: "✨", descriptor: "Unexpected reveal → explain", exampleHook: "[Surprising thing]. That's not what you think." },
+  investigator: { icon: "🔍", descriptor: "Hidden element → reveal",     exampleHook: "[Topic] is hiding something nobody talks about." },
 };
 
-const STATUS_STYLES: Record<string, { label: string; color: string; next: GeneratedCarousel["status"] }> = {
-  generating: { label: "Generating", color: "bg-amber-100 text-amber-700",   next: "completed" },
-  completed:  { label: "Completed",  color: "bg-emerald-100 text-emerald-700", next: "failed" },
-  failed:     { label: "Failed",     color: "bg-rose-100 text-rose-700",      next: "generating" },
+const HOOK_PATTERNS = [
+  { id: "listicle", stars: 5, name: "Listicle Promise",  template: "5 things your [professional] wants you to know about [topic]" },
+  { id: "myth",     stars: 4, name: "Myth Opener",       template: "Stop believing this about [topic]" },
+  { id: "stat",     stars: 4, name: "Stat Anchor",       template: "[Startling number]% of [group] get this wrong about [topic]" },
+  { id: "regret",   stars: 3, name: "Regret Frame",      template: "I wish I knew this about [topic] sooner" },
+  { id: "quick",    stars: 3, name: "Quick Win",         template: "Fix your [problem] in [short time]" },
+  { id: "counter",  stars: 3, name: "Contrarian Hook",   template: "[Common advice] is making your [condition] worse" },
+];
+
+const CTA_TEMPLATES = [
+  { id: "save",    text: "Save this for your next visit",       stars: 5, platform: "Instagram" },
+  { id: "share",   text: "Share this with someone who needs it",stars: 4, platform: "LinkedIn"  },
+  { id: "follow",  text: "Follow for more tips like this",      stars: 3, platform: "All"       },
+  { id: "book",    text: "Book your first visit — link in bio", stars: 3, platform: "Action"    },
+  { id: "comment", text: "Which one surprised you most?",       stars: 2, platform: "TikTok"    },
+];
+
+const CTA_DEFAULTS: Record<string, string> = {
+  instagram: "Save this for your next visit",
+  linkedin:  "Share this with someone who needs it",
+  tiktok:    "Which one surprised you most?",
 };
 
-const AUDIENCES = [
+const WORD_TARGETS: Record<string, { hook: [number, number]; topic: [number, number] }> = {
+  instagram_portrait: { hook: [10, 15], topic: [6, 10] },
+  instagram_square:   { hook: [8,  12], topic: [6, 10] },
+  linkedin:           { hook: [10, 15], topic: [8, 14] },
+  tiktok:             { hook: [6,  10], topic: [4, 8]  },
+};
+
+const DEFAULT_POINTS = [
+  "Your strongest argument or most surprising fact",
+  "The counterintuitive point most people get wrong",
+  "The practical takeaway your audience can act on today",
+];
+
+const FALLBACK_AUDIENCES = [
   "New Moms / Young Families",
   "Weekend Warriors / Active Adults",
   "Aging Adults / 55+",
@@ -55,6 +78,71 @@ const AUDIENCES = [
   "Prenatal / Postnatal",
   "General / All Ages",
 ];
+
+type SparkStarter = {
+  icon: string;
+  topic: string;
+  archetype: ArchetypeId;
+  audience: string;
+  platformKey: string;
+  aspectRatio: string;
+};
+
+const SPARK_STARTERS: SparkStarter[] = [
+  { icon: "⚡", topic: "Text neck: the silent epidemic most people ignore",          archetype: "contrarian",    audience: "Remote Workers / Desk Workers",   platformKey: "instagram", aspectRatio: "4:5" },
+  { icon: "📋", topic: "5 signs your spine needs attention today",                   archetype: "teacher",       audience: "General / All Ages",             platformKey: "instagram", aspectRatio: "4:5" },
+  { icon: "🔮", topic: "What actually happens during a chiropractic adjustment",     archetype: "fortuneteller", audience: "General / All Ages",             platformKey: "linkedin",  aspectRatio: "1:1" },
+  { icon: "🔍", topic: "Why your back pain keeps coming back",                       archetype: "investigator",  audience: "Weekend Warriors / Active Adults",platformKey: "instagram", aspectRatio: "4:5" },
+  { icon: "✨", topic: "Pregnancy posture: what we never tell new moms",             archetype: "magician",      audience: "New Moms / Young Families",      platformKey: "instagram", aspectRatio: "1:1" },
+  { icon: "🧪", topic: "I adjusted 3 patients this week with the same hidden issue", archetype: "experimenter",  audience: "Aging Adults / 55+",             platformKey: "linkedin",  aspectRatio: "1:1" },
+];
+
+const PLATFORM_OPTIONS = [
+  { platform: "instagram", aspectRatio: "4:5", label: "Instagram (Portrait)", slides: 7, abbr: "IG" },
+  { platform: "instagram", aspectRatio: "1:1", label: "Instagram (Square)",   slides: 7, abbr: "IG" },
+  { platform: "linkedin",  aspectRatio: "1:1", label: "LinkedIn",             slides: 6, abbr: "LI" },
+  { platform: "tiktok",    aspectRatio: "9:16",label: "TikTok",               slides: 7, abbr: "TT" },
+] as const;
+
+type PlatformOption = (typeof PLATFORM_OPTIONS)[number];
+
+const SLIDE_TYPE_STYLES: Record<string, { label: string; color: string }> = {
+  cover:   { label: "Cover",   color: "bg-violet-100 text-violet-700 border-violet-200" },
+  content: { label: "Content", color: "bg-slate-100 text-slate-600 border-slate-200"   },
+  rehook:  { label: "Rehook",  color: "bg-sky-100 text-sky-700 border-sky-200"         },
+  cta:     { label: "CTA",     color: "bg-teal-100 text-teal-700 border-teal-200"      },
+};
+
+const STATUS_STYLES: Record<string, { label: string; color: string; next: GeneratedCarousel["status"] }> = {
+  generating: { label: "Generating", color: "bg-amber-100 text-amber-700",    next: "completed" },
+  completed:  { label: "Completed",  color: "bg-emerald-100 text-emerald-700",next: "failed"    },
+  failed:     { label: "Failed",     color: "bg-rose-100 text-rose-700",      next: "generating"},
+};
+
+// ─── Word count badge ─────────────────────────────────────────────────────────
+
+function wordCount(text: string) {
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
+function WordCountBadge({ text, targets }: { text: string; targets: [number, number] }) {
+  const count = wordCount(text);
+  const [min, max] = targets;
+  if (!text.trim()) return <span className="text-[9px] text-slate-300">{min}–{max} words optimal</span>;
+  if (count >= min && count <= max) return <span className="text-[9px] text-emerald-500 font-bold">{count} words ✓</span>;
+  if (count < min) return <span className="text-[9px] text-slate-400">{count} / {min}+ words</span>;
+  return <span className="text-[9px] text-amber-500 font-bold">{count} words (aim for {max})</span>;
+}
+
+// ─── Star Rating ─────────────────────────────────────────────────────────────
+
+function Stars({ count, max = 5 }: { count: number; max?: number }) {
+  return (
+    <span className="text-[9px] text-amber-400 tracking-tight">
+      {"★".repeat(count)}{"☆".repeat(max - count)}
+    </span>
+  );
+}
 
 // ─── Slide Editor Card ─────────────────────────────────────────────────────────
 
@@ -250,13 +338,11 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
     ? scored.reduce((a, b) => (a.compositeScore! > b.compositeScore! ? a : b))
     : null;
 
-  // Platform counts
   const byCounts = carousels.reduce<Record<string, number>>((acc, c) => {
     acc[c.platform] = (acc[c.platform] ?? 0) + 1;
     return acc;
   }, {});
 
-  // Template/strategy versions from most recent
   const latestVersioned = carousels.find((c) => c.templateVersion);
 
   return (
@@ -273,14 +359,12 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
             </button>
           </div>
 
-          {/* Library stats */}
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Library</p>
             <p className="text-2xl font-black text-slate-800">{carousels.length}</p>
             <p className="text-[10px] text-slate-400">carousels total</p>
           </div>
 
-          {/* Platform breakdown */}
           {Object.keys(byCounts).length > 0 && (
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">By Platform</p>
@@ -299,7 +383,6 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
             </div>
           )}
 
-          {/* Top performer */}
           {topPerformer && (
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Score</p>
@@ -312,7 +395,6 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
             </div>
           )}
 
-          {/* Version tracker */}
           {latestVersioned && (
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Versions</p>
@@ -355,7 +437,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   const [topic, setTopic] = useState("");
   const [hookLine, setHookLine] = useState("");
   const [talkingPoints, setTalkingPoints] = useState<string[]>(["", "", ""]);
-  const [ctaText, setCtaText] = useState("");
+  const [ctaText, setCtaText] = useState(CTA_DEFAULTS.instagram);
+  const [ctaMode, setCtaMode] = useState<"preset" | "custom">("preset");
 
   // ── From video form
   const [videoSearch, setVideoSearch] = useState("");
@@ -370,6 +453,9 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   const [manualCanvaUrl, setManualCanvaUrl] = useState("");
   const [canvaSaved, setCanvaSaved] = useState(false);
 
+  // ── Hook pattern panel
+  const [showHookPatterns, setShowHookPatterns] = useState(false);
+
   // ── Fetch all carousels
   const { data: carousels = [] } = useQuery<GeneratedCarousel[]>({
     queryKey: ["carousels-lab"],
@@ -378,8 +464,15 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
       if (!res.ok) throw new Error("Failed to fetch carousels");
       return res.json();
     },
-    refetchInterval: 5000, // poll while generating
+    refetchInterval: 5000,
   });
+
+  // ── Fetch industry config for dynamic audience list
+  const { data: industryConfig } = useQuery<{ audiences?: Array<{ label: string }> }>({
+    queryKey: ["industry-config"],
+    queryFn: () => fetch("/api/videos/config/industry").then((r) => r.json()),
+  });
+  const audiences = industryConfig?.audiences?.map((a) => a.label) ?? FALLBACK_AUDIENCES;
 
   // ── Fetch video library for From Video picker
   const { data: videos = [] } = useQuery<{ code: string; title: string; format: string; audience: string }[]>({
@@ -398,6 +491,39 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   });
 
   const activeCarousel = carousels.find((c) => c.id === activeCarouselId) ?? null;
+
+  // ── Platform-derived helpers
+  const platformKey = platform.platform === "instagram"
+    ? (platform.aspectRatio === "4:5" ? "instagram_portrait" : "instagram_square")
+    : platform.platform;
+  const wordTargets = WORD_TARGETS[platformKey] ?? WORD_TARGETS.instagram_portrait;
+
+  // ── Progressive disclosure phases
+  const showPhase2 = !!archetype;
+  const showPhase3 = topic.trim().split(/\s+/).filter(Boolean).length >= 3;
+
+  // ── Handle platform change (auto-update CTA default)
+  const handlePlatformChange = (opt: PlatformOption) => {
+    setPlatform(opt);
+    if (ctaMode === "preset") {
+      setCtaText(CTA_DEFAULTS[opt.platform] ?? CTA_TEMPLATES[0].text);
+    }
+  };
+
+  // ── Apply a spark starter
+  const applySparkStarter = (spark: SparkStarter) => {
+    const platOpt = PLATFORM_OPTIONS.find(
+      (p) => p.platform === spark.platformKey && p.aspectRatio === spark.aspectRatio
+    ) ?? PLATFORM_OPTIONS[0];
+    setPlatform(platOpt);
+    setArchetype(spark.archetype);
+    setAudience(spark.audience);
+    setTopic(spark.topic);
+    setCtaText(CTA_DEFAULTS[spark.platformKey] ?? CTA_TEMPLATES[0].text);
+    setCtaMode("preset");
+    setMode("fresh");
+    setActiveCarouselId(null);
+  };
 
   // ── Generate mutation (Fresh Start)
   const generateMutation = useMutation({
@@ -499,7 +625,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ── Left: Library ───────────────────────────────────────────────── */}
+      {/* ── Left: Library + Spark Starters ──────────────────────────────── */}
       <div className="w-[220px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-hidden">
         <div className="p-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -508,18 +634,59 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
           {carousels.length === 0 ? (
-            <p className="text-[11px] text-slate-400 text-center pt-4">No carousels yet</p>
+            /* Empty state: Spark Starters fill the panel */
+            <div className="space-y-2">
+              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 pt-1">Spark Starters</p>
+              <p className="text-[9px] text-slate-400 leading-relaxed">Tap any to pre-fill the form and jump straight to generating.</p>
+              {SPARK_STARTERS.map((spark) => {
+                const meta = ARCHETYPE_META[spark.archetype];
+                return (
+                  <button
+                    key={spark.topic}
+                    onClick={() => applySparkStarter(spark)}
+                    className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                  >
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-[11px]">{spark.icon}</span>
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 group-hover:text-violet-600">
+                        {spark.archetype}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-semibold text-slate-700 line-clamp-2 leading-snug">{spark.topic}</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5 truncate">{meta.descriptor}</p>
+                  </button>
+                );
+              })}
+            </div>
           ) : (
-            carousels.map((c) => (
-              <CarouselCard
-                key={c.id}
-                carousel={c}
-                isActive={activeCarouselId === c.id}
-                onSelect={() => { setActiveCarouselId(c.id); setActiveSlideIndex(0); }}
-              />
-            ))
+            /* Library exists: show carousels + spark starters collapsed */
+            <>
+              {carousels.map((c) => (
+                <CarouselCard
+                  key={c.id}
+                  carousel={c}
+                  isActive={activeCarouselId === c.id}
+                  onSelect={() => { setActiveCarouselId(c.id); setActiveSlideIndex(0); }}
+                />
+              ))}
+              <div className="pt-1 border-t border-slate-200">
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1.5">Spark Starters</p>
+                <div className="space-y-1">
+                  {SPARK_STARTERS.map((spark) => (
+                    <button
+                      key={spark.topic}
+                      onClick={() => applySparkStarter(spark)}
+                      className="w-full text-left px-2.5 py-2 rounded-lg border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
+                    >
+                      <span className="text-[11px] shrink-0">{spark.icon}</span>
+                      <p className="text-[9px] font-semibold text-slate-600 line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
         </div>
 
@@ -565,9 +732,9 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
         </div>
 
         <div className="p-5 space-y-6">
-          {/* ── Creator (shown when no active carousel or creating new) */}
+          {/* ── Creator (shown when no active carousel) */}
           {!activeCarousel && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-5">
               {/* Mode toggle */}
               <div className="flex items-center gap-2">
                 {(["fresh", "from-video"] as const).map((m) => (
@@ -586,203 +753,374 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 ))}
               </div>
 
-              {/* Platform + Audience */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Platform</label>
-                  <select
-                    value={PLATFORM_OPTIONS.indexOf(platform)}
-                    onChange={(e) => setPlatform(PLATFORM_OPTIONS[parseInt(e.target.value)])}
-                    className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
-                  >
-                    {PLATFORM_OPTIONS.map((opt, i) => (
-                      <option key={i} value={i}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Audience</label>
-                  <select
-                    value={audience}
-                    onChange={(e) => setAudience(e.target.value)}
-                    className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
-                  >
-                    <option value="">Any audience</option>
-                    {AUDIENCES.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {mode === "fresh" && (
                 <>
-                  {/* Hook Archetype */}
-                  <FeatureHint id="carousel-archetype" content="Pick the Kallaway archetype for your cover slide. Fortuneteller and Contrarian perform best on Instagram. Teacher and Investigator work well on LinkedIn." side="bottom">
+                  {/* Phase 1: Platform + Archetype (always visible) */}
+
+                  {/* Platform */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">Platform</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PLATFORM_OPTIONS.map((opt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handlePlatformChange(opt)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                            platform === opt
+                              ? "bg-violet-600 text-white border-violet-600"
+                              : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Archetype — visual card grid */}
+                  <FeatureHint
+                    id="carousel-archetype"
+                    content={FEATURE_HINTS["carousel-archetype"]?.content ?? "Pick your hook archetype — the creative persona that shapes your cover slide."}
+                    side="bottom"
+                  >
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-2">Hook Archetype (Cover Slide)</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {ARCHETYPES.map((a) => (
+                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-2">
+                        Your Voice <span className="text-slate-300 normal-case tracking-normal font-normal">(pick your hook archetype)</span>
+                      </label>
+
+                      {archetype ? (
+                        /* Collapsed — show selected archetype */
+                        <div className="flex items-start gap-3 p-3 rounded-xl border border-violet-200 bg-violet-50">
+                          <span className="text-xl">{ARCHETYPE_META[archetype].icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-black text-violet-800 capitalize">{archetype}</p>
+                            <p className="text-[10px] text-violet-600">{ARCHETYPE_META[archetype].descriptor}</p>
+                            <p className="text-[9px] italic text-slate-500 mt-0.5 line-clamp-1">
+                              e.g. "{ARCHETYPE_META[archetype].exampleHook}"
+                            </p>
+                          </div>
                           <button
-                            key={a.id}
-                            onClick={() => setArchetype(archetype === a.id ? "" : a.id)}
-                            title={a.desc}
-                            className={cn(
-                              "px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors",
-                              archetype === a.id
-                                ? "bg-violet-600 text-white border-violet-600"
-                                : "bg-white text-slate-500 border-slate-200 hover:border-violet-400 hover:text-violet-600"
-                            )}
+                            onClick={() => setArchetype("")}
+                            className="text-[9px] font-bold text-violet-500 hover:text-violet-700 shrink-0 mt-0.5"
                           >
-                            {a.label}
+                            Change
                           </button>
-                        ))}
-                      </div>
-                      {archetype && (
-                        <p className="text-[10px] italic text-slate-400 mt-1">
-                          {ARCHETYPES.find((a) => a.id === archetype)?.desc}
-                        </p>
+                        </div>
+                      ) : (
+                        /* Expanded 2x3 card grid */
+                        <div className="grid grid-cols-2 gap-2">
+                          {ARCHETYPES.map((a) => {
+                            const meta = ARCHETYPE_META[a.id];
+                            return (
+                              <button
+                                key={a.id}
+                                onClick={() => setArchetype(a.id)}
+                                className="text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                              >
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <span className="text-base">{meta.icon}</span>
+                                  <span className="text-[10px] font-black text-slate-700 group-hover:text-violet-700">{a.label}</span>
+                                </div>
+                                <p className="text-[9px] text-slate-500 leading-relaxed mb-1">{meta.descriptor}</p>
+                                <p className="text-[9px] italic text-slate-400 line-clamp-2">"{meta.exampleHook}"</p>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   </FeatureHint>
 
-                  {/* Topic */}
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Topic</label>
-                    <textarea
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      placeholder="e.g. Text neck and forward head posture"
-                      rows={2}
-                      className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
-                    />
-                  </div>
+                  {/* Phase 2: Audience + Topic (visible after archetype picked) */}
+                  {showPhase2 && (
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      {/* Audience */}
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Audience</label>
+                        <select
+                          value={audience}
+                          onChange={(e) => setAudience(e.target.value)}
+                          className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
+                        >
+                          <option value="">Any audience</option>
+                          {audiences.map((a) => (
+                            <option key={a} value={a}>{a}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  {/* Hook line */}
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">
-                      Cover Hook <span className="text-slate-300 normal-case tracking-normal font-normal">(optional — AI generates if blank)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={hookLine}
-                      onChange={(e) => setHookLine(e.target.value)}
-                      placeholder="e.g. Your neck will pay for your phone habit."
-                      className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
-                    />
-                  </div>
+                      {/* Topic with word count */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Topic</label>
+                          <WordCountBadge text={topic} targets={wordTargets.topic} />
+                        </div>
+                        <textarea
+                          value={topic}
+                          onChange={(e) => setTopic(e.target.value)}
+                          placeholder="e.g. Text neck and forward head posture"
+                          rows={2}
+                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Talking points */}
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">
-                      Content Points <span className="text-slate-300 normal-case tracking-normal font-normal">(one per slide, 3-5 recommended)</span>
-                    </label>
-                    <div className="space-y-1.5">
-                      {talkingPoints.map((pt, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                          <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{i + 1}.</span>
-                          <input
-                            type="text"
-                            value={pt}
-                            onChange={(e) => {
-                              const next = [...talkingPoints];
-                              next[i] = e.target.value;
-                              setTalkingPoints(next);
-                            }}
-                            placeholder={`Point ${i + 1}`}
-                            className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
-                          />
-                          {talkingPoints.length > 1 && (
+                  {/* Phase 3: Hook, Content Points, CTA (visible after 3+ words in topic) */}
+                  {showPhase3 && (
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      {/* Cover Hook with quick-fill */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                            Cover Hook <span className="text-slate-300 normal-case tracking-normal font-normal">(optional)</span>
+                          </label>
+                          <WordCountBadge text={hookLine} targets={wordTargets.hook} />
+                        </div>
+                        <input
+                          type="text"
+                          value={hookLine}
+                          onChange={(e) => setHookLine(e.target.value)}
+                          placeholder="e.g. Your neck will pay for your phone habit."
+                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                        />
+
+                        {/* Hook pattern quick-fill */}
+                        <button
+                          onClick={() => setShowHookPatterns((v) => !v)}
+                          className="mt-1.5 flex items-center gap-1 text-[9px] font-bold text-violet-500 hover:text-violet-700"
+                        >
+                          <ChevronDown size={10} className={cn("transition-transform", showHookPatterns && "rotate-180")} />
+                          Use a proven pattern
+                        </button>
+
+                        {showHookPatterns && (
+                          <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden">
+                            {HOOK_PATTERNS.map((pat, i) => (
+                              <div
+                                key={pat.id}
+                                className={cn(
+                                  "flex items-start gap-3 px-3 py-2.5 hover:bg-violet-50 transition-colors",
+                                  i < HOOK_PATTERNS.length - 1 && "border-b border-slate-100"
+                                )}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <Stars count={pat.stars} />
+                                    <span className="text-[9px] font-bold text-slate-600">{pat.name}</span>
+                                  </div>
+                                  <p className="text-[9px] italic text-slate-500 line-clamp-1">"{pat.template}"</p>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setHookLine(pat.template);
+                                    setShowHookPatterns(false);
+                                  }}
+                                  className="shrink-0 text-[9px] font-bold text-violet-500 hover:text-violet-700 mt-0.5"
+                                >
+                                  Use
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Talking points */}
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">
+                          Content Points <span className="text-slate-300 normal-case tracking-normal font-normal">(one per slide, 3-5 recommended)</span>
+                        </label>
+                        <div className="space-y-1.5">
+                          {talkingPoints.map((pt, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                              <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{i + 1}.</span>
+                              <input
+                                type="text"
+                                value={pt}
+                                onChange={(e) => {
+                                  const next = [...talkingPoints];
+                                  next[i] = e.target.value;
+                                  setTalkingPoints(next);
+                                }}
+                                placeholder={DEFAULT_POINTS[i] ?? `Point ${i + 1}`}
+                                className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
+                              />
+                              {talkingPoints.length > 1 && (
+                                <button
+                                  onClick={() => setTalkingPoints(talkingPoints.filter((_, j) => j !== i))}
+                                  className="text-slate-300 hover:text-rose-400"
+                                >
+                                  <X size={10} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {talkingPoints.length < 6 && (
                             <button
-                              onClick={() => setTalkingPoints(talkingPoints.filter((_, j) => j !== i))}
-                              className="text-slate-300 hover:text-rose-400"
+                              onClick={() => setTalkingPoints([...talkingPoints, ""])}
+                              className="text-[10px] text-violet-500 hover:text-violet-700 font-bold"
                             >
-                              <X size={10} />
+                              + Add point
                             </button>
                           )}
                         </div>
-                      ))}
-                      {talkingPoints.length < 6 && (
-                        <button
-                          onClick={() => setTalkingPoints([...talkingPoints, ""])}
-                          className="text-[10px] text-violet-500 hover:text-violet-700 font-bold"
-                        >
-                          + Add point
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* CTA */}
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">CTA Text</label>
-                    <input
-                      type="text"
-                      value={ctaText}
-                      onChange={(e) => setCtaText(e.target.value)}
-                      placeholder="Save this and book a consult — link in bio"
-                      className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
-                    />
-                  </div>
+                      {/* CTA — ranked presets + custom */}
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-2">Call to Action</label>
+                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                          {CTA_TEMPLATES.map((cta, i) => {
+                            const isSelected = ctaMode === "preset" && ctaText === cta.text;
+                            return (
+                              <button
+                                key={cta.id}
+                                onClick={() => { setCtaMode("preset"); setCtaText(cta.text); }}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                                  i < CTA_TEMPLATES.length && "border-b border-slate-100",
+                                  isSelected ? "bg-violet-50" : "bg-white hover:bg-slate-50"
+                                )}
+                              >
+                                <div className={cn(
+                                  "w-3 h-3 rounded-full border-2 shrink-0 transition-colors",
+                                  isSelected ? "border-violet-600 bg-violet-600" : "border-slate-300"
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={cn("text-[10px] font-semibold", isSelected ? "text-violet-800" : "text-slate-700")}>
+                                    {cta.text}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Stars count={cta.stars} />
+                                  <span className="text-[8px] text-slate-400">{cta.platform}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+
+                          {/* Custom CTA option */}
+                          <button
+                            onClick={() => setCtaMode("custom")}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                              ctaMode === "custom" ? "bg-violet-50" : "bg-white hover:bg-slate-50"
+                            )}
+                          >
+                            <div className={cn(
+                              "w-3 h-3 rounded-full border-2 shrink-0",
+                              ctaMode === "custom" ? "border-violet-600 bg-violet-600" : "border-slate-300"
+                            )} />
+                            <span className="text-[10px] font-semibold text-slate-500">Custom…</span>
+                          </button>
+                        </div>
+
+                        {ctaMode === "custom" && (
+                          <input
+                            type="text"
+                            value={ctaMode === "custom" ? ctaText : ""}
+                            onChange={(e) => setCtaText(e.target.value)}
+                            placeholder="Write your own call to action"
+                            className="mt-2 w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Generate button */}
+                  <button
+                    onClick={() => generateMutation.mutate()}
+                    disabled={
+                      isGenerating ||
+                      !topic.trim() && !hookLine.trim()
+                    }
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isGenerating ? (
+                      <><Loader2 size={12} className="animate-spin" /> Generating…</>
+                    ) : (
+                      <><Layers size={12} /> Generate Carousel</>
+                    )}
+                  </button>
                 </>
               )}
 
               {mode === "from-video" && (
-                <div className="space-y-3">
+                <>
+                  {/* Platform for from-video */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Search Video Library</label>
-                    <input
-                      type="text"
-                      value={videoSearch}
-                      onChange={(e) => setVideoSearch(e.target.value)}
-                      placeholder="Search by code or title…"
-                      className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
-                    />
+                    <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1.5">Platform</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PLATFORM_OPTIONS.map((opt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handlePlatformChange(opt)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-[10px] font-bold border transition-colors",
+                            platform === opt
+                              ? "bg-violet-600 text-white border-violet-600"
+                              : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-1">
-                    {filteredVideos.map((v) => (
-                      <button
-                        key={v.code}
-                        onClick={() => setSelectedVideoCode(selectedVideoCode === v.code ? null : v.code)}
-                        className={cn(
-                          "w-full text-left px-3 py-2 rounded-xl border text-[11px] transition-colors",
-                          selectedVideoCode === v.code
-                            ? "border-violet-400 bg-violet-50 font-bold text-violet-800"
-                            : "border-slate-200 bg-white hover:border-violet-300 text-slate-700"
-                        )}
-                      >
-                        <span className="font-mono text-[9px] text-slate-400 mr-2">{String(v.code)}</span>
-                        {String(v.title).slice(0, 60)}
-                        <span className="ml-2 text-[9px] text-slate-400">{String(v.format)} · {String(v.audience)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Generate button */}
-              <button
-                onClick={() => mode === "fresh" ? generateMutation.mutate() : fromVideoMutation.mutate()}
-                disabled={
-                  isGenerating ||
-                  (mode === "fresh" && !topic.trim() && !hookLine.trim()) ||
-                  (mode === "from-video" && !selectedVideoCode)
-                }
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {isGenerating ? (
-                  <><Loader2 size={12} className="animate-spin" /> Generating…</>
-                ) : (
-                  <><Layers size={12} /> Generate Carousel</>
-                )}
-              </button>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 block mb-1">Search Video Library</label>
+                      <input
+                        type="text"
+                        value={videoSearch}
+                        onChange={(e) => setVideoSearch(e.target.value)}
+                        placeholder="Search by code or title…"
+                        className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {filteredVideos.map((v) => (
+                        <button
+                          key={v.code}
+                          onClick={() => setSelectedVideoCode(selectedVideoCode === v.code ? null : v.code)}
+                          className={cn(
+                            "w-full text-left px-3 py-2 rounded-xl border text-[11px] transition-colors",
+                            selectedVideoCode === v.code
+                              ? "border-violet-400 bg-violet-50 font-bold text-violet-800"
+                              : "border-slate-200 bg-white hover:border-violet-300 text-slate-700"
+                          )}
+                        >
+                          <span className="font-mono text-[9px] text-slate-400 mr-2">{String(v.code)}</span>
+                          {String(v.title).slice(0, 60)}
+                          <span className="ml-2 text-[9px] text-slate-400">{String(v.format)} · {String(v.audience)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => fromVideoMutation.mutate()}
+                    disabled={isGenerating || !selectedVideoCode}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isGenerating ? (
+                      <><Loader2 size={12} className="animate-spin" /> Generating…</>
+                    ) : (
+                      <><Layers size={12} /> Generate Carousel</>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
           {/* ── Slide Editor (shown when active carousel exists) */}
           {activeCarousel && (
             <div className="space-y-4">
-              {/* Carousel info */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={cn(
@@ -809,14 +1147,12 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 </button>
               </div>
 
-              {/* Hook line */}
               {activeCarousel.hookLine && (
                 <p className="text-sm font-bold italic text-slate-700 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
                   "{activeCarousel.hookLine}"
                 </p>
               )}
 
-              {/* Slide tab strip */}
               {slides.length > 0 && (
                 <div className="flex items-center gap-1 overflow-x-auto pb-1">
                   {slides.map((s, i) => {
@@ -842,7 +1178,6 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 </div>
               )}
 
-              {/* Active slide editor */}
               {slides.length > 0 ? (
                 <div className="bg-white border border-slate-200 rounded-2xl p-5">
                   <FeatureHint id="carousel-slide-editor" content="Edit each slide's heading, body copy, and visual direction. Changes save directly to the database — use Revert to undo." side="top">
@@ -872,7 +1207,6 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 )
               )}
 
-              {/* Actions bar */}
               <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
                 <button
                   onClick={handleCopyText}
@@ -900,7 +1234,6 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           )}
         </div>
 
-        {/* ViewHelp */}
         {VIEW_HELP.CAROUSEL_LAB && <ViewHelp {...VIEW_HELP.CAROUSEL_LAB} />}
       </div>
 
