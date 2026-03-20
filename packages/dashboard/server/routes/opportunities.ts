@@ -3,7 +3,8 @@ import { Router } from "express";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "../db.js";
-import { performanceMetrics } from "../../shared/schema.js";
+import { performanceMetrics, dismissedOpportunities } from "../../shared/schema.js";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
@@ -394,6 +395,33 @@ RULES:
     } else {
       res.status(500).json({ error: "Failed to write to idea-bank.md" });
     }
+  });
+
+  // GET /api/opportunities/dismissed - List all dismissed opportunity fingerprints
+  router.get("/dismissed", (_req, res) => {
+    const rows = db.select().from(dismissedOpportunities).all();
+    res.json({ dismissed: rows.map((r) => r.topicFingerprint) });
+  });
+
+  // POST /api/opportunities/dismiss - Dismiss an opportunity with a reason
+  router.post("/dismiss", (req, res) => {
+    const { topic, reason = "not_relevant" } = req.body as { topic?: string; reason?: string };
+    if (!topic) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+    const fingerprint = topic.toLowerCase().trim().replace(/\s+/g, "_").slice(0, 100);
+    db.insert(dismissedOpportunities)
+      .values({ topicFingerprint: fingerprint, reason })
+      .onConflictDoUpdate({ target: dismissedOpportunities.topicFingerprint, set: { reason } })
+      .run();
+    res.json({ success: true, fingerprint });
+  });
+
+  // DELETE /api/opportunities/dismiss/:fingerprint - Un-dismiss an opportunity
+  router.delete("/dismiss/:fingerprint", (req, res) => {
+    db.delete(dismissedOpportunities).where(eq(dismissedOpportunities.topicFingerprint, req.params.fingerprint)).run();
+    res.json({ success: true });
   });
 
   // POST /api/opportunities/interpret-trends - AI synthesizes research into actionable insights

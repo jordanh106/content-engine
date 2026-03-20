@@ -25,10 +25,11 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
-import type { ConversationMessage } from "../shared/types.js";
+import type { ConversationMessage, CreatorPersona } from "../shared/types.js";
 import type { SavedCaption, FormatId, ProductionStatus, DashboardView } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { useCreator } from "./context/CreatorContext.js";
 import { EmptyState } from "./ui/EmptyState.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP } from "../shared/help-content.js";
@@ -237,8 +238,24 @@ type CaptionStudioProps = {
   onNavigate?: (view: DashboardView) => void;
 };
 
+const CAPTION_AVATAR_COLOR_MAP: Record<string, string> = {
+  teal: "bg-teal-600",
+  violet: "bg-violet-600",
+  amber: "bg-amber-500",
+  rose: "bg-rose-500",
+  sky: "bg-sky-500",
+};
+
 export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
   const queryClient = useQueryClient();
+  const { selectedCreatorId } = useCreator();
+
+  const { data: personaData } = useQuery<{ personas: CreatorPersona[] }>({
+    queryKey: ["personas"],
+    queryFn: () => fetch("/api/personas").then((r) => r.json()),
+    staleTime: 60_000,
+  });
+  const activePersona = personaData?.personas?.find((p) => p.id === selectedCreatorId) ?? null;
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -306,7 +323,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       const r = await fetch("/api/captions/generate-freeform", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
+        body: JSON.stringify({ ...params, creatorId: selectedCreatorId ?? undefined }),
       });
       if (!r.ok) { const err = await r.json(); throw new Error(err.error || "Failed"); }
       return r.json();
@@ -330,7 +347,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       const r = await fetch("/api/captions/generate-hooks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
+        body: JSON.stringify({ ...params, creatorId: selectedCreatorId ?? undefined }),
       });
       if (!r.ok) { const err = await r.json(); throw new Error(err.error || "Failed"); }
       return r.json();
@@ -415,7 +432,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       const r = await fetch("/api/captions/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoCode, platforms: plats }),
+        body: JSON.stringify({ videoCode, platforms: plats, creatorId: selectedCreatorId ?? undefined }),
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({ error: `Server error: ${r.status}` }));
@@ -477,6 +494,26 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const handleCopyAsPrompt = (videoCode: string, platform: string, description?: string) => {
+    const lines = [
+      `Write a short-form video caption for the following:`,
+      ``,
+      videoCode ? `Video: ${videoCode}` : null,
+      platform ? `Platform: ${platform}` : null,
+      description ? `Description: ${description}` : null,
+      ``,
+      `Requirements:`,
+      `- Hook in the first line (must stop the scroll)`,
+      `- Platform-native tone and length`,
+      `- Include a clear CTA`,
+      `- Structure: Hook → Context → Rehook → CTA`,
+    ].filter(Boolean).join("\n");
+    navigator.clipboard.writeText(lines).catch(() => {});
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
   const handleStartEdit = (caption: SavedCaption) => {
     setEditingId(caption.id);
     const lines = caption.caption.split("\n");
@@ -511,11 +548,13 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
             platforms: freeformContext?.platforms,
             tags: freeformContext?.tags,
             conversationHistory: newHistory,
+            creatorId: selectedCreatorId ?? undefined,
           }
         : {
             videoCode: selectedVideo,
             prompt,
             conversationHistory: newHistory,
+            creatorId: selectedCreatorId ?? undefined,
           };
       const r = await fetch(url, {
         method: "POST",
@@ -612,7 +651,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       const r = await fetch("/api/captions/generate-batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoCodes: codes }),
+        body: JSON.stringify({ videoCodes: codes, creatorId: selectedCreatorId ?? undefined }),
       });
       const data = await r.json();
       if (r.ok) {
@@ -667,6 +706,15 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
             Generate and manage social media captions for your videos
           </p>
         </div>
+        {activePersona && (
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Generating as</span>
+            <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0", CAPTION_AVATAR_COLOR_MAP[activePersona.avatarColor ?? "teal"] ?? "bg-teal-600")}>
+              {activePersona.initials ?? activePersona.name.slice(0, 2).toUpperCase()}
+            </span>
+            <span className="text-[10px] font-bold text-slate-700">{activePersona.name}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -928,6 +976,16 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 </button>
                 {freeformMutation.isError && (
                   <p className="text-xs text-red-500 mt-2">{(freeformMutation.error as Error)?.message}</p>
+                )}
+                {freeformDesc.trim() && (
+                  <button
+                    onClick={() => handleCopyAsPrompt("", [...freeformPlatforms].join(", "), freeformDesc)}
+                    className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-500 text-[10px] font-bold hover:border-slate-400 hover:text-slate-700 transition-colors"
+                    title="Copy a structured prompt to use in Claude or ChatGPT"
+                  >
+                    {copiedPrompt ? <Check size={12} /> : <Copy size={12} />}
+                    {copiedPrompt ? "Copied!" : "Copy as Prompt"}
+                  </button>
                 )}
               </div>
 

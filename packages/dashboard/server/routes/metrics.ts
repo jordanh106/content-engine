@@ -142,6 +142,26 @@ export function createMetricsRouter(contentLibraryPath: string) {
 
   // GET /api/metrics/top-performers - Aggregate top performers by total engagement
   router.get("/top-performers", (_req, res) => {
+    // Fetch all videos with views to compute median
+    const allViewRows = db
+      .select({
+        videoCode: performanceMetrics.videoCode,
+        totalViews: sql<number>`SUM(${performanceMetrics.views})`,
+      })
+      .from(performanceMetrics)
+      .groupBy(performanceMetrics.videoCode)
+      .all();
+
+    // Compute median total views across all tracked videos
+    const allViews = allViewRows.map((r) => r.totalViews ?? 0).sort((a, b) => a - b);
+    let medianViews = 0;
+    if (allViews.length > 0) {
+      const mid = Math.floor(allViews.length / 2);
+      medianViews = allViews.length % 2 === 0
+        ? (allViews[mid - 1] + allViews[mid]) / 2
+        : allViews[mid];
+    }
+
     const rows = db
       .select({
         videoCode: performanceMetrics.videoCode,
@@ -175,6 +195,10 @@ export function createMetricsRouter(contentLibraryPath: string) {
         row.totalViews && row.totalViews > 0
           ? (row.totalSaves ?? 0) / row.totalViews
           : 0;
+      const outlierScore =
+        medianViews > 0 && row.totalViews
+          ? Math.round((row.totalViews / medianViews) * 10) / 10
+          : null;
 
       return {
         ...row,
@@ -184,6 +208,8 @@ export function createMetricsRouter(contentLibraryPath: string) {
         totalEngagement,
         engagementRate: Math.round(engagementRate * 10000) / 100,
         saveRate: Math.round(saveRate * 10000) / 100,
+        outlierScore,
+        medianViews: Math.round(medianViews),
       };
     });
 

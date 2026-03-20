@@ -170,11 +170,26 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
           trend = growth > 0 ? "growing" : growth < 0 ? "declining" : "stable";
         }
       }
+
+      const previousSnapshot = handleSnapshots.length >= 2 ? handleSnapshots[1] : null;
+
+      const lastDate = new Date(latest.recordedAt + "T00:00:00");
+      const daysSinceLastLog = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      const snapshotPoints = handleSnapshots
+        .slice()
+        .reverse()
+        .slice(-10)
+        .map((s) => ({ date: s.recordedAt, followers: s.followers }));
+
       return {
         handle: latest.handle,
         platform: latest.platform,
         latestSnapshot: latest,
+        previousSnapshot,
         trend,
+        daysSinceLastLog,
+        snapshotPoints,
       };
     });
 
@@ -192,6 +207,16 @@ export function createBenchmarkingRouter(contentLibraryPath: string) {
       },
       competitors,
     });
+  });
+
+  // DELETE /api/benchmarking/snapshots/:handle - remove all snapshots for a handle
+  router.delete("/snapshots/:handle", (req, res) => {
+    const handle = decodeURIComponent(req.params.handle);
+    const result = db
+      .delete(channelSnapshots)
+      .where(eq(channelSnapshots.handle, handle))
+      .run();
+    res.json({ deleted: result.changes, handle });
   });
 
   // POST /api/benchmarking/analyze - AI-powered competitive analysis

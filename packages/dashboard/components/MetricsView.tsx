@@ -66,7 +66,8 @@ import type {
 } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
-import { VIEW_HELP } from "../shared/help-content.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -87,6 +88,8 @@ type TopPerformer = {
   totalEngagement: number;
   engagementRate: number;
   saveRate: number;
+  outlierScore: number | null;
+  medianViews: number;
 };
 
 type FormatMetric = {
@@ -1457,10 +1460,24 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                         <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Saves</th>
                         <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Eng. Rate</th>
                         <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Save Rate</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                          <FeatureHint id="outlier-score" content={FEATURE_HINTS["outlier-score"].content} side="top">
+                            <span>Outlier</span>
+                          </FeatureHint>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {performers.slice(0, 10).map((p) => (
+                      {performers.slice(0, 10).map((p) => {
+                        const outlier = p.outlierScore ?? null;
+                        const outlierCls = outlier && outlier >= 10
+                          ? "bg-violet-100 text-violet-700"
+                          : outlier && outlier >= 5
+                          ? "bg-teal-100 text-teal-700"
+                          : outlier && outlier >= 2
+                          ? "bg-emerald-100 text-emerald-700"
+                          : null;
+                        return (
                         <tr key={p.videoCode} className="border-b border-slate-50 hover:bg-slate-50">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
@@ -1475,8 +1492,18 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0).toLocaleString()}</td>
                           <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{p.engagementRate > 0 ? `${p.engagementRate}%` : "—"}</td>
                           <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0) > 0 ? `${p.saveRate}%` : "—"}</td>
+                          <td className="text-right px-3 py-3">
+                            {outlierCls ? (
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${outlierCls}`}>
+                                {outlier}x
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 text-[10px]">—</span>
+                            )}
+                          </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

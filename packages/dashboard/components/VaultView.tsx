@@ -67,6 +67,27 @@ const CATEGORY_COLORS: Record<string, string> = {
   custom: "bg-slate-100 text-slate-700",
 };
 
+// Kallaway's 6 hook archetypes mapped from our category system
+const CATEGORY_ARCHETYPE: Record<string, string> = {
+  question: "Teacher",
+  statistic: "Fortuneteller",
+  myth: "Contrarian",
+  emotional: "Experimenter",
+  didyouknow: "Fortuneteller",
+  pattern_interrupt: "Magician",
+  mystery: "Investigator",
+  list: "Teacher",
+  problem: "Experimenter",
+  shock: "Magician",
+  callout: "Contrarian",
+  transformation: "Experimenter",
+  exclusivity: "Investigator",
+  controversial: "Contrarian",
+  fomo: "Fortuneteller",
+  urgency: "Magician",
+  cta: "Teacher",
+};
+
 function highlightVariables(pattern: string): React.ReactNode {
   const parts = pattern.split(/(\[[A-Z][A-Z0-9_ ]*\])/g);
   return parts.map((part, i) =>
@@ -847,6 +868,11 @@ export const VaultView: React.FC = () => {
                           >
                             {hook.category}
                           </span>
+                          {CATEGORY_ARCHETYPE[hook.category] && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white">
+                              {CATEGORY_ARCHETYPE[hook.category]}
+                            </span>
+                          )}
                           {hook.bestFormat && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
                               Format {hook.bestFormat}

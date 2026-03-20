@@ -1786,6 +1786,15 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 >
 > DURATION: 38 seconds
 
+
+#### E1: What Actually Happens at a Baby's First Chiropractic Visit
+
+**Format:** E (Walkthrough) | **Duration:** 50s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] 'People see baby chiropractor videos online and think we're cracking their spines. Let me show you what really happens.' — Real walkthrough of a gentle infant adjustment with narration and visible nervous system explanation. Directly addresses the viral controversy with trust and transparency.
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

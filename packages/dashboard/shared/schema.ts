@@ -385,3 +385,34 @@ export const inspirationInbox = sqliteTable("inspiration_inbox", {
   status: text("status").notNull().default("inbox"), // "inbox" | "developed" | "dismissed"
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
+
+// Creator Personas
+
+export const creatorPersonas = sqliteTable("creator_personas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  role: text("role"),
+  initials: text("initials"),
+  avatarColor: text("avatar_color"),
+  voiceTone: text("voice_tone"),
+  humorStyle: text("humor_style"),
+  contentStrengths: text("content_strengths"), // JSON: string[]
+  audienceAffinities: text("audience_affinities"), // JSON: string[]
+  hookPreferences: text("hook_preferences"), // JSON: string[]
+  sentenceStyle: text("sentence_style"),
+  doNot: text("do_not"), // JSON: string[]
+  exampleLines: text("example_lines"), // JSON: string[]
+  vaultStyleId: integer("vault_style_id"),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
+// Dismissed Opportunities
+
+export const dismissedOpportunities = sqliteTable("dismissed_opportunities", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  topicFingerprint: text("topic_fingerprint").notNull().unique(), // lowercased topic slug
+  reason: text("reason").notNull().default("not_relevant"), // "already_covered" | "not_relevant" | "oversaturated"
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});

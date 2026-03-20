@@ -87,6 +87,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         "Click 'Add to Ideas' to move a topic into the Idea Bank for development",
       ]},
       { type: "callout", variant: "warning", text: "If data feels stale, the view warns you. Refresh with /last30days in Claude Code." },
+      { type: "heading", text: "Quick Filter Presets" },
+      { type: "paragraph", text: "Three chips above the filter bar narrow the list instantly. Top Scoring: ≥70 overall score. Quick Wins: Format F (micro) or B (checklist) — fastest to produce. Research-Backed: 3+ evidence sources. Presets stack with sort and format filters." },
+      { type: "heading", text: "Dismiss + Learn" },
+      { type: "paragraph", text: "Click X on any opportunity card to dismiss it. Choose: Already covered, Not relevant, or Oversaturated. Dismissed items are hidden immediately and the reason is stored to SQLite." },
       { type: "navigate", label: "Go to Opportunities", targetView: "OPPORTUNITIES" },
     ],
   },
@@ -112,6 +116,37 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    id: "idea-lab",
+    title: "Idea Lab",
+    phase: "discover",
+    relatedView: "IDEAS",
+    summary: "Three-mode AI workshop for developing content ideas into production-ready scripts.",
+    keywords: ["idea lab", "script", "modes", "finisher", "fixer", "original", "analyze video", "url", "adapt", "hook", "vault", "save", "copy prompt", "structure", "rehook"],
+    content: [
+      { type: "paragraph", text: "Idea Lab is an AI workshop inside the Ideas view. Access it via the Idea Lab tab. It has three entry modes." },
+      { type: "table", headers: ["Entry Mode", "Input", "What You Get"], rows: [
+        ["Analyze Video", "Paste a video URL", "3 niche-specific adaptations with hooks and format suggestions"],
+        ["Guide Me", "Describe a vague idea", "AI asks one question at a time to shape it into a production concept"],
+        ["7 Ways", "Type any topic", "The topic rewritten across all 7 video formats simultaneously"],
+      ]},
+      { type: "heading", text: "Script Modes" },
+      { type: "steps", title: "", items: [
+        "Original: AI generates a complete script from your topic and hook. No extra input needed.",
+        "Finisher: Paste your raw notes or bullet points. AI assembles them into a structured script without adding outside facts.",
+        "Fixer: Paste a rough draft. AI polishes pacing, hook, and CTA without changing your voice.",
+      ]},
+      { type: "tip", label: "Finisher vs Fixer", text: "Use Finisher when you have notes but no script. Use Fixer when you have a draft but it feels flat or off-structure." },
+      { type: "heading", text: "Script Structure Visualization" },
+      { type: "paragraph", text: "After a script generates, expand the collapsible 'Script Structure' row: Hook → Setup → Rehook → Build → Final Hook as colored pills. Each pill is a loop-open or loop-close in Kallaway's rehook dance." },
+      { type: "heading", text: "Copy as Prompt" },
+      { type: "paragraph", text: "'Copy as Prompt' exports a structured block (topic, format, audience, hook, key points, CTA, structure) for pasting into Claude or ChatGPT to regenerate or expand the script externally." },
+      { type: "heading", text: "Save to Vault" },
+      { type: "paragraph", text: "The bookmark icon next to any hook line saves it to your Vault as a custom hook in the 'custom' category. Find it in the Vault's Hooks tab." },
+      { type: "callout", variant: "info", text: "Hook Rewriter pills (Question, Myth, Stat, etc.) rewrite just the hook in any Kallaway style without regenerating the whole script." },
+      { type: "navigate", label: "Go to Ideas", targetView: "IDEAS" },
+    ],
+  },
+  {
     id: "watchlist",
     title: "Watchlist",
     phase: "discover",
@@ -128,6 +163,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         "Check 'Rising Creators' from automated watchlist intelligence",
       ]},
       { type: "tip", label: "Creator Videos", text: "Expand a creator to see their individual videos with outlier detection (which videos vastly outperformed their average)." },
+      { type: "heading", text: "Creator Search" },
+      { type: "paragraph", text: "A search box at the top filters creators by handle or tracking reason in real time. When exactly one creator matches, their card auto-expands." },
+      { type: "heading", text: "7 DNA Components" },
+      { type: "paragraph", text: "Every video breakdown shows 7 components: Topic, Angle, Hook, Storytelling Style, Visual Format, Key Visuals, Audio. These are what you extract from a creator's video and replicate when adapting content to your niche." },
       { type: "navigate", label: "Go to Watchlist", targetView: "WATCHLIST" },
     ],
   },
@@ -334,6 +373,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "heading", text: "AI Insights" },
       { type: "paragraph", text: "Four types: Wins (what's working), Opportunities (what to try), Trends (directional patterns), Recommendations (specific actions)." },
       { type: "tip", label: "Velocity", text: "Velocity metrics show average days between pipeline stages and identify which stage videos get stuck in." },
+      { type: "heading", text: "Outlier Score" },
+      { type: "paragraph", text: "The Outlier column in the Top Performers table shows the video's views divided by your median views. Emerald = 2x+, Teal = 5x+, Violet = 10x+. Kallaway's key discovery signal — study what made those videos different and replicate." },
       { type: "navigate", label: "Go to Metrics", targetView: "METRICS" },
     ],
   },
@@ -349,6 +390,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { type: "heading", text: "Hooks" },
       { type: "paragraph", text: "Hook templates use Mad Lib format with [VARIABLE] placeholders. Library hooks (from hook-patterns.md) are read-only. Custom hooks you add can be edited. Filter by category, format, platform, or optimization goal." },
       { type: "tip", label: "Extract & Adapt", text: "'Extract Pattern' converts raw hook text into a reusable template. 'Adapt' generates niche variations of any hook." },
+      { type: "heading", text: "Hook Archetype Badges" },
+      { type: "paragraph", text: "Each hook card shows a dark pill badge: Teacher, Fortuneteller, Contrarian, Experimenter, Magician, or Investigator. Derived from the hook category. Scan for diversity — if you only see Teacher and Fortuneteller, you are missing Magician and Investigator patterns." },
       { type: "heading", text: "Writing Styles" },
       { type: "paragraph", text: "Paste a creator's transcript and AI extracts concrete rules: sentence length, tone, structure, techniques, things to avoid. Apply saved styles when generating scripts." },
       { type: "heading", text: "Visual Styles" },
@@ -552,6 +595,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         detail:
           "The progress tracker shows how many published videos you have toward the 270-video goal (90 min of content = superfan territory).",
       },
+      {
+        label: "Content Mix",
+        detail:
+          "The stacked bar shows your content library split by duration tier: Micro (<15s), Short (15-45s), Medium (45-90s), Long (90s+). Hover each segment for counts. Kallaway: ~270 short-form videos at 20s avg = 90 min watched = superfan territory.",
+      },
     ],
   },
   PIPELINE: {
@@ -628,6 +676,21 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         detail:
           "Click 'Spin 6 Angles' on any idea to see it through 6 Kallaway hook archetypes. Each angle is a ready-to-film concept with a suggested format.",
       },
+      {
+        label: "Script Modes",
+        detail:
+          "After clicking 'Write Script' in Idea Lab, choose: Original (AI generates fresh), Finisher (paste notes → AI completes), or Fixer (paste draft → AI polishes).",
+      },
+      {
+        label: "Copy as Prompt",
+        detail:
+          "After generating a script draft, 'Copy as Prompt' exports a structured block for Claude or ChatGPT — topic, format, hook, key points, CTA, and structure.",
+      },
+      {
+        label: "Save to Vault",
+        detail:
+          "The bookmark icon next to any hook line in adaptation cards saves that hook to the Vault as a custom hook. Find it in the Vault's Hooks tab.",
+      },
     ],
   },
   OPPORTUNITIES: {
@@ -649,6 +712,16 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "Add to Ideas",
         detail: "Move a high-scoring opportunity into the Idea Bank for planning.",
       },
+      {
+        label: "Quick Filter Presets",
+        detail:
+          "Three chips: Top Scoring (score ≥70), Quick Wins (Format F or B — fastest to produce), Research-Backed (3+ evidence sources). Stack with sort and format filters.",
+      },
+      {
+        label: "Dismiss + Learn",
+        detail:
+          "Click X on any card to dismiss it with a reason: Already covered, Not relevant, or Oversaturated. Dismissed topics are hidden and the reason is persisted to SQLite.",
+      },
     ],
   },
   WATCHLIST: {
@@ -665,6 +738,16 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "View Analysis",
         detail:
           "When analysis exists, click 'View Analysis' to see content patterns, hook styles, and key takeaways.",
+      },
+      {
+        label: "Creator Search",
+        detail:
+          "Filter the creator list by handle or tracking reason. When exactly one creator matches, that card auto-expands.",
+      },
+      {
+        label: "7 DNA Components",
+        detail:
+          "Each video breakdown shows 7 components: Topic, Angle, Hook, Storytelling Style, Visual Format, Key Visuals, Audio. These are the fields to replicate when adapting a creator's video to your niche.",
       },
     ],
   },
@@ -727,6 +810,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         detail:
           "Blue 'Library' badges are from hook-patterns.md (read-only). Custom hooks you add can be edited and deleted.",
       },
+      {
+        label: "Hook Archetype Badges",
+        detail:
+          "Dark pill badges on each hook card show the Kallaway archetype: Teacher, Fortuneteller, Contrarian, Experimenter, Magician, or Investigator. Scan your vault to find which archetypes you are missing.",
+      },
     ],
   },
   METRICS: {
@@ -748,6 +836,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "Top Performers",
         detail:
           "The table shows which videos get the best engagement and save rates, helping guide future content.",
+      },
+      {
+        label: "Outlier Score",
+        detail:
+          "The multiplier badge in the Top Performers table shows how many times a video exceeded your own median views. Emerald=2x+, Teal=5x+, Violet=10x+. Study what made outliers different and replicate the pattern.",
       },
     ],
   },
@@ -775,6 +868,11 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
         label: "Refinement",
         detail:
           "Use the AI Refinement chips grouped by Hook, Value, CTA, and Platform to iterate. Try 'Add a contrarian snapback' or 'Try a different archetype'.",
+      },
+      {
+        label: "Copy as Prompt",
+        detail:
+          "In the freeform panel, 'Copy as Prompt' exports a structured prompt (video, platform, description, requirements) to paste into Claude or ChatGPT.",
       },
     ],
   },
@@ -861,6 +959,56 @@ export const FEATURE_HINTS: Record<string, HintData> = {
       "Spin any idea through 6 hook archetypes to explore different creative angles.",
     side: "bottom",
   },
+  "opportunity-presets": {
+    content:
+      "Three quick filters: Top Scoring (≥70 overall), Quick Wins (Format F or B — fastest to produce), Research-Backed (3+ evidence sources). Click to toggle; click again to clear.",
+    side: "bottom",
+  },
+  "opportunity-dismiss": {
+    content:
+      "Dismiss this topic with a reason: Already covered, Not relevant, or Oversaturated. Dismissed topics are hidden and the reason is stored.",
+    side: "top",
+  },
+  "creator-search": {
+    content:
+      "Filter creators by handle or tracking reason. When only one match exists the card auto-expands.",
+    side: "bottom",
+  },
+  "outlier-score": {
+    content:
+      "Multiplier vs your own median views. Emerald = 2x+, Teal = 5x+, Violet = 10x+. Kallaway's primary discovery signal — study what made these videos different.",
+    side: "top",
+  },
+  "script-modes": {
+    content:
+      "Original: AI generates fresh from your topic and hook. Finisher: paste your notes and AI completes. Fixer: paste your rough draft and AI polishes.",
+    side: "bottom",
+  },
+  "save-hook-vault": {
+    content:
+      "Saves this hook to your Vault as a custom hook. Find it later in the Vault's Hooks tab.",
+    side: "right",
+  },
+  "copy-as-prompt": {
+    content:
+      "Exports a structured AI prompt with your topic, format, hook, and key points. Paste into Claude or ChatGPT.",
+    side: "top",
+  },
+  "script-structure": {
+    content:
+      "Kallaway's rehook dance: Hook → Setup → Rehook → Build → Final Hook. Every transition must re-earn attention.",
+    side: "bottom",
+  },
+  "content-mix": {
+    content:
+      "Your library split by duration tier. Kallaway: 270 short-form videos at 20s avg = 90 min watched = superfan territory.",
+    side: "bottom",
+  },
+  "hook-archetype-badge": {
+    content:
+      "Kallaway archetype derived from hook category. Use this to spot which types you are over- or under-using.",
+    side: "right",
+  },
 };
 
 // ============================================
@@ -915,6 +1063,8 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
   { id: "move-video", label: "Move a video in the pipeline", eventId: "move-video", targetView: "PIPELINE" },
   { id: "visit-ideas", label: "Check out the idea bank", eventId: "visit-ideas", targetView: "IDEAS" },
   { id: "visit-calendar", label: "Explore your calendar", eventId: "visit-calendar", targetView: "CALENDAR" },
+  { id: "use-idea-lab", label: "Generate a script in Idea Lab", eventId: "use-idea-lab", targetView: "IDEAS" },
+  { id: "check-opportunities", label: "Review your scored content opportunities", eventId: "check-opportunities", targetView: "OPPORTUNITIES" },
 ];
 
 // ============================================
@@ -922,6 +1072,24 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
 // ============================================
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: "1.3.0",
+    date: "2026-03-20",
+    title: "IdeaLab Upgrades, Outlier Scores & Opportunity Filters",
+    items: [
+      "IdeaLab: Script Modes — Original, Finisher (paste notes→complete), Fixer (paste draft→polish)",
+      "IdeaLab: Copy as Prompt — exports structured AI prompt for Claude or ChatGPT",
+      "IdeaLab: Save to Vault — bookmark icon on hook lines saves to Vault as custom hooks",
+      "IdeaLab: Script Structure Visualization — Hook→Setup→Rehook→Build→Final Hook pill flow",
+      "Opportunities: Filter Presets — Top Scoring (≥70), Quick Wins (F or B), Research-Backed (3+ evidence)",
+      "Opportunities: Dismiss + Learn — X button with reason picker; dismissed topics persist to SQLite",
+      "Watchlist: Creator Search — filter by handle or tracking reason",
+      "Watchlist: 7 DNA Components — Topic, Angle, Hook, Storytelling Style, Visual Format, Key Visuals, Audio",
+      "Vault + Opportunities: Hook Archetype Labels — Teacher, Fortuneteller, Contrarian, Experimenter, Magician, Investigator",
+      "Metrics: Outlier Score — multiplier badge vs your own median (Emerald=2x+, Teal=5x+, Violet=10x+)",
+      "Home: Content Mix Widget — stacked bar showing library split by duration tier",
+    ],
+  },
   {
     version: "1.2.0",
     date: "2026-03-11",

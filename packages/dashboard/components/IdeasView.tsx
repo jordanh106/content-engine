@@ -1,10 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield, Inbox, Link, X, ChevronDown, ChevronUp, Send } from "lucide-react";
+import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield, Inbox, Link, X, ChevronDown, ChevronUp, Send, Zap } from "lucide-react";
 import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId, InboxItem } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
+import { IdeaLab } from "./IdeaLab.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
@@ -296,7 +297,19 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [generatorOpen, setGeneratorOpen] = useState(false);
+  const [labOpen, setLabOpen] = useState(false);
+  const [highlightedTopic, setHighlightedTopic] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const handleIdeaAdded = useCallback((topic: string) => {
+    setLabOpen(false);
+    setHighlightedTopic(topic);
+    setTimeout(() => {
+      const el = document.querySelector(`[data-topic="${CSS.escape(topic)}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    setTimeout(() => setHighlightedTopic(null), 3500);
+  }, []);
 
   const { data: summary } = useQuery<SummaryResponse>({
     queryKey: ["ideas-summary"],
@@ -339,6 +352,18 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setLabOpen((v) => !v)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
+              labOpen
+                ? "bg-amber-500 text-white"
+                : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+            )}
+          >
+            <Zap size={14} />
+            Lab
+          </button>
           <button
             onClick={() => setGeneratorOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-violet-600 text-white hover:bg-violet-700 transition-colors"
@@ -384,6 +409,15 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
           </FeatureHint>
         </div>
       </div>
+
+      {/* Idea Lab */}
+      {labOpen && (
+        <IdeaLab
+          onClose={() => setLabOpen(false)}
+          onIdeaAdded={handleIdeaAdded}
+          existingTopics={ideas.map((i) => i.topic)}
+        />
+      )}
 
       {/* Inspiration Inbox */}
       <InspirationInbox />
@@ -460,6 +494,7 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
               key={idea.id}
               idea={idea}
               onClick={() => setSelectedIdea(idea)}
+              highlighted={highlightedTopic === idea.topic}
             />
           ))}
         </div>
@@ -596,7 +631,7 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
   );
 };
 
-const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick }) => {
+const IdeaCard: React.FC<{ idea: Idea; onClick: () => void; highlighted?: boolean }> = ({ idea, onClick, highlighted }) => {
   const meta = CATEGORY_META[idea.category];
   const { data: conceptData } = useQuery<{ concept: IdeaConcept | null }>({
     queryKey: ["idea-concept", idea.topic],
@@ -608,7 +643,11 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void }> = ({ idea, onClick
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer"
+      data-topic={idea.topic}
+      className={cn(
+        "bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer",
+        highlighted && "ring-2 ring-teal-400 ring-offset-1 border-teal-300"
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">

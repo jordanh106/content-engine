@@ -17,10 +17,12 @@ import {
   X,
   Bell,
   Brain,
+  Users,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { DashboardView } from "../shared/types.js";
+import type { DashboardView, CreatorPersona } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
+import { useCreator } from "./context/CreatorContext.js";
 
 type NavItem = {
   view: DashboardView;
@@ -168,11 +170,122 @@ const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> 
   );
 };
 
+const AVATAR_COLOR_MAP: Record<string, string> = {
+  teal: "bg-teal-600",
+  violet: "bg-violet-600",
+  amber: "bg-amber-500",
+  rose: "bg-rose-500",
+  sky: "bg-sky-500",
+};
+
+const SidebarCreatorFooter: React.FC<{ onManage: () => void }> = ({ onManage }) => {
+  const { selectedCreatorId, setSelectedCreatorId } = useCreator();
+  const { data } = useQuery<{ personas: CreatorPersona[] }>({
+    queryKey: ["personas"],
+    queryFn: () => fetch("/api/personas").then((r) => r.json()),
+    staleTime: 60_000,
+  });
+  const personas = data?.personas ?? [];
+  if (personas.length === 0) return null;
+
+  const active = personas.find((p) => p.id === selectedCreatorId) ?? null;
+
+  return (
+    <div className="border-t border-slate-200 px-4 py-3 space-y-2">
+      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Creating as</p>
+      {/* Avatar pills */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {personas.map((p) => {
+          const isSelected = selectedCreatorId === p.id;
+          const avatarCls = AVATAR_COLOR_MAP[p.avatarColor ?? "teal"] ?? "bg-teal-600";
+          return (
+            <button
+              key={p.id}
+              onClick={() => setSelectedCreatorId(isSelected ? null : p.id)}
+              title={p.name}
+              className={cn(
+                "flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
+                isSelected
+                  ? "bg-slate-800 text-white border-slate-800"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+              )}
+            >
+              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 text-white", avatarCls)}>
+                {p.initials ?? p.name.slice(0, 2).toUpperCase()}
+              </span>
+              <span className="truncate max-w-[80px]">{p.name}</span>
+              {isSelected && <span className="text-teal-400 text-[9px]">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      {!active && (
+        <p className="text-[9px] text-slate-400 italic">No creator selected — using brand voice</p>
+      )}
+      <button
+        onClick={onManage}
+        className="text-[9px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+      >
+        Manage creators →
+      </button>
+    </div>
+  );
+};
+
+const MobileCreatorSwitcher: React.FC<{ onManage: () => void }> = ({ onManage }) => {
+  const { selectedCreatorId, setSelectedCreatorId } = useCreator();
+  const { data } = useQuery<{ personas: CreatorPersona[] }>({
+    queryKey: ["personas"],
+    queryFn: () => fetch("/api/personas").then((r) => r.json()),
+    staleTime: 60_000,
+  });
+  const personas = data?.personas ?? [];
+  if (personas.length === 0) return null;
+
+  return (
+    <div className="px-3 pb-3 border-t border-slate-100 mt-1 pt-3">
+      <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Creating as</p>
+      <div className="px-2 flex items-center gap-1.5 flex-wrap">
+        {personas.map((p) => {
+          const isSelected = selectedCreatorId === p.id;
+          const avatarCls = AVATAR_COLOR_MAP[p.avatarColor ?? "teal"] ?? "bg-teal-600";
+          return (
+            <button
+              key={p.id}
+              onClick={() => setSelectedCreatorId(isSelected ? null : p.id)}
+              title={p.name}
+              className={cn(
+                "flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
+                isSelected
+                  ? "bg-slate-800 text-white border-slate-800"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+              )}
+            >
+              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 text-white", avatarCls)}>
+                {p.initials ?? p.name.slice(0, 2).toUpperCase()}
+              </span>
+              <span className="truncate max-w-[80px]">{p.name}</span>
+              {isSelected && <span className="text-teal-400 text-[9px]">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        onClick={onManage}
+        className="mt-2 px-2 text-[9px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+      >
+        Manage creators →
+      </button>
+    </div>
+  );
+};
+
 type LayoutProps = {
   currentView: DashboardView;
   onNavigate: (view: DashboardView) => void;
   onOpenVault?: () => void;
   onOpenGuide?: () => void;
+  onOpenPersonas?: () => void;
   children: React.ReactNode;
 };
 
@@ -181,6 +294,7 @@ export const Layout: React.FC<LayoutProps> = ({
   onNavigate,
   onOpenVault,
   onOpenGuide,
+  onOpenPersonas,
   children,
 }) => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(getCollapsedState);
@@ -271,6 +385,9 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Creator switcher footer */}
+        {onOpenPersonas && <SidebarCreatorFooter onManage={onOpenPersonas} />}
 
         {/* Home button at bottom */}
         <div className="border-t border-slate-200 px-3 py-2">
@@ -377,6 +494,10 @@ export const Layout: React.FC<LayoutProps> = ({
                 ))}
               </div>
             ))}
+            {/* Creator quick-switch in More sheet */}
+            {onOpenPersonas && (
+              <MobileCreatorSwitcher onManage={() => { onOpenPersonas(); setMoreOpen(false); }} />
+            )}
             {/* Vault & Guide in More sheet */}
             {(onOpenVault || onOpenGuide) && (
               <div className="px-3 pb-4 border-t border-slate-100 mt-1 pt-2 space-y-0.5">

@@ -880,7 +880,10 @@ export type BenchmarkComparison = {
     handle: string;
     platform: string;
     latestSnapshot: ChannelSnapshot;
+    previousSnapshot: ChannelSnapshot | null;
     trend: "growing" | "stable" | "declining" | "unknown";
+    daysSinceLastLog: number;
+    snapshotPoints: Array<{ date: string; followers: number | null }>;
   }>;
 };
 
@@ -1422,4 +1425,73 @@ export type InboxItem = {
   sourceUrl: string | null;
   status: "inbox" | "developed" | "dismissed";
   createdAt: string;
+};
+
+// ============================================
+// Idea Lab Types
+// ============================================
+
+export type LabAdaptation = {
+  adaptedTopic: string;
+  hookLine: string;
+  suggestedFormat: string;
+  targetAudience: string;
+  whyItWorks: string;
+  timeToFilm: string;
+  difficultyLevel: "Easy" | "Medium" | "Advanced";
+};
+
+export type UrlSparkResult = {
+  sourcePattern: string;
+  hookMechanism: string;
+  adaptations: LabAdaptation[];
+};
+
+export type FormatMutation = {
+  format: string;
+  formatName: string;
+  adaptedTopic: string;
+  adaptedHook: string;
+  estimatedRuntime: string;
+  platformFit: string[];
+  difficultyLevel: "Easy" | "Medium" | "Advanced";
+  whyThisFormat: string;
+};
+
+export type FormedIdea = {
+  topic: string;
+  hookAngle: string;
+  suggestedFormat: string;
+  targetAudience: string;
+  whyItWorks: string;
+  readyForProduction: boolean;
+};
+
+export type ScriptDraft = {
+  hookLine: string;
+  keyPoints: string[];
+  cta: string;
+  estimatedDuration: string;
+  productionNotes: string;
+};
+
+
+export type CreatorPersona = {
+  id: number;
+  name: string;
+  role: string | null;
+  initials: string | null;
+  avatarColor: string | null;
+  voiceTone: string | null;
+  humorStyle: string | null;
+  contentStrengths: string[];
+  audienceAffinities: string[];
+  hookPreferences: string[];
+  sentenceStyle: string | null;
+  doNot: string[];
+  exampleLines: string[];
+  vaultStyleId: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 };

@@ -33,7 +33,6 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | Pregnancy Chiropractic |  |  | High |  | 2026-03-18 |
 | Teen Athletes |  |  | High |  | 2026-03-18 |
 | Webster Technique: Can Chiropractic Really Help a Breech Baby? | A (Explainer) | Pregnancy chiropractic trending at 40k+ views with high engagement due to safety concerns. Educational format addresses specific technique questions found in social discussions. | High | AI Strategy Recommendation | 2026-03-19 |
-| What Actually Happens at a Baby's First Chiropractic Visit | E | 'People see baby chiropractor videos online and think we're cracking their spines. Let me show you what really happens.' — Real walkthrough of a gentle infant adjustment with narration and visible nervous system explanation. Directly addresses the viral controversy with trust and transparency. | high | Viral Scout | 2026-03-19 |
 | 3 Signs Your Child's Nervous System Is Overwhelmed | A | 'If your child struggles with sleep, focus, or big emotions — this isn't a behavior problem. It's a nervous system problem.' — List-style education video connecting dysregulation symptoms to spinal stress, with simple chiropractic nervous system explanation. | high | Viral Scout | 2026-03-19 |
 | Satisfying Prenatal Adjustment Clip (ASMR-Style) | E | '32 weeks pregnant and her back finally let go.' — Short, sound-forward adjustment clip of a prenatal patient with text overlay describing what's being released. No voiceover. Let the crack, the exhale, and the patient's relief carry the video. | high | Viral Scout | 2026-03-19 |
 | Hard Pill: Your Morning Back Pain Isn't From Sleeping Wrong | A | 'Hard pill to swallow: You don't wake up stiff because of your mattress. You wake up stiff because your spine has been compensating for months.' — Quick-cut education video on cumulative spinal stress with a clear call to action to get checked. | high | Viral Scout | 2026-03-19 |
@@ -69,6 +68,8 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 | Develop a recurring cast structure using real patients or family members who appear across multiple posts. This does not require daily posting like @dr.holdenstanfill. Even 1 recurring character, a prenatal mom documented across trimesters, a toddler shown at 6 months then 12 months, creates narrative continuity that rewards returning viewers and gives new viewers a reason to scroll back through prior content. This closes the serialization gap against all competitors simultaneously. |  |  | medium | Watchlist Analysis | 2026-03-19 |
 | Gamer's Neck POV Series | C (Demo) | Your gaming setup is aging your spine by 10 years | High | n8n Watchlist Intelligence | 2026-03-19 |
 | Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-19 |
+| Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-19 |
+| Here Is What the Original Chainsaw Actually Looked Like in Use | C (Demo) | This is what doctors were doing with a chainsaw before it ever touched a single tree. | High | Idea Lab | 2026-03-19 |
 
 ---
 
@@ -137,4 +138,5 @@ Move ideas here after they've been promoted to the calendar. Keep for reference.
 | Spinal Disc Herniation Education | A | 2026-03-10 | |
 | When Should My Child First See a Chiropractor? | A (Explainer) | 2026-03-18 | |
 | Why Your Kid's Backpack is Causing Shoulder Problems | A | 2026-03-19 | |
+| What Actually Happens at a Baby's First Chiropractic Visit | E | 2026-03-20 | |
 - **Why lower back pain returns every morning** | Format: | Hook: | Priority: High | Source: Inspiration Inbox | Date: 2026-03-18 | Category: evergreen

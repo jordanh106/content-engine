@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy } from "lucide-react";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { FEATURE_HINTS } from "../shared/help-content.js";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
 import { ResearchPanel } from "./ResearchPanel.js";
 import { cn } from "../utils/cn.js";
@@ -293,7 +296,14 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   const [showLogMetrics, setShowLogMetrics] = useState<string | null>(null);
   const [benchmarkExpanded, setBenchmarkExpanded] = useState(false);
   const [enrichingHandle, setEnrichingHandle] = useState<string | null>(null);
+  const [creatorSearch, setCreatorSearch] = useState("");
   const creators = data?.creators ?? [];
+  const filteredCreators = creatorSearch.trim()
+    ? creators.filter((c) =>
+        c.handle.toLowerCase().includes(creatorSearch.toLowerCase()) ||
+        c.whyTracking?.toLowerCase().includes(creatorSearch.toLowerCase())
+      )
+    : creators;
   const sections = data?.sections ?? [];
 
   // Benchmarking data
@@ -315,6 +325,17 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["benchmarking-compare"] });
       setShowLogMetrics(null);
+    },
+  });
+
+  const removeSnapshotMutation = useMutation({
+    mutationFn: async (handle: string) => {
+      const r = await fetch(`/api/benchmarking/snapshots/${encodeURIComponent(handle)}`, { method: "DELETE" });
+      if (!r.ok) throw new Error("Failed to remove");
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["benchmarking-compare"] });
     },
   });
 
@@ -501,38 +522,73 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
             {/* Competitor comparison */}
             {benchmarkData?.competitors && benchmarkData.competitors.length > 0 && (
               <div className="space-y-2">
-                {benchmarkData.competitors.map((comp) => (
-                  <div key={comp.handle} className="border border-slate-200 rounded-xl p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-700">{comp.handle}</p>
-                      <p className="text-[10px] text-slate-400">{comp.platform}</p>
+                {benchmarkData.competitors.map((comp) => {
+                  const followerDelta = comp.latestSnapshot.followers && comp.previousSnapshot?.followers
+                    ? comp.latestSnapshot.followers - comp.previousSnapshot.followers
+                    : null;
+                  const followerDeltaPct = followerDelta && comp.previousSnapshot?.followers
+                    ? Math.round((followerDelta / comp.previousSnapshot.followers) * 100)
+                    : null;
+                  const stalenessLabel = comp.daysSinceLastLog <= 14
+                    ? `${comp.daysSinceLastLog}d ago`
+                    : `${Math.round(comp.daysSinceLastLog / 7)}w ago`;
+                  const stalenessColor = comp.daysSinceLastLog <= 14
+                    ? "text-emerald-500"
+                    : comp.daysSinceLastLog <= 30
+                    ? "text-amber-500"
+                    : "text-rose-500";
+                  return (
+                    <div key={comp.handle} className="border border-slate-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-700">{comp.handle}</p>
+                          <p className="text-[10px] text-slate-400">{comp.platform}</p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap justify-end">
+                          {comp.latestSnapshot.followers && (
+                            <span className="text-sm text-slate-600">{comp.latestSnapshot.followers.toLocaleString()}</span>
+                          )}
+                          {followerDelta !== null && followerDeltaPct !== null && (
+                            <span className={cn(
+                              "flex items-center gap-0.5 text-[10px] font-bold",
+                              followerDelta >= 0 ? "text-emerald-600" : "text-rose-600"
+                            )}>
+                              {followerDelta >= 0 ? <ArrowUp size={9} /> : <ArrowDown size={9} />}
+                              {followerDelta >= 0 ? "+" : ""}{followerDelta.toLocaleString()} ({followerDeltaPct}%)
+                            </span>
+                          )}
+                          {comp.snapshotPoints.length >= 2 && comp.snapshotPoints.some(p => p.followers) && (
+                            <div className="w-16 h-7 flex-shrink-0">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={comp.snapshotPoints}>
+                                  <Line type="monotone" dataKey="followers" stroke="#14b8a6" strokeWidth={1.5} dot={false} />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          )}
+                          {comp.latestSnapshot.engagementRateBps ? (
+                            <span className="text-[10px] text-slate-500">{(comp.latestSnapshot.engagementRateBps / 100).toFixed(1)}% eng.</span>
+                          ) : null}
+                          <span className={cn("text-[10px] font-bold", stalenessColor)}>{stalenessLabel}</span>
+                          <button
+                            onClick={() => setShowLogMetrics(comp.handle)}
+                            className="text-[10px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+                          >
+                            Log
+                          </button>
+                          <button
+                            onClick={() => removeSnapshotMutation.mutate(comp.handle)}
+                            disabled={removeSnapshotMutation.isPending}
+                            className="text-slate-300 hover:text-rose-400 transition-colors"
+                            title="Remove from benchmarking"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      {comp.latestSnapshot.followers && (
-                        <span className="text-slate-600">{comp.latestSnapshot.followers.toLocaleString()} followers</span>
-                      )}
-                      {comp.latestSnapshot.engagementRateBps && (
-                        <span className="text-slate-600">{(comp.latestSnapshot.engagementRateBps / 100).toFixed(1)}% eng.</span>
-                      )}
-                      <span className={cn(
-                        "flex items-center gap-0.5 text-[10px] font-bold",
-                        comp.trend === "growing" ? "text-emerald-600" :
-                        comp.trend === "declining" ? "text-rose-600" :
-                        "text-slate-400",
-                      )}>
-                        {comp.trend === "growing" && <ArrowUp size={10} />}
-                        {comp.trend === "declining" && <ArrowDown size={10} />}
-                        {comp.trend}
-                      </span>
-                      <button
-                        onClick={() => setShowLogMetrics(comp.handle)}
-                        className="text-[10px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
-                      >
-                        Log
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -668,6 +724,37 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
         addedTopic={addedIdea}
       />
 
+      {/* Creator search filter */}
+      {creators.length > 3 && (
+        <FeatureHint id="creator-search" content={FEATURE_HINTS["creator-search"].content} side="bottom">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            value={creatorSearch}
+            onChange={(e) => {
+              setCreatorSearch(e.target.value);
+              const matches = creators.filter((c) =>
+                c.handle.toLowerCase().includes(e.target.value.toLowerCase()) ||
+                c.whyTracking?.toLowerCase().includes(e.target.value.toLowerCase())
+              );
+              if (e.target.value && matches.length === 1) setExpandedHandle(matches[0].handle);
+              else if (!e.target.value) setExpandedHandle(null);
+            }}
+            placeholder="Filter by creator..."
+            className="w-full pl-8 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 text-slate-800 placeholder-slate-400"
+          />
+          {creatorSearch && (
+            <button
+              onClick={() => setCreatorSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        </FeatureHint>
+      )}
+
       {/* Creator Cards */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading watchlist...</div>
@@ -677,9 +764,11 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           headline="No creators tracked yet"
           description="Add creators to watchlist.md to start tracking their content patterns and strategies."
         />
+      ) : filteredCreators.length === 0 ? (
+        <div className="text-center py-8 text-slate-400 text-sm">No creators match "{creatorSearch}"</div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {creators.map((creator) => (
+          {filteredCreators.map((creator) => (
             <CreatorCard
               key={creator.handle}
               creator={creator}
@@ -1346,7 +1435,7 @@ const LogMetricsForm: React.FC<LogMetricsFormProps> = ({ handle, onSubmit, onCan
         <p className="text-sm font-bold text-slate-700">Log Metrics: {handle}</p>
         <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
       </div>
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-5">
         <div>
           <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Platform</label>
           <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white">
@@ -1364,6 +1453,10 @@ const LogMetricsForm: React.FC<LogMetricsFormProps> = ({ handle, onSubmit, onCan
           <input value={avgViews} onChange={(e) => setAvgViews(e.target.value)} placeholder="5000" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
         </div>
         <div>
+          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Eng Rate %</label>
+          <input value={engRate} onChange={(e) => setEngRate(e.target.value)} placeholder="3.5" type="number" step="0.1" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+        </div>
+        <div>
           <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Posts/Week</label>
           <input value={postsPerWeek} onChange={(e) => setPostsPerWeek(e.target.value)} placeholder="4" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
         </div>
@@ -1376,6 +1469,7 @@ const LogMetricsForm: React.FC<LogMetricsFormProps> = ({ handle, onSubmit, onCan
             platform,
             followers: followers ? parseInt(followers) : undefined,
             avgViews: avgViews ? parseInt(avgViews) : undefined,
+            engagementRateBps: engRate ? Math.round(parseFloat(engRate) * 100) : undefined,
             postsPerWeek: postsPerWeek ? parseInt(postsPerWeek) : undefined,
           })}
           disabled={isPending}
@@ -1738,10 +1832,10 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
         {[
           { label: "Topic", value: breakdown.topic },
           { label: "Angle", value: breakdown.angle },
-          { label: "Hook Format", value: breakdown.hookFormat },
-          { label: "Story Style", value: breakdown.storyStyle },
+          { label: "Hook", value: breakdown.hookFormat },
+          { label: "Storytelling Style", value: breakdown.storyStyle },
           { label: "Visual Format", value: breakdown.visualFormat },
-          { label: "Visuals", value: breakdown.visuals },
+          { label: "Key Visuals", value: breakdown.visuals },
           { label: "Audio", value: breakdown.audio },
         ].filter((i) => i.value).map((item) => (
           <div key={item.label} className="bg-slate-50 rounded-lg p-2">
@@ -1787,8 +1881,8 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
             {[
               { label: "Topic", value: breakdown.topic },
               { label: "Angle", value: breakdown.angle },
-              { label: "Hook Format", value: breakdown.hookFormat },
-              { label: "Story Style", value: breakdown.storyStyle },
+              { label: "Hook", value: breakdown.hookFormat },
+              { label: "Storytelling Style", value: breakdown.storyStyle },
               { label: "Visual Format", value: breakdown.visualFormat },
               { label: "Audio", value: breakdown.audio },
             ].filter((i) => i.value).map((item) => (

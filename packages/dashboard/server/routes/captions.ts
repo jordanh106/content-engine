@@ -205,7 +205,7 @@ export function createCaptionsRouter(contentLibraryPath: string) {
       return;
     }
 
-    const { videoCode, prompt, conversationHistory, platforms: requestedPlatforms } = req.body;
+    const { videoCode, prompt, conversationHistory, platforms: requestedPlatforms, creatorId } = req.body;
     if (!videoCode) {
       res.status(400).json({ error: "videoCode is required" });
       return;
@@ -276,11 +276,18 @@ export function createCaptionsRouter(contentLibraryPath: string) {
         // Metrics lookup is optional
       }
 
+      let personaPrompt = "";
+      if (creatorId) {
+        const { loadPersona, buildPersonaPrompt } = await import("../utils/persona-context.js");
+        const persona = loadPersona(creatorId as number);
+        personaPrompt = buildPersonaPrompt(persona);
+      }
+
       const systemPrompt = buildCaptionSystemPrompt(brandVoice, hookText, {
         format: `${video.format} (${formatInfo?.name || ""})`,
         audience: audienceLabel,
         tags: video.tags,
-      }) + provenPatterns;
+      }) + provenPatterns + (personaPrompt ? `\n\n${personaPrompt}` : "");
 
       const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
       if (conversationHistory?.length > 0) {
@@ -497,7 +504,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
       res.status(503).json({ error: "AI unavailable" });
       return;
     }
-    const { videoCodes } = req.body;
+    const { videoCodes, creatorId: batchCreatorId } = req.body;
     if (!Array.isArray(videoCodes) || videoCodes.length === 0) {
       res.status(400).json({ error: "videoCodes array required" });
       return;
@@ -515,6 +522,13 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
       .join("\n\n");
     const config = fs.existsSync(configPath) ? parseConfig(configPath) : null;
 
+    let batchPersonaPrompt = "";
+    if (batchCreatorId) {
+      const { loadPersona, buildPersonaPrompt } = await import("../utils/persona-context.js");
+      const persona = loadPersona(batchCreatorId as number);
+      batchPersonaPrompt = buildPersonaPrompt(persona);
+    }
+
     for (const videoCode of videoCodes) {
       try {
         const video = videos.find((v) => v.code === videoCode);
@@ -529,7 +543,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
           format: `${video.format} (${formatInfo?.name || ""})`,
           audience: audienceLabel,
           tags: video.tags,
-        });
+        }) + (batchPersonaPrompt ? `\n\n${batchPersonaPrompt}` : "");
 
         const response = await client.messages.create({
           model: "claude-sonnet-4-6",
@@ -629,7 +643,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
       return;
     }
 
-    const { description, mood, platforms: requestedPlatforms, tags, conversationHistory, analysisContext, videoCode: existingCode, visualHook, textOverlay, audioContext } = req.body as {
+    const { description, mood, platforms: requestedPlatforms, tags, conversationHistory, analysisContext, videoCode: existingCode, visualHook, textOverlay, audioContext, creatorId: freeformCreatorId } = req.body as {
       description?: string;
       mood?: string;
       platforms?: string[];
@@ -640,6 +654,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
       visualHook?: string;
       textOverlay?: string;
       audioContext?: string;
+      creatorId?: number;
     };
 
     if (!description) {
@@ -668,6 +683,13 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
       const hookText = hookCategories
         .map((c) => `${c.name}:\n${c.patterns.map((p) => `- ${p.pattern}: "${p.example}" (${p.platform}, optimizes ${p.optimizes})`).join("\n")}`)
         .join("\n\n");
+
+      let freeformPersonaPrompt = "";
+      if (freeformCreatorId) {
+        const { loadPersona, buildPersonaPrompt } = await import("../utils/persona-context.js");
+        const persona = loadPersona(freeformCreatorId);
+        freeformPersonaPrompt = buildPersonaPrompt(persona);
+      }
 
       // Proven patterns from top performers
       let provenPatterns = "";
@@ -737,6 +759,7 @@ RULES:
 - Each platform gets a unique caption (not resized versions of the same text)
 - Write natively for each platform's voice and format
 ${provenPatterns}
+${freeformPersonaPrompt ? `\n${freeformPersonaPrompt}` : ""}
 
 Respond with JSON only. Generate 2 variants per platform using DIFFERENT hook archetypes:
 {"captions": [{"platform": "Instagram", "variant": "A", "caption": "...", "hookArchetype": "Teacher"}, {"platform": "Instagram", "variant": "B", "caption": "...", "hookArchetype": "Contrarian"}, ...], "message": "brief description of approach"}`;
@@ -834,12 +857,13 @@ VIDEO DESCRIPTION: ${description}`;
       return;
     }
 
-    const { title, description, audience, format, platform } = req.body as {
+    const { title, description, audience, format, platform, creatorId: hooksCreatorId } = req.body as {
       title?: string;
       description?: string;
       audience?: string;
       format?: string;
       platform?: string;
+      creatorId?: number;
     };
 
     if (!title && !description) {
@@ -848,6 +872,13 @@ VIDEO DESCRIPTION: ${description}`;
     }
 
     try {
+      let hooksPersonaPrompt = "";
+      if (hooksCreatorId) {
+        const { loadPersona, buildPersonaPrompt } = await import("../utils/persona-context.js");
+        const persona = loadPersona(hooksCreatorId);
+        hooksPersonaPrompt = buildPersonaPrompt(persona);
+      }
+
       const hookCategories = parseHookPatterns(hookPatternsPath);
       const hookExamples = hookCategories
         .map((c) => `${c.name}: ${c.patterns.slice(0, 2).map((p) => `"${p.example}"`).join(", ")}`)
@@ -894,6 +925,7 @@ EACH HOOK MUST FOLLOW THE 3-PART STRUCTURE:
 3. Contrarian Snapback: Flip to unexpected direction
 
 For each hook, also include a breakdown of the 3 parts and score its strength (0-33) based on: curiosity gap, scroll-stop power, and content relevance.
+${hooksPersonaPrompt ? `\n${hooksPersonaPrompt}` : ""}
 
 Respond with JSON only:
 {"hooks": [{"text": "full hook text", "type": "Fortune Teller", "score": 28, "breakdown": {"contextLean": "first part", "patternInterrupt": "but/contrast part", "snapback": "flip part"}}, ...]}`,

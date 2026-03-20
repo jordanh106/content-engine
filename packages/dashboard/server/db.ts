@@ -502,3 +502,89 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS research_reports (
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_research_reports_type ON research_reports(type, created_at)`);
+
+// Migration: Creator Personas
+sqlite.exec(`CREATE TABLE IF NOT EXISTS creator_personas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  role TEXT,
+  initials TEXT,
+  avatar_color TEXT,
+  voice_tone TEXT,
+  humor_style TEXT,
+  content_strengths TEXT,
+  audience_affinities TEXT,
+  hook_preferences TEXT,
+  sentence_style TEXT,
+  do_not TEXT,
+  example_lines TEXT,
+  vault_style_id INTEGER,
+  is_active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Seed: Pre-built creator personas — uses prepared statements to avoid SQL escaping issues
+{
+  // One-time correction: rename "Dr. Jordan" to "Jordan Harper" with correct role
+  sqlite.prepare(
+    "UPDATE creator_personas SET name = ?, role = ? WHERE name = ?"
+  ).run("Jordan Harper", "Office Manager & Co-Owner", "Dr. Jordan");
+
+  // One-time fix: restore contractions in example_lines (previously flattened by SQL escaping bug)
+  sqlite.prepare(
+    "UPDATE creator_personas SET example_lines = ? WHERE name = 'Jordan Harper'"
+  ).run(JSON.stringify(["Yeah.", "I'll give them that.", "Trust your instincts. They're right."]));
+  sqlite.prepare(
+    "UPDATE creator_personas SET example_lines = ? WHERE name = 'Dr. Ashley'"
+  ).run(JSON.stringify([
+    "If you're pregnant and still exercising, I made this for you.",
+    "Your baby's spine starts forming before you know you're pregnant.",
+    "This one is for the moms doing all the things.",
+  ]));
+
+  const insertPersona = sqlite.prepare(`
+    INSERT OR IGNORE INTO creator_personas
+      (name, role, initials, avatar_color, voice_tone, humor_style, sentence_style, content_strengths, audience_affinities, hook_preferences, do_not, example_lines)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertPersona.run(
+    "Jordan Harper",
+    "Office Manager & Co-Owner",
+    "JH",
+    "teal",
+    "Deadpan authority with dry humor. Serious content that earns a laugh.",
+    "Brief dry asides, fourth-wall breaks, CTA as comedy. Never mugging.",
+    "Short. Punchy. Direct. Vary length deliberately. One-word sentences land.",
+    JSON.stringify(["Myth busting", "Education", "Pattern interrupt", "Humor-wrapped advice"]),
+    JSON.stringify(["Athletes", "Adults", "WFH professionals", "Skeptics"]),
+    JSON.stringify(["myth_contrarian", "pattern_interrupt", "statistic"]),
+    JSON.stringify(["Sound effects", "Meme overlays", "Exaggerated reactions", "Emdashes"]),
+    JSON.stringify(["Yeah.", "I'll give them that.", "Trust your instincts. They're right."])
+  );
+  insertPersona.run(
+    "Dr. Ashley",
+    "Chiropractor, Prenatal & Pediatric Specialist",
+    "DA",
+    "violet",
+    "Warm clinical empathy. Medical authority with maternal warmth.",
+    "Gentle, relatable, parent-to-parent recognition moments. Humor from truth, not punchlines.",
+    "Conversational, 10-15 words. Warm transitions. Never clinical third-person.",
+    JSON.stringify(["Prenatal", "Pediatric", "Patient stories", "Demo and exercise"]),
+    JSON.stringify(["Prenatal moms", "New parents", "Families", "Pediatric patients"]),
+    JSON.stringify(["story_emotional", "question", "did_you_know"]),
+    JSON.stringify(["Cold clinical language", "Aggressive CTAs", "Emdashes", "Deadpan delivery"]),
+    JSON.stringify([
+      "If you're pregnant and still exercising, I made this for you.",
+      "Your baby's spine starts forming before you know you're pregnant.",
+      "This one is for the moms doing all the things.",
+    ])
+  );
+}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS dismissed_opportunities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topic_fingerprint TEXT NOT NULL UNIQUE,
+  reason TEXT NOT NULL DEFAULT 'not_relevant',
+  created_at TEXT DEFAULT (datetime('now'))
+)`);

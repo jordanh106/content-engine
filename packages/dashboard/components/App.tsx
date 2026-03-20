@@ -13,8 +13,10 @@ import { SessionView } from "./SessionView.js";
 import { CalendarView } from "./CalendarView.js";
 import { CaptionStudio } from "./CaptionStudio.js";
 import { VaultPanel } from "./VaultPanel.js";
+import { PersonaPanel } from "./PersonaPanel.js";
 import { CommandPalette } from "./CommandPalette.js";
 import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
+import { CreatorProvider } from "./context/CreatorContext.js";
 import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
 import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
@@ -26,6 +28,7 @@ const AppInner: React.FC = () => {
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [personasOpen, setPersonasOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const onboarding = useOnboarding();
 
@@ -111,7 +114,7 @@ const AppInner: React.FC = () => {
 
   return (
     <>
-      <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault} onOpenGuide={handleOpenGuide}>
+      <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault} onOpenGuide={handleOpenGuide} onOpenPersonas={() => setPersonasOpen(true)}>
         {view === "LIBRARY" && (
           <ContentLibrary onSelectVideo={handleSelectVideo} />
         )}
@@ -141,6 +144,9 @@ const AppInner: React.FC = () => {
       {/* Vault slide-out panel */}
       <VaultPanel open={vaultOpen} onClose={handleCloseVault} />
 
+      {/* Creator Personas panel */}
+      {personasOpen && <PersonaPanel onClose={() => setPersonasOpen(false)} />}
+
       {/* Field Manual */}
       <FieldManual
         open={guideOpen}
@@ -167,7 +173,9 @@ const AppInner: React.FC = () => {
 };
 
 export const App: React.FC = () => (
-  <OnboardingProvider>
-    <AppInner />
-  </OnboardingProvider>
+  <CreatorProvider>
+    <OnboardingProvider>
+      <AppInner />
+    </OnboardingProvider>
+  </CreatorProvider>
 );

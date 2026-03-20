@@ -36,6 +36,7 @@ import {
   Rocket,
   Trophy,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { FORMATS } from "../shared/types.js";
 import type {
@@ -50,6 +51,27 @@ import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { Tooltip as UITooltip } from "./ui/Tooltip.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+
+const HOOK_ARCHETYPE: Record<string, string> = {
+  question: "Teacher",
+  statistic: "Fortuneteller",
+  myth: "Contrarian",
+  emotional: "Experimenter",
+  "did you know": "Fortuneteller",
+  didyouknow: "Fortuneteller",
+  pattern_interrupt: "Magician",
+  mystery: "Investigator",
+  list: "Teacher",
+  problem: "Experimenter",
+  shock: "Magician",
+  callout: "Contrarian",
+  transformation: "Experimenter",
+  exclusivity: "Investigator",
+  controversial: "Contrarian",
+  fomo: "Fortuneteller",
+  urgency: "Magician",
+  cta: "Teacher",
+};
 
 const FORMAT_COLORS: Record<string, string> = {
   A: "#0d9488",
@@ -201,11 +223,19 @@ const SparkBar: React.FC<{ dimensions: ContentOpportunity["dimensions"] }> = ({ 
 // Opportunity Card (List View)
 // ============================
 
+const DISMISS_REASONS = [
+  { value: "already_covered", label: "Already covered" },
+  { value: "not_relevant", label: "Not relevant" },
+  { value: "oversaturated", label: "Oversaturated" },
+] as const;
+
 const OpportunityCard: React.FC<{
   opportunity: ContentOpportunity;
   onClick: () => void;
-}> = ({ opportunity, onClick }) => {
+  onDismiss?: (topic: string, reason: string) => void;
+}> = ({ opportunity, onClick, onDismiss }) => {
   const [showWhy, setShowWhy] = useState(false);
+  const [showDismissMenu, setShowDismissMenu] = useState(false);
   const tags = getValidationTags(opportunity);
   const formatInfo = FORMATS[opportunity.suggestedFormat as FormatId];
   const topEvidence = opportunity.evidence.slice(0, 2);
@@ -271,6 +301,38 @@ const OpportunityCard: React.FC<{
                 </button>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Dismiss button */}
+      {onDismiss && (
+        <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-end relative">
+          {showDismissMenu ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400">Why dismiss?</span>
+              {DISMISS_REASONS.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={(e) => { e.stopPropagation(); onDismiss(opportunity.topic, r.value); setShowDismissMenu(false); }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition-colors"
+                >
+                  {r.label}
+                </button>
+              ))}
+              <button onClick={(e) => { e.stopPropagation(); setShowDismissMenu(false); }} className="text-slate-300 hover:text-slate-500">
+                <X size={10} />
+              </button>
+            </div>
+          ) : (
+            <FeatureHint id="opportunity-dismiss" content={FEATURE_HINTS["opportunity-dismiss"].content} side="top">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDismissMenu(true); }}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-rose-500 transition-colors"
+            >
+              <X size={10} /> Dismiss
+            </button>
+            </FeatureHint>
           )}
         </div>
       )}
@@ -561,6 +623,11 @@ const OpportunityDetail: React.FC<{
                   <span className="text-[10px] text-slate-400">
                     Optimizes: {opportunity.suggestedHook.optimizes}
                   </span>
+                  {HOOK_ARCHETYPE[opportunity.suggestedHook.category?.toLowerCase()] && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-white uppercase tracking-wider">
+                      {HOOK_ARCHETYPE[opportunity.suggestedHook.category.toLowerCase()]} archetype
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -814,9 +881,16 @@ const OpportunityDetail: React.FC<{
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-slate-500">Hook</span>
-                <span className="text-[11px] font-medium text-slate-700">
-                  {opportunity.suggestedHook.category}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-slate-700">
+                    {opportunity.suggestedHook.category}
+                  </span>
+                  {HOOK_ARCHETYPE[opportunity.suggestedHook.category?.toLowerCase()] && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-white uppercase tracking-wider">
+                      {HOOK_ARCHETYPE[opportunity.suggestedHook.category.toLowerCase()]}
+                    </span>
+                  )}
+                </div>
               </div>
               {opportunity.similarTopPerformer && (
                 <div className="pt-2 border-t border-slate-100">
@@ -1060,6 +1134,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
   const [filterFormat, setFilterFormat] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState<string | null>(null);
   const [filterAudience, setFilterAudience] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<"top-scoring" | "quick-wins" | "research-backed" | null>(null);
 
   const { data, isLoading } = useQuery<OpportunitiesResponse>({
     queryKey: ["opportunities"],
@@ -1074,6 +1149,25 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
       }),
     onSuccess: (result: OpportunitiesResponse) => {
       queryClient.setQueryData(["opportunities"], result);
+    },
+  });
+
+  const { data: dismissedData } = useQuery<{ dismissed: string[] }>({
+    queryKey: ["dismissed-opportunities"],
+    queryFn: () => fetch("/api/opportunities/dismissed").then((r) => r.json()),
+    staleTime: 30_000,
+  });
+  const dismissedSet = new Set(dismissedData?.dismissed ?? []);
+
+  const dismissMutation = useMutation({
+    mutationFn: ({ topic, reason }: { topic: string; reason: string }) =>
+      fetch("/api/opportunities/dismiss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, reason }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dismissed-opportunities"] });
     },
   });
 
@@ -1099,6 +1193,11 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
     if (filterFormat && opp.suggestedFormat !== filterFormat) return false;
     if (filterPlatform && opp.targetPlatform !== filterPlatform) return false;
     if (filterAudience && opp.targetAudience !== filterAudience) return false;
+    if (activePreset === "top-scoring" && opp.overallScore < 70) return false;
+    if (activePreset === "quick-wins" && opp.suggestedFormat !== "F" && opp.suggestedFormat !== "B") return false;
+    if (activePreset === "research-backed" && opp.evidence.length < 3) return false;
+    const fingerprint = opp.topic.toLowerCase().trim().replace(/\s+/g, "_").slice(0, 100);
+    if (dismissedSet.has(fingerprint)) return false;
     return true;
   });
 
@@ -1252,6 +1351,39 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
 
       {/* Sort + Filter controls */}
       {opportunities.length > 0 && !generateMutation.isPending && <FeatureHint id="opportunity-dims" content={FEATURE_HINTS["opportunity-dims"].content} side="bottom"><span className="text-[10px] text-slate-400 mb-1 block">Tap any opportunity to see the full 7-dimension breakdown</span></FeatureHint>}
+      {/* Preset chips */}
+      {opportunities.length > 0 && !generateMutation.isPending && (
+        <FeatureHint id="opportunity-presets" content={FEATURE_HINTS["opportunity-presets"].content} side="bottom">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Quick Filter</span>
+          {(["top-scoring", "quick-wins", "research-backed"] as const).map((preset) => {
+            const labels: Record<typeof preset, string> = {
+              "top-scoring": "Top Scoring",
+              "quick-wins": "Quick Wins",
+              "research-backed": "Research-Backed",
+            };
+            const isActive = activePreset === preset;
+            return (
+              <button
+                key={preset}
+                onClick={() => setActivePreset(isActive ? null : preset)}
+                className={cn(
+                  "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors",
+                  isActive
+                    ? "bg-teal-600 text-white border-teal-600"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-teal-400 hover:text-teal-600"
+                )}
+              >
+                {labels[preset]}
+              </button>
+            );
+          })}
+          {activePreset && (
+            <span className="text-[9px] text-slate-400">{filtered.length} match</span>
+          )}
+        </div>
+        </FeatureHint>
+      )}
       {opportunities.length > 0 && !generateMutation.isPending && (
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           {/* Sort */}
@@ -1354,6 +1486,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
               key={opp.id}
               opportunity={opp}
               onClick={() => setSelectedOpp(opp)}
+              onDismiss={(topic, reason) => dismissMutation.mutate({ topic, reason })}
             />
           ))}
         </div>

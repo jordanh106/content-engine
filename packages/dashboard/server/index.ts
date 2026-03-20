@@ -49,6 +49,8 @@ import { createN8nRunnerRouter } from "./routes/n8n-runner.js";
 import { createResearchRouter } from "./routes/research.js";
 import { createViralInsightsRouter } from "./routes/viral-insights.js";
 import { createInboxRouter } from "./routes/inbox.js";
+import { createIdeaLabRouter } from "./routes/idea-lab.js";
+import { createPersonasRouter } from "./routes/personas.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -112,6 +114,8 @@ app.use("/api/n8n", createN8nRunnerRouter(contentLibraryPath));
 app.use("/api/research", createResearchRouter(contentLibraryPath));
 app.use("/api/viral-insights", createViralInsightsRouter(viralInsightsDir));
 app.use("/api/inbox", createInboxRouter(contentLibraryPath));
+app.use("/api/idea-lab", createIdeaLabRouter(contentLibraryPath));
+app.use("/api/personas", createPersonasRouter());
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

@@ -29,6 +29,9 @@ import type {
   OpportunitiesResponse,
   IntelDigest,
 } from "../shared/types.js";
+import { ViewHelp } from "./ui/ViewHelp.js";
+import { FeatureHint } from "./ui/FeatureHint.js";
+import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
@@ -690,6 +693,74 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
       </section>
 
+      {/* Content Mix */}
+      {pipeline && (() => {
+        const FORMAT_TIER: Record<string, { tier: string; label: string; color: string; seconds: string }> = {
+          F: { tier: "micro",  label: "Micro",  color: "bg-orange-400", seconds: "<15s" },
+          D: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "15-30s" },
+          G: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "15-30s" },
+          A: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "30-45s" },
+          B: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "30-45s" },
+          C: { tier: "medium", label: "Medium", color: "bg-sky-400",    seconds: "30-60s" },
+          E: { tier: "medium", label: "Medium", color: "bg-sky-400",    seconds: "45-60s" },
+        };
+
+        const allVideos = Object.values(pipeline.stages).flat();
+        const tierCounts: Record<string, number> = { micro: 0, short: 0, medium: 0, long: 0 };
+        for (const v of allVideos) {
+          const tier = FORMAT_TIER[v.format]?.tier ?? "long";
+          tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
+        }
+        const total = allVideos.length;
+        if (total === 0) return null;
+
+        const TIERS = [
+          { key: "micro",  label: "Micro",  desc: "<15s",   color: "bg-orange-400" },
+          { key: "short",  label: "Short",  desc: "15-45s", color: "bg-teal-400" },
+          { key: "medium", label: "Medium", desc: "45-90s", color: "bg-sky-400" },
+          { key: "long",   label: "Long",   desc: "90s+",   color: "bg-violet-400" },
+        ].filter((t) => tierCounts[t.key] > 0);
+
+        return (
+          <section>
+            <FeatureHint id="content-mix" content={FEATURE_HINTS["content-mix"].content} side="bottom">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">Content Mix</h2>
+            </FeatureHint>
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+              {/* Stacked bar */}
+              <div className="flex rounded-full overflow-hidden h-3 gap-0.5">
+                {TIERS.map((t) => {
+                  const pct = Math.round((tierCounts[t.key] / total) * 100);
+                  return (
+                    <div
+                      key={t.key}
+                      className={`${t.color} h-full transition-all`}
+                      style={{ width: `${pct}%` }}
+                      title={`${t.label}: ${tierCounts[t.key]} videos (${pct}%)`}
+                    />
+                  );
+                })}
+              </div>
+              {/* Legend */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {TIERS.map((t) => {
+                  const pct = Math.round((tierCounts[t.key] / total) * 100);
+                  return (
+                    <div key={t.key} className="flex items-center gap-1.5">
+                      <div className={`w-2.5 h-2.5 rounded-sm ${t.color}`} />
+                      <span className="text-[10px] font-bold text-slate-600">{t.label}</span>
+                      <span className="text-[10px] text-slate-400">{t.desc}</span>
+                      <span className="text-[10px] font-bold text-slate-700">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-400">Kallaway: ~90 min total content = superfan. Short-form at 20s avg needs 270 videos. Long-form at 60 min needs only 1.5.</p>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Trend Pulse */}
       {pulseData?.digest && (() => {
         const digest = pulseData.digest;
@@ -905,6 +976,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       <AutomationStatus />
 
       {/* Keyboard shortcut hint */}
+      <ViewHelp {...VIEW_HELP.HOME} />
       <div className="hidden md:flex justify-center pt-2">
         <p className="text-xs text-slate-400">
           Press{" "}
