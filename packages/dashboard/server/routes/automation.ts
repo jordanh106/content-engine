@@ -13,6 +13,7 @@ const TRACKED_WORKFLOWS: N8nWorkflowConfig[] = [
   { id: process.env.N8N_WORKFLOW_ID ?? "", label: "Content Intelligence - Weekly Digest", schedule: "Monday 8am" },
   { id: process.env.N8N_WATCHLIST_INTEL_WORKFLOW_ID ?? "", label: "Watchlist Intelligence", schedule: "Wednesday 8am" },
   { id: process.env.N8N_METRICS_WORKFLOW_ID ?? "", label: "Metrics Sync", schedule: "On demand" },
+  { id: process.env.N8N_CAROUSEL_BATCH_WORKFLOW_ID ?? "", label: "Carousel & Thumbnail Generator", schedule: "Friday 8am / On demand" },
 ].filter((w) => w.id);
 
 export function createAutomationRouter() {

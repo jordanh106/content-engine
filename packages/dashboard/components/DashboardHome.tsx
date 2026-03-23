@@ -21,6 +21,7 @@ import {
   Copy,
   Plus,
   Check,
+  Layers,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -517,6 +518,21 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     staleTime: 1000 * 60 * 30,
   });
 
+  const { data: carouselData } = useQuery<{ total: number; completed: number }>({
+    queryKey: ["carousel-count"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/carousels");
+        if (!res.ok) return { total: 0, completed: 0 };
+        const carousels = await res.json() as Array<{ status: string }>;
+        return { total: carousels.length, completed: carousels.filter((c) => c.status === "completed").length };
+      } catch {
+        return { total: 0, completed: 0 };
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const [copiedHook, setCopiedHook] = useState<string | null>(null);
   const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
 
@@ -649,7 +665,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
           Quick Stats
         </h2>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -670,6 +686,16 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               {metricsData?.totalViews ? (metricsData.totalViews >= 1000 ? `${(metricsData.totalViews / 1000).toFixed(1)}K` : metricsData.totalViews) : "---"}
             </p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Total Views</p>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+                <Layers size={14} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{carouselData?.completed ?? 0}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Carousels</p>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4">

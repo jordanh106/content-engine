@@ -1,0 +1,56 @@
+{
+  "brand": {
+    "primary": "#0d9488",
+    "primaryLight": "#14b8a6",
+    "background": "#f8fafc",
+    "backgroundDark": "#0f172a",
+    "accent": "#14b8a6",
+    "text": "#0f172a",
+    "textLight": "#f8fafc",
+    "muted": "#64748b"
+  },
+  "formatColors": {
+    "A": "#0d9488",
+    "B": "#059669",
+    "C": "#0284c7",
+    "D": "#e11d48",
+    "E": "#7c3aed",
+    "F": "#ea580c",
+    "G": "#ec4899"
+  },
+  "typography": {
+    "headingFont": "Georgia, 'Times New Roman', serif",
+    "bodyFont": "'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+    "headingSizeRatio": 1.0,
+    "bodySizeRatio": 1.0
+  },
+  "cover": {
+    "headlineFontSize": 64,
+    "subheadFontSize": 28,
+    "gradientAngle": 135,
+    "gradientOpacity": 0.95,
+    "accentBarHeight": 8,
+    "paddingPercent": 10
+  },
+  "content": {
+    "numberFontSize": 72,
+    "titleFontSize": 36,
+    "bodyFontSize": 24,
+    "numberOpacity": 0.15,
+    "paddingPercent": 8
+  },
+  "cta": {
+    "headlineFontSize": 42,
+    "subheadFontSize": 24,
+    "buttonFontSize": 20,
+    "buttonPaddingH": 48,
+    "buttonPaddingV": 16,
+    "buttonBorderRadius": 999
+  },
+  "thumbnail": {
+    "headlineFontSize": 72,
+    "subheadFontSize": 32,
+    "textShadowBlur": 8,
+    "overlayOpacity": 0.7
+  }
+}

@@ -33,13 +33,14 @@ import {
   recommendToolAndModel,
   suggestCameraMovement,
 } from "../shared/production-knowledge.js";
+import { CarouselsTab } from "./CarouselsTab.js";
 
 type VideoDetailProps = {
   code: string;
   onClose: () => void;
 };
 
-type Tab = "script" | "shots" | "info" | "timeline" | "produce" | "publish" | "waterfall" | "storyboard";
+type Tab = "script" | "shots" | "info" | "timeline" | "produce" | "publish" | "waterfall" | "storyboard" | "carousels";
 
 export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>("script");
@@ -170,6 +171,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
     ...(showPublishTab ? [{ id: "publish" as Tab, label: "Publish", icon: <Send size={16} /> }] : []),
     { id: "storyboard", label: "Storyboard", icon: <Film size={16} /> },
     { id: "waterfall", label: "Waterfall", icon: <GitBranch size={16} /> },
+    { id: "carousels", label: "Carousels", icon: <Layers size={16} /> },
     { id: "info", label: "Info", icon: <Sparkles size={16} /> },
   ];
 
@@ -379,6 +381,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
               {activeTab === "publish" && <PublishTab code={code} />}
               {activeTab === "storyboard" && <StoryboardTab code={code} />}
               {activeTab === "waterfall" && <WaterfallTab code={code} />}
+              {activeTab === "carousels" && <CarouselsTab code={code} />}
               {activeTab === "info" && <InfoTab video={video} code={code} />}
             </>
           )}

@@ -7,6 +7,7 @@ import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
 import { invalidateWatchlistIntelCache } from "../parsers/watchlist-insights.js";
 import { appendIdeasToFile } from "./ideas.js";
+import { generatedCarousels, carouselSlides } from "../../shared/schema.js";
 import type { MetricsSyncEntry, IdeaCategory } from "../../shared/types.js";
 
 const POLL_INTERVAL_MS = 5_000;
@@ -246,8 +247,8 @@ export function createN8nRunnerRouter(contentLibraryPath: string) {
   // POST /api/n8n/run - trigger n8n workflow and ingest results
   router.post("/run", async (req, res) => {
     const { workflowType } = req.body as { workflowType?: string };
-    if (workflowType !== "content-intel" && workflowType !== "watchlist-intel") {
-      res.status(400).json({ error: "workflowType must be 'content-intel' or 'watchlist-intel'" });
+    if (workflowType !== "content-intel" && workflowType !== "watchlist-intel" && workflowType !== "carousel-batch") {
+      res.status(400).json({ error: "workflowType must be 'content-intel', 'watchlist-intel', or 'carousel-batch'" });
       return;
     }
 
@@ -258,13 +259,15 @@ export function createN8nRunnerRouter(contentLibraryPath: string) {
       return;
     }
 
-    const workflowId =
-      workflowType === "content-intel"
-        ? process.env.N8N_METRICS_WORKFLOW_ID
-        : process.env.N8N_WATCHLIST_INTEL_WORKFLOW_ID;
+    const workflowIdMap: Record<string, { envVar: string; id: string | undefined }> = {
+      "content-intel": { envVar: "N8N_METRICS_WORKFLOW_ID", id: process.env.N8N_METRICS_WORKFLOW_ID },
+      "watchlist-intel": { envVar: "N8N_WATCHLIST_INTEL_WORKFLOW_ID", id: process.env.N8N_WATCHLIST_INTEL_WORKFLOW_ID },
+      "carousel-batch": { envVar: "N8N_CAROUSEL_BATCH_WORKFLOW_ID", id: process.env.N8N_CAROUSEL_BATCH_WORKFLOW_ID },
+    };
+
+    const { envVar, id: workflowId } = workflowIdMap[workflowType];
 
     if (!workflowId) {
-      const envVar = workflowType === "content-intel" ? "N8N_METRICS_WORKFLOW_ID" : "N8N_WATCHLIST_INTEL_WORKFLOW_ID";
       res.status(500).json({ error: `${envVar} must be set in .env` });
       return;
     }
@@ -274,10 +277,15 @@ export function createN8nRunnerRouter(contentLibraryPath: string) {
       const { executionId, durationMs } = await triggerAndWait(apiUrl, apiKey, workflowId);
       console.log(`[n8n-runner] Execution ${executionId} succeeded in ${Math.round(durationMs / 1000)}s. Ingesting...`);
 
-      const detail =
-        workflowType === "content-intel"
-          ? await ingestContentIntel(apiUrl, apiKey, executionId, contentLibraryPath)
-          : await ingestWatchlistIntel(apiUrl, apiKey, executionId, contentLibraryPath);
+      let detail: Record<string, unknown>;
+      if (workflowType === "content-intel") {
+        detail = await ingestContentIntel(apiUrl, apiKey, executionId, contentLibraryPath);
+      } else if (workflowType === "watchlist-intel") {
+        detail = await ingestWatchlistIntel(apiUrl, apiKey, executionId, contentLibraryPath);
+      } else {
+        // carousel-batch: execution data is ingested via POST /api/carousels/ingest from the workflow itself
+        detail = { message: "Carousel batch workflow completed. Images ingested via webhook callback." };
+      }
 
       const result: RunResult = { triggered: true, ingested: true, executionId, durationMs, detail };
       res.status(200).json(result);

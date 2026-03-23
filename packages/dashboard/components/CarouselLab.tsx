@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutGrid, Plus, ChevronRight, RotateCcw, Copy, Check, ExternalLink,
@@ -68,6 +68,28 @@ const DEFAULT_POINTS = [
   "The counterintuitive point most people get wrong",
   "The practical takeaway your audience can act on today",
 ];
+
+function substituteHookVars(template: string, topic: string, audience: string): string {
+  const t = topic.trim() || "[topic]";
+  const g = audience ? audience.split(" / ")[0].toLowerCase() : "[group]";
+  // Extract core noun phrase from topic (strip leading question words + trailing verb phrases)
+  const subject = t
+    .replace(/^(why|how|what|the truth about|stop|fix|signs|things|(\d+)\s+signs?\s+(your)?)\s*/i, "")
+    .replace(/\s+(keeps?|is|are|needs?|wants?|will|can|should)\s+.*$/i, "")
+    .trim() || t;
+  return template
+    .replace(/\[topic\]/gi, t)
+    .replace(/\[professional\]/gi, "chiropractor")
+    .replace(/\[group\]/gi, g)
+    .replace(/\[problem\]/gi, subject)
+    .replace(/\[condition\]/gi, subject)
+    .replace(/\[short time\]/gi, "30 seconds")
+    .replace(/\[Y time\]/gi, "30 days")
+    .replace(/\[X\]/gi, subject)
+    .replace(/\[Startling number\]/gi, "80")
+    .replace(/\[Common advice\]/gi, `"${subject} will fix itself"`)
+    .replace(/\[Surprising thing\]/gi, `What ${subject} actually does`);
+}
 
 const FALLBACK_AUDIENCES = [
   "New Moms / Young Families",
@@ -455,6 +477,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
   // ── Hook pattern panel
   const [showHookPatterns, setShowHookPatterns] = useState(false);
+  const [pendingHookReplace, setPendingHookReplace] = useState<number | null>(null);
 
   // ── Fetch all carousels
   const { data: carousels = [] } = useQuery<GeneratedCarousel[]>({
@@ -525,6 +548,17 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
     setActiveCarouselId(null);
   };
 
+  // ── Auto-detect point count from topic pattern (e.g., "5 signs..." → 5 empty fields)
+  useEffect(() => {
+    const match = topic.match(/^(\d+)\s+(signs?|reasons?|ways?|things?|tips?|facts?|steps?)/i);
+    if (match) {
+      const count = Math.min(parseInt(match[1], 10), 6);
+      if (count !== talkingPoints.length && talkingPoints.every((p) => !p.trim())) {
+        setTalkingPoints(Array(count).fill(""));
+      }
+    }
+  }, [topic]);
+
   // ── Generate mutation (Fresh Start)
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -585,6 +619,42 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["carousels-lab"] });
       if (activeCarouselId === id) setActiveCarouselId(null);
+    },
+  });
+
+  // ── Suggest content points via Claude
+  const suggestPointsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/carousels/suggest-points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          audience: audience || undefined,
+          archetype: archetype || undefined,
+          hookLine: hookLine || undefined,
+          platform: platform.platform,
+          aspectRatio: platform.aspectRatio,
+          count: talkingPoints.length,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to suggest points");
+      return res.json() as Promise<{ points: string[] }>;
+    },
+    onSuccess: (data) => {
+      setTalkingPoints(data.points);
+    },
+  });
+
+  // ── Retry failed/stuck carousel
+  const retryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/carousels/${id}/retry`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to retry");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["carousels"] });
     },
   });
 
@@ -914,12 +984,22 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                 </div>
                                 <button
                                   onClick={() => {
-                                    setHookLine(pat.template);
+                                    if (hookLine.trim() && pendingHookReplace !== i) {
+                                      setPendingHookReplace(i);
+                                      return;
+                                    }
+                                    setHookLine(substituteHookVars(pat.template, topic, audience));
                                     setShowHookPatterns(false);
+                                    setPendingHookReplace(null);
                                   }}
-                                  className="shrink-0 text-xs font-bold text-violet-500 hover:text-violet-700 mt-0.5"
+                                  className={cn(
+                                    "shrink-0 text-xs font-bold mt-0.5",
+                                    pendingHookReplace === i
+                                      ? "text-rose-500 hover:text-rose-700"
+                                      : "text-violet-500 hover:text-violet-700"
+                                  )}
                                 >
-                                  Use
+                                  {pendingHookReplace === i ? "Replace?" : "Use"}
                                 </button>
                               </div>
                             ))}
@@ -929,16 +1009,31 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                       {/* Talking points */}
                       <div>
-                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">
-                          Content Points
-                        </label>
-                        <p className="text-[11px] text-slate-400 mb-2">One per slide, 3-5 recommended</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Content Points</div>
+                            <div className="text-[11px] text-slate-400 normal-case tracking-normal font-normal">One per slide, 3-5 recommended</div>
+                          </div>
+                          {topic.trim().split(/\s+/).length >= 3 && (
+                            <button
+                              onClick={() => suggestPointsMutation.mutate()}
+                              disabled={suggestPointsMutation.isPending}
+                              className="text-[11px] font-bold text-violet-500 hover:text-violet-700 disabled:opacity-40 flex items-center gap-1 shrink-0"
+                            >
+                              {suggestPointsMutation.isPending ? (
+                                <span className="animate-pulse">Thinking...</span>
+                              ) : (
+                                <>✦ Suggest</>
+                              )}
+                            </button>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           {talkingPoints.map((pt, i) => (
                             <div key={i} className="flex gap-2 items-center">
                               <span className="text-xs font-bold text-slate-400 w-5 shrink-0">{i + 1}.</span>
-                              <input
-                                type="text"
+                              <textarea
+                                rows={2}
                                 value={pt}
                                 onChange={(e) => {
                                   const next = [...talkingPoints];
@@ -946,7 +1041,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                   setTalkingPoints(next);
                                 }}
                                 placeholder={DEFAULT_POINTS[i] ?? `Point ${i + 1}`}
-                                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
+                                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300 resize-y"
                               />
                               {talkingPoints.length > 1 && (
                                 <button
@@ -1186,6 +1281,18 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       Edit Slide {activeSlideIndex + 1}
                     </p>
                   </FeatureHint>
+
+                  {/* Show slide image if available */}
+                  {slides[activeSlideIndex]?.imagePath && (
+                    <div className="mb-4 rounded-xl overflow-hidden border border-slate-200">
+                      <img
+                        src={slides[activeSlideIndex].imagePath!}
+                        alt={`Slide ${activeSlideIndex + 1}`}
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  )}
+
                   <SlideEditor
                     slide={slides[activeSlideIndex]}
                     isActive={true}
@@ -1195,17 +1302,20 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   />
                 </div>
               ) : (
-                activeCarousel.status === "generating" ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
-                    <Loader2 size={14} className="animate-spin" />
-                    Rendering slides via n8n…
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
-                    <Image size={14} />
-                    No slides yet — slides appear after n8n rendering completes.
-                  </div>
-                )
+                <div className="flex flex-col items-center gap-3 text-sm text-slate-400 py-8">
+                  {activeCarousel.status === "generating" ? (
+                    <>
+                      <Loader2 size={24} className="animate-spin text-teal-500" />
+                      <p className="font-medium text-slate-600">Generating AI slide images...</p>
+                      <p className="text-xs text-slate-400">This takes ~30 seconds for {activeCarousel.slideCount} slides. Page auto-refreshes.</p>
+                    </>
+                  ) : (
+                    <>
+                      <Image size={14} />
+                      <p>No slides yet.</p>
+                    </>
+                  )}
+                </div>
               )}
 
               <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
@@ -1217,6 +1327,17 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   {copied ? <Check size={10} /> : <Copy size={10} />}
                   {copied ? "Copied!" : "Copy Slide Text"}
                 </button>
+
+                {(activeCarousel.status === "failed" || activeCarousel.status === "generating") && (
+                  <button
+                    onClick={() => retryMutation.mutate(activeCarousel.id)}
+                    disabled={retryMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border border-violet-500 text-violet-600 hover:bg-violet-50 disabled:opacity-40 transition-colors"
+                  >
+                    <RotateCcw size={10} className={retryMutation.isPending ? "animate-spin" : ""} />
+                    {retryMutation.isPending ? "Retrying..." : "Retry"}
+                  </button>
+                )}
 
                 <FeatureHint id="carousel-canva-push" content="After saving, run /carousel-lab push [id] in Claude Code to create a Canva design. The URL will appear here when done." side="top">
                   <button

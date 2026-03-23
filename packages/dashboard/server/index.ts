@@ -51,6 +51,7 @@ import { createViralInsightsRouter } from "./routes/viral-insights.js";
 import { createInboxRouter } from "./routes/inbox.js";
 import { createIdeaLabRouter } from "./routes/idea-lab.js";
 import { createPersonasRouter } from "./routes/personas.js";
+import { createCarouselsRouter } from "./routes/carousels.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -82,6 +83,11 @@ const viralInsightsDir = path.join(industryDir, "viral-insights");
 const storyboardImagesDir = path.join(dataDir, "storyboard-images");
 if (!fs.existsSync(storyboardImagesDir)) fs.mkdirSync(storyboardImagesDir, { recursive: true });
 app.use("/storyboard-images", express.static(storyboardImagesDir));
+
+// Static: carousel images
+const carouselImagesDir = path.join(dataDir, "carousel-images");
+if (!fs.existsSync(carouselImagesDir)) fs.mkdirSync(carouselImagesDir, { recursive: true });
+app.use("/carousel-images", express.static(carouselImagesDir));
 
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
@@ -116,6 +122,7 @@ app.use("/api/viral-insights", createViralInsightsRouter(viralInsightsDir));
 app.use("/api/inbox", createInboxRouter(contentLibraryPath));
 app.use("/api/idea-lab", createIdeaLabRouter(contentLibraryPath));
 app.use("/api/personas", createPersonasRouter());
+app.use("/api/carousels", createCarouselsRouter(contentLibraryPath, carouselImagesDir));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

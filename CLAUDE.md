@@ -30,6 +30,8 @@ scripts/             Repo utilities (install, scaffold)
 - Viral insights: `industries/chiropractic/viral-insights/` (scout reports and cumulative patterns)
 - Creator insights: `industries/chiropractic/creator-insights/` (per-creator analysis profiles)
 - Watchlist intelligence: `industries/chiropractic/watchlist-insights/` (weekly competitive intelligence reports)
+- Carousel strategy: `industries/chiropractic/carousel-strategy.md` (autoresearch-optimized content rules for carousels)
+- Carousel optimizer: `industries/chiropractic/carousel-optimizer/` (autoresearch loop configurations for templates + strategy)
 
 ## Skills
 
@@ -145,6 +147,7 @@ No auth. Localhost only. Solo internal tool accessed from desktop and phone.
 - **Inspiration Inbox**: Frictionless raw-idea capture layer in IdeasView. SQLite-only (`inspiration_inbox` table, no markdown file). Statuses: inbox / developed / dismissed. Develop action writes to `idea-bank.md`.
 - **Trend Pulse widget**: Home screen widget surfacing latest n8n Content Intelligence digest. Shows trending topics, hook patterns, content gaps. One-click "+ Add to Ideas". Auto-hidden if no digest file exists.
 - **Carousel Waterfall tier**: Auto-Generate in Waterfall tab produces 12 derivatives (was 10). Two new carousel items: Instagram (7-slide) + LinkedIn (6-slide) with AI-generated slide outlines. Carousel cards in WaterfallTab show expandable slide-by-slide briefs.
+- **Carousel & Thumbnail Pipeline**: Self-improving carousel generation via n8n workflows + autoresearch loops. Branded HTML templates (cover, content, CTA, thumbnail) rendered to images. Dashboard-triggered generation from VideoDetail CarouselsTab. Batch workflow on Friday 8am. Two autoresearch optimization loops: template design + content strategy, both driven by composite engagement score. Version stamping tracks which template/strategy produced which results.
 
 **Phases 3-4 PENDING**:
 - Phase 3: Session Planner (batch production checklist with timer, auto-advance status on completion)
@@ -174,6 +177,8 @@ SQLite DB           ──query──→   Status, dates, calendar, sessions, me
 - `session_items` - Checklist items within a session
 - `performance_metrics` - Post-publish metrics (views, likes, saves, shares, comments)
 - `inspiration_inbox` - Raw idea captures (content, source_url, status: inbox/developed/dismissed)
+- `generated_carousels` - Carousel metadata with template/strategy version stamps, composite scores
+- `carousel_slides` - Individual slide records (image paths, slide type, index)
 
 ### Design System
 
@@ -330,8 +335,85 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 |----------|----|---------|---------|
 | Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
 | Watchlist Intelligence | sQXCCmZ7HspGFJME | Weekly (Wednesday 8am) | Monitors watchlist creators, finds non-obvious opportunities via cross-niche analysis, self-improves by reading previous outputs |
+| Carousel & Thumbnail Generator | 2RVLLlgoDcr7hs4f | Friday 8am / On demand | Generates branded carousel slides and YouTube thumbnails from HTML templates |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
+
+## Carousel & Thumbnail Pipeline
+
+Self-improving carousel generation system using n8n workflows and autoresearch optimization loops.
+
+### Architecture
+
+```
+Dashboard "Generate Carousel" ──POST──> n8n Webhook (/carousel-generate)
+                                              │
+Weekly Schedule Trigger ──────────────────────┘
+                                              ▼
+                                  [Code: Build Slide HTML from templates]
+                                              ▼
+                                  [HTML-to-Image rendering]
+                                              ▼
+Dashboard receives images ──> data/carousel-images/ ──> SQLite tracking
+                                              │
+                          Publish ──> Collect metrics ──> Autoresearch loop
+```
+
+### Platform Dimensions
+
+| Platform | Aspect | Width | Height |
+|----------|--------|-------|--------|
+| Instagram (square) | 1:1 | 1080 | 1080 |
+| Instagram (portrait) | 4:5 | 1080 | 1350 |
+| LinkedIn | 1:1 | 1080 | 1080 |
+| TikTok | 9:16 | 1080 | 1920 |
+| YouTube thumbnail | 16:9 | 1280 | 720 |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `packages/dashboard/server/routes/carousels.ts` | CRUD + generation + metrics routes |
+| `packages/dashboard/server/carousel-templates/` | Editable HTML/CSS templates (autoresearch asset) |
+| `packages/dashboard/server/carousel-templates/config.json` | Template variables (font sizes, spacing, colors) |
+| `packages/dashboard/components/CarouselsTab.tsx` | Carousel generation UI in VideoDetail |
+| `packages/dashboard/components/ui/CarouselPreview.tsx` | Slide viewer with lightbox |
+| `industries/chiropractic/carousel-strategy.md` | Content strategy rules (autoresearch asset) |
+| `industries/chiropractic/carousel-optimizer/` | Autoresearch loop configurations |
+
+### API Routes
+
+- `GET /api/carousels` - List with filters (?videoCode, ?platform, ?status)
+- `GET /api/carousels/:id` - Single carousel with slides
+- `POST /api/carousels/generate` - Create and trigger n8n generation
+- `POST /api/carousels/:videoCode/from-script` - Auto-extract from video script
+- `POST /api/carousels/ingest` - Receive images from batch workflow
+- `DELETE /api/carousels/:id` - Remove carousel + images
+- `GET /api/carousels/templates` - Serve current templates + strategy for n8n
+- `GET /api/carousels/metrics/score` - Composite engagement score (autoresearch verify)
+- `GET /api/carousels/metrics/by-version` - Performance by template/strategy version
+- `GET /api/carousels/experiments` - Experiment log for autoresearch
+
+### Autoresearch Self-Improving Loops
+
+Two optimization loops, each with its own editable asset and scalar metric:
+
+**Template Loop** (`carousel-optimizer/template-loop.md`):
+- Asset: `packages/dashboard/server/carousel-templates/**`
+- Metric: `curl -s http://localhost:3001/api/carousels/metrics/score | jq '.compositeScore'`
+- Optimizes: font sizes, colors, spacing, gradients, CTA styling
+
+**Strategy Loop** (`carousel-optimizer/strategy-loop.md`):
+- Asset: `industries/chiropractic/carousel-strategy.md`
+- Metric: same composite score filtered by strategy version
+- Optimizes: hook rankings, slide counts, copy length, CTA wording, content structure
+
+Composite score formula: `save_rate*0.4 + share_rate*0.3 + engagement*0.2 + ctr*0.1`
+
+### SQLite Tables
+
+- `generated_carousels` - Carousel metadata, version stamps, composite scores
+- `carousel_slides` - Individual slide records with image paths
 
 ## Git
 
