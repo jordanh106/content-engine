@@ -65,9 +65,9 @@ class TestRenderCompact(unittest.TestCase):
             mode="reddit-only",
         )
 
-        result = render.render_compact(report, missing_keys="x")
+        result = render.render_compact(report)
 
-        self.assertIn("XAI_API_KEY", result)
+        self.assertIn("xAI key", result)
 
 
 class TestRenderContextSnippet(unittest.TestCase):
@@ -110,6 +110,54 @@ class TestGetContextPath(unittest.TestCase):
         result = render.get_context_path()
         self.assertIsInstance(result, str)
         self.assertIn("last30days.context.md", result)
+
+
+class TestEnsureOutputDir(unittest.TestCase):
+    """Tests for ensure_output_dir()."""
+
+    def test_creates_directory(self):
+        import os
+        import tempfile
+        test_dir = os.path.join(tempfile.mkdtemp(), "output", "nested")
+        os.environ["LAST30DAYS_OUTPUT_DIR"] = test_dir
+        try:
+            render.ensure_output_dir()
+            self.assertTrue(os.path.exists(test_dir))
+        finally:
+            os.environ.pop("LAST30DAYS_OUTPUT_DIR", None)
+
+
+class TestXrefTag(unittest.TestCase):
+    """Tests for _xref_tag()."""
+
+    def test_no_refs(self):
+        item = schema.RedditItem(id="R1", title="T", url="u", subreddit="s")
+        self.assertEqual(render._xref_tag(item), "")
+
+    def test_with_refs(self):
+        item = schema.RedditItem(
+            id="R1", title="T", url="u", subreddit="s",
+            cross_refs=["X1", "HN2"],
+        )
+        tag = render._xref_tag(item)
+        self.assertIn("X", tag)
+        self.assertIn("HN", tag)
+
+
+class TestRenderEmptyReport(unittest.TestCase):
+    """Test render_compact handles empty reports gracefully."""
+
+    def test_empty_items_graceful(self):
+        report = schema.Report(
+            topic="test",
+            range_from="2026-02-04",
+            range_to="2026-03-06",
+            generated_at="2026-03-06T00:00:00+00:00",
+            mode="both",
+        )
+        output = render.render_compact(report)
+        self.assertIn("test", output)
+        self.assertIsInstance(output, str)
 
 
 if __name__ == "__main__":
