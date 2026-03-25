@@ -10,6 +10,7 @@ import { db } from "../db.js";
 import { creatorVideos, videoBreakdowns, channelSnapshots, vaultHooks } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { downloadVideo, isYtDlpAvailable, cleanupDownload } from "../lib/video-downloader.js";
+import { ensureThumbnail } from "../lib/thumbnail-resolver.js";
 
 if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
 
@@ -36,7 +37,7 @@ function extractVariables(pattern: string): string[] {
   return [...new Set(matches.map((m) => m.slice(1, -1)))];
 }
 
-export function createCreatorVideosRouter(contentLibraryPath: string) {
+export function createCreatorVideosRouter(contentLibraryPath: string, thumbnailsDir?: string) {
   const router = Router();
 
   let client: Anthropic | null = null;
@@ -149,6 +150,11 @@ export function createCreatorVideosRouter(contentLibraryPath: string) {
         .returning()
         .get();
 
+      // Resolve thumbnail in background
+      if (thumbnailsDir && result.videoUrl) {
+        ensureThumbnail(result, thumbnailsDir).catch(() => {});
+      }
+
       res.json({ video: result });
     } catch (error) {
       console.error("[creator-videos] Error saving video:", error);
@@ -255,6 +261,13 @@ Respond with JSON only:
           .returning()
           .get();
         savedVideos.push(result);
+
+        // Resolve and cache thumbnail in background
+        if (thumbnailsDir && result.videoUrl && result.videoUrl !== "unknown") {
+          ensureThumbnail(result, thumbnailsDir).catch((err) =>
+            console.warn(`[creator-videos] Thumbnail resolve failed for ${result.id}:`, err)
+          );
+        }
       }
 
       console.log(`[creator-videos] Scanned @${handle}: ${savedVideos.length} videos, avgViews=${avgViews}`);
@@ -270,6 +283,50 @@ Respond with JSON only:
       console.error("[creator-videos] Scan error:", error);
       const message = error instanceof Error ? error.message : "Failed to scan creator videos";
       res.status(500).json({ error: message });
+    }
+  });
+
+  // PUT /api/creator-videos/:id/status - Update video status
+  router.put("/:id/status", (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      const validStatuses = ["inbox", "starred", "saved", "archived"];
+      if (!validStatuses.includes(status)) {
+        res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
+        return;
+      }
+      db.update(creatorVideos).set({ status }).where(eq(creatorVideos.id, id)).run();
+      res.json({ id, status });
+    } catch (error) {
+      console.error("[creator-videos] Error updating status:", error);
+      res.status(500).json({ error: "Failed to update status" });
+    }
+  });
+
+  // DELETE /api/creator-videos/:id - Remove a video and its cached thumbnail
+  router.delete("/:id", (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const video = db.select().from(creatorVideos).where(eq(creatorVideos.id, id)).get();
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      // Remove cached thumbnail file
+      if (video.thumbnailUrl && video.thumbnailUrl.startsWith("/thumbnails/") && thumbnailsDir) {
+        const thumbPath = path.join(thumbnailsDir, path.basename(video.thumbnailUrl));
+        if (fs.existsSync(thumbPath)) {
+          fs.unlinkSync(thumbPath);
+        }
+      }
+
+      db.delete(creatorVideos).where(eq(creatorVideos.id, id)).run();
+      res.json({ deleted: true, id });
+    } catch (error) {
+      console.error("[creator-videos] Error deleting video:", error);
+      res.status(500).json({ error: "Failed to delete video" });
     }
   });
 

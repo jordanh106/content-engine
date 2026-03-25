@@ -439,6 +439,11 @@ try {
   sqlite.exec(`ALTER TABLE storyboard_shots ADD COLUMN image_style TEXT`);
 } catch { /* column already exists */ }
 
+// Migration: Add status column to creator_videos
+try {
+  sqlite.exec(`ALTER TABLE creator_videos ADD COLUMN status TEXT NOT NULL DEFAULT 'inbox'`);
+} catch { /* column already exists */ }
+
 // Migration: Create production_checklist table
 sqlite.exec(`CREATE TABLE IF NOT EXISTS production_checklist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

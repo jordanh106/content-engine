@@ -52,6 +52,7 @@ import { createInboxRouter } from "./routes/inbox.js";
 import { createIdeaLabRouter } from "./routes/idea-lab.js";
 import { createPersonasRouter } from "./routes/personas.js";
 import { createCarouselsRouter } from "./routes/carousels.js";
+import { createDiscoverRouter } from "./routes/discover.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -89,6 +90,11 @@ const carouselImagesDir = path.join(dataDir, "carousel-images");
 if (!fs.existsSync(carouselImagesDir)) fs.mkdirSync(carouselImagesDir, { recursive: true });
 app.use("/carousel-images", express.static(carouselImagesDir));
 
+// Static: cached video thumbnails
+const thumbnailsDir = path.join(dataDir, "thumbnails");
+if (!fs.existsSync(thumbnailsDir)) fs.mkdirSync(thumbnailsDir, { recursive: true });
+app.use("/thumbnails", express.static(thumbnailsDir));
+
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
@@ -109,7 +115,7 @@ app.use("/api/captions", createCaptionsRouter(contentLibraryPath));
 app.use("/api/video-analysis", createVideoAnalysisRouter(contentLibraryPath));
 app.use("/api/benchmarking", createBenchmarkingRouter(contentLibraryPath));
 app.use("/api/vault", createVaultRouter(contentLibraryPath));
-app.use("/api/creator-videos", createCreatorVideosRouter(contentLibraryPath));
+app.use("/api/creator-videos", createCreatorVideosRouter(contentLibraryPath, thumbnailsDir));
 app.use("/api/search", createSearchRouter(contentLibraryPath));
 app.use("/api/automation", createAutomationRouter());
 app.use("/api/storyboards", createStoryboardsRouter(contentLibraryPath, dataDir));
@@ -123,6 +129,7 @@ app.use("/api/inbox", createInboxRouter(contentLibraryPath));
 app.use("/api/idea-lab", createIdeaLabRouter(contentLibraryPath));
 app.use("/api/personas", createPersonasRouter());
 app.use("/api/carousels", createCarouselsRouter(contentLibraryPath, carouselImagesDir));
+app.use("/api/discover", createDiscoverRouter(contentLibraryPath, viralInsightsDir, thumbnailsDir));
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

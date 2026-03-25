@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy } from "lucide-react";
+import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy, LayoutGrid, List } from "lucide-react";
+import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { FEATURE_HINTS } from "../shared/help-content.js";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
@@ -1547,6 +1548,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
   const [searchHandle, setSearchHandle] = useState("");
   const [expandedVideo, setExpandedVideo] = useState<number | null>(null);
   const [analyzeUrlOpen, setAnalyzeUrlOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [urlInput, setUrlInput] = useState("");
   const [urlResult, setUrlResult] = useState<{ breakdown: VideoBreakdown; videoTitle: string; frameCount: number; hasTranscript: boolean } | null>(null);
 
@@ -1746,7 +1748,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
         </div>
       </div>
 
-      {/* Video grid */}
+      {/* View mode toggle + Video grid */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-400 text-sm">Loading videos...</div>
       ) : videos.length === 0 ? (
@@ -1757,15 +1759,60 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
         />
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-slate-400">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
-          {videos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              isExpanded={expandedVideo === video.id}
-              onToggle={() => setExpandedVideo(expandedVideo === video.id ? null : video.id)}
-            />
-          ))}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
+              >
+                <List size={14} />
+              </button>
+            </div>
+          </div>
+
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {videos.map((video) => (
+                <VideoThumbnailCard
+                  key={video.id}
+                  thumbnailUrl={video.thumbnailUrl}
+                  videoUrl={video.videoUrl}
+                  title={video.videoTitle || `@${video.creatorHandle} video`}
+                  subtitle={`@${video.creatorHandle}`}
+                  platform={video.platform}
+                  views={video.views ?? undefined}
+                  outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
+                  durationSeconds={video.durationSeconds ?? undefined}
+                  createdAt={video.createdAt}
+                  onClick={() => {
+                    if (video.videoUrl && video.videoUrl !== "unknown") {
+                      window.open(video.videoUrl, "_blank", "noopener");
+                    } else {
+                      setExpandedVideo(expandedVideo === video.id ? null : video.id);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {videos.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  video={video}
+                  isExpanded={expandedVideo === video.id}
+                  onToggle={() => setExpandedVideo(expandedVideo === video.id ? null : video.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

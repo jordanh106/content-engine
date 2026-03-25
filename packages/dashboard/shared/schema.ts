@@ -176,6 +176,7 @@ export const creatorVideos = sqliteTable("creator_videos", {
   shares: integer("shares").default(0),
   saves: integer("saves").default(0),
   outlierScoreX100: integer("outlier_score_x100"),
+  status: text("status").notNull().default("inbox"),
   recordedAt: text("recorded_at").notNull(),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });

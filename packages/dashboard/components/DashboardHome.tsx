@@ -22,6 +22,7 @@ import {
   Plus,
   Check,
   Layers,
+  Flame,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -29,7 +30,9 @@ import type {
   DashboardView,
   OpportunitiesResponse,
   IntelDigest,
+  CreatorVideo,
 } from "../shared/types.js";
+import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -533,6 +536,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: outlierVideos } = useQuery<{ videos: CreatorVideo[]; total: number }>({
+    queryKey: ["outlier-videos-home"],
+    queryFn: () => fetch("/api/creator-videos?sort=outlierScore&minOutlierScore=200").then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const [copiedHook, setCopiedHook] = useState<string | null>(null);
   const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
 
@@ -786,6 +795,44 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </section>
         );
       })()}
+
+      {/* Blowing Up Right Now - Outlier Videos */}
+      {(outlierVideos?.videos?.length ?? 0) > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5">
+              <Flame size={12} className="text-orange-500" />
+              Blowing Up Right Now
+            </h2>
+            <button
+              onClick={() => onNavigate("DISCOVER_FEED")}
+              className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors"
+            >
+              See All →
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x scrollbar-hide">
+            {outlierVideos!.videos.slice(0, 10).map((video) => (
+              <VideoThumbnailCard
+                key={video.id}
+                thumbnailUrl={video.thumbnailUrl}
+                videoUrl={video.videoUrl}
+                title={video.videoTitle || `@${video.creatorHandle}`}
+                subtitle={`@${video.creatorHandle}`}
+                platform={video.platform}
+                views={video.views ?? undefined}
+                outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
+                durationSeconds={video.durationSeconds ?? undefined}
+                createdAt={video.createdAt}
+                size="sm"
+                onClick={() => {
+                  if (video.videoUrl && video.videoUrl !== "unknown") window.open(video.videoUrl, "_blank", "noopener");
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Trend Pulse */}
       {pulseData?.digest && (() => {

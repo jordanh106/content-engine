@@ -633,6 +633,33 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  DISCOVER_FEED: {
+    title: "Discover",
+    description:
+      "Visual discovery feed showing top-performing competitor videos, your own best content, and trending topics. Hover thumbnails to preview.",
+    tips: [
+      {
+        label: "Outlier Videos",
+        detail:
+          "Videos that performed 2x or more above their creator's average. These are the content patterns worth studying and adapting.",
+      },
+      {
+        label: "Hover to Preview",
+        detail:
+          "On desktop, hover any video thumbnail to play a muted preview. On mobile, videos auto-play when scrolled into view.",
+      },
+      {
+        label: "Your Top Performers",
+        detail:
+          "Your own published videos ranked by total views. Click to open full details and see what worked.",
+      },
+      {
+        label: "Trending Topics",
+        detail:
+          "Latest trending topics from the weekly intelligence digest. Click '+ Create' to turn a trend into a content idea.",
+      },
+    ],
+  },
   PIPELINE: {
     title: "Production Pipeline",
     description:

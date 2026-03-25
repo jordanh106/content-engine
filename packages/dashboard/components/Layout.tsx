@@ -19,6 +19,7 @@ import {
   Brain,
   Users,
   LayoutGrid,
+  Compass,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
@@ -42,6 +43,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "DISCOVER",
     phase: "discover",
     items: [
+      { view: "DISCOVER_FEED", label: "Discover", icon: <Compass size={18} /> },
       { view: "OPPORTUNITIES", label: "Opportunities", icon: <Radar size={18} /> },
       { view: "IDEAS", label: "Ideas", icon: <Lightbulb size={18} /> },
       { view: "WATCHLIST", label: "Watchlist", icon: <Eye size={18} /> },

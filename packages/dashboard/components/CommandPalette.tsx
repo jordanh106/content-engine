@@ -20,6 +20,7 @@ import {
   Hash,
   User,
   Layers,
+  Compass,
 } from "lucide-react";
 import type { DashboardView } from "../shared/types.js";
 
@@ -152,6 +153,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const navigationItems: CommandItemWithShortcut[] = [
     { id: "home", label: "Home", icon: <LayoutDashboard size={16} />, action: () => nav("HOME"), group: "navigation", keywords: "dashboard overview", shortcut: "1" },
+    { id: "discover", label: "Discover", icon: <Compass size={16} />, action: () => nav("DISCOVER_FEED"), group: "navigation", keywords: "discover feed trending outliers inspiration videos", shortcut: "D" },
     { id: "opportunities", label: "Opportunities", icon: <Radar size={16} />, action: () => nav("OPPORTUNITIES"), group: "navigation", keywords: "discover trends scoring", shortcut: "2" },
     { id: "ideas", label: "Ideas", icon: <Lightbulb size={16} />, action: () => nav("IDEAS"), group: "navigation", keywords: "idea bank brainstorm", shortcut: "3" },
     { id: "watchlist", label: "Watchlist", icon: <Eye size={16} />, action: () => nav("WATCHLIST"), group: "navigation", keywords: "creators competitors", shortcut: "W" },

@@ -23,6 +23,7 @@ import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
 import { FieldManual } from "./FieldManual.js";
 import { PerformanceReviewView } from "./PerformanceReviewView.js";
 import { CarouselLab } from "./CarouselLab.js";
+import { DiscoverFeed } from "./DiscoverFeed.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -77,6 +78,7 @@ const AppInner: React.FC = () => {
         case "9": setView("METRICS"); break;
         case "v": setVaultOpen((prev) => !prev); break;
         case "w": setView("WATCHLIST"); break;
+        case "d": setView("DISCOVER_FEED"); break;
         case "?": setGuideOpen((prev) => !prev); break;
       }
     };
@@ -134,6 +136,7 @@ const AppInner: React.FC = () => {
         {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
         {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
         {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
+        {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
 
         {selectedVideoCode && (
           <VideoDetail

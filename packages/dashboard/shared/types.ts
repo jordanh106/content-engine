@@ -178,6 +178,7 @@ export type VideoDetailResponse = ParsedVideo & {
 
 export const DASHBOARD_VIEWS = [
   "HOME",
+  "DISCOVER_FEED",
   "PIPELINE",
   "LIBRARY",
   "IDEAS",
@@ -1001,9 +1002,14 @@ export type CreatorVideo = {
   shares: number;
   saves: number;
   outlierScoreX100: number | null;
+  status: string;
   recordedAt: string;
   createdAt: string;
 };
+
+// ============================================
+// Discover Feed Types
+// ============================================
 
 export type VideoBreakdown = {
   id: number;
