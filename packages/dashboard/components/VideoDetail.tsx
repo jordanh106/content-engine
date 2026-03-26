@@ -184,9 +184,9 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
       />
 
       {/* Panel - full screen on mobile, slide-out on desktop */}
-      <div className="fixed inset-0 md:inset-y-0 md:right-0 md:left-auto md:w-[560px] bg-white z-50 flex flex-col shadow-xl">
+      <div className="fixed inset-0 md:inset-y-0 md:right-0 md:left-auto md:w-[560px] bg-surface-elevated z-50 flex flex-col shadow-xl">
         {/* Header */}
-        <div className="flex items-start justify-between p-4 md:p-6 border-b border-slate-200">
+        <div className="flex items-start justify-between p-4 md:p-6 border-b border-themed">
           <div className="flex-1 min-w-0">
             {video && (
               <>
@@ -197,7 +197,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                   <StatusBadge status={video.status} />
                   <AdvanceStatusButton video={video} onAdvanced={() => queryClient.invalidateQueries({ queryKey: ["video-detail", code] })} />
                 </div>
-                <h2 className="text-lg font-serif font-bold text-slate-900 leading-snug">
+                <h2 className="text-lg font-serif font-bold text-themed leading-snug">
                   {video.title}
                 </h2>
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -206,7 +206,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                     audience={video.audience}
                     label={video.audienceLabel}
                   />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-0.5">
+                  <span className="text-[10px] font-bold text-themed-muted uppercase tracking-wider px-2 py-0.5">
                     {video.duration}s
                   </span>
                 </div>
@@ -215,20 +215,20 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 rounded-lg hover:bg-surface-hover text-themed-tertiary min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Render panel */}
-        <div className="px-4 md:px-6 py-4 border-b border-slate-200 bg-teal-50/40">
+        <div className="px-4 md:px-6 py-4 border-b border-themed bg-teal-50/40">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-1">
                 Motion Graphics
               </p>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-themed-secondary">
                 Generate individual clips for assembly in CapCut.
               </p>
             </div>
@@ -239,7 +239,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
                   renderAllShotsMutation.isPending || hasActiveShotJobs
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    ? "bg-surface-hover text-themed-tertiary cursor-not-allowed"
                     : "bg-teal-600 text-white hover:bg-teal-700",
                 )}
               >
@@ -261,7 +261,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
                   renderMutation.isPending || isRendering
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    ? "bg-surface-hover text-themed-tertiary cursor-not-allowed"
                     : "bg-slate-600 text-white hover:bg-slate-700",
                 )}
               >
@@ -308,10 +308,10 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
 
           {/* Legacy full composition latest job */}
           {latestJob && !latestJob.shotId && (
-            <div className="mt-3 p-3 rounded-xl border border-slate-200 bg-white">
+            <div className="mt-3 p-3 rounded-xl border border-themed bg-surface-elevated">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-slate-600">
-                  Full composition: <span className="font-mono text-slate-800">{latestJob.id.slice(0, 8)}</span>
+                <p className="text-xs text-themed-secondary">
+                  Full composition: <span className="font-mono text-themed">{latestJob.id.slice(0, 8)}</span>
                 </p>
                 <JobStatusBadge status={latestJob.status} />
               </div>
@@ -322,7 +322,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                     Open MP4
                   </a>
                   <a href={latestJob.outputUrl} download
-                    className="text-xs font-semibold text-slate-600 hover:text-slate-800">
+                    className="text-xs font-semibold text-themed-secondary hover:text-themed">
                     Download
                   </a>
                 </div>
@@ -338,7 +338,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 px-4 md:px-6">
+        <div className="flex border-b border-themed px-4 md:px-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -347,7 +347,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 "flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === tab.id
                   ? "border-teal-600 text-teal-700"
-                  : "border-transparent text-slate-500 hover:text-slate-700",
+                  : "border-transparent text-themed-tertiary hover:text-themed-secondary",
               )}
             >
               {tab.icon}
@@ -359,9 +359,9 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
         {/* Content */}
         <div className="flex-1 overflow-auto p-4 md:p-6">
           {isLoading ? (
-            <div className="text-center py-12 text-slate-400">Loading...</div>
+            <div className="text-center py-12 text-themed-muted">Loading...</div>
           ) : !video ? (
-            <div className="text-center py-12 text-slate-400">Video not found</div>
+            <div className="text-center py-12 text-themed-muted">Video not found</div>
           ) : (
             <>
               <NextStepBanner video={video} activeTab={activeTab} />
@@ -379,7 +379,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                     totalDuration={timelineData.totalDuration}
                   />
                 ) : (
-                  <div className="text-center py-12 text-slate-400">Loading timeline...</div>
+                  <div className="text-center py-12 text-themed-muted">Loading timeline...</div>
                 )}
               </div>
               <div style={{ display: activeTab === "produce" ? "block" : "none" }}>
@@ -499,7 +499,7 @@ const AdvanceStatusButton: React.FC<{ video: VideoDetailResponse; onAdvanced: ()
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-slate-500 hover:bg-slate-100"
+          className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-themed-tertiary hover:bg-surface-hover"
         >
           Cancel
         </button>
@@ -510,7 +510,7 @@ const AdvanceStatusButton: React.FC<{ video: VideoDetailResponse; onAdvanced: ()
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 hover:bg-teal-100 hover:text-teal-700 transition-colors"
+      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-surface-hover text-themed-secondary hover:bg-teal-100 hover:text-teal-700 transition-colors"
     >
       <ChevronRight size={8} />
       {flow.label}
@@ -638,13 +638,13 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
             Voiceover Script
           </p>
           {versionCount > 0 && (
             <button
               onClick={() => setShowVersions(!showVersions)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-surface-hover text-themed-tertiary hover:bg-surface-hover transition-colors"
             >
               <GitBranch size={9} />
               {versionCount} {versionCount === 1 ? "version" : "versions"}
@@ -672,16 +672,16 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
                   Adapt
                 </button>
                 {adaptOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10">
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-surface-elevated border border-themed rounded-xl shadow-lg z-10">
                     {ADAPT_PLATFORMS.map((p) => (
                       <button
                         key={p.key}
                         onClick={() => { adaptMutation.mutate(p.key); setAdaptOpen(false); }}
                         disabled={adaptMutation.isPending}
-                        className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
+                        className="w-full text-left px-3 py-2 hover:bg-surface-hover first:rounded-t-xl last:rounded-b-xl"
                       >
-                        <span className="text-xs font-medium text-slate-800">{p.label}</span>
-                        <span className="block text-[10px] text-slate-400">{p.note}</span>
+                        <span className="text-xs font-medium text-themed">{p.label}</span>
+                        <span className="block text-[10px] text-themed-muted">{p.note}</span>
                       </button>
                     ))}
                   </div>
@@ -700,7 +700,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               </button>
               <button
                 onClick={cancelEditing}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-surface-hover text-themed-secondary hover:bg-surface-hover transition-colors"
               >
                 Cancel
               </button>
@@ -730,7 +730,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
                 key={s}
                 onClick={() => refineMutation.mutate(s)}
                 disabled={refineMutation.isPending}
-                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-40"
+                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-surface-elevated border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-40"
               >
                 {s}
               </button>
@@ -743,7 +743,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               onChange={(e) => setRefinePrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
               placeholder="Or type a custom instruction..."
-              className="flex-1 px-3 py-2 text-sm border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="flex-1 px-3 py-2 text-sm border border-violet-200 rounded-lg bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-violet-300"
             />
             <button
               onClick={() => { if (refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
@@ -776,7 +776,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full min-h-[300px] p-4 text-sm leading-relaxed text-slate-700 bg-white border border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 font-mono resize-y"
+            className="w-full min-h-[300px] p-4 text-sm leading-relaxed text-themed-secondary bg-surface-elevated border border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 font-mono resize-y"
             spellCheck
           />
           {hasChanges && (
@@ -786,12 +786,12 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
           )}
         </div>
       ) : (
-        <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+        <div className="bg-surface-hover rounded-xl p-4 space-y-3">
           {lines.map((line, i) => {
             if (!line.trim()) return <div key={i} className="h-3" />;
             const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
             return (
-              <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-amber-600 font-semibold italic" : "text-slate-700")}>
+              <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-amber-600 font-semibold italic" : "text-themed-secondary")}>
                 {line}
               </p>
             );
@@ -801,21 +801,21 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 
       {/* Version History Drawer */}
       {showVersions && versionsData?.versions && versionsData.versions.length > 0 && (
-        <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-50 px-4 py-2 flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Version History</p>
-            <button onClick={() => setShowVersions(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="mt-4 border border-themed rounded-xl overflow-hidden">
+          <div className="bg-surface-hover px-4 py-2 flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Version History</p>
+            <button onClick={() => setShowVersions(false)} className="text-themed-muted hover:text-themed-secondary">
               <X size={12} />
             </button>
           </div>
           <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
             {versionsData.versions.map((v) => (
-              <div key={v.id} className="px-4 py-3 hover:bg-slate-50 cursor-pointer group" onClick={() => { setDraft(v.script); setEditing(true); }}>
+              <div key={v.id} className="px-4 py-3 hover:bg-surface-hover cursor-pointer group" onClick={() => { setDraft(v.script); setEditing(true); }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">v{v.version}</span>
-                  <span className="text-[10px] text-slate-400">{new Date(v.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs font-bold text-themed-secondary">v{v.version}</span>
+                  <span className="text-[10px] text-themed-muted">{new Date(v.createdAt).toLocaleDateString()}</span>
                 </div>
-                {v.changeNote && <p className="text-[10px] text-slate-500 mt-0.5">{v.changeNote}</p>}
+                {v.changeNote && <p className="text-[10px] text-themed-tertiary mt-0.5">{v.changeNote}</p>}
                 <p className="text-[10px] text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity mt-1">Click to load this version</p>
               </div>
             ))}
@@ -842,12 +842,12 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               </button>
             </div>
           </div>
-          <div className="bg-white rounded-lg p-3 space-y-2">
+          <div className="bg-surface-elevated rounded-lg p-3 space-y-2">
             {adaptedScript.split("\n").map((line, i) => {
               if (!line.trim()) return <div key={i} className="h-2" />;
               const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
               return (
-                <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-violet-600 font-semibold italic" : "text-slate-700")}>
+                <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-violet-600 font-semibold italic" : "text-themed-secondary")}>
                   {line}
                 </p>
               );
@@ -902,9 +902,9 @@ const ConsistencyCheck: React.FC<{ code: string }> = ({ code }) => {
   });
 
   return (
-    <div className="mt-4 border border-slate-200 rounded-xl p-4">
+    <div className="mt-4 border border-themed rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           Voice Consistency
         </p>
         <button
@@ -923,7 +923,7 @@ const ConsistencyCheck: React.FC<{ code: string }> = ({ code }) => {
             <span className={cn("text-2xl font-black", result.overallScore >= 7 ? "text-emerald-600" : result.overallScore >= 5 ? "text-amber-600" : "text-rose-600")}>
               {result.overallScore}
             </span>
-            <span className="text-xs text-slate-400">/10</span>
+            <span className="text-xs text-themed-muted">/10</span>
           </div>
           <div className="grid grid-cols-5 gap-1">
             {Object.entries(result.scores).map(([key, score]) => (
@@ -931,7 +931,7 @@ const ConsistencyCheck: React.FC<{ code: string }> = ({ code }) => {
                 <div className={cn("text-sm font-bold", score >= 7 ? "text-emerald-600" : score >= 5 ? "text-amber-600" : "text-rose-600")}>
                   {score}
                 </div>
-                <div className="text-[9px] text-slate-400 truncate">{CONSISTENCY_LABELS[key] || key}</div>
+                <div className="text-[9px] text-themed-muted truncate">{CONSISTENCY_LABELS[key] || key}</div>
               </div>
             ))}
           </div>
@@ -947,7 +947,7 @@ const ConsistencyCheck: React.FC<{ code: string }> = ({ code }) => {
           )}
         </div>
       ) : (
-        <p className="text-xs text-slate-400">AI checks voice, hook, tone, structure, and delivery cues.</p>
+        <p className="text-xs text-themed-muted">AI checks voice, hook, tone, structure, and delivery cues.</p>
       )}
     </div>
   );
@@ -988,11 +988,11 @@ const ThumbnailConcepts: React.FC<{ code: string }> = ({ code }) => {
   const displayConcepts = concepts.length > 0 ? concepts : savedConcepts?.concepts || [];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4">
+    <div className="bg-surface-elevated border border-themed rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Camera size={14} className="text-pink-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
             Thumbnail Concepts
           </p>
         </div>
@@ -1010,8 +1010,8 @@ const ThumbnailConcepts: React.FC<{ code: string }> = ({ code }) => {
         <div className="space-y-2 mt-2">
           {displayConcepts.map((c, i) => (
             <div key={i} className="bg-pink-50 rounded-lg p-3">
-              <p className="text-sm font-bold text-slate-800">{c.textOverlay}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[10px] text-slate-500">
+              <p className="text-sm font-bold text-themed">{c.textOverlay}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-[10px] text-themed-tertiary">
                 {c.expression && <span>Expression: {c.expression}</span>}
                 {c.background && <span>BG: {c.background}</span>}
                 {c.colorScheme && <span>Colors: {c.colorScheme}</span>}
@@ -1021,7 +1021,7 @@ const ThumbnailConcepts: React.FC<{ code: string }> = ({ code }) => {
           ))}
         </div>
       ) : (
-        <p className="text-xs text-slate-400">AI generates text overlays, expressions, and visual direction for thumbnails.</p>
+        <p className="text-xs text-themed-muted">AI generates text overlays, expressions, and visual direction for thumbnails.</p>
       )}
     </div>
   );
@@ -1035,7 +1035,7 @@ const ShotsTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           Cinema Studio Shots ({video.shots.length})
         </p>
         <CopyButton
@@ -1048,23 +1048,23 @@ const ShotsTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
         {video.shots.map((shot) => (
           <div
             key={shot.number}
-            className="bg-white border border-slate-200 rounded-xl p-4"
+            className="bg-surface-elevated border border-themed rounded-xl p-4"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center justify-center">
                   {shot.number}
                 </span>
-                <span className="text-xs font-medium text-slate-500">
+                <span className="text-xs font-medium text-themed-tertiary">
                   {shot.duration}s
                 </span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-themed-muted">
                   {shot.cameraMovement}
                 </span>
               </div>
               <CopyButton text={shot.prompt} />
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed">
+            <p className="text-sm text-themed-secondary leading-relaxed">
               {shot.prompt}
             </p>
           </div>
@@ -1109,7 +1109,7 @@ const InfoTab: React.FC<{ video: VideoDetailResponse; code: string }> = ({ video
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
           Production Style
         </p>
         <ProductionStylePicker
@@ -1120,14 +1120,14 @@ const InfoTab: React.FC<{ video: VideoDetailResponse; code: string }> = ({ video
       </div>
 
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
           Tags
         </p>
         <div className="flex flex-wrap gap-1.5">
           {video.tags.map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full"
+              className="px-2 py-0.5 bg-surface-hover text-themed-secondary text-xs rounded-full"
             >
               {tag}
             </span>
@@ -1136,27 +1136,27 @@ const InfoTab: React.FC<{ video: VideoDetailResponse; code: string }> = ({ video
       </div>
 
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
           Format
         </p>
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-themed-secondary">
           {video.format}: {video.formatName} ({video.duration}s)
         </p>
       </div>
 
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
           Audience
         </p>
-        <p className="text-sm text-slate-700">{video.audienceLabel}</p>
+        <p className="text-sm text-themed-secondary">{video.audienceLabel}</p>
       </div>
 
       {video.notes && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
             Notes
           </p>
-          <p className="text-sm text-slate-700">{video.notes}</p>
+          <p className="text-sm text-themed-secondary">{video.notes}</p>
         </div>
       )}
     </div>
@@ -1168,7 +1168,7 @@ const InfoTab: React.FC<{ video: VideoDetailResponse; code: string }> = ({ video
 // ============================================
 
 const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  real: { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200" },
+  real: { bg: "bg-surface-hover", text: "text-themed-secondary", border: "border-themed" },
   ai_enhanced: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
   ai_generated: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },
   motion_graphic: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
@@ -1217,20 +1217,20 @@ const ProduceChecklist: React.FC<{
   const pct = items.length > 0 ? Math.round((completed / items.length) * 100) : 100;
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden">
+    <div className="border border-themed rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between p-3 hover:bg-surface-hover transition-colors"
       >
         <div className="flex items-center gap-2">
-          {open ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{title}</span>
+          {open ? <ChevronDown size={14} className="text-themed-muted" /> : <ChevronRight size={14} className="text-themed-muted" />}
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-tertiary">{title}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn("text-[10px] font-bold", pct === 100 ? "text-emerald-600" : "text-slate-400")}>
+          <span className={cn("text-[10px] font-bold", pct === 100 ? "text-emerald-600" : "text-themed-muted")}>
             {completed}/{items.length}
           </span>
-          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="w-12 h-1.5 bg-surface-hover rounded-full overflow-hidden">
             <div
               className={cn("h-full rounded-full transition-all", pct === 100 ? "bg-emerald-500" : "bg-teal-500")}
               style={{ width: `${pct}%` }}
@@ -1239,12 +1239,12 @@ const ProduceChecklist: React.FC<{
         </div>
       </button>
       {open && (
-        <div className="border-t border-slate-100 p-3 space-y-1.5">
+        <div className="border-t border-themed-subtle p-3 space-y-1.5">
           {items.map((item) => (
             <button
               key={item.key}
               onClick={() => toggleMutation.mutate({ itemKey: item.key, completed: !item.completed })}
-              className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors text-left"
+              className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-surface-hover transition-colors text-left"
             >
               <div className={cn(
                 "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors",
@@ -1252,12 +1252,12 @@ const ProduceChecklist: React.FC<{
                   ? "bg-teal-600 border-teal-600"
                   : item.critical
                     ? "border-amber-400"
-                    : "border-slate-300",
+                    : "border-themed",
               )}>
                 {item.completed && <Check size={12} className="text-white" />}
               </div>
               <div className="flex-1 min-w-0">
-                <span className={cn("text-sm", item.completed ? "text-slate-400 line-through" : "text-slate-700")}>
+                <span className={cn("text-sm", item.completed ? "text-themed-muted line-through" : "text-themed-secondary")}>
                   {item.label}
                 </span>
                 {item.critical && !item.completed && (
@@ -1300,27 +1300,27 @@ const ShotCard: React.FC<{
   return (
     <div className={cn(
       "border rounded-xl p-3 transition-all",
-      shot.completed ? "bg-slate-50 border-slate-200 opacity-70" : cn(colors.bg, colors.border),
+      shot.completed ? "bg-surface-hover border-themed opacity-70" : cn(colors.bg, colors.border),
     )}>
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-800 font-mono">#{shot.shotNumber}</span>
+          <span className="text-xs font-bold text-themed font-mono">#{shot.shotNumber}</span>
           {shot.act && (
-            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full", ACT_COLORS[shot.act] || "bg-slate-100 text-slate-600")}>
+            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full", ACT_COLORS[shot.act] || "bg-surface-hover text-themed-secondary")}>
               {shot.act}
             </span>
           )}
           <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border", colors.border, colors.text, colors.bg)}>
             {METHOD_LABELS[shot.productionMethod]}
           </span>
-          <span className="text-[10px] text-slate-400">{shot.durationSeconds}s</span>
+          <span className="text-[10px] text-themed-muted">{shot.durationSeconds}s</span>
         </div>
         <button
           onClick={() => toggleMutation.mutate()}
           className={cn(
             "w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-            shot.completed ? "bg-teal-600 border-teal-600" : "border-slate-300 hover:border-teal-400",
+            shot.completed ? "bg-teal-600 border-teal-600" : "border-themed hover:border-teal-400",
           )}
         >
           {shot.completed && <Check size={14} className="text-white" />}
@@ -1329,7 +1329,7 @@ const ShotCard: React.FC<{
 
       {/* Script line */}
       {shot.scriptLine && (
-        <p className="text-xs text-slate-600 italic mb-2 leading-relaxed">"{shot.scriptLine}"</p>
+        <p className="text-xs text-themed-secondary italic mb-2 leading-relaxed">"{shot.scriptLine}"</p>
       )}
 
       {/* Technique guidance */}
@@ -1337,8 +1337,8 @@ const ShotCard: React.FC<{
         {/* Tool + Model */}
         {shot.toolRecommendation && (
           <div className="flex items-center gap-1.5">
-            <Wand2 size={10} className="text-slate-400 flex-shrink-0" />
-            <span className="text-[10px] text-slate-500">
+            <Wand2 size={10} className="text-themed-muted flex-shrink-0" />
+            <span className="text-[10px] text-themed-tertiary">
               <span className="font-bold">{shot.toolRecommendation}</span>
               {shot.modelRecommendation && shot.modelRecommendation !== "N/A" && (
                 <> / {shot.modelRecommendation}</>
@@ -1358,8 +1358,8 @@ const ShotCard: React.FC<{
         {/* Camera defaults */}
         {shot.cameraDefaults && (
           <div className="flex items-center gap-1.5">
-            <Camera size={10} className="text-slate-400 flex-shrink-0" />
-            <span className="text-[10px] text-slate-500">
+            <Camera size={10} className="text-themed-muted flex-shrink-0" />
+            <span className="text-[10px] text-themed-tertiary">
               {shot.cameraDefaults.camera} / {shot.cameraDefaults.lens} / {shot.cameraDefaults.focalLength} / {shot.cameraDefaults.genre}
             </span>
           </div>
@@ -1368,10 +1368,10 @@ const ShotCard: React.FC<{
         {/* Suggested movement */}
         {shot.suggestedMovement && (
           <div className="flex items-center gap-1.5">
-            <Film size={10} className="text-slate-400 flex-shrink-0" />
-            <span className="text-[10px] text-slate-500">
+            <Film size={10} className="text-themed-muted flex-shrink-0" />
+            <span className="text-[10px] text-themed-tertiary">
               Movement: <span className="font-bold">{shot.suggestedMovement}</span>
-              {shot.suggestedMovementReason && <span className="text-slate-400"> - {shot.suggestedMovementReason}</span>}
+              {shot.suggestedMovementReason && <span className="text-themed-muted"> - {shot.suggestedMovementReason}</span>}
             </span>
           </div>
         )}
@@ -1379,19 +1379,19 @@ const ShotCard: React.FC<{
         {/* Color grade notes */}
         {shot.colorGradeNotes && (
           <div className="flex items-center gap-1.5">
-            <Layers size={10} className="text-slate-400 flex-shrink-0" />
-            <span className="text-[10px] text-slate-500">Color: {shot.colorGradeNotes}</span>
+            <Layers size={10} className="text-themed-muted flex-shrink-0" />
+            <span className="text-[10px] text-themed-tertiary">Color: {shot.colorGradeNotes}</span>
           </div>
         )}
 
         {/* Cinema Studio prompt */}
         {shot.cinemaStudioPrompt && (
-          <div className="mt-2 bg-white/60 border border-slate-200 rounded-lg p-2">
+          <div className="mt-2 bg-white/60 border border-themed rounded-lg p-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cinema Studio Prompt</span>
+              <span className="text-[9px] font-bold text-themed-muted uppercase tracking-wider">Cinema Studio Prompt</span>
               <CopyButton text={shot.cinemaStudioPrompt} />
             </div>
-            <p className="text-[10px] text-slate-600 leading-relaxed">{shot.cinemaStudioPrompt}</p>
+            <p className="text-[10px] text-themed-secondary leading-relaxed">{shot.cinemaStudioPrompt}</p>
           </div>
         )}
 
@@ -1415,12 +1415,12 @@ const ShotCard: React.FC<{
       {/* Filming tips (collapsed by default) */}
       {shot.filmingTips.length > 0 && !shot.completed && (
         <details className="mt-2">
-          <summary className="text-[10px] text-slate-400 cursor-pointer hover:text-slate-600">
+          <summary className="text-[10px] text-themed-muted cursor-pointer hover:text-themed-secondary">
             Tips ({shot.filmingTips.length})
           </summary>
           <ul className="mt-1 space-y-0.5">
             {shot.filmingTips.map((tip, i) => (
-              <li key={i} className="text-[10px] text-slate-500 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1.5 before:w-1 before:h-1 before:rounded-full before:bg-slate-300">
+              <li key={i} className="text-[10px] text-themed-tertiary pl-3 relative before:content-[''] before:absolute before:left-0 before:top-1.5 before:w-1 before:h-1 before:rounded-full before:bg-slate-300">
                 {tip}
               </li>
             ))}
@@ -1460,7 +1460,7 @@ const ProduceTab: React.FC<{
       {/* Overall completion */}
       {produceData && produceData.shotCards.length > 0 && (
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden">
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-500",
@@ -1471,7 +1471,7 @@ const ProduceTab: React.FC<{
           </div>
           <span className={cn(
             "text-xs font-bold",
-            produceData.completion.overall === 100 ? "text-emerald-600" : "text-slate-500",
+            produceData.completion.overall === 100 ? "text-emerald-600" : "text-themed-tertiary",
           )}>
             {produceData.completion.overall}%
           </span>
@@ -1492,7 +1492,7 @@ const ProduceTab: React.FC<{
       {/* Shot-by-shot production cards */}
       {produceData && produceData.shotCards.length > 0 ? (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
             Shot Guide ({produceData.shotCards.filter((s) => s.completed).length}/{produceData.shotCards.length})
           </p>
           <div className="space-y-2">
@@ -1502,10 +1502,10 @@ const ProduceTab: React.FC<{
           </div>
         </div>
       ) : (
-        <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl">
-          <Film size={24} className="text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500 mb-1">No storyboard yet.</p>
-          <p className="text-xs text-slate-400">Generate a storyboard first to get shot-by-shot production guidance.</p>
+        <div className="text-center py-6 border border-dashed border-themed rounded-xl">
+          <Film size={24} className="text-themed-muted mx-auto mb-2" />
+          <p className="text-sm text-themed-tertiary mb-1">No storyboard yet.</p>
+          <p className="text-xs text-themed-muted">Generate a storyboard first to get shot-by-shot production guidance.</p>
         </div>
       )}
 
@@ -1525,13 +1525,13 @@ const ProduceTab: React.FC<{
         <>
           {plan.hookVariations.length > 0 && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                 Hook Variations ({plan.hookVariations.length})
               </p>
               <div className="space-y-2">
                 {plan.hookVariations.map((hook, i) => (
-                  <div key={i} className="bg-white border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2">
-                    <p className="text-sm text-slate-700">{hook}</p>
+                  <div key={i} className="bg-surface-elevated border border-themed rounded-xl p-3 flex items-start justify-between gap-2">
+                    <p className="text-sm text-themed-secondary">{hook}</p>
                     <CopyButton text={hook} />
                   </div>
                 ))}
@@ -1541,14 +1541,14 @@ const ProduceTab: React.FC<{
 
           {Object.keys(plan.platformOptimization).length > 0 && (
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                 Platform Optimization
               </p>
               <div className="grid gap-2">
                 {Object.entries(plan.platformOptimization).map(([platform, notes]) => (
-                  <div key={platform} className="bg-white border border-slate-200 rounded-xl p-3">
+                  <div key={platform} className="bg-surface-elevated border border-themed rounded-xl p-3">
                     <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">{platform}</p>
-                    <p className="text-sm text-slate-600">{notes}</p>
+                    <p className="text-sm text-themed-secondary">{notes}</p>
                   </div>
                 ))}
               </div>
@@ -1562,7 +1562,7 @@ const ProduceTab: React.FC<{
           <button
             onClick={() => generateMutation.mutate(code)}
             disabled={generateMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-surface-hover text-themed-secondary hover:bg-surface-hover disabled:opacity-50 transition-colors"
           >
             {generateMutation.isPending ? (
               <><Loader2 size={12} className="animate-spin" /> Generating...</>
@@ -1650,7 +1650,7 @@ const PUBLISH_PLATFORM_LABELS: Record<string, string> = {
 
 const PUBLISH_PLATFORM_COLORS: Record<string, string> = {
   instagram_reels: "border-pink-200 bg-pink-50",
-  tiktok: "border-slate-300 bg-slate-50",
+  tiktok: "border-themed bg-surface-hover",
   youtube_shorts: "border-red-200 bg-red-50",
   youtube_long: "border-red-200 bg-red-50",
 };
@@ -1753,8 +1753,8 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
     setTimeout(() => setCopiedPlatform(null), 2000);
   };
 
-  if (isLoading) return <div className="text-center py-12 text-slate-400">Loading...</div>;
-  if (!kit) return <div className="text-center py-12 text-slate-400">Could not load publish data</div>;
+  if (isLoading) return <div className="text-center py-12 text-themed-muted">Loading...</div>;
+  if (!kit) return <div className="text-center py-12 text-themed-muted">Could not load publish data</div>;
 
   const platforms = ["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"];
 
@@ -1763,10 +1763,10 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
       {/* Summary */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
             Publish Checklist
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-themed-tertiary mt-0.5">
             {kit.coveredCount}/{kit.totalPlatforms} platforms have captions
           </p>
         </div>
@@ -1785,11 +1785,11 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
       </div>
 
       {/* Virality Score */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
+      <div className="bg-surface-elevated border border-themed rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-amber-500" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               Virality Score
             </p>
           </div>
@@ -1814,35 +1814,35 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
               <span className={cn("text-3xl font-black", scoreColor(viralityScore.score))}>
                 {viralityScore.score}
               </span>
-              <span className="text-sm text-slate-400">/100</span>
+              <span className="text-sm text-themed-muted">/100</span>
             </div>
 
             <div className="space-y-1.5">
               {Object.entries(viralityScore.dimensions).map(([key, dim]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500 w-28 shrink-0 truncate">
+                  <span className="text-[10px] text-themed-tertiary w-28 shrink-0 truncate">
                     {VIRALITY_DIMENSION_LABELS[key] || key}
                   </span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="flex-1 bg-surface-hover rounded-full h-2 overflow-hidden">
                     <div
                       className={cn("h-full rounded-full transition-all", scoreBg(dim.score * 5))}
                       style={{ width: `${(dim.score / 20) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 w-6 text-right">{dim.score}</span>
+                  <span className="text-[10px] font-bold text-themed-tertiary w-6 text-right">{dim.score}</span>
                 </div>
               ))}
             </div>
 
             {viralityScore.suggestion && (
-              <p className="text-xs text-slate-600 bg-slate-50 rounded-lg p-2.5 mt-2">
+              <p className="text-xs text-themed-secondary bg-surface-hover rounded-lg p-2.5 mt-2">
                 <Sparkles size={12} className="inline mr-1 text-amber-500" />
                 {viralityScore.suggestion}
               </p>
             )}
           </div>
         ) : (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-themed-muted">
             AI evaluates hook strength, topic relevance, format fit, shareability, and platform potential.
           </p>
         )}
@@ -1862,9 +1862,9 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
         const calEntry = kit.calendarEntries.find((e) => e.platform === platform);
 
         return (
-          <div key={platform} className={cn("border rounded-xl p-4", PUBLISH_PLATFORM_COLORS[platform] || "border-slate-200 bg-white")}>
+          <div key={platform} className={cn("border rounded-xl p-4", PUBLISH_PLATFORM_COLORS[platform] || "border-themed bg-surface-elevated")}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-sm font-bold text-themed">
                 {PUBLISH_PLATFORM_LABELS[platform] || platform}
               </p>
               <div className="flex items-center gap-2">
@@ -1873,13 +1873,13 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
                     "text-[10px] font-bold px-2 py-0.5 rounded-full",
                     caption.status === "approved" ? "bg-emerald-100 text-emerald-700" :
                     caption.status === "posted" ? "bg-teal-100 text-teal-700" :
-                    "bg-slate-100 text-slate-600",
+                    "bg-surface-hover text-themed-secondary",
                   )}>
                     {caption.status}
                   </span>
                 )}
                 {calEntry && (
-                  <span className="text-[10px] font-bold text-slate-500">
+                  <span className="text-[10px] font-bold text-themed-tertiary">
                     {calEntry.date}
                   </span>
                 )}
@@ -1888,7 +1888,7 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
 
             {caption ? (
               <div className="relative">
-                <p className="text-sm text-slate-600 whitespace-pre-wrap pr-10 line-clamp-4">{caption.caption}</p>
+                <p className="text-sm text-themed-secondary whitespace-pre-wrap pr-10 line-clamp-4">{caption.caption}</p>
                 <button
                   onClick={() => handleCopy(platform, caption.caption)}
                   className="absolute top-0 right-0 p-2 rounded-lg hover:bg-white/60 transition-colors"
@@ -1897,16 +1897,16 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
                   {copiedPlatform === platform ? (
                     <Check size={16} className="text-teal-500" />
                   ) : (
-                    <Copy size={16} className="text-slate-400" />
+                    <Copy size={16} className="text-themed-muted" />
                   )}
                 </button>
               </div>
             ) : (
-              <p className="text-sm text-slate-400 italic">No caption generated</p>
+              <p className="text-sm text-themed-muted italic">No caption generated</p>
             )}
 
             {!calEntry && (
-              <p className="text-[10px] text-slate-400 mt-2">Not scheduled</p>
+              <p className="text-[10px] text-themed-muted mt-2">Not scheduled</p>
             )}
           </div>
         );
@@ -1970,17 +1970,17 @@ const RenderShotCard: React.FC<{
   onRender: () => void;
   isRendering: boolean;
 }> = ({ component, job, onRender, isRendering }) => {
-  const typeColor = COMPONENT_TYPE_COLORS[component.componentType] || "bg-slate-100 text-slate-700";
+  const typeColor = COMPONENT_TYPE_COLORS[component.componentType] || "bg-surface-hover text-themed-secondary";
   const isActive = job && (job.status === "queued" || job.status === "running");
 
   return (
-    <div className="p-3 rounded-xl border border-slate-200 bg-white">
+    <div className="p-3 rounded-xl border border-themed bg-surface-elevated">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", typeColor)}>
             {component.componentType}
           </span>
-          <span className="text-[10px] font-mono text-slate-400">
+          <span className="text-[10px] font-mono text-themed-muted">
             {component.durationInSeconds}s
           </span>
         </div>
@@ -1990,7 +1990,7 @@ const RenderShotCard: React.FC<{
             <a
               href={job.outputUrl}
               download
-              className="p-1 rounded hover:bg-slate-100 text-slate-500"
+              className="p-1 rounded hover:bg-surface-hover text-themed-tertiary"
               title="Download"
             >
               <Download size={14} />
@@ -2002,7 +2002,7 @@ const RenderShotCard: React.FC<{
             className={cn(
               "p-1 rounded transition-colors",
               isRendering || isActive
-                ? "text-slate-300 cursor-not-allowed"
+                ? "text-themed-muted cursor-not-allowed"
                 : "text-teal-600 hover:bg-teal-50",
             )}
             title="Render this clip"
@@ -2011,7 +2011,7 @@ const RenderShotCard: React.FC<{
           </button>
         </div>
       </div>
-      <p className="text-xs text-slate-600 mt-1.5 truncate" title={component.label}>
+      <p className="text-xs text-themed-secondary mt-1.5 truncate" title={component.label}>
         {component.label}
       </p>
       {job?.error && (
@@ -2040,7 +2040,7 @@ function parseSlides(description: string): string[] {
 }
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
-  idea: { label: "Idea", color: "text-slate-500" },
+  idea: { label: "Idea", color: "text-themed-tertiary" },
   created: { label: "Created", color: "text-sky-600" },
   published: { label: "Published", color: "text-emerald-600" },
 };
@@ -2187,10 +2187,10 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
             Content Waterfall
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-themed-tertiary mt-0.5">
             Track derivative content from this source video
           </p>
         </div>
@@ -2232,15 +2232,15 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             </button>
           </div>
           {suggestions.map((s, i) => (
-            <div key={i} className="bg-white border border-violet-100 rounded-lg p-2.5">
+            <div key={i} className="bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[9px] font-bold uppercase text-violet-500">{s.tier}</span>
-                    {s.platform && <span className="text-[9px] text-slate-400">{s.platform}</span>}
+                    {s.platform && <span className="text-[9px] text-themed-muted">{s.platform}</span>}
                   </div>
-                  <p className="text-xs font-medium text-slate-800">{s.description}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{s.content}</p>
+                  <p className="text-xs font-medium text-themed">{s.description}</p>
+                  <p className="text-[11px] text-themed-tertiary mt-0.5 line-clamp-2">{s.content}</p>
                 </div>
                 <button
                   onClick={() => handleAddSuggestion(i, s)}
@@ -2264,14 +2264,14 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
       )}
 
       {showAdd && (
-        <div className="border border-slate-200 rounded-xl p-3 space-y-2">
+        <div className="border border-themed rounded-xl p-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[9px] font-bold uppercase text-slate-500">Tier</label>
+              <label className="text-[9px] font-bold uppercase text-themed-tertiary">Tier</label>
               <select
                 value={newTier}
                 onChange={(e) => setNewTier(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs bg-white"
+                className="w-full rounded-lg border border-themed px-2 py-1 text-xs bg-surface-elevated"
               >
                 <option value="cutdown">Cutdown (5-10min)</option>
                 <option value="short">Short (15-60s)</option>
@@ -2279,11 +2279,11 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
               </select>
             </div>
             <div>
-              <label className="text-[9px] font-bold uppercase text-slate-500">Platform</label>
+              <label className="text-[9px] font-bold uppercase text-themed-tertiary">Platform</label>
               <select
                 value={newPlatform}
                 onChange={(e) => setNewPlatform(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs bg-white"
+                className="w-full rounded-lg border border-themed px-2 py-1 text-xs bg-surface-elevated"
               >
                 <option value="">Any</option>
                 <option>Instagram</option>
@@ -2298,7 +2298,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)}
             placeholder="Description..."
-            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs"
+            className="w-full rounded-lg border border-themed px-2 py-1 text-xs"
           />
           <div className="flex gap-2">
             <button
@@ -2310,7 +2310,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             </button>
             <button
               onClick={() => setShowAdd(false)}
-              className="px-3 py-1 rounded-full text-[10px] font-bold text-slate-400 hover:text-slate-600"
+              className="px-3 py-1 rounded-full text-[10px] font-bold text-themed-muted hover:text-themed-secondary"
             >
               Cancel
             </button>
@@ -2319,12 +2319,12 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
       )}
 
       {isLoading ? (
-        <div className="text-center py-8 text-slate-400 text-sm">Loading...</div>
+        <div className="text-center py-8 text-themed-muted text-sm">Loading...</div>
       ) : items.length === 0 ? (
         <div className="text-center py-8">
-          <GitBranch size={28} className="text-slate-300 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">No derivatives tracked yet</p>
-          <p className="text-xs text-slate-400 mt-1">
+          <GitBranch size={28} className="text-themed-muted mx-auto mb-2" />
+          <p className="text-sm text-themed-tertiary">No derivatives tracked yet</p>
+          <p className="text-xs text-themed-muted mt-1">
             Add cutdowns, shorts, and text posts derived from this video
           </p>
         </div>
@@ -2344,22 +2344,22 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             return (
               <div key={tier}>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="h-px flex-1 bg-slate-100" />
+                  <div className="h-px flex-1 bg-surface-hover" />
                   <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", meta.color)}>
                     {meta.label} ({tierItems.length})
                   </span>
-                  <div className="h-px flex-1 bg-slate-100" />
+                  <div className="h-px flex-1 bg-surface-hover" />
                 </div>
                 <div className="space-y-1.5">
                   {tierItems.map((item) => {
                     const statusMeta = STATUS_META[item.status] || STATUS_META.idea;
                     return (
-                      <div key={item.id} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
+                      <div key={item.id} className="flex items-center gap-2 px-3 py-2 border border-themed rounded-xl hover:border-themed transition-colors">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-slate-700 truncate">{item.description || "Untitled derivative"}</p>
+                          <p className="text-xs text-themed-secondary truncate">{item.description || "Untitled derivative"}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             {item.platform && (
-                              <span className="text-[9px] font-bold text-slate-400">{item.platform}</span>
+                              <span className="text-[9px] font-bold text-themed-muted">{item.platform}</span>
                             )}
                             <button
                               onClick={() => {
@@ -2374,7 +2374,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                         </div>
                         <button
                           onClick={() => deleteMutation.mutate(item.id)}
-                          className="text-slate-300 hover:text-rose-500 transition-colors flex-shrink-0"
+                          className="text-themed-muted hover:text-rose-500 transition-colors flex-shrink-0"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -2392,11 +2392,11 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
             return (
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="h-px flex-1 bg-slate-100" />
+                  <div className="h-px flex-1 bg-surface-hover" />
                   <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold", meta.color)}>
                     {meta.label} ({grouped.carousel.length})
                   </span>
-                  <div className="h-px flex-1 bg-slate-100" />
+                  <div className="h-px flex-1 bg-surface-hover" />
                 </div>
                 <div className="space-y-1.5">
                   {grouped.carousel.map((item) => {
@@ -2410,7 +2410,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                             Carousel
                           </span>
                           {item.platform && (
-                            <span className="text-[9px] font-bold text-slate-400 flex-1">{item.platform}</span>
+                            <span className="text-[9px] font-bold text-themed-muted flex-1">{item.platform}</span>
                           )}
                           <button
                             onClick={() => {
@@ -2423,7 +2423,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                           </button>
                           <button
                             onClick={() => deleteMutation.mutate(item.id)}
-                            className="text-slate-300 hover:text-rose-500 transition-colors shrink-0"
+                            className="text-themed-muted hover:text-rose-500 transition-colors shrink-0"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -2433,7 +2433,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                               isExpanded ? next.delete(item.id) : next.add(item.id);
                               return next;
                             })}
-                            className="text-slate-400 hover:text-violet-600 transition-colors shrink-0"
+                            className="text-themed-muted hover:text-violet-600 transition-colors shrink-0"
                           >
                             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </button>
@@ -2443,13 +2443,13 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                             {slides.map((slide, i) => (
                               <div key={i} className="flex gap-2 text-xs">
                                 <span className="font-bold text-violet-400 shrink-0 w-12 text-[10px]">Slide {i + 1}</span>
-                                <span className="text-slate-700 text-[11px]">{slide}</span>
+                                <span className="text-themed-secondary text-[11px]">{slide}</span>
                               </div>
                             ))}
                           </div>
                         )}
                         {isExpanded && slides.length === 0 && (
-                          <p className="px-3 pb-3 text-xs text-slate-600 border-t border-violet-100 pt-2">{item.description}</p>
+                          <p className="px-3 pb-3 text-xs text-themed-secondary border-t border-violet-100 pt-2">{item.description}</p>
                         )}
                       </div>
                     );
@@ -2615,7 +2615,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12 text-slate-400">
+      <div className="flex items-center justify-center py-12 text-themed-muted">
         <Loader2 size={20} className="animate-spin mr-2" />
         Loading storyboard...
       </div>
@@ -2631,20 +2631,20 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
   return (
     <div className="space-y-6">
       {/* Generation Controls */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
           Generate Storyboard
         </p>
         <div className="flex flex-wrap items-end gap-3">
           {visualStyles.length > 0 && (
             <div className="flex-1 min-w-[200px]">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-1">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted block mb-1">
                 Visual Style (optional)
               </label>
               <select
                 value={selectedStyleId ?? ""}
                 onChange={(e) => setSelectedStyleId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white"
+                className="w-full border border-themed rounded-lg px-3 py-2 text-sm text-themed-secondary bg-surface-elevated"
               >
                 <option value="">Default</option>
                 {visualStyles.map((style) => (
@@ -2674,15 +2674,15 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
       {storyboard && (
         <>
           {/* Summary */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Storyboard
               </p>
               <span
                 className={cn(
                   "text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full",
-                  storyboard.status === "draft" && "bg-slate-100 text-slate-600",
+                  storyboard.status === "draft" && "bg-surface-hover text-themed-secondary",
                   storyboard.status === "approved" && "bg-emerald-50 text-emerald-700",
                   storyboard.status === "in_production" && "bg-amber-50 text-amber-700",
                   storyboard.status === "completed" && "bg-teal-50 text-teal-700",
@@ -2692,11 +2692,11 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
               </span>
             </div>
             {storyboard.oneSentenceConcept && (
-              <p className="text-sm text-slate-600 mb-3 italic">
+              <p className="text-sm text-themed-secondary mb-3 italic">
                 {storyboard.oneSentenceConcept}
               </p>
             )}
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-themed-tertiary">
               {shots.length} shots
               {Object.keys(methodCounts).length > 0 && ": "}
               {Object.entries(methodCounts)
@@ -2720,14 +2720,14 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                 return (
                   <div
                     key={shot.id}
-                    className="bg-white border border-slate-200 rounded-2xl p-5"
+                    className="bg-surface-elevated border border-themed rounded-2xl p-5"
                   >
                     {/* Shot Header */}
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs font-bold text-slate-700">
+                      <span className="text-xs font-bold text-themed-secondary">
                         Shot {shot.shotNumber}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-themed-muted">
                         {shot.durationSeconds}s
                       </span>
                       <span className={cn("w-2 h-2 rounded-full flex-shrink-0", method.dot)} />
@@ -2743,14 +2743,14 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         <span
                           className={cn(
                             "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
-                            SB_ACT_COLORS[shot.act] ?? "bg-slate-100 text-slate-600",
+                            SB_ACT_COLORS[shot.act] ?? "bg-surface-hover text-themed-secondary",
                           )}
                         >
                           {shot.act}
                         </span>
                       )}
                       {shot.brollType && (
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full bg-surface-hover text-themed-tertiary">
                           B-roll: {shot.brollType}
                         </span>
                       )}
@@ -2762,7 +2762,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                             <button
                               key={s}
                               onClick={() => setFrameStyles((prev) => ({ ...prev, [shot.id]: s }))}
-                              className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors", active ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200")}
+                              className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors", active ? "bg-violet-600 text-white" : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover")}
                             >{s}</button>
                           );
                         })}
@@ -2790,7 +2790,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         <button
                           onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? shot.imageStyle ?? "sketch")}
                           disabled={generatingFrameShots.has(shot.id)}
-                          className="absolute top-1 right-1 opacity-0 group-hover/frame:opacity-100 p-1 bg-white/80 backdrop-blur-sm rounded-lg text-slate-600 hover:text-violet-700 transition-all"
+                          className="absolute top-1 right-1 opacity-0 group-hover/frame:opacity-100 p-1 bg-white/80 backdrop-blur-sm rounded-lg text-themed-secondary hover:text-violet-700 transition-all"
                           title="Regenerate"
                         >
                           <RefreshCw size={12} />
@@ -2809,7 +2809,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         const defaults = CINEMA_DEFAULTS_BY_FORMAT[formatId];
                         if (defaults) {
                           badges.push(
-                            <span key="cam" className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2 py-0.5">
+                            <span key="cam" className="text-[10px] font-medium text-themed-tertiary bg-surface-hover border border-themed rounded-full px-2 py-0.5">
                               {defaults.camera} &middot; {defaults.lens} {defaults.focalLength}
                             </span>,
                           );
@@ -2847,21 +2847,21 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
 
                     {/* Script Line */}
                     {shot.scriptLine && (
-                      <p className="text-sm text-slate-600 mb-2">{shot.scriptLine}</p>
+                      <p className="text-sm text-themed-secondary mb-2">{shot.scriptLine}</p>
                     )}
 
                     {/* Cinema Studio Prompt (for AI generated shots) */}
                     {shot.cinemaStudioPrompt && shot.productionMethod === "ai_generated" && (
-                      <div className="bg-slate-50 rounded-lg p-3 mb-2">
+                      <div className="bg-surface-hover rounded-lg p-3 mb-2">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs text-slate-600 font-mono flex-1">
+                          <p className="text-xs text-themed-secondary font-mono flex-1">
                             {shot.cinemaStudioPrompt}
                           </p>
                           <button
                             onClick={() =>
                               copyToClipboard(shot.cinemaStudioPrompt!, `cinema-${shot.id}`)
                             }
-                            className="flex-shrink-0 text-slate-400 hover:text-teal-600 transition-colors"
+                            className="flex-shrink-0 text-themed-muted hover:text-teal-600 transition-colors"
                           >
                             {copiedId === `cinema-${shot.id}` ? (
                               <Check size={14} className="text-emerald-500" />
@@ -2895,10 +2895,10 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
 
                     {/* AI Prompts Section */}
                     {shot.productionMethod !== "real" && (
-                      <div className="mt-3 border-t border-slate-100 pt-3">
+                      <div className="mt-3 border-t border-themed-subtle pt-3">
                         <button
                           onClick={() => toggleShotExpand(shot.shotNumber)}
-                          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+                          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted hover:text-themed-secondary transition-colors"
                         >
                           <Sparkles size={12} />
                           AI Prompts ({shotPrompts.length})
@@ -2910,22 +2910,22 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                             {shotPrompts.map((prompt) => (
                               <div
                                 key={prompt.id}
-                                className="bg-slate-50 rounded-lg p-3"
+                                className="bg-surface-hover rounded-lg p-3"
                               >
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                                   <span
                                     className={cn(
                                       "text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full",
-                                      TECHNIQUE_COLORS[prompt.technique] ?? "bg-slate-100 text-slate-600",
+                                      TECHNIQUE_COLORS[prompt.technique] ?? "bg-surface-hover text-themed-secondary",
                                     )}
                                   >
                                     {prompt.technique.replace(/_/g, " ")}
                                   </span>
                                   {prompt.tool && (
-                                    <span className="text-[10px] text-slate-400">{prompt.tool}</span>
+                                    <span className="text-[10px] text-themed-muted">{prompt.tool}</span>
                                   )}
                                   {prompt.model && (
-                                    <span className="text-[10px] text-slate-400">{prompt.model}</span>
+                                    <span className="text-[10px] text-themed-muted">{prompt.model}</span>
                                   )}
                                   {prompt.resultRating != null && (
                                     <span className="flex items-center gap-0.5">
@@ -2946,7 +2946,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                                 <textarea
                                   readOnly
                                   value={prompt.promptText}
-                                  className="w-full text-xs text-slate-600 font-mono bg-white border border-slate-200 rounded-lg p-2 resize-none"
+                                  className="w-full text-xs text-themed-secondary font-mono bg-surface-elevated border border-themed rounded-lg p-2 resize-none"
                                   rows={3}
                                 />
                                 <div className="flex items-center gap-2 mt-2">
@@ -2954,7 +2954,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                                     onClick={() =>
                                       copyToClipboard(prompt.promptText, `prompt-${prompt.id}`)
                                     }
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-themed text-themed-secondary hover:bg-surface-hover transition-colors"
                                   >
                                     {copiedId === `prompt-${prompt.id}` ? (
                                       <Check size={12} className="text-emerald-500" />
@@ -2994,9 +2994,9 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
       {/* Empty State */}
       {!storyboard && !isGenerating && (
         <div className="text-center py-12">
-          <Film size={32} className="mx-auto text-slate-300 mb-3" />
-          <p className="text-sm text-slate-500 mb-1">No storyboard yet</p>
-          <p className="text-xs text-slate-400">
+          <Film size={32} className="mx-auto text-themed-muted mb-3" />
+          <p className="text-sm text-themed-tertiary mb-1">No storyboard yet</p>
+          <p className="text-xs text-themed-muted">
             Generate a storyboard to plan your shots, production methods, and AI prompts.
           </p>
         </div>

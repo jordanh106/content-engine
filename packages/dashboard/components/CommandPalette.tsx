@@ -204,25 +204,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       {/* Dialog */}
       <div className="absolute left-1/2 top-[20%] -translate-x-1/2 w-[90%] max-w-lg">
         <Command
-          className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+          className="bg-surface-elevated rounded-2xl shadow-2xl border border-themed overflow-hidden"
           label="Command Palette"
           shouldFilter={searchResults.length === 0}
         >
-          <div className="flex items-center gap-3 px-4 border-b border-slate-200">
-            <Search size={16} className="text-slate-400 shrink-0" />
+          <div className="flex items-center gap-3 px-4 border-b border-themed">
+            <Search size={16} className="text-themed-muted shrink-0" />
             <Command.Input
               placeholder="Search videos, ideas, creators, or type a command..."
-              className="w-full py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none bg-transparent"
+              className="w-full py-3.5 text-sm text-themed placeholder:text-themed-muted outline-none bg-transparent"
               autoFocus
               onValueChange={handleInputChange}
             />
-            <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 rounded border border-slate-200 shrink-0">
+            <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-themed-muted bg-surface-hover rounded border border-themed shrink-0">
               ESC
             </kbd>
           </div>
 
           <Command.List className="max-h-[50vh] overflow-y-auto p-2">
-            <Command.Empty className="px-4 py-8 text-center text-sm text-slate-500">
+            <Command.Empty className="px-4 py-8 text-center text-sm text-themed-tertiary">
               {isSearching ? "Searching..." : "No results found."}
             </Command.Empty>
 
@@ -234,14 +234,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     key={`search-${result.type}-${result.id}`}
                     value={`search ${result.title} ${result.subtitle}`}
                     onSelect={() => handleSearchSelect(result)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-themed-secondary cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
                   >
                     {SEARCH_ICONS[result.type]}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{result.title}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{result.subtitle}</div>
+                      <div className="text-[10px] text-themed-muted truncate">{result.subtitle}</div>
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-300 shrink-0">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-themed-muted shrink-0">
                       {SEARCH_TYPE_LABELS[result.type]}
                     </span>
                   </Command.Item>
@@ -257,9 +257,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     key={`recent-${v}`}
                     value={`recent ${v.toLowerCase()}`}
                     onSelect={() => nav(v)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-themed-secondary cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
                   >
-                    <ArrowRight size={14} className="text-slate-400" />
+                    <ArrowRight size={14} className="text-themed-muted" />
                     {VIEW_LABELS[v] ?? v}
                   </Command.Item>
                 ))}
@@ -273,12 +273,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   key={item.id}
                   value={`${item.label} ${item.keywords ?? ""}`}
                   onSelect={item.action}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-themed-secondary cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
                 >
-                  <span className="text-slate-400">{item.icon}</span>
+                  <span className="text-themed-muted">{item.icon}</span>
                   <span className="flex-1">{item.label}</span>
                   {item.shortcut && (
-                    <kbd className="hidden md:inline-flex px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 rounded border border-slate-200">{item.shortcut}</kbd>
+                    <kbd className="hidden md:inline-flex px-1.5 py-0.5 text-[10px] font-mono text-themed-muted bg-surface-hover rounded border border-themed">{item.shortcut}</kbd>
                   )}
                 </Command.Item>
               ))}
@@ -291,7 +291,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   key={item.id}
                   value={`${item.label} ${item.keywords ?? ""}`}
                   onSelect={item.action}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-themed-secondary cursor-pointer data-[selected=true]:bg-teal-50 data-[selected=true]:text-teal-700"
                 >
                   <span className="text-teal-500">{item.icon}</span>
                   {item.label}

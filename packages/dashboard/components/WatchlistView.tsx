@@ -95,7 +95,7 @@ const CompetitorGaps: React.FC<CompetitorGapsProps> = ({ onAddIdea, addedTopic }
           <button
             onClick={() => clearMutation.mutate()}
             title="Clear all topic data"
-            className="ml-auto text-slate-300 hover:text-rose-400 transition-colors"
+            className="ml-auto text-themed-muted hover:text-rose-400 transition-colors"
           >
             <Trash2 size={11} />
           </button>
@@ -118,10 +118,10 @@ const CompetitorGaps: React.FC<CompetitorGapsProps> = ({ onAddIdea, addedTopic }
           {data.blueOcean.length > 0 ? (
             <div className="space-y-2">
               {data.blueOcean.slice(0, 10).map((gap, i) => (
-                <div key={i} className="bg-white border border-sky-100 rounded-lg p-2.5 flex items-start justify-between gap-2">
+                <div key={i} className="bg-surface-elevated border border-sky-100 rounded-lg p-2.5 flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800">{gap.topic}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-sm font-medium text-themed">{gap.topic}</p>
+                    <p className="text-[10px] text-themed-muted mt-0.5">
                       Covered by: {gap.creators.slice(0, 3).map((c) => `@${c}`).join(", ")}
                       {gap.count > 1 && ` (${gap.count} videos)`}
                     </p>
@@ -149,10 +149,10 @@ const CompetitorGaps: React.FC<CompetitorGapsProps> = ({ onAddIdea, addedTopic }
           )}
           {data.overlap.length > 0 && (
             <div className="mt-2">
-              <p className="text-[10px] font-bold text-slate-500 mb-1">Topics you both cover ({data.overlap.length}):</p>
+              <p className="text-[10px] font-bold text-themed-tertiary mb-1">Topics you both cover ({data.overlap.length}):</p>
               <div className="flex flex-wrap gap-1">
                 {data.overlap.slice(0, 8).map((o, i) => (
-                  <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{o.topic}</span>
+                  <span key={i} className="text-[10px] bg-surface-hover text-themed-secondary px-2 py-0.5 rounded-full">{o.topic}</span>
                 ))}
               </div>
             </div>
@@ -412,9 +412,9 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Eye size={20} className="text-violet-500" />
-            <h2 className="text-lg font-serif font-bold text-slate-900">Creator Watchlist</h2>
+            <h2 className="text-lg font-serif font-bold text-themed">Creator Watchlist</h2>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-themed-tertiary">
             Track competitors and inspiration creators. Analyze their patterns directly from here.
           </p>
         </div>
@@ -428,14 +428,14 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+      <div className="flex gap-1 bg-surface-hover rounded-xl p-1 w-fit">
         <button
           onClick={() => setWatchlistTab("creators")}
           className={cn(
             "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors",
             watchlistTab === "creators"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700",
+              ? "bg-surface-elevated text-themed shadow-sm"
+              : "text-themed-tertiary hover:text-themed-secondary",
           )}
         >
           <Users size={14} />
@@ -446,8 +446,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           className={cn(
             "flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors",
             watchlistTab === "videos"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700",
+              ? "bg-surface-elevated text-themed shadow-sm"
+              : "text-themed-tertiary hover:text-themed-secondary",
           )}
         >
           <Video size={14} />
@@ -468,18 +468,18 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       )}
 
       {/* Benchmarking Section */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
         <button
           onClick={() => setBenchmarkExpanded(!benchmarkExpanded)}
           className="w-full flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <BarChart3 size={18} className="text-teal-600" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               Competitive Benchmarking
             </p>
           </div>
-          {benchmarkExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          {benchmarkExpanded ? <ChevronUp size={16} className="text-themed-muted" /> : <ChevronDown size={16} className="text-themed-muted" />}
         </button>
 
         {benchmarkExpanded && (
@@ -539,15 +539,15 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                     ? "text-amber-500"
                     : "text-rose-500";
                   return (
-                    <div key={comp.handle} className="border border-slate-200 rounded-xl p-3">
+                    <div key={comp.handle} className="border border-themed rounded-xl p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-slate-700">{comp.handle}</p>
-                          <p className="text-[10px] text-slate-400">{comp.platform}</p>
+                          <p className="text-sm font-bold text-themed-secondary">{comp.handle}</p>
+                          <p className="text-[10px] text-themed-muted">{comp.platform}</p>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap justify-end">
                           {comp.latestSnapshot.followers && (
-                            <span className="text-sm text-slate-600">{comp.latestSnapshot.followers.toLocaleString()}</span>
+                            <span className="text-sm text-themed-secondary">{comp.latestSnapshot.followers.toLocaleString()}</span>
                           )}
                           {followerDelta !== null && followerDeltaPct !== null && (
                             <span className={cn(
@@ -568,19 +568,19 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                             </div>
                           )}
                           {comp.latestSnapshot.engagementRateBps ? (
-                            <span className="text-[10px] text-slate-500">{(comp.latestSnapshot.engagementRateBps / 100).toFixed(1)}% eng.</span>
+                            <span className="text-[10px] text-themed-tertiary">{(comp.latestSnapshot.engagementRateBps / 100).toFixed(1)}% eng.</span>
                           ) : null}
                           <span className={cn("text-[10px] font-bold", stalenessColor)}>{stalenessLabel}</span>
                           <button
                             onClick={() => setShowLogMetrics(comp.handle)}
-                            className="text-[10px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+                            className="text-[10px] font-bold text-themed-muted hover:text-teal-600 transition-colors"
                           >
                             Log
                           </button>
                           <button
                             onClick={() => removeSnapshotMutation.mutate(comp.handle)}
                             disabled={removeSnapshotMutation.isPending}
-                            className="text-slate-300 hover:text-rose-400 transition-colors"
+                            className="text-themed-muted hover:text-rose-400 transition-colors"
                             title="Remove from benchmarking"
                           >
                             <X size={12} />
@@ -621,7 +621,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
             {/* AI Analysis results */}
             {analysisResult && (
               <div className="space-y-3 mt-3">
-                <p className="text-sm text-slate-600">{analysisResult.summary}</p>
+                <p className="text-sm text-themed-secondary">{analysisResult.summary}</p>
                 <div className="grid md:grid-cols-3 gap-3">
                   <div className="border border-emerald-200 bg-emerald-50 rounded-xl p-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Strengths</p>
@@ -687,17 +687,17 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           </p>
           <div className="space-y-2">
             {outliersData.outliers.slice(0, 5).map((o) => (
-              <div key={o.id} className="bg-white border border-amber-100 rounded-xl p-3 flex items-start justify-between gap-2">
+              <div key={o.id} className="bg-surface-elevated border border-amber-100 rounded-xl p-3 flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{o.title}</p>
+                  <p className="text-sm font-medium text-themed truncate">{o.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-slate-500">@{o.creatorHandle}</span>
+                    <span className="text-[10px] text-themed-tertiary">@{o.creatorHandle}</span>
                     <span className="text-[10px] font-bold text-amber-600">{o.multiplier}x median</span>
-                    <span className="text-[10px] text-slate-400">{o.views.toLocaleString()} views</span>
+                    <span className="text-[10px] text-themed-muted">{o.views.toLocaleString()} views</span>
                   </div>
                 </div>
                 {o.url && (
-                  <a href={o.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-teal-600 shrink-0">
+                  <a href={o.url} target="_blank" rel="noreferrer" className="text-themed-muted hover:text-teal-600 shrink-0">
                     <ExternalLink size={14} />
                   </a>
                 )}
@@ -729,7 +729,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       {creators.length > 3 && (
         <FeatureHint id="creator-search" content={FEATURE_HINTS["creator-search"].content} side="bottom">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-themed-muted pointer-events-none" />
           <input
             value={creatorSearch}
             onChange={(e) => {
@@ -742,12 +742,12 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
               else if (!e.target.value) setExpandedHandle(null);
             }}
             placeholder="Filter by creator..."
-            className="w-full pl-8 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 text-slate-800 placeholder-slate-400"
+            className="w-full pl-8 pr-4 py-2 text-sm bg-surface-hover border border-themed rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 text-themed placeholder-slate-400"
           />
           {creatorSearch && (
             <button
               onClick={() => setCreatorSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-themed-muted hover:text-themed-secondary"
             >
               <X size={12} />
             </button>
@@ -758,15 +758,15 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
 
       {/* Creator Cards */}
       {isLoading ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Loading watchlist...</div>
+        <div className="text-center py-12 text-themed-muted text-sm">Loading watchlist...</div>
       ) : creators.length === 0 ? (
         <EmptyState
-          icon={<Eye size={24} className="text-slate-400" />}
+          icon={<Eye size={24} className="text-themed-muted" />}
           headline="No creators tracked yet"
           description="Add creators to watchlist.md to start tracking their content patterns and strategies."
         />
       ) : filteredCreators.length === 0 ? (
-        <div className="text-center py-8 text-slate-400 text-sm">No creators match "{creatorSearch}"</div>
+        <div className="text-center py-8 text-themed-muted text-sm">No creators match "{creatorSearch}"</div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filteredCreators.map((creator) => (
@@ -786,16 +786,16 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       {/* Latest Intelligence */}
       {intelData?.date ? (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-amber-500" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                   Watchlist Intelligence
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-400">{intelData.date}</span>
+                <span className="text-[10px] text-themed-muted">{intelData.date}</span>
                 <button
                   onClick={() => syncMutation.mutate()}
                   disabled={syncMutation.isPending || runNowMutation.isPending}
@@ -836,35 +836,35 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-slate-900">{intelData.ideas?.length || 0}</p>
-                <p className="text-[10px] text-slate-500 font-medium">Ideas Found</p>
+              <div className="bg-surface-hover rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-themed">{intelData.ideas?.length || 0}</p>
+                <p className="text-[10px] text-themed-tertiary font-medium">Ideas Found</p>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-slate-900">{intelData.risingCreators?.length || 0}</p>
-                <p className="text-[10px] text-slate-500 font-medium">Rising Creators</p>
+              <div className="bg-surface-hover rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-themed">{intelData.risingCreators?.length || 0}</p>
+                <p className="text-[10px] text-themed-tertiary font-medium">Rising Creators</p>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 text-center">
-                <p className="text-lg font-bold text-slate-900">{intelData.previousTopics?.length || 0}</p>
-                <p className="text-[10px] text-slate-500 font-medium">Topics Tracked</p>
+              <div className="bg-surface-hover rounded-xl p-3 text-center">
+                <p className="text-lg font-bold text-themed">{intelData.previousTopics?.length || 0}</p>
+                <p className="text-[10px] text-themed-tertiary font-medium">Topics Tracked</p>
               </div>
             </div>
 
             {/* Non-Obvious Ideas */}
             {intelData.ideas?.length > 0 && (
               <div className="mb-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Non-Obvious Opportunities
                 </p>
                 <div className="space-y-2">
                   {intelData.ideas.slice(0, 5).map((idea, i) => (
-                    <div key={i} className="bg-slate-50 rounded-xl p-3">
+                    <div key={i} className="bg-surface-hover rounded-xl p-3">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-sm font-medium text-slate-900">{idea.topic}</p>
+                        <p className="text-sm font-medium text-themed">{idea.topic}</p>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <span className={cn(
                             "px-1.5 py-0.5 rounded text-[9px] font-bold",
-                            idea.priority === "High" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600",
+                            idea.priority === "High" ? "bg-rose-100 text-rose-700" : "bg-surface-hover text-themed-secondary",
                           )}>
                             {idea.priority}
                           </span>
@@ -884,8 +884,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                           </button>
                         </div>
                       </div>
-                      <p className="text-xs text-slate-500 mb-1">{idea.whyNonObvious}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <p className="text-xs text-themed-tertiary mb-1">{idea.whyNonObvious}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-themed-muted">
                         {idea.suggestedFormat && <span className="font-mono">{idea.suggestedFormat}</span>}
                         {idea.inspiredBy && <span>via {idea.inspiredBy}</span>}
                         {idea.targetAudience && <span>{idea.targetAudience}</span>}
@@ -899,7 +899,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
             {/* Rising Creators */}
             {intelData.risingCreators?.length > 0 && (
               <div className="mb-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Rising Creators
                 </p>
                 <div className="space-y-3">
@@ -913,18 +913,18 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                     const isAdded = addedCreators.has(c.handle);
                     const highPriorityIdeas = intelData.ideas?.filter((idea) => idea.priority === "High") ?? [];
                     return (
-                      <div key={i} className="bg-slate-50 rounded-xl p-3">
+                      <div key={i} className="bg-surface-hover rounded-xl p-3">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                            <span className="text-sm font-semibold text-slate-900">{c.handle}</span>
+                            <span className="text-sm font-semibold text-themed">{c.handle}</span>
                             <span className={cn(
                               "px-1.5 py-0.5 rounded text-[9px] font-bold",
-                              PLATFORM_COLORS[c.platform] || "bg-slate-100 text-slate-600"
+                              PLATFORM_COLORS[c.platform] || "bg-surface-hover text-themed-secondary"
                             )}>
                               {c.platform}
                             </span>
                             {c.followers && c.followers !== "Unknown" && (
-                              <span className="text-[10px] text-slate-400">{c.followers}</span>
+                              <span className="text-[10px] text-themed-muted">{c.followers}</span>
                             )}
                             {isTopPick && (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">
@@ -937,7 +937,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                               href={getCreatorProfileUrl(c.handle, c.platform)}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-slate-300 hover:text-teal-600 transition-colors"
+                              className="text-themed-muted hover:text-teal-600 transition-colors"
                               title="View profile"
                             >
                               <ExternalLink size={12} />
@@ -964,17 +964,17 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-slate-600 leading-relaxed mb-2">{c.whyWatch}</p>
+                        <p className="text-xs text-themed-secondary leading-relaxed mb-2">{c.whyWatch}</p>
                         {highPriorityIdeas.length > 0 && (
-                          <div className="pt-2 border-t border-slate-200">
-                            <p className="text-[10px] text-slate-400 mb-1.5">Ideas from this scan:</p>
+                          <div className="pt-2 border-t border-themed">
+                            <p className="text-[10px] text-themed-muted mb-1.5">Ideas from this scan:</p>
                             <div className="space-y-1">
                               {highPriorityIdeas.slice(0, 3).map((idea, j) => (
                                 <div key={j} className="flex items-center justify-between gap-2">
-                                  <span className="text-[11px] text-slate-700 flex-1 min-w-0 truncate">{idea.topic}</span>
+                                  <span className="text-[11px] text-themed-secondary flex-1 min-w-0 truncate">{idea.topic}</span>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {idea.suggestedFormat && (
-                                      <span className="text-[9px] font-mono text-slate-400">{idea.suggestedFormat.split(" ")[0]}</span>
+                                      <span className="text-[9px] font-mono text-themed-muted">{idea.suggestedFormat.split(" ")[0]}</span>
                                     )}
                                     <button
                                       onClick={() => addIdeaMutation.mutate(idea)}
@@ -983,7 +983,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                                         "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
                                         addedIdea === idea.topic
                                           ? "bg-teal-100 text-teal-700"
-                                          : "bg-slate-100 text-slate-500 hover:bg-teal-50 hover:text-teal-600"
+                                          : "bg-surface-hover text-themed-tertiary hover:bg-teal-50 hover:text-teal-600"
                                       )}
                                     >
                                       {addedIdea === idea.topic ? <Check size={9} /> : <Plus size={9} />}
@@ -1007,17 +1007,17 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
               intelData.selfImprovementNotes.nextScanFocus ||
               (intelData.selfImprovementNotes.bestQueries?.length ?? 0) > 0
             ) && (
-              <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="mt-4 pt-3 border-t border-themed-subtle">
                 <div className="flex items-center gap-1.5 mb-2">
                   <TrendingUp size={12} className="text-teal-500" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Scout Notes</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Scout Notes</p>
                 </div>
                 {(intelData.selfImprovementNotes.bestQueries?.length ?? 0) > 0 && (
                   <div className="mb-2">
-                    <p className="text-[10px] text-slate-400 mb-1">Best queries this scan:</p>
+                    <p className="text-[10px] text-themed-muted mb-1">Best queries this scan:</p>
                     <div className="flex flex-wrap gap-1">
                       {intelData.selfImprovementNotes.bestQueries.map((q, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-[10px] text-slate-600 font-mono">
+                        <span key={i} className="px-2 py-0.5 bg-surface-hover rounded text-[10px] text-themed-secondary font-mono">
                           {q}
                         </span>
                       ))}
@@ -1025,7 +1025,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                   </div>
                 )}
                 {intelData.selfImprovementNotes.nextScanFocus && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-themed-tertiary">
                     Next focus: {intelData.selfImprovementNotes.nextScanFocus}
                   </p>
                 )}
@@ -1034,11 +1034,11 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles size={16} className="text-slate-300" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <Sparkles size={16} className="text-themed-muted" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Watchlist Intelligence
               </p>
             </div>
@@ -1063,13 +1063,13 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
             </div>
           </div>
           {syncMutation.isSuccess && (syncMutation.data as { synced: boolean })?.synced === false && (
-            <p className="text-xs text-slate-500 mt-2">{(syncMutation.data as { message?: string })?.message || "No data found"}</p>
+            <p className="text-xs text-themed-tertiary mt-2">{(syncMutation.data as { message?: string })?.message || "No data found"}</p>
           )}
           {syncMutation.isError && (
             <p className="text-xs text-rose-500 mt-2">{(syncMutation.error as Error)?.message || "Sync failed. Check n8n connection."}</p>
           )}
           {!syncMutation.isPending && !syncMutation.isSuccess && (
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-themed-muted mt-2">
               Run the Watchlist Intelligence workflow in n8n, then sync to pull the report.
             </p>
           )}
@@ -1077,8 +1077,8 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       )}
 
       {/* Quick Actions */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
           Quick Actions
         </p>
         <div className="flex flex-wrap gap-2">
@@ -1170,25 +1170,25 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
   const isStale = !creator.lastAnalyzed || creator.lastAnalyzed.trim() === "";
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-slate-300 transition-colors">
+    <div className="bg-surface-elevated border border-themed rounded-2xl p-5 hover:border-themed transition-colors">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <a
             href={getCreatorProfileUrl(creator.handle, creator.platform)}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-slate-900 text-sm flex items-center gap-1.5 hover:text-teal-700 transition-colors"
+            className="font-medium text-themed text-sm flex items-center gap-1.5 hover:text-teal-700 transition-colors"
           >
             {creator.handle}
-            <ExternalLink size={12} className="text-slate-400" />
+            <ExternalLink size={12} className="text-themed-muted" />
           </a>
           {creator.followers && (
-            <p className="text-xs text-slate-500 mt-0.5">{creator.followers} followers</p>
+            <p className="text-xs text-themed-tertiary mt-0.5">{creator.followers} followers</p>
           )}
         </div>
         <div className="flex flex-wrap gap-1 justify-end">
           {platforms.map((p) => (
-            <span key={p} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${PLATFORM_COLORS[p] ?? "bg-slate-200 text-slate-700"}`}>
+            <span key={p} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${PLATFORM_COLORS[p] ?? "bg-surface-hover text-themed-secondary"}`}>
               {p}
             </span>
           ))}
@@ -1196,23 +1196,23 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
       </div>
 
       {creator.whyTracking && (
-        <p className="text-xs text-slate-600 mb-2">{creator.whyTracking}</p>
+        <p className="text-xs text-themed-secondary mb-2">{creator.whyTracking}</p>
       )}
 
       <div className="flex flex-wrap gap-2 text-[10px]">
         {creator.contentStyle && (
-          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+          <span className="bg-surface-hover text-themed-secondary px-2 py-0.5 rounded-full">
             {creator.contentStyle}
           </span>
         )}
         {creator.frequency && (
-          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+          <span className="bg-surface-hover text-themed-secondary px-2 py-0.5 rounded-full">
             {creator.frequency}
           </span>
         )}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-themed-subtle flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={onToggle}
@@ -1221,7 +1221,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
               "inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-all border",
               creator.hasInsight
                 ? "border-violet-200 text-violet-600 hover:bg-violet-50"
-                : "border-slate-200 text-slate-300 cursor-not-allowed",
+                : "border-themed text-themed-muted cursor-not-allowed",
             )}
           >
             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -1235,7 +1235,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
               (analyzeMutation.isPending || isEnriching)
                 ? "bg-violet-100 text-violet-500"
                 : creator.hasInsight
-                  ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  ? "bg-surface-hover text-themed-secondary hover:bg-surface-hover"
                   : "bg-violet-600 text-white hover:bg-violet-700",
             )}
           >
@@ -1250,7 +1250,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
           )}
         </div>
         <div className="flex items-center gap-2">
-          <p className={cn("text-xs", isStale ? "text-amber-500 font-medium" : "text-slate-500")}>
+          <p className={cn("text-xs", isStale ? "text-amber-500 font-medium" : "text-themed-tertiary")}>
             {isStale ? "Never analyzed" : creator.lastAnalyzed}
           </p>
           {confirmDelete ? (
@@ -1264,7 +1264,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-[9px] font-bold text-slate-400 hover:text-slate-600"
+                className="text-[9px] font-bold text-themed-muted hover:text-themed-secondary"
               >
                 Cancel
               </button>
@@ -1272,7 +1272,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="text-slate-300 hover:text-rose-500 transition-colors"
+              className="text-themed-muted hover:text-rose-500 transition-colors"
               title="Remove creator"
             >
               <Trash2 size={12} />
@@ -1307,29 +1307,29 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
   const [section, setSection] = useState(sections[0] || "");
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5">
+    <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Add Creator</p>
-        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Add Creator</p>
+        <button onClick={onCancel} className="text-themed-muted hover:text-themed-secondary">
           <X size={16} />
         </button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Handle *</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Handle *</label>
           <input
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="@creator_handle"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Platform *</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Platform *</label>
           <select
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-white"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-surface-elevated"
           >
             <option>Instagram</option>
             <option>TikTok</option>
@@ -1340,49 +1340,49 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Followers</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Followers</label>
           <input
             value={followers}
             onChange={(e) => setFollowers(e.target.value)}
             placeholder="e.g. ~50K"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Section</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Section</label>
           <select
             value={section}
             onChange={(e) => setSection(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-white"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400 bg-surface-elevated"
           >
             {sections.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="md:col-span-2">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Why Tracking</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Why Tracking</label>
           <input
             value={whyTracking}
             onChange={(e) => setWhyTracking(e.target.value)}
             placeholder="What makes this creator worth watching?"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Content Style</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Content Style</label>
           <input
             value={contentStyle}
             onChange={(e) => setContentStyle(e.target.value)}
             placeholder="e.g. Educational, humor-driven"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
           />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary mb-1 block">Frequency</label>
           <input
             value={frequency}
             onChange={(e) => setFrequency(e.target.value)}
             placeholder="e.g. 3-4x/week"
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
+            className="w-full rounded-xl border border-themed px-3 py-2 text-sm focus:outline-none focus:border-teal-400"
           />
         </div>
       </div>
@@ -1390,7 +1390,7 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
       <div className="flex justify-end gap-2 mt-4">
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700"
+          className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-themed-tertiary hover:text-themed-secondary"
         >
           Cancel
         </button>
@@ -1431,39 +1431,39 @@ const LogMetricsForm: React.FC<LogMetricsFormProps> = ({ handle, onSubmit, onCan
   const [postsPerWeek, setPostsPerWeek] = useState("");
 
   return (
-    <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+    <div className="border border-themed rounded-xl p-4 bg-surface-hover">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-bold text-slate-700">Log Metrics: {handle}</p>
-        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+        <p className="text-sm font-bold text-themed-secondary">Log Metrics: {handle}</p>
+        <button onClick={onCancel} className="text-themed-muted hover:text-themed-secondary"><X size={14} /></button>
       </div>
       <div className="grid gap-2 grid-cols-2 md:grid-cols-5">
         <div>
-          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Platform</label>
-          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white">
+          <label className="text-[10px] font-bold uppercase text-themed-tertiary mb-1 block">Platform</label>
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-full rounded-lg border border-themed px-2 py-1.5 text-sm bg-surface-elevated">
             <option>Instagram</option>
             <option>TikTok</option>
             <option>YouTube</option>
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Followers</label>
-          <input value={followers} onChange={(e) => setFollowers(e.target.value)} placeholder="50000" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+          <label className="text-[10px] font-bold uppercase text-themed-tertiary mb-1 block">Followers</label>
+          <input value={followers} onChange={(e) => setFollowers(e.target.value)} placeholder="50000" type="number" className="w-full rounded-lg border border-themed px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Avg Views</label>
-          <input value={avgViews} onChange={(e) => setAvgViews(e.target.value)} placeholder="5000" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+          <label className="text-[10px] font-bold uppercase text-themed-tertiary mb-1 block">Avg Views</label>
+          <input value={avgViews} onChange={(e) => setAvgViews(e.target.value)} placeholder="5000" type="number" className="w-full rounded-lg border border-themed px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Eng Rate %</label>
-          <input value={engRate} onChange={(e) => setEngRate(e.target.value)} placeholder="3.5" type="number" step="0.1" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+          <label className="text-[10px] font-bold uppercase text-themed-tertiary mb-1 block">Eng Rate %</label>
+          <input value={engRate} onChange={(e) => setEngRate(e.target.value)} placeholder="3.5" type="number" step="0.1" className="w-full rounded-lg border border-themed px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block">Posts/Week</label>
-          <input value={postsPerWeek} onChange={(e) => setPostsPerWeek(e.target.value)} placeholder="4" type="number" className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm" />
+          <label className="text-[10px] font-bold uppercase text-themed-tertiary mb-1 block">Posts/Week</label>
+          <input value={postsPerWeek} onChange={(e) => setPostsPerWeek(e.target.value)} placeholder="4" type="number" className="w-full rounded-lg border border-themed px-2 py-1.5 text-sm" />
         </div>
       </div>
       <div className="flex justify-end gap-2 mt-3">
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+        <button onClick={onCancel} className="px-3 py-1.5 rounded-full text-[10px] font-bold text-themed-tertiary hover:text-themed-secondary">Cancel</button>
         <button
           onClick={() => onSubmit({
             handle,
@@ -1490,19 +1490,19 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
     queryFn: () => fetch(`/api/watchlist/${cleanHandle}/insights`).then((r) => r.json()),
   });
 
-  if (isLoading) return <div className="mt-3 text-xs text-slate-400">Loading analysis...</div>;
+  if (isLoading) return <div className="mt-3 text-xs text-themed-muted">Loading analysis...</div>;
   if (!data?.insight) return null;
 
   const insight = data.insight;
 
   return (
-    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+    <div className="mt-3 pt-3 border-t border-themed-subtle space-y-3">
       {insight.keyTakeaways.length > 0 && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Key Takeaways</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Key Takeaways</p>
           <ul className="space-y-1">
             {insight.keyTakeaways.map((t, i) => (
-              <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+              <li key={i} className="text-xs text-themed-secondary flex gap-1.5">
                 <span className="text-teal-500 mt-0.5">-</span>
                 <span>{t}</span>
               </li>
@@ -1513,7 +1513,7 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
 
       {insight.contentPatterns.length > 0 && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Content Patterns</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Content Patterns</p>
           <div className="flex flex-wrap gap-1">
             {insight.contentPatterns.slice(0, 6).map((p, i) => (
               <span key={i} className="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded-full">{p}</span>
@@ -1524,7 +1524,7 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
 
       {insight.hookStyles.length > 0 && (
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Hook Styles</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Hook Styles</p>
           <div className="flex flex-wrap gap-1">
             {insight.hookStyles.slice(0, 6).map((h, i) => (
               <span key={i} className="bg-violet-50 text-violet-700 text-[10px] px-2 py-0.5 rounded-full">{h}</span>
@@ -1627,7 +1627,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="Paste YouTube, Instagram, or TikTok URL..."
-                className="flex-1 px-3 py-2 rounded-lg border border-purple-200 text-sm text-slate-700 focus:outline-none focus:border-purple-400 bg-white"
+                className="flex-1 px-3 py-2 rounded-lg border border-purple-200 text-sm text-themed-secondary focus:outline-none focus:border-purple-400 bg-surface-elevated"
               />
               <button
                 onClick={() => { if (urlInput.trim()) analyzeUrlMutation.mutate(urlInput.trim()); }}
@@ -1645,9 +1645,9 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
               <p className="text-xs text-rose-500">{(analyzeUrlMutation.error as Error).message}</p>
             )}
             {urlResult && (
-              <div className="bg-white border border-purple-200 rounded-xl p-4 space-y-2">
+              <div className="bg-surface-elevated border border-purple-200 rounded-xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-900">{urlResult.videoTitle}</p>
+                  <p className="text-sm font-medium text-themed">{urlResult.videoTitle}</p>
                   <span className="text-[9px] font-bold text-purple-500">
                     {urlResult.frameCount} frames | {urlResult.hasTranscript ? "Transcribed" : "No transcript"}
                   </span>
@@ -1660,8 +1660,8 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
       </div>
 
       {/* Scan creators */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
           Scan Creator Videos
         </p>
         <div className="flex flex-wrap gap-2">
@@ -1674,7 +1674,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors",
                 scanMutation.isPending && scanMutation.variables?.handle === c.handle
                   ? "bg-violet-100 text-violet-500"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                  : "bg-surface-hover text-themed-secondary hover:bg-surface-hover",
               )}
             >
               {scanMutation.isPending && scanMutation.variables?.handle === c.handle
@@ -1696,7 +1696,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-surface-hover rounded-lg p-0.5">
           {(["all", "7d", "30d", "90d"] as const).map((range) => (
             <button
               key={range}
@@ -1704,8 +1704,8 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
               className={cn(
                 "px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors",
                 dateRange === range
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700",
+                  ? "bg-surface-elevated text-themed shadow-sm"
+                  : "text-themed-tertiary hover:text-themed-secondary",
               )}
             >
               {range === "all" ? "All" : range}
@@ -1716,7 +1716,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
         <select
           value={minOutlier}
           onChange={(e) => setMinOutlier(parseInt(e.target.value))}
-          className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 bg-white"
+          className="rounded-lg border border-themed px-2 py-1 text-[10px] font-bold text-themed-secondary bg-surface-elevated"
         >
           <option value={0}>All Scores</option>
           <option value={100}>1x+</option>
@@ -1730,7 +1730,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as "outlierScore" | "views" | "publishedAt")}
-          className="rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 bg-white"
+          className="rounded-lg border border-themed px-2 py-1 text-[10px] font-bold text-themed-secondary bg-surface-elevated"
         >
           <option value="outlierScore">Outlier Score</option>
           <option value="views">Views</option>
@@ -1738,39 +1738,39 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
         </select>
 
         <div className="relative flex-1 min-w-[120px] max-w-[200px]">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-themed-muted" />
           <input
             value={searchHandle}
             onChange={(e) => setSearchHandle(e.target.value)}
             placeholder="Filter by handle..."
-            className="w-full pl-7 pr-2 py-1 rounded-lg border border-slate-200 text-[10px] font-medium text-slate-600 focus:outline-none focus:border-teal-400"
+            className="w-full pl-7 pr-2 py-1 rounded-lg border border-themed text-[10px] font-medium text-themed-secondary focus:outline-none focus:border-teal-400"
           />
         </div>
       </div>
 
       {/* View mode toggle + Video grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Loading videos...</div>
+        <div className="text-center py-12 text-themed-muted text-sm">Loading videos...</div>
       ) : videos.length === 0 ? (
         <EmptyState
-          icon={<Video size={24} className="text-slate-400" />}
+          icon={<Video size={24} className="text-themed-muted" />}
           headline="No videos tracked yet"
           description="Use the Scan buttons above to find recent videos from your watchlist creators."
         />
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-400">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
-            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+            <p className="text-xs text-themed-muted">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
+            <div className="flex gap-1 bg-surface-hover rounded-lg p-0.5">
               <button
                 onClick={() => setViewMode("grid")}
-                className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
+                className={cn("p-1.5 rounded-md transition-colors", viewMode === "grid" ? "bg-surface-elevated text-themed shadow-sm" : "text-themed-muted hover:text-themed-secondary")}
               >
                 <LayoutGrid size={14} />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600")}
+                className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-surface-elevated text-themed shadow-sm" : "text-themed-muted hover:text-themed-secondary")}
               >
                 <List size={14} />
               </button>
@@ -1832,7 +1832,7 @@ const outlierLabel = (score: number) => `${(score / 100).toFixed(1)}x`;
 const outlierColor = (score: number) => {
   if (score >= 300) return "bg-emerald-100 text-emerald-700 border-emerald-200";
   if (score >= 150) return "bg-amber-100 text-amber-700 border-amber-200";
-  return "bg-slate-100 text-slate-600 border-slate-200";
+  return "bg-surface-hover text-themed-secondary border-themed";
 };
 
 // ─── DNA Display Components ──────────────────────────────────────────────────
@@ -1850,8 +1850,8 @@ const ColorSwatch: React.FC<{ hex: string; label?: string }> = ({ hex, label }) 
       className="flex items-center gap-1.5 group"
       title={`Copy ${hex}`}
     >
-      <div className="w-5 h-5 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: hex }} />
-      <span className="text-[10px] text-slate-500 group-hover:text-slate-700">
+      <div className="w-5 h-5 rounded-full border border-themed shadow-sm" style={{ backgroundColor: hex }} />
+      <span className="text-[10px] text-themed-tertiary group-hover:text-themed-secondary">
         {copied ? "Copied!" : label || hex}
       </span>
     </button>
@@ -1885,9 +1885,9 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           { label: "Key Visuals", value: breakdown.visuals },
           { label: "Audio", value: breakdown.audio },
         ].filter((i) => i.value).map((item) => (
-          <div key={item.label} className="bg-slate-50 rounded-lg p-2">
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
-            <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
+          <div key={item.label} className="bg-surface-hover rounded-lg p-2">
+            <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted">{item.label}</p>
+            <p className="text-xs text-themed-secondary mt-0.5">{item.value}</p>
           </div>
         ))}
       </div>
@@ -1905,14 +1905,14 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
       )}
 
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+      <div className="flex gap-1 bg-surface-hover rounded-lg p-0.5">
         {(["overview", "style", "plan"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setDnaTab(tab)}
             className={cn(
               "px-3 py-1 rounded-md text-[10px] font-bold capitalize transition-colors",
-              dnaTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700",
+              dnaTab === tab ? "bg-surface-elevated text-themed shadow-sm" : "text-themed-tertiary hover:text-themed-secondary",
             )}
           >
             {tab}
@@ -1933,9 +1933,9 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
               { label: "Visual Format", value: breakdown.visualFormat },
               { label: "Audio", value: breakdown.audio },
             ].filter((i) => i.value).map((item) => (
-              <div key={item.label} className="bg-slate-50 rounded-lg p-2">
-                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{item.label}</p>
-                <p className="text-xs text-slate-700 mt-0.5">{item.value}</p>
+              <div key={item.label} className="bg-surface-hover rounded-lg p-2">
+                <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted">{item.label}</p>
+                <p className="text-xs text-themed-secondary mt-0.5">{item.value}</p>
               </div>
             ))}
           </div>
@@ -1943,7 +1943,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Story Structure Timeline */}
           {story && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-2 flex items-center gap-1">
                 <Film size={10} /> Story Structure
               </p>
               <div className="flex gap-1">
@@ -1974,7 +1974,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Aesthetic keywords */}
           {aesthetics && aesthetics.length > 0 && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Aesthetic Keywords</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1">Aesthetic Keywords</p>
               <div className="flex flex-wrap gap-1">
                 {aesthetics.map((kw, i) => (
                   <span key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-medium border border-purple-200">
@@ -1992,11 +1992,11 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
                 const items = broll[type];
                 if (!items || !Array.isArray(items) || items.length === 0) return null;
                 return (
-                  <div key={type} className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{type} B-Roll</p>
+                  <div key={type} className="bg-surface-hover rounded-lg p-2">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted">{type} B-Roll</p>
                     <div className="mt-1 space-y-0.5">
                       {items.slice(0, 3).map((item, i) => (
-                        <p key={i} className="text-[10px] text-slate-600">{item}</p>
+                        <p key={i} className="text-[10px] text-themed-secondary">{item}</p>
                       ))}
                     </div>
                   </div>
@@ -2013,7 +2013,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Color Palette */}
           {colors && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-2 flex items-center gap-1">
                 <Palette size={10} /> Color Palette
               </p>
               <div className="flex flex-wrap gap-3">
@@ -2022,10 +2022,10 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
                 ))}
               </div>
               {colors.mood && (
-                <p className="text-[10px] text-slate-500 mt-1.5">Mood: {colors.mood}</p>
+                <p className="text-[10px] text-themed-tertiary mt-1.5">Mood: {colors.mood}</p>
               )}
               {colors.grading && (
-                <p className="text-[10px] text-slate-500">Grading: {colors.grading}</p>
+                <p className="text-[10px] text-themed-tertiary">Grading: {colors.grading}</p>
               )}
             </div>
           )}
@@ -2033,12 +2033,12 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Typography */}
           {typography && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Typography</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1">Typography</p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(typography).map(([key, val]) => (
-                  <div key={key} className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-[8px] font-bold uppercase text-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
-                    <p className="text-[10px] text-slate-700 mt-0.5">{val}</p>
+                  <div key={key} className="bg-surface-hover rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-themed-muted">{key.replace(/([A-Z])/g, " $1")}</p>
+                    <p className="text-[10px] text-themed-secondary mt-0.5">{val}</p>
                   </div>
                 ))}
               </div>
@@ -2048,14 +2048,14 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Music/Audio */}
           {music && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1 flex items-center gap-1">
                 <Music size={10} /> Music & Audio
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(music).map(([key, val]) => (
-                  <div key={key} className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-[8px] font-bold uppercase text-slate-400">{key.replace(/([A-Z])/g, " $1")}</p>
-                    <p className="text-[10px] text-slate-700 mt-0.5">{val}</p>
+                  <div key={key} className="bg-surface-hover rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-themed-muted">{key.replace(/([A-Z])/g, " $1")}</p>
+                    <p className="text-[10px] text-themed-secondary mt-0.5">{val}</p>
                   </div>
                 ))}
               </div>
@@ -2065,12 +2065,12 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Set Design */}
           {setDesign && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Set Design</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1">Set Design</p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(setDesign).map(([key, val]) => (
-                  <div key={key} className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-[8px] font-bold uppercase text-slate-400">{key}</p>
-                    <p className="text-[10px] text-slate-700 mt-0.5">
+                  <div key={key} className="bg-surface-hover rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-themed-muted">{key}</p>
+                    <p className="text-[10px] text-themed-secondary mt-0.5">
                       {Array.isArray(val) ? val.join(", ") : String(val)}
                     </p>
                   </div>
@@ -2082,12 +2082,12 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
           {/* Transitions */}
           {transitions && (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Transitions</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1">Transitions</p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(transitions).map(([key, val]) => (
-                  <div key={key} className="bg-slate-50 rounded-lg p-2">
-                    <p className="text-[8px] font-bold uppercase text-slate-400">{key}</p>
-                    <p className="text-[10px] text-slate-700 mt-0.5">
+                  <div key={key} className="bg-surface-hover rounded-lg p-2">
+                    <p className="text-[8px] font-bold uppercase text-themed-muted">{key}</p>
+                    <p className="text-[10px] text-themed-secondary mt-0.5">
                       {Array.isArray(val) ? val.join(", ") : String(val)}
                     </p>
                   </div>
@@ -2103,20 +2103,20 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
         <div className="space-y-3">
           {replication && replication.length > 0 ? (
             <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2">Replication Plan</p>
+              <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-2">Replication Plan</p>
               <div className="space-y-1.5">
                 {replication.map((step, i) => (
-                  <div key={i} className="flex items-start gap-2 bg-slate-50 rounded-lg p-2.5">
+                  <div key={i} className="flex items-start gap-2 bg-surface-hover rounded-lg p-2.5">
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-black flex items-center justify-center">
                       {i + 1}
                     </span>
-                    <p className="text-xs text-slate-700">{step}</p>
+                    <p className="text-xs text-themed-secondary">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-xs text-slate-400">No replication plan available. Run Deep Analyze to generate one.</p>
+            <p className="text-xs text-themed-muted">No replication plan available. Run Deep Analyze to generate one.</p>
           )}
         </div>
       )}
@@ -2126,7 +2126,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
 
 const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) => {
   const queryClient = useQueryClient();
-  const platformColor = PLATFORM_COLORS[video.platform] ?? "bg-slate-200 text-slate-700";
+  const platformColor = PLATFORM_COLORS[video.platform] ?? "bg-surface-hover text-themed-secondary";
 
   const breakdownQuery = useQuery<{ breakdown: VideoBreakdown | null }>({
     queryKey: ["video-breakdown", video.id],
@@ -2185,7 +2185,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
   const hasDeepDna = breakdown && (breakdown.storyStructure || breakdown.colorPalette || breakdown.replicationPlan);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:border-slate-300 transition-colors">
+    <div className="bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-themed transition-colors">
       <div className="flex items-start gap-3">
         {/* Outlier badge */}
         {video.outlierScoreX100 != null && (
@@ -2200,7 +2200,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
-            <p className="text-sm font-medium text-slate-900 line-clamp-2 flex-1">
+            <p className="text-sm font-medium text-themed line-clamp-2 flex-1">
               {video.videoTitle || "Untitled Video"}
             </p>
             {hasDeepDna && (
@@ -2210,17 +2210,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-slate-500">{video.creatorHandle}</span>
+            <span className="text-xs text-themed-tertiary">{video.creatorHandle}</span>
             <span className={`px-1.5 py-0 rounded-full text-[9px] font-bold ${platformColor}`}>
               {video.platform}
             </span>
             {video.publishedAt && (
-              <span className="text-[10px] text-slate-400">{video.publishedAt}</span>
+              <span className="text-[10px] text-themed-muted">{video.publishedAt}</span>
             )}
           </div>
 
           {/* Metrics row */}
-          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-slate-500">
+          <div className="flex items-center gap-3 mt-2 text-[10px] font-bold text-themed-tertiary">
             <span>{(video.views || 0).toLocaleString()} views</span>
             {(video.likes ?? 0) > 0 && <span>{(video.likes ?? 0).toLocaleString()} likes</span>}
             {(video.comments ?? 0) > 0 && <span>{(video.comments ?? 0).toLocaleString()} comments</span>}
@@ -2249,7 +2249,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
                 href={video.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-themed-muted hover:text-themed-secondary"
               >
                 <ExternalLink size={10} />
                 View
@@ -2258,7 +2258,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
             <button
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending}
-              className="ml-auto text-slate-300 hover:text-rose-500 transition-colors"
+              className="ml-auto text-themed-muted hover:text-rose-500 transition-colors"
             >
               <Trash2 size={12} />
             </button>
@@ -2268,14 +2268,14 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
 
       {/* Expanded breakdown */}
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-100">
+        <div className="mt-3 pt-3 border-t border-themed-subtle">
           {breakdownQuery.isLoading ? (
-            <p className="text-xs text-slate-400">Loading breakdown...</p>
+            <p className="text-xs text-themed-muted">Loading breakdown...</p>
           ) : breakdown ? (
             <DnaDisplay breakdown={breakdown} />
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs text-slate-400">No breakdown yet.</p>
+              <p className="text-xs text-themed-muted">No breakdown yet.</p>
               <button
                 onClick={() => analyzeMutation.mutate()}
                 disabled={analyzeMutation.isPending || deepAnalyzeMutation.isPending}

@@ -25,6 +25,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { useCreator } from "./context/CreatorContext.js";
+import { ThemeToggle } from "./ui/ThemeToggle.js";
 
 type NavItem = {
   view: DashboardView;
@@ -129,7 +130,7 @@ const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> 
     <div className="relative">
       <button
         onClick={() => { setOpen(!open); if (!open && unread > 0) markReadMutation.mutate(); }}
-        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors relative"
+        className="p-1.5 rounded-lg text-themed-muted hover:text-amber-600 hover:bg-amber-50 transition-colors relative"
         title="Notifications"
       >
         <Bell size={18} />
@@ -143,12 +144,12 @@ const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
-            <div className="p-3 border-b border-slate-100">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Notifications</p>
+          <div className="absolute right-0 top-full mt-2 w-72 bg-surface-elevated border border-themed rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+            <div className="p-3 border-b border-themed-subtle">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Notifications</p>
             </div>
             {(data?.notifications || []).length === 0 ? (
-              <p className="p-4 text-xs text-slate-400 text-center">No notifications yet</p>
+              <p className="p-4 text-xs text-themed-muted text-center">No notifications yet</p>
             ) : (
               <div className="divide-y divide-slate-100">
                 {(data?.notifications || []).slice(0, 10).map((n) => (
@@ -158,11 +159,11 @@ const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> 
                       if (n.targetView) onNavigate(n.targetView as DashboardView);
                       setOpen(false);
                     }}
-                    className={cn("w-full text-left p-3 hover:bg-slate-50 transition-colors", !n.read && "bg-amber-50/50")}
+                    className={cn("w-full text-left p-3 hover:bg-surface-hover transition-colors", !n.read && "bg-amber-50/50")}
                   >
-                    <p className="text-xs font-medium text-slate-800">{n.title}</p>
-                    {n.detail && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{n.detail}</p>}
-                    <p className="text-[9px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs font-medium text-themed">{n.title}</p>
+                    {n.detail && <p className="text-[10px] text-themed-tertiary mt-0.5 line-clamp-2">{n.detail}</p>}
+                    <p className="text-[9px] text-themed-muted mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
                   </button>
                 ))}
               </div>
@@ -195,8 +196,8 @@ const SidebarCreatorFooter: React.FC<{ onManage: () => void }> = ({ onManage }) 
   const active = personas.find((p) => p.id === selectedCreatorId) ?? null;
 
   return (
-    <div className="border-t border-slate-200 px-4 py-3 space-y-2">
-      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Creating as</p>
+    <div className="border-t border-themed px-4 py-3 space-y-2">
+      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-themed-muted">Creating as</p>
       {/* Avatar pills */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {personas.map((p) => {
@@ -211,7 +212,7 @@ const SidebarCreatorFooter: React.FC<{ onManage: () => void }> = ({ onManage }) 
                 "flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
                 isSelected
                   ? "bg-slate-800 text-white border-slate-800"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  : "bg-surface-elevated text-themed-secondary border-themed hover:border-themed"
               )}
             >
               <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 text-white", avatarCls)}>
@@ -224,11 +225,11 @@ const SidebarCreatorFooter: React.FC<{ onManage: () => void }> = ({ onManage }) 
         })}
       </div>
       {!active && (
-        <p className="text-[9px] text-slate-400 italic">No creator selected — using brand voice</p>
+        <p className="text-[9px] text-themed-muted italic">No creator selected — using brand voice</p>
       )}
       <button
         onClick={onManage}
-        className="text-[9px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+        className="text-[9px] font-bold text-themed-muted hover:text-teal-600 transition-colors"
       >
         Manage creators →
       </button>
@@ -247,8 +248,8 @@ const MobileCreatorSwitcher: React.FC<{ onManage: () => void }> = ({ onManage })
   if (personas.length === 0) return null;
 
   return (
-    <div className="px-3 pb-3 border-t border-slate-100 mt-1 pt-3">
-      <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Creating as</p>
+    <div className="px-3 pb-3 border-t border-themed-subtle mt-1 pt-3">
+      <p className="px-2 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Creating as</p>
       <div className="px-2 flex items-center gap-1.5 flex-wrap">
         {personas.map((p) => {
           const isSelected = selectedCreatorId === p.id;
@@ -262,7 +263,7 @@ const MobileCreatorSwitcher: React.FC<{ onManage: () => void }> = ({ onManage })
                 "flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[10px] font-bold transition-all border",
                 isSelected
                   ? "bg-slate-800 text-white border-slate-800"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  : "bg-surface-elevated text-themed-secondary border-themed hover:border-themed"
               )}
             >
               <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 text-white", avatarCls)}>
@@ -276,7 +277,7 @@ const MobileCreatorSwitcher: React.FC<{ onManage: () => void }> = ({ onManage })
       </div>
       <button
         onClick={onManage}
-        className="mt-2 px-2 text-[9px] font-bold text-slate-400 hover:text-teal-600 transition-colors"
+        className="mt-2 px-2 text-[9px] font-bold text-themed-muted hover:text-teal-600 transition-colors"
       >
         Manage creators →
       </button>
@@ -316,23 +317,24 @@ export const Layout: React.FC<LayoutProps> = ({
   const currentInMore = !MOBILE_CORE_VIEWS.has(currentView);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-surface-body flex flex-col md:flex-row">
       {/* Desktop sidebar */}
-      <nav className="hidden md:flex flex-col w-56 bg-white border-r border-slate-200 shrink-0 h-screen sticky top-0">
+      <nav className="hidden md:flex flex-col w-56 bg-surface-secondary/80 backdrop-blur-xl border-r border-themed shrink-0 h-screen sticky top-0">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <div>
-            <h1 className="text-lg font-serif font-bold text-slate-900">Content Engine</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-0.5">
+            <h1 className="text-lg font-serif font-bold text-themed">Content Engine</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mt-0.5">
               Production Dashboard
             </p>
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell onNavigate={onNavigate} />
+            <ThemeToggle />
             {onOpenGuide && (
               <button
                 onClick={onOpenGuide}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                className="p-1.5 rounded-lg text-themed-muted hover:text-sky-400 hover:bg-surface-hover transition-colors"
                 title="Field Manual (?)"
               >
                 <BookOpen size={18} />
@@ -341,7 +343,7 @@ export const Layout: React.FC<LayoutProps> = ({
             {onOpenVault && (
               <button
                 onClick={onOpenVault}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                className="p-1.5 rounded-lg text-themed-muted hover:text-teal-400 hover:bg-surface-hover transition-colors"
                 title="Open Vault"
               >
                 <Bookmark size={18} />
@@ -356,7 +358,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <div key={group.phase}>
               <button
                 onClick={() => toggleGroup(group.phase)}
-                className="flex items-center justify-between w-full px-2 pt-4 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+                className="flex items-center justify-between w-full px-2 pt-4 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted hover:text-themed-secondary transition-colors"
               >
                 {group.label}
                 <ChevronDown
@@ -376,8 +378,8 @@ export const Layout: React.FC<LayoutProps> = ({
                       className={cn(
                         "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-colors text-left w-full",
                         currentView === item.view
-                          ? "bg-teal-50 text-teal-700 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                          ? "bg-[var(--accent-light)] text-[var(--accent)] font-semibold accent-glow"
+                          : "text-themed-secondary hover:bg-surface-hover hover:text-themed",
                       )}
                     >
                       {item.icon}
@@ -394,14 +396,14 @@ export const Layout: React.FC<LayoutProps> = ({
         {onOpenPersonas && <SidebarCreatorFooter onManage={onOpenPersonas} />}
 
         {/* Home button at bottom */}
-        <div className="border-t border-slate-200 px-3 py-2">
+        <div className="border-t border-themed px-3 py-2">
           <button
             onClick={() => onNavigate("HOME")}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full",
               currentView === "HOME"
-                ? "bg-teal-50 text-teal-700 font-semibold"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                ? "bg-[var(--accent-light)] text-[var(--accent)] font-semibold accent-glow"
+                : "text-themed-secondary hover:bg-surface-hover hover:text-themed",
             )}
           >
             <LayoutDashboard size={18} />
@@ -414,7 +416,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
 
       {/* Mobile bottom tabs — Priority+ pattern */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-secondary border-t border-themed z-50">
         <div className="flex">
           {MOBILE_CORE.map((item) => (
             <button
@@ -427,7 +429,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
                 currentView === item.view
                   ? "text-teal-600"
-                  : "text-slate-400",
+                  : "text-themed-muted",
               )}
             >
               {currentView === item.view && (
@@ -442,7 +444,7 @@ export const Layout: React.FC<LayoutProps> = ({
             onClick={() => setMoreOpen(!moreOpen)}
             className={cn(
               "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors relative",
-              currentInMore || moreOpen ? "text-teal-600" : "text-slate-400",
+              currentInMore || moreOpen ? "text-teal-600" : "text-themed-muted",
             )}
           >
             {currentInMore && !moreOpen && (
@@ -463,19 +465,19 @@ export const Layout: React.FC<LayoutProps> = ({
             onClick={() => setMoreOpen(false)}
           />
           {/* Sheet */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-[60] max-h-[70vh] overflow-y-auto animate-slide-up">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-elevated rounded-t-2xl z-[60] max-h-[70vh] overflow-y-auto animate-slide-up">
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <h2 className="text-sm font-bold text-slate-900">Navigate</h2>
+              <h2 className="text-sm font-bold text-themed">Navigate</h2>
               <button
                 onClick={() => setMoreOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg text-themed-muted hover:text-themed-secondary"
               >
                 <X size={18} />
               </button>
             </div>
             {NAV_GROUPS.map((group) => (
               <div key={group.phase} className="px-3 pb-2">
-                <p className="px-2 pt-2 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <p className="px-2 pt-2 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                   {group.label}
                 </p>
                 {group.items.map((item) => (
@@ -489,7 +491,7 @@ export const Layout: React.FC<LayoutProps> = ({
                       "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left w-full",
                       currentView === item.view
                         ? "bg-teal-50 text-teal-700 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                        : "text-themed-secondary hover:bg-surface-hover hover:text-slate-900",
                     )}
                   >
                     {item.icon}
@@ -504,14 +506,14 @@ export const Layout: React.FC<LayoutProps> = ({
             )}
             {/* Vault & Guide in More sheet */}
             {(onOpenVault || onOpenGuide) && (
-              <div className="px-3 pb-4 border-t border-slate-100 mt-1 pt-2 space-y-0.5">
+              <div className="px-3 pb-4 border-t border-themed-subtle mt-1 pt-2 space-y-0.5">
                 {onOpenGuide && (
                   <button
                     onClick={() => {
                       onOpenGuide();
                       setMoreOpen(false);
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left w-full"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-themed-secondary hover:bg-surface-hover hover:text-slate-900 transition-colors text-left w-full"
                   >
                     <BookOpen size={18} />
                     Field Manual
@@ -523,7 +525,7 @@ export const Layout: React.FC<LayoutProps> = ({
                       onOpenVault();
                       setMoreOpen(false);
                     }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left w-full"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-themed-secondary hover:bg-surface-hover hover:text-slate-900 transition-colors text-left w-full"
                   >
                     <Bookmark size={18} />
                     Vault

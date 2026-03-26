@@ -24,6 +24,7 @@ import { FieldManual } from "./FieldManual.js";
 import { PerformanceReviewView } from "./PerformanceReviewView.js";
 import { CarouselLab } from "./CarouselLab.js";
 import { DiscoverFeed } from "./DiscoverFeed.js";
+import { ViewTransition } from "./ui/animations.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -118,25 +119,27 @@ const AppInner: React.FC = () => {
   return (
     <>
       <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault} onOpenGuide={handleOpenGuide} onOpenPersonas={() => setPersonasOpen(true)}>
-        {view === "LIBRARY" && (
-          <ContentLibrary onSelectVideo={handleSelectVideo} />
-        )}
-        {view === "HOME" && (
-          <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
-        )}
-        {view === "PIPELINE" && (
-          <PipelineBoard onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
-        )}
-        {view === "CALENDAR" && <CalendarView onNavigate={handleNavigate} />}
-        {view === "SESSION" && <SessionView onNavigate={handleNavigate} />}
-        {view === "IDEAS" && <IdeasView onNavigate={handleNavigate} />}
-        {view === "OPPORTUNITIES" && <OpportunitiesView onNavigate={handleNavigate} />}
-        {view === "WATCHLIST" && <WatchlistView onNavigate={handleNavigate} />}
-        {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
-        {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
-        {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
-        {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
-        {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
+        <ViewTransition viewKey={view}>
+          {view === "LIBRARY" && (
+            <ContentLibrary onSelectVideo={handleSelectVideo} />
+          )}
+          {view === "HOME" && (
+            <DashboardHome onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
+          )}
+          {view === "PIPELINE" && (
+            <PipelineBoard onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />
+          )}
+          {view === "CALENDAR" && <CalendarView onNavigate={handleNavigate} />}
+          {view === "SESSION" && <SessionView onNavigate={handleNavigate} />}
+          {view === "IDEAS" && <IdeasView onNavigate={handleNavigate} />}
+          {view === "OPPORTUNITIES" && <OpportunitiesView onNavigate={handleNavigate} />}
+          {view === "WATCHLIST" && <WatchlistView onNavigate={handleNavigate} />}
+          {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
+          {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
+          {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
+          {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
+          {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
+        </ViewTransition>
 
         {selectedVideoCode && (
           <VideoDetail

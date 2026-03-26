@@ -47,6 +47,14 @@ scripts/             Repo utilities (install, scaffold)
 | brand-factory | Auto-loaded when applying brand | Industry-specific brand colors, typography, voice |
 | theme-factory | `/theme-factory` | 11 pre-set styling themes for artifacts |
 
+### Global CLI Skills (installed at `~/.claude/skills/`, not symlinked from repo)
+
+| Skill | Invocation | Purpose |
+|-------|-----------|---------|
+| ffmpeg-production | Auto-loaded on video/audio tasks | Multi-platform export (IG Reels/TikTok/YT Shorts/YT Long), Apple Silicon hardware encoding, Remotion post-processing, silence removal, audio mastering, caption burning, A/B thumbnail generation, VHS/grain effects, transport stream assembly |
+| playwright-skill | Auto-loaded on browser tasks | Browser automation, screenshots, responsive testing, HTML-to-image rendering for carousels. Uses Chromium. 4x fewer tokens than Playwright MCP. |
+| youtube-clipper | Auto-loaded on YouTube clip requests | Download video + AI chapter analysis (2-5 min semantic segments) + clip extraction + subtitle burning. Requires yt-dlp + FFmpeg. |
+
 ### Skill Pipeline
 ```
 /last30days ─┐
@@ -142,12 +150,18 @@ No auth. Localhost only. Solo internal tool accessed from desktop and phone.
 - WatchlistView: reads `watchlist.md`, creator cards with platform badges, last-analyzed status, quick action commands
 - API routes: `/api/metrics`, `/api/ideas`, `/api/watchlist`
 - Parsers: `idea-bank.ts`, `watchlist.ts` with file-watching cache invalidation
+- Discover API: `GET /api/discover/feed` (paginated, limit/offset, status/sort/dateRange filters), `POST /api/discover/add-url`, `PUT /api/discover/batch-status`, `DELETE /api/discover/batch`, `POST /api/discover/backfill-thumbnails`
+- Script API: `PUT /api/videos/:code/script` (saves + versions), `GET /api/videos/:code/script-versions`, `POST /api/videos/:code/refine-script` (AI suggestions)
 
 **Additional features shipped**:
 - **Inspiration Inbox**: Frictionless raw-idea capture layer in IdeasView. SQLite-only (`inspiration_inbox` table, no markdown file). Statuses: inbox / developed / dismissed. Develop action writes to `idea-bank.md`.
 - **Trend Pulse widget**: Home screen widget surfacing latest n8n Content Intelligence digest. Shows trending topics, hook patterns, content gaps. One-click "+ Add to Ideas". Auto-hidden if no digest file exists.
 - **Carousel Waterfall tier**: Auto-Generate in Waterfall tab produces 12 derivatives (was 10). Two new carousel items: Instagram (7-slide) + LinkedIn (6-slide) with AI-generated slide outlines. Carousel cards in WaterfallTab show expandable slide-by-slide briefs.
 - **Carousel & Thumbnail Pipeline**: Self-improving carousel generation via n8n workflows + autoresearch loops. Branded HTML templates (cover, content, CTA, thumbnail) rendered to images. Dashboard-triggered generation from VideoDetail CarouselsTab. Batch workflow on Friday 8am. Two autoresearch optimization loops: template design + content strategy, both driven by composite engagement score. Version stamping tracks which template/strategy produced which results.
+- **Discover Feed**: Visual-first video discovery with infinite scroll. Paste YouTube/TikTok/Instagram URLs to track inspiration. Status workflow (inbox/starred/saved/archived) with filter tabs and count badges. Sort by date/views/outlier/creator. Date range filtering. Trending topics from weekly intelligence digest. Hover preview plays YouTube/TikTok embeds (muted, 500ms delay, desktop only). Bulk actions via shift+click range select (desktop) or long-press (mobile) with floating BulkActionBar. Mobile: swipe right=star, swipe left=archive, bottom sheet for video details, FAB for URL add.
+- **Script Editor**: In-place script editing in VideoDetail. Saves back to `content-library.md` via `updateVideoScript()` parser. Version tracking in `script_versions` table. AI refinement suggestions via Claude Haiku with brand voice enforcement. No emdashes rule enforced.
+- **VideoDetail Enhancements**: NextStepBanner (contextual guidance based on status + active tab), AdvanceStatusButton (one-click status progression in header), tab persistence via `display: none/block` instead of conditional rendering.
+- **IdeaDetail Workflow**: Two-phase "Develop Script" then "Start Production" flow. Idea auto-archived on production start.
 
 **Phases 3-4 PENDING**:
 - Phase 3: Session Planner (batch production checklist with timer, auto-advance status on completion)
@@ -166,6 +180,8 @@ viral-insights/     ──parser──→  Weekly n8n digest (Trend Pulse widget
                                Express API enriches with:
                                          ↓
 SQLite DB           ──query──→   Status, dates, calendar, sessions, metrics, inbox
+                    ──query──→   Discover Feed (creator_videos, infinite scroll, bulk actions)
+                    ──query──→   Script versions (edit history, AI refinement)
 ```
 
 ### SQLite Tables
@@ -179,6 +195,8 @@ SQLite DB           ──query──→   Status, dates, calendar, sessions, me
 - `inspiration_inbox` - Raw idea captures (content, source_url, status: inbox/developed/dismissed)
 - `generated_carousels` - Carousel metadata with template/strategy version stamps, composite scores
 - `carousel_slides` - Individual slide records (image paths, slide type, index)
+- `creator_videos` - Tracked creator videos from Discover Feed (creatorHandle, platform, videoUrl, thumbnailUrl, status: inbox/starred/saved/archived, outlierScoreX100, views, engagement metrics)
+- `script_versions` - Video script version history (videoCode, version, script, changeNote, timestamps)
 
 ### Design System
 
@@ -313,6 +331,7 @@ npm run render           # Remotion render
 npm run typecheck        # TypeScript check (Remotion)
 npm run dashboard        # Start dashboard (port 3001)
 npm run test:skills      # Run last30days Python tests
+brew install ffmpeg yt-dlp # Video processing + YouTube downloading (for ffmpeg-production and youtube-clipper skills)
 ```
 
 ## Adding a New Industry
@@ -338,6 +357,20 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 | Carousel & Thumbnail Generator | 2RVLLlgoDcr7hs4f | Friday 8am / On demand | Generates branded carousel slides and YouTube thumbnails from HTML templates |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
+
+## CLI Tools
+
+Installed via Homebrew. Preferred over MCP servers for token efficiency (CLI uses 4-32x fewer tokens per independent benchmarks).
+
+| Tool | Purpose | Used by |
+|------|---------|---------|
+| FFmpeg 8.1 | Video/audio processing, encoding, format conversion, caption burning | ffmpeg-production skill |
+| yt-dlp | YouTube/TikTok/Instagram video downloading | youtube-clipper skill |
+| Playwright + Chromium | Browser automation, screenshots, HTML-to-image rendering | playwright-skill |
+
+### CLI vs MCP Strategy
+
+CLI tools are preferred over MCP equivalents when available. Key data: Playwright CLI uses ~27K tokens/session vs ~114K for MCP (4x savings). Three MCP servers can consume 72% of the context window before a single message. Current MCPs (n8n, Canva, Xpoz) remain because no CLI alternatives exist for their specific capabilities.
 
 ## Carousel & Thumbnail Pipeline
 

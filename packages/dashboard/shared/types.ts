@@ -421,6 +421,25 @@ export type IntelDigest = {
 };
 
 // ============================================
+// Research Suggestions (extracted from research outputs)
+// ============================================
+
+export type ResearchIdea = {
+  topic: string;
+  suggestedFormat?: string;
+  hookAngle?: string;
+  priority: string;
+  source: string;
+  category: string;
+  sourceFile: string;
+  sourceDate: string;
+  alreadyInBank: boolean;
+  context?: string;
+  platforms?: string[];
+  gapDescription?: string;
+};
+
+// ============================================
 // Research Report Types (from /last30days skill)
 // ============================================
 

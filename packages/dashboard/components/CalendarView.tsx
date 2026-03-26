@@ -33,7 +33,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   instagram_reels: "bg-pink-50 border-pink-200 text-pink-700",
   youtube_shorts: "bg-red-50 border-red-200 text-red-700",
   youtube_long: "bg-red-50 border-red-200 text-red-700",
-  tiktok: "bg-slate-50 border-slate-300 text-slate-700",
+  tiktok: "bg-surface-hover border-themed text-themed-secondary",
   instagram_stories: "bg-purple-50 border-purple-200 text-purple-700",
 };
 
@@ -225,10 +225,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
+          <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
             Content Calendar
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-themed-tertiary mt-1">
             {entries.length} entries {viewMode === "week" ? "this week" : "this month"}
             {totalGaps > 0 && (
               <FeatureHint id="calendar-gaps" content={FEATURE_HINTS["calendar-gaps"].content} side="bottom">
@@ -264,12 +264,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
             </button>
           )}
           {/* View mode toggle */}
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 mr-2">
+          <div className="flex items-center bg-surface-hover rounded-lg p-0.5 mr-2">
             <button
               onClick={() => setViewMode("week")}
               className={cn(
                 "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors",
-                viewMode === "week" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700",
+                viewMode === "week" ? "bg-surface-elevated text-teal-700 shadow-sm" : "text-themed-tertiary hover:text-themed-secondary",
               )}
             >
               <CalendarDays size={12} /> Week
@@ -278,7 +278,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
               onClick={() => setViewMode("month")}
               className={cn(
                 "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors",
-                viewMode === "month" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700",
+                viewMode === "month" ? "bg-surface-elevated text-teal-700 shadow-sm" : "text-themed-tertiary hover:text-themed-secondary",
               )}
             >
               <Calendar size={12} /> Month
@@ -287,16 +287,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
 
           <button
             onClick={() => viewMode === "week" ? navigateWeek(-1) : navigateMonth(-1)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-medium text-slate-700 min-w-[160px] text-center">
+          <span className="text-sm font-medium text-themed-secondary min-w-[160px] text-center">
             {viewMode === "week" ? weekLabel : getMonthLabel(monthStart)}
           </span>
           <button
             onClick={() => viewMode === "week" ? navigateWeek(1) : navigateMonth(1)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
           >
             <ChevronRight size={18} />
           </button>
@@ -344,10 +344,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                     isToday(d) ? "bg-teal-50" : "",
                   )}
                 >
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{DAYS[i]}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">{DAYS[i]}</p>
                   <p className={cn(
                     "text-sm font-bold",
-                    isToday(d) ? "text-teal-600" : "text-slate-700",
+                    isToday(d) ? "text-teal-600" : "text-themed-secondary",
                   )}>
                     {d.getDate()}
                   </p>
@@ -357,7 +357,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
               {platforms.map((platform) => (
                 <React.Fragment key={platform}>
                   <div className="flex items-center px-2">
-                    <span className="text-[10px] font-bold text-slate-500 truncate">
+                    <span className="text-[10px] font-bold text-themed-tertiary truncate">
                       {PLATFORM_LABELS[platform] || platform}
                     </span>
                   </div>
@@ -368,8 +368,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                       <div
                         key={`${platform}-${dateStr}`}
                         className={cn(
-                          "min-h-[60px] border border-slate-100 rounded-lg p-1 relative group",
-                          isToday(d) ? "bg-teal-50/30" : "bg-white",
+                          "min-h-[60px] border border-themed-subtle rounded-lg p-1 relative group",
+                          isToday(d) ? "bg-teal-50/30" : "bg-surface-elevated",
                         )}
                       >
                         {cellEntries.map((entry) => (
@@ -377,14 +377,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                             key={entry.id}
                             className={cn(
                               "text-[10px] rounded-md px-1.5 py-1 mb-0.5 border flex items-center gap-1",
-                              PLATFORM_COLORS[platform] || "bg-slate-50 border-slate-200 text-slate-700",
+                              PLATFORM_COLORS[platform] || "bg-surface-hover border-themed text-themed-secondary",
                             )}
                           >
                             {entry.videoFormat && <FormatBadge format={entry.videoFormat} />}
                             <span className="font-bold truncate">{entry.videoCode || entry.slotLabel || "TBD"}</span>
                             <button
                               onClick={() => deleteMutation.mutate(entry.id)}
-                              className="ml-auto opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity"
+                              className="ml-auto opacity-0 group-hover:opacity-100 text-themed-muted hover:text-rose-500 transition-opacity"
                             >
                               <Trash2 size={10} />
                             </button>
@@ -394,7 +394,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                           onClick={() => setShowAddModal({ date: dateStr, platform })}
                           className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Plus size={14} className="text-slate-300" />
+                          <Plus size={14} className="text-themed-muted" />
                         </button>
                       </div>
                     );
@@ -408,12 +408,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
 
       {/* Month View */}
       {viewMode === "month" && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
           {/* Day headers */}
-          <div className="grid grid-cols-7 border-b border-slate-200">
+          <div className="grid grid-cols-7 border-b border-themed">
             {DAYS.map((d) => (
               <div key={d} className="py-2 text-center">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{d}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">{d}</span>
               </div>
             ))}
           </div>
@@ -427,8 +427,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                 <div
                   key={i}
                   className={cn(
-                    "min-h-[80px] border-b border-r border-slate-100 p-1.5 relative group cursor-pointer hover:bg-slate-50 transition-colors",
-                    !isCurrentMonth && "bg-slate-50/50",
+                    "min-h-[80px] border-b border-r border-themed-subtle p-1.5 relative group cursor-pointer hover:bg-surface-hover transition-colors",
+                    !isCurrentMonth && "bg-surface-hover/50",
                     isToday(date) && "bg-teal-50/40",
                   )}
                   onClick={() => {
@@ -440,12 +440,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                   <div className="flex items-center justify-between mb-1">
                     <span className={cn(
                       "text-xs font-bold",
-                      isToday(date) ? "text-teal-600" : isCurrentMonth ? "text-slate-700" : "text-slate-300",
+                      isToday(date) ? "text-teal-600" : isCurrentMonth ? "text-themed-secondary" : "text-themed-muted",
                     )}>
                       {date.getDate()}
                     </span>
                     {dayEntries.length > 0 && (
-                      <span className="text-[9px] font-bold text-slate-400">{dayEntries.length}</span>
+                      <span className="text-[9px] font-bold text-themed-muted">{dayEntries.length}</span>
                     )}
                   </div>
                   {/* Platform dots */}
@@ -462,25 +462,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                   )}
                   {/* Show video codes */}
                   {dayEntries.slice(0, 2).map((entry) => (
-                    <div key={entry.id} className="text-[9px] font-medium text-slate-500 truncate mt-0.5">
+                    <div key={entry.id} className="text-[9px] font-medium text-themed-tertiary truncate mt-0.5">
                       {entry.videoCode || entry.slotLabel || "TBD"}
                     </div>
                   ))}
                   {dayEntries.length > 2 && (
-                    <div className="text-[9px] text-slate-400">+{dayEntries.length - 2} more</div>
+                    <div className="text-[9px] text-themed-muted">+{dayEntries.length - 2} more</div>
                   )}
                 </div>
               );
             })}
           </div>
           {/* Month summary */}
-          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center gap-4 flex-wrap">
+          <div className="px-4 py-3 bg-surface-hover border-t border-themed flex items-center gap-4 flex-wrap">
             {platforms.map((p) => {
               const count = entries.filter((e) => e.platform === p).length;
               return (
                 <div key={p} className="flex items-center gap-1.5">
                   <div className={cn("w-2.5 h-2.5 rounded-full", PLATFORM_DOTS[p] || "bg-slate-400")} />
-                  <span className="text-[10px] font-bold text-slate-500">
+                  <span className="text-[10px] font-bold text-themed-tertiary">
                     {PLATFORM_LABELS[p] || p}: {count}
                   </span>
                 </div>
@@ -493,24 +493,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
       {/* Add Entry Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl">
+          <div className="bg-surface-elevated rounded-2xl p-5 w-full max-w-sm shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-themed">
                 Add to {PLATFORM_LABELS[showAddModal.platform] || showAddModal.platform}
               </h3>
-              <button onClick={() => setShowAddModal(null)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setShowAddModal(null)} className="text-themed-muted hover:text-themed-secondary">
                 <X size={16} />
               </button>
             </div>
-            <p className="text-xs text-slate-500 mb-4">{showAddModal.date}</p>
+            <p className="text-xs text-themed-tertiary mb-4">{showAddModal.date}</p>
 
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Video Code</label>
+                <label className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Video Code</label>
                 <select
                   value={addVideoCode}
                   onChange={(e) => setAddVideoCode(e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                  className="mt-1 w-full border border-themed rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
                 >
                   <option value="">Select a video (optional)</option>
                   {availableVideos?.videos?.map((v) => (
@@ -519,13 +519,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</label>
+                <label className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Notes</label>
                 <input
                   type="text"
                   value={addNotes}
                   onChange={(e) => setAddNotes(e.target.value)}
                   placeholder="Optional notes..."
-                  className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                  className="mt-1 w-full border border-themed rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
                 />
               </div>
               <button

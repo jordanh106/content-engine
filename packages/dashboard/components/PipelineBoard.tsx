@@ -84,7 +84,7 @@ const DroppableColumn: React.FC<{
   return (
     <div className="w-64 md:w-72 flex-shrink-0 flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           {status}
         </span>
         <span
@@ -100,7 +100,7 @@ const DroppableColumn: React.FC<{
       <div
         ref={setNodeRef}
         className={cn(
-          "bg-slate-50 rounded-2xl p-2 flex-1 min-h-[200px] space-y-2 transition-colors",
+          "bg-surface-hover rounded-2xl p-2 flex-1 min-h-[200px] space-y-2 transition-colors",
           isOver && "ring-2 ring-teal-200 bg-teal-50/30",
         )}
       >
@@ -126,12 +126,12 @@ const AccordionSection: React.FC<{
   const colors = statusColors[status] || statusColors.SCRIPTED;
 
   return (
-    <section className="border border-slate-200 rounded-2xl overflow-hidden">
+    <section className="border border-themed rounded-2xl overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 bg-white"
+        className="w-full flex items-center justify-between p-4 bg-surface-elevated"
       >
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           {status}
         </span>
         <span
@@ -145,7 +145,7 @@ const AccordionSection: React.FC<{
         </span>
       </button>
       {isOpen && (
-        <div className="p-2 bg-slate-50 space-y-2">
+        <div className="p-2 bg-surface-hover space-y-2">
           {videos.map((video) => (
             <PipelineCard
               key={video.code}
@@ -168,7 +168,7 @@ const AccordionSection: React.FC<{
             />
           ))}
           {videos.length === 0 && (
-            <p className="text-xs text-slate-400 text-center py-4">
+            <p className="text-xs text-themed-muted text-center py-4">
               No videos in this stage
             </p>
           )}
@@ -402,18 +402,18 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   if (isLoading || !data) {
     return (
       <div className="p-4 md:p-6 animate-pulse">
-        <div className="h-7 bg-slate-200 rounded w-32 mb-2" />
-        <div className="h-4 bg-slate-100 rounded w-48 mb-6" />
+        <div className="h-7 bg-surface-hover rounded w-32 mb-2" />
+        <div className="h-4 bg-surface-hover rounded w-48 mb-6" />
         <div className="hidden md:flex gap-3 overflow-x-auto pb-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="w-64 flex-shrink-0">
-              <div className="h-3 bg-slate-200 rounded w-20 mb-3" />
-              <div className="bg-slate-50 rounded-2xl p-2 min-h-[200px] space-y-2">
+              <div className="h-3 bg-surface-hover rounded w-20 mb-3" />
+              <div className="bg-surface-hover rounded-2xl p-2 min-h-[200px] space-y-2">
                 {[...Array(i < 1 ? 4 : 1)].map((_, j) => (
-                  <div key={j} className="bg-white rounded-xl p-3 space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-16" />
-                    <div className="h-3 bg-slate-100 rounded w-full" />
-                    <div className="h-5 bg-slate-100 rounded w-12" />
+                  <div key={j} className="bg-surface-elevated rounded-xl p-3 space-y-2">
+                    <div className="h-3 bg-surface-hover rounded w-16" />
+                    <div className="h-3 bg-surface-hover rounded w-full" />
+                    <div className="h-5 bg-surface-hover rounded w-12" />
                   </div>
                 ))}
               </div>
@@ -428,10 +428,10 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
     <div className="p-4 md:p-6">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
+        <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
           Pipeline
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-themed-tertiary mt-1">
           {data.total} videos across {PRODUCTION_STATUSES.length} stages
         </p>
       </div>
@@ -468,14 +468,14 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <Filter size={14} className="text-slate-400" />
+        <Filter size={14} className="text-themed-muted" />
         <button
           onClick={() => { setFormatFilter(null); setAudienceFilter(null); setStyleFilter(null); }}
           className={cn(
             "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
             !formatFilter && !audienceFilter && !styleFilter
               ? "bg-teal-600 text-white"
-              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+              : "bg-surface-elevated border border-themed text-themed-tertiary hover:border-themed",
           )}
         >
           All
@@ -488,7 +488,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
               "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
               formatFilter === f
                 ? "bg-teal-600 text-white"
-                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+                : "bg-surface-elevated border border-themed text-themed-tertiary hover:border-themed",
             )}
           >
             {f}
@@ -496,7 +496,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
         ))}
         {audiences.length > 1 && (
           <>
-            <span className="w-px h-4 bg-slate-200" />
+            <span className="w-px h-4 bg-surface-hover" />
             {audiences.map((a) => (
               <button
                 key={a.id}
@@ -505,7 +505,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
                   "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors truncate max-w-[120px]",
                   audienceFilter === a.id
                     ? "bg-teal-600 text-white"
-                    : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+                    : "bg-surface-elevated border border-themed text-themed-tertiary hover:border-themed",
                 )}
               >
                 {a.label}
@@ -513,7 +513,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
             ))}
           </>
         )}
-        <span className="w-px h-4 bg-slate-200" />
+        <span className="w-px h-4 bg-surface-hover" />
         {PRODUCTION_STYLES.map((s) => {
           const info = PRODUCTION_STYLE_INFO[s];
           return (
@@ -524,7 +524,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
                 "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
                 styleFilter === s
                   ? cn(info.color.bg, info.color.text, info.color.border, "border")
-                  : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300",
+                  : "bg-surface-elevated border border-themed text-themed-tertiary hover:border-themed",
               )}
             >
               {info.name}
@@ -543,7 +543,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
           <select
             value={bulkTarget ?? ""}
             onChange={(e) => setBulkTarget(e.target.value as ProductionStatus)}
-            className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5"
+            className="text-xs font-medium text-themed-secondary bg-surface-elevated border border-themed rounded-lg px-2 py-1.5"
           >
             <option value="">Move to...</option>
             {PRODUCTION_STATUSES.map((s) => (
@@ -564,14 +564,14 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
               "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
               bulkTarget
                 ? "bg-violet-600 text-white hover:bg-violet-700"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed",
+                : "bg-surface-hover text-themed-muted cursor-not-allowed",
             )}
           >
             {bulkMoveMutation.isPending ? "Moving..." : "Move"}
           </button>
           <button
             onClick={clearSelection}
-            className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-colors"
+            className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-themed-tertiary hover:text-themed-secondary transition-colors"
           >
             Clear
           </button>
@@ -580,7 +580,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
       {/* Desktop: horizontal kanban */}
       <FeatureHint id="pipeline-drag" content={FEATURE_HINTS["pipeline-drag"].content} side="bottom">
-        <p className="hidden md:block text-xs text-slate-400 mb-2">Drag cards to advance</p>
+        <p className="hidden md:block text-xs text-themed-muted mb-2">Drag cards to advance</p>
       </FeatureHint>
       <div data-tour="pipeline-board" className="hidden md:block">
         <DndContext
@@ -602,12 +602,12 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
                     <div key={video.code} className="relative">
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelect(video.code); }}
-                        className="absolute top-2 right-2 z-10 p-0.5 rounded hover:bg-slate-100 transition-colors"
+                        className="absolute top-2 right-2 z-10 p-0.5 rounded hover:bg-surface-hover transition-colors"
                       >
                         {selectedCodes.has(video.code) ? (
                           <CheckSquare size={14} className="text-violet-600" />
                         ) : (
-                          <Square size={14} className="text-slate-300" />
+                          <Square size={14} className="text-themed-muted" />
                         )}
                       </button>
                       <DraggableCard
@@ -617,7 +617,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
                     </div>
                   ))}
                   {stageVideos.length === 0 && (
-                    <p className="text-xs text-slate-400 text-center py-4">
+                    <p className="text-xs text-themed-muted text-center py-4">
                       Empty
                     </p>
                   )}

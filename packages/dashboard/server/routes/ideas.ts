@@ -3,6 +3,7 @@ import { Router } from "express";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
+import { parseResearchSuggestions } from "../parsers/research-digest.js";
 import { parseContentLibrary, invalidateCache as invalidateContentCache } from "../parsers/content-library.js";
 import { db } from "../db.js";
 import { eq, desc } from "drizzle-orm";
@@ -215,6 +216,20 @@ export function createIdeasRouter(contentLibraryPath: string) {
       counts[idea.category] = (counts[idea.category] || 0) + 1;
     }
     res.json({ counts, total: ideas.length });
+  });
+
+  // GET /api/ideas/research-suggestions - extracted ideas from research outputs
+  router.get("/research-suggestions", (_req, res) => {
+    try {
+      const viralInsightsDir = path.join(industryDir, "viral-insights");
+      const creatorInsightsDir = path.join(industryDir, "creator-insights");
+      const suggestions = parseResearchSuggestions(viralInsightsDir, creatorInsightsDir, ideaBankPath);
+      const newCount = suggestions.filter((s) => !s.alreadyInBank).length;
+      res.json({ suggestions, total: suggestions.length, newCount });
+    } catch (error) {
+      console.error("[ideas] Error parsing research suggestions:", error);
+      res.status(500).json({ error: "Failed to parse research suggestions" });
+    }
   });
 
   // POST /api/ideas/sync-n8n - pull latest ideas from n8n execution

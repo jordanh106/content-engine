@@ -51,6 +51,7 @@ import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { Tooltip as UITooltip } from "./ui/Tooltip.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+import { ScrollReveal } from "./ui/animations.js";
 
 const HOOK_ARCHETYPE: Record<string, string> = {
   question: "Teacher",
@@ -183,7 +184,7 @@ const SparkBar: React.FC<{ dimensions: ContentOpportunity["dimensions"] }> = ({ 
         const meta = DIMENSION_META[dim];
         return (
           <div key={dim} className="flex items-center justify-between gap-3">
-            <span className="text-[11px] text-slate-300">{meta.label}</span>
+            <span className="text-[11px] text-themed-muted">{meta.label}</span>
             <div className="flex items-center gap-1.5">
               <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${score}%`, backgroundColor: meta.color }} />
@@ -241,7 +242,7 @@ const OpportunityCard: React.FC<{
   const topEvidence = opportunity.evidence.slice(0, 2);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl hover:border-teal-300 hover:shadow-sm transition-all">
+    <div className="bg-surface-elevated border border-themed rounded-2xl hover:border-teal-300 hover:shadow-sm transition-all">
       <button
         onClick={onClick}
         className="w-full text-left p-4 md:p-5"
@@ -249,10 +250,10 @@ const OpportunityCard: React.FC<{
         <div className="flex items-start gap-3">
           <ScoreBadge score={opportunity.overallScore} />
           <div className="flex-1 min-w-0">
-            <h3 className="font-serif font-bold text-slate-900 text-sm md:text-base leading-tight">
+            <h3 className="font-serif font-bold text-themed text-sm md:text-base leading-tight">
               {opportunity.topic}
             </h3>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{opportunity.whyNow}</p>
+            <p className="text-xs text-themed-tertiary mt-1 line-clamp-2">{opportunity.whyNow}</p>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               {formatInfo && (
                 <span
@@ -262,7 +263,7 @@ const OpportunityCard: React.FC<{
                   {opportunity.suggestedFormat}: {formatInfo.shortName}
                 </span>
               )}
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-themed-muted bg-surface-hover px-2 py-0.5 rounded-full">
                 {formatPlatformName(opportunity.targetPlatform)}
               </span>
               {tags.map((tag) => (
@@ -279,10 +280,10 @@ const OpportunityCard: React.FC<{
         </div>
       </button>
       {opportunity.evidence.length > 0 && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-themed-subtle">
           <button
             onClick={(e) => { e.stopPropagation(); setShowWhy(!showWhy); }}
-            className="w-full flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors text-left"
+            className="w-full flex items-center gap-1.5 px-4 py-2 text-[10px] font-bold text-themed-muted hover:text-themed-secondary transition-colors text-left"
           >
             {showWhy ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             Why this? ({opportunity.evidence.length} signal{opportunity.evidence.length !== 1 ? "s" : ""})
@@ -290,7 +291,7 @@ const OpportunityCard: React.FC<{
           {showWhy && (
             <div className="px-4 pb-3 space-y-1.5">
               {topEvidence.map((e, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                <div key={i} className="flex items-start gap-2 text-xs text-themed-secondary">
                   <span className="shrink-0 mt-0.5">{EVIDENCE_ICONS[e.type] ?? <Globe size={12} />}</span>
                   <span className="line-clamp-2">{e.title}: {e.detail}</span>
                 </div>
@@ -307,20 +308,20 @@ const OpportunityCard: React.FC<{
 
       {/* Dismiss button */}
       {onDismiss && (
-        <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-end relative">
+        <div className="border-t border-themed-subtle px-4 py-2 flex items-center justify-end relative">
           {showDismissMenu ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400">Why dismiss?</span>
+              <span className="text-[10px] text-themed-muted">Why dismiss?</span>
               {DISMISS_REASONS.map((r) => (
                 <button
                   key={r.value}
                   onClick={(e) => { e.stopPropagation(); onDismiss(opportunity.topic, r.value); setShowDismissMenu(false); }}
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition-colors"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-hover text-themed-secondary hover:bg-rose-100 hover:text-rose-700 transition-colors"
                 >
                   {r.label}
                 </button>
               ))}
-              <button onClick={(e) => { e.stopPropagation(); setShowDismissMenu(false); }} className="text-slate-300 hover:text-slate-500">
+              <button onClick={(e) => { e.stopPropagation(); setShowDismissMenu(false); }} className="text-themed-muted hover:text-themed-tertiary">
                 <X size={10} />
               </button>
             </div>
@@ -328,7 +329,7 @@ const OpportunityCard: React.FC<{
             <FeatureHint id="opportunity-dismiss" content={FEATURE_HINTS["opportunity-dismiss"].content} side="top">
             <button
               onClick={(e) => { e.stopPropagation(); setShowDismissMenu(true); }}
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-rose-500 transition-colors"
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-themed-muted hover:text-rose-500 transition-colors"
             >
               <X size={10} /> Dismiss
             </button>
@@ -354,19 +355,19 @@ const DimensionBar: React.FC<{
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">{meta.icon}</span>
-          <span className="text-xs font-bold text-slate-700">{meta.label}</span>
-          <span className="text-[10px] text-slate-400">({meta.weight}%)</span>
+          <span className="text-themed-tertiary">{meta.icon}</span>
+          <span className="text-xs font-bold text-themed-secondary">{meta.label}</span>
+          <span className="text-[10px] text-themed-muted">({meta.weight}%)</span>
         </div>
-        <span className="text-sm font-black text-slate-800">{score}</span>
+        <span className="text-sm font-black text-themed">{score}</span>
       </div>
-      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2.5 bg-surface-hover rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${score}%`, backgroundColor: meta.color }}
         />
       </div>
-      <p className="text-[11px] text-slate-500 mt-1">{rationale}</p>
+      <p className="text-[11px] text-themed-tertiary mt-1">{rationale}</p>
     </div>
   );
 };
@@ -374,18 +375,18 @@ const DimensionBar: React.FC<{
 const EvidenceCard: React.FC<{
   evidence: ContentOpportunity["evidence"][0];
 }> = ({ evidence }) => (
-  <div className="flex items-start gap-2 p-3 bg-slate-50 rounded-xl">
+  <div className="flex items-start gap-2 p-3 bg-surface-hover rounded-xl">
     <div className="mt-0.5">{EVIDENCE_ICONS[evidence.type] ?? <Globe size={14} />}</div>
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-slate-700 truncate">{evidence.title}</span>
+        <span className="text-xs font-bold text-themed-secondary truncate">{evidence.title}</span>
         {evidence.engagement?.score && (
-          <span className="text-[10px] font-bold text-slate-400 shrink-0">
+          <span className="text-[10px] font-bold text-themed-muted shrink-0">
             Score: {evidence.engagement.score}
           </span>
         )}
       </div>
-      <p className="text-[11px] text-slate-500 mt-0.5">{evidence.detail}</p>
+      <p className="text-[11px] text-themed-tertiary mt-0.5">{evidence.detail}</p>
       {evidence.url && (
         <a
           href={evidence.url}
@@ -476,7 +477,7 @@ const OpportunityDetail: React.FC<{
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-4"
+        className="flex items-center gap-2 text-sm text-themed-tertiary hover:text-themed-secondary transition-colors mb-4"
       >
         <ArrowLeft size={16} /> All Opportunities
       </button>
@@ -485,11 +486,11 @@ const OpportunityDetail: React.FC<{
         {/* Left Column - Main Content */}
         <div className="flex-1 min-w-0 space-y-6">
           {/* Header */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
             <div className="flex items-start gap-4">
               <ScoreBadge score={opportunity.overallScore} size="lg" />
               <div className="flex-1">
-                <h1 className="font-serif font-bold text-xl md:text-2xl text-slate-900 leading-tight">
+                <h1 className="font-serif font-bold text-xl md:text-2xl text-themed leading-tight">
                   {opportunity.topic}
                 </h1>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -507,17 +508,17 @@ const OpportunityDetail: React.FC<{
           </div>
 
           {/* Why Now */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Why Now?
             </h2>
-            <p className="text-sm text-slate-700 leading-relaxed">{opportunity.whyNow}</p>
+            <p className="text-sm text-themed-secondary leading-relaxed">{opportunity.whyNow}</p>
           </div>
 
           {/* Proof & Signals */}
           {opportunity.evidence.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+            <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
                 Proof & Signals
               </h2>
               <div className="space-y-4">
@@ -525,10 +526,10 @@ const OpportunityDetail: React.FC<{
                   <div key={type}>
                     <div className="flex items-center gap-2 mb-2">
                       {EVIDENCE_ICONS[type]}
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      <span className="text-xs font-bold text-themed-secondary uppercase tracking-wider">
                         {type === "viral-digest" ? "Market Intel" : type}
                       </span>
-                      <span className="text-[10px] text-slate-400">({items.length})</span>
+                      <span className="text-[10px] text-themed-muted">({items.length})</span>
                     </div>
                     <div className="space-y-2">
                       {items.map((e, i) => (
@@ -542,8 +543,8 @@ const OpportunityDetail: React.FC<{
           )}
 
           {/* Competition Check */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               The Content Gap
             </h2>
             <div className="flex items-start gap-3 mb-3">
@@ -564,16 +565,16 @@ const OpportunityDetail: React.FC<{
                     : "Well Covered"}
               </div>
             </div>
-            <p className="text-sm text-slate-700">{opportunity.competitionCheck.gapDescription}</p>
+            <p className="text-sm text-themed-secondary">{opportunity.competitionCheck.gapDescription}</p>
             {opportunity.competitionCheck.coveredVideos.length > 0 && (
               <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-themed-muted font-bold uppercase tracking-wider">
                   Related videos:
                 </span>
                 {opportunity.competitionCheck.coveredVideos.map((code) => (
                   <span
                     key={code}
-                    className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full"
+                    className="text-[10px] font-bold text-themed-secondary bg-surface-hover px-2 py-0.5 rounded-full"
                   >
                     {code}
                   </span>
@@ -583,14 +584,14 @@ const OpportunityDetail: React.FC<{
           </div>
 
           {/* Execution Plan */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-4">
               Execution Plan
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Format */}
-              <div className="bg-slate-50 rounded-xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <div className="bg-surface-hover rounded-xl p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Suggested Format
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -605,22 +606,22 @@ const OpportunityDetail: React.FC<{
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-600">{opportunity.formatRationale}</p>
+                <p className="text-[11px] text-themed-secondary">{opportunity.formatRationale}</p>
               </div>
 
               {/* Hook */}
-              <div className="bg-slate-50 rounded-xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <div className="bg-surface-hover rounded-xl p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Suggested Hook
                 </div>
-                <p className="text-sm font-medium text-slate-800 italic mb-1">
+                <p className="text-sm font-medium text-themed italic mb-1">
                   "{opportunity.suggestedHook.example}"
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-themed-tertiary">
                     Pattern: {opportunity.suggestedHook.pattern}
                   </span>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-themed-muted">
                     Optimizes: {opportunity.suggestedHook.optimizes}
                   </span>
                   {HOOK_ARCHETYPE[opportunity.suggestedHook.category?.toLowerCase()] && (
@@ -632,27 +633,27 @@ const OpportunityDetail: React.FC<{
               </div>
 
               {/* Platform & Audience */}
-              <div className="bg-slate-50 rounded-xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <div className="bg-surface-hover rounded-xl p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Target Platform
                 </div>
-                <span className="text-sm font-medium text-slate-800">
+                <span className="text-sm font-medium text-themed">
                   {formatPlatformName(opportunity.targetPlatform)}
                 </span>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <div className="bg-surface-hover rounded-xl p-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
                   Target Audience
                 </div>
-                <span className="text-sm font-medium text-slate-800">
+                <span className="text-sm font-medium text-themed">
                   {opportunity.targetAudience}
                 </span>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+            <div className="mt-4 pt-4 border-t border-themed space-y-3">
               {produced && producedCode && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
                   <p className="text-sm text-emerald-700 font-medium">
@@ -672,7 +673,7 @@ const OpportunityDetail: React.FC<{
                     produced
                       ? "bg-emerald-100 text-emerald-700 cursor-default"
                       : startProductionMutation.isPending
-                        ? "bg-slate-100 text-slate-400 cursor-wait"
+                        ? "bg-surface-hover text-themed-muted cursor-wait"
                         : "bg-violet-600 text-white hover:bg-violet-700",
                   )}
                 >
@@ -698,7 +699,7 @@ const OpportunityDetail: React.FC<{
                     added
                       ? "bg-emerald-100 text-emerald-700 cursor-default"
                       : addToIdeasMutation.isPending
-                        ? "bg-slate-100 text-slate-400 cursor-wait"
+                        ? "bg-surface-hover text-themed-muted cursor-wait"
                         : "bg-teal-600 text-white hover:bg-teal-700",
                   )}
                 >
@@ -721,13 +722,13 @@ const OpportunityDetail: React.FC<{
           </div>
 
           {/* Scoring Breakdown */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:p-6">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">
               Scoring Breakdown
             </h2>
             <div className="flex items-center gap-3 mb-5">
-              <span className="text-3xl font-black text-slate-900">{opportunity.overallScore}</span>
-              <span className="text-xs text-slate-500">/100 weighted score</span>
+              <span className="text-3xl font-black text-themed">{opportunity.overallScore}</span>
+              <span className="text-xs text-themed-tertiary">/100 weighted score</span>
             </div>
 
             {/* Chart */}
@@ -782,8 +783,8 @@ const OpportunityDetail: React.FC<{
         {/* Right Sidebar */}
         <div className="w-full lg:w-72 shrink-0 space-y-4">
           {/* Quick Actions */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Quick Actions
             </h3>
             <div className="space-y-2">
@@ -795,7 +796,7 @@ const OpportunityDetail: React.FC<{
                   produced
                     ? "bg-emerald-100 text-emerald-700"
                     : startProductionMutation.isPending
-                      ? "bg-slate-100 text-slate-400"
+                      ? "bg-surface-hover text-themed-muted"
                       : "bg-violet-600 text-white hover:bg-violet-700",
                 )}
               >
@@ -831,14 +832,14 @@ const OpportunityDetail: React.FC<{
               </button>
               <button
                 onClick={onBack}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-themed-secondary bg-surface-hover hover:bg-surface-hover transition-colors"
               >
                 <ArrowLeft size={12} /> Back to List
               </button>
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 text-center">
-              <div className="text-2xl font-black text-slate-900">{opportunity.overallScore}</div>
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <div className="mt-3 pt-3 border-t border-themed-subtle text-center">
+              <div className="text-2xl font-black text-themed">{opportunity.overallScore}</div>
+              <div className="text-[10px] text-themed-muted font-bold uppercase tracking-wider">
                 {opportunity.overallScore >= 70
                   ? "High Priority"
                   : opportunity.overallScore >= 40
@@ -849,13 +850,13 @@ const OpportunityDetail: React.FC<{
           </div>
 
           {/* Content Fit */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Content Fit
             </h3>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">Format</span>
+                <span className="text-[11px] text-themed-tertiary">Format</span>
                 {formatInfo && (
                   <span
                     className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
@@ -868,21 +869,21 @@ const OpportunityDetail: React.FC<{
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">Platform</span>
-                <span className="text-[11px] font-medium text-slate-700">
+                <span className="text-[11px] text-themed-tertiary">Platform</span>
+                <span className="text-[11px] font-medium text-themed-secondary">
                   {formatPlatformName(opportunity.targetPlatform)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">Audience</span>
-                <span className="text-[11px] font-medium text-slate-700">
+                <span className="text-[11px] text-themed-tertiary">Audience</span>
+                <span className="text-[11px] font-medium text-themed-secondary">
                   {opportunity.targetAudience}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">Hook</span>
+                <span className="text-[11px] text-themed-tertiary">Hook</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-slate-700">
+                  <span className="text-[11px] font-medium text-themed-secondary">
                     {opportunity.suggestedHook.category}
                   </span>
                   {HOOK_ARCHETYPE[opportunity.suggestedHook.category?.toLowerCase()] && (
@@ -893,7 +894,7 @@ const OpportunityDetail: React.FC<{
                 </div>
               </div>
               {opportunity.similarTopPerformer && (
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-themed-subtle">
                   <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 font-bold">
                     <Trophy size={10} />
                     Similar to top performer: {opportunity.similarTopPerformer}
@@ -901,7 +902,7 @@ const OpportunityDetail: React.FC<{
                 </div>
               )}
               {opportunity.ideaBankMatch && (
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-themed-subtle">
                   <span className="text-[10px] text-violet-600 font-bold">
                     Matches idea: {opportunity.ideaBankMatch}
                   </span>
@@ -911,8 +912,8 @@ const OpportunityDetail: React.FC<{
           </div>
 
           {/* Community Signals */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Community Signals
             </h3>
             <div className="space-y-3">
@@ -921,13 +922,13 @@ const OpportunityDetail: React.FC<{
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <MessageCircle size={12} className="text-orange-500" />
-                      <span className="text-[11px] font-medium text-slate-700">Reddit</span>
+                      <span className="text-[11px] font-medium text-themed-secondary">Reddit</span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500">
+                    <span className="text-[10px] font-bold text-themed-tertiary">
                       {opportunity.communitySignals.topRedditScore}/100
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-1">
+                  <div className="text-[10px] text-themed-tertiary mt-1">
                     {opportunity.communitySignals.redditThreads} threads
                     {opportunity.communitySignals.topRedditTitle && (
                       <span className="block truncate">
@@ -942,13 +943,13 @@ const OpportunityDetail: React.FC<{
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <Hash size={12} className="text-sky-500" />
-                      <span className="text-[11px] font-medium text-slate-700">X/Twitter</span>
+                      <span className="text-[11px] font-medium text-themed-secondary">X/Twitter</span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500">
+                    <span className="text-[10px] font-bold text-themed-tertiary">
                       {opportunity.communitySignals.topXScore}/100
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-1">
+                  <div className="text-[10px] text-themed-tertiary mt-1">
                     {opportunity.communitySignals.xPosts} posts
                     {opportunity.communitySignals.topXPreview && (
                       <span className="block truncate">
@@ -962,9 +963,9 @@ const OpportunityDetail: React.FC<{
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Globe size={12} className="text-emerald-500" />
-                    <span className="text-[11px] font-medium text-slate-700">Web</span>
+                    <span className="text-[11px] font-medium text-themed-secondary">Web</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-themed-tertiary">
                     {opportunity.communitySignals.webArticles} articles
                   </span>
                 </div>
@@ -972,14 +973,14 @@ const OpportunityDetail: React.FC<{
               {opportunity.communitySignals.redditThreads === 0 &&
                 opportunity.communitySignals.xPosts === 0 &&
                 opportunity.communitySignals.webArticles === 0 && (
-                  <p className="text-[11px] text-slate-400">No community signals for this topic.</p>
+                  <p className="text-[11px] text-themed-muted">No community signals for this topic.</p>
                 )}
             </div>
           </div>
 
           {/* Dimension Quick Scores */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Dimension Scores
             </h3>
             <div className="space-y-2">
@@ -993,10 +994,10 @@ const OpportunityDetail: React.FC<{
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: meta?.color ?? "#94a3b8" }}
                       />
-                      <span className="text-[11px] text-slate-600 flex-1 truncate">
+                      <span className="text-[11px] text-themed-secondary flex-1 truncate">
                         {meta?.label ?? d.dimension}
                       </span>
-                      <span className="text-[11px] font-bold text-slate-800">{d.score}</span>
+                      <span className="text-[11px] font-bold text-themed">{d.score}</span>
                     </div>
                   );
                 })}
@@ -1030,13 +1031,13 @@ const ContentGapHeatMap: React.FC = () => {
   if (!data || data.totalGaps === 0) return null;
 
   const cellColor = (cell: GapCell) => {
-    if (cell.total === 0) return "bg-slate-50 border-dashed border-slate-200";
+    if (cell.total === 0) return "bg-surface-hover border-dashed border-themed";
     if (cell.published > 0) return "bg-emerald-100 border-emerald-200";
     return "bg-amber-50 border-amber-200";
   };
 
   const cellText = (cell: GapCell) => {
-    if (cell.total === 0) return "text-slate-300";
+    if (cell.total === 0) return "text-themed-muted";
     if (cell.published > 0) return "text-emerald-700";
     return "text-amber-700";
   };
@@ -1045,7 +1046,7 @@ const ContentGapHeatMap: React.FC = () => {
     <div className="mb-4">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 px-1 hover:text-slate-600 transition-colors"
+        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2 px-1 hover:text-themed-secondary transition-colors"
       >
         <Layers size={12} />
         Content Gaps ({data.totalGaps})
@@ -1056,11 +1057,11 @@ const ContentGapHeatMap: React.FC = () => {
       </button>
 
       {expanded && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 overflow-x-auto">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-4 overflow-x-auto">
           <table className="w-full text-center">
             <thead>
               <tr>
-                <th className="text-[10px] font-bold text-slate-400 text-left pb-2 pr-3 min-w-[100px]">
+                <th className="text-[10px] font-bold text-themed-muted text-left pb-2 pr-3 min-w-[100px]">
                   Audience
                 </th>
                 {data.formats.map((f) => (
@@ -1070,7 +1071,7 @@ const ContentGapHeatMap: React.FC = () => {
                     title={`Format ${f.id}: ${f.name}`}
                   >
                     <span className="text-[10px] font-bold block" style={{ color: FORMAT_COLORS[f.id] || "#64748b" }}>{f.id}</span>
-                    <span className="text-[9px] text-slate-400 block leading-tight">{f.name}</span>
+                    <span className="text-[9px] text-themed-muted block leading-tight">{f.name}</span>
                   </th>
                 ))}
               </tr>
@@ -1078,7 +1079,7 @@ const ContentGapHeatMap: React.FC = () => {
             <tbody>
               {data.audiences.map((aud) => (
                 <tr key={aud.id}>
-                  <td className="text-[10px] text-slate-600 font-medium text-left pr-3 py-1 truncate max-w-[120px]">
+                  <td className="text-[10px] text-themed-secondary font-medium text-left pr-3 py-1 truncate max-w-[120px]">
                     {aud.label}
                   </td>
                   {data.formats.map((fmt) => {
@@ -1102,9 +1103,9 @@ const ContentGapHeatMap: React.FC = () => {
               ))}
             </tbody>
           </table>
-          <div className="flex items-center gap-4 mt-3 text-[10px] text-slate-400">
+          <div className="flex items-center gap-4 mt-3 text-[10px] text-themed-muted">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded bg-slate-50 border border-dashed border-slate-200" /> Gap
+              <span className="w-3 h-3 rounded bg-surface-hover border border-dashed border-themed" /> Gap
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded bg-amber-50 border border-amber-200" /> In Production
@@ -1223,11 +1224,11 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">Opportunities</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">Opportunities</h1>
+          <p className="text-xs text-themed-tertiary mt-1">
             AI-scored content opportunities ranked by potential impact
             {generatedAgo && (
-              <span className="text-slate-400 ml-2">Generated {generatedAgo}</span>
+              <span className="text-themed-muted ml-2">Generated {generatedAgo}</span>
             )}
           </p>
         </div>
@@ -1238,7 +1239,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             className={cn(
               "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
               generateMutation.isPending
-                ? "bg-slate-100 text-slate-400 cursor-wait"
+                ? "bg-surface-hover text-themed-muted cursor-wait"
                 : "bg-teal-600 text-white hover:bg-teal-700",
             )}
           >
@@ -1253,7 +1254,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             )}
           </button>
           {generatedAgo && (
-            <span className="text-[10px] text-slate-400">Updated {generatedAgo}</span>
+            <span className="text-[10px] text-themed-muted">Updated {generatedAgo}</span>
           )}
         </div>
       </div>
@@ -1287,7 +1288,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             </span>
           )}
           {(summary.tiktokResults ?? 0) > 0 && (
-            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-bold text-themed bg-surface-hover px-2.5 py-1 rounded-full">
               {summary.tiktokResults} TikTok
             </span>
           )}
@@ -1296,13 +1297,13 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
               {summary.facebookResults} FB
             </span>
           )}
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-bold text-themed-tertiary bg-surface-hover px-2.5 py-1 rounded-full">
             {summary.hookPatterns} Hooks
           </span>
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-bold text-themed-tertiary bg-surface-hover px-2.5 py-1 rounded-full">
             {summary.existingVideos} Videos
           </span>
-          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-bold text-themed-tertiary bg-surface-hover px-2.5 py-1 rounded-full">
             {summary.ideasInBank} Ideas
           </span>
         </div>
@@ -1337,10 +1338,10 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
 
       {/* Generating state */}
       {generateMutation.isPending && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center mb-4">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-12 text-center mb-4">
           <Loader2 size={32} className="animate-spin text-teal-600 mx-auto mb-4" />
-          <p className="text-sm font-medium text-slate-700">Analyzing data sources...</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm font-medium text-themed-secondary">Analyzing data sources...</p>
+          <p className="text-xs text-themed-tertiary mt-1">
             Cross-referencing research, hooks, and content library
           </p>
         </div>
@@ -1350,12 +1351,12 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
       <ContentGapHeatMap />
 
       {/* Sort + Filter controls */}
-      {opportunities.length > 0 && !generateMutation.isPending && <FeatureHint id="opportunity-dims" content={FEATURE_HINTS["opportunity-dims"].content} side="bottom"><span className="text-[10px] text-slate-400 mb-1 block">Tap any opportunity to see the full 7-dimension breakdown</span></FeatureHint>}
+      {opportunities.length > 0 && !generateMutation.isPending && <FeatureHint id="opportunity-dims" content={FEATURE_HINTS["opportunity-dims"].content} side="bottom"><span className="text-[10px] text-themed-muted mb-1 block">Tap any opportunity to see the full 7-dimension breakdown</span></FeatureHint>}
       {/* Preset chips */}
       {opportunities.length > 0 && !generateMutation.isPending && (
         <FeatureHint id="opportunity-presets" content={FEATURE_HINTS["opportunity-presets"].content} side="bottom">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Quick Filter</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-themed-muted">Quick Filter</span>
           {(["top-scoring", "quick-wins", "research-backed"] as const).map((preset) => {
             const labels: Record<typeof preset, string> = {
               "top-scoring": "Top Scoring",
@@ -1371,7 +1372,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
                   "text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors",
                   isActive
                     ? "bg-teal-600 text-white border-teal-600"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-teal-400 hover:text-teal-600"
+                    : "bg-surface-elevated text-themed-tertiary border-themed hover:border-teal-400 hover:text-teal-600"
                 )}
               >
                 {labels[preset]}
@@ -1379,7 +1380,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             );
           })}
           {activePreset && (
-            <span className="text-[9px] text-slate-400">{filtered.length} match</span>
+            <span className="text-[9px] text-themed-muted">{filtered.length} match</span>
           )}
         </div>
         </FeatureHint>
@@ -1391,7 +1392,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="appearance-none bg-white border border-slate-200 rounded-full px-3 py-1.5 pr-8 text-[11px] font-bold text-slate-600 cursor-pointer"
+              className="appearance-none bg-surface-elevated border border-themed rounded-full px-3 py-1.5 pr-8 text-[11px] font-bold text-themed-secondary cursor-pointer"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -1401,7 +1402,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
             </select>
             <ChevronDown
               size={12}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-themed-muted pointer-events-none"
             />
           </div>
 
@@ -1413,7 +1414,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
                 "text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors",
                 filterFormat === null
                   ? "bg-teal-600 text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                  : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
               )}
             >
               All Formats
@@ -1426,7 +1427,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
                   "text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors",
                   filterFormat === f
                     ? "text-white"
-                    : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                    : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                 )}
                 style={filterFormat === f ? { backgroundColor: FORMAT_COLORS[f] ?? "#94a3b8" } : {}}
               >
@@ -1446,7 +1447,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
                     "text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors",
                     filterPlatform === p
                       ? "bg-slate-700 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                      : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                   )}
                 >
                   {formatPlatformName(p)}
@@ -1458,7 +1459,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
           {/* Audience filter */}
           {uniqueAudiences.length > 1 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400 font-medium">Audience:</span>
+              <span className="text-[10px] text-themed-muted font-medium">Audience:</span>
               {uniqueAudiences.map((a) => (
                 <button
                   key={a}
@@ -1467,7 +1468,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
                     "text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors",
                     filterAudience === a
                       ? "bg-sky-600 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                      : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                   )}
                 >
                   {a}
@@ -1494,12 +1495,12 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
 
       {/* Empty state */}
       {!isLoading && !generateMutation.isPending && opportunities.length === 0 && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-          <Radar size={48} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="font-serif font-bold text-lg text-slate-900 mb-2">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-12 text-center">
+          <Radar size={48} className="text-themed-muted mx-auto mb-4" />
+          <h3 className="font-serif font-bold text-lg text-themed mb-2">
             Discover Content Opportunities
           </h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
+          <p className="text-sm text-themed-tertiary max-w-md mx-auto">
             Click "Generate Opportunities" to analyze your research data, hook library, and content
             library. The AI will score and rank the best content topics to create next.
           </p>
@@ -1516,7 +1517,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
 
       {/* Generated timestamp */}
       {data?.generatedAt && opportunities.length > 0 && (
-        <p className="text-[10px] text-slate-400 mt-3 text-center">
+        <p className="text-[10px] text-themed-muted mt-3 text-center">
           Generated {new Date(data.generatedAt).toLocaleString()}
         </p>
       )}

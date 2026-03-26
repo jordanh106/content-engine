@@ -163,11 +163,11 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
+        <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
           Session Planner
         </h1>
         <FeatureHint id="session-phases" content={FEATURE_HINTS["session-phases"].content} side="bottom">
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-themed-tertiary mt-1">
             Batch production sessions with auto-advancing status
           </p>
         </FeatureHint>
@@ -178,7 +178,7 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
         <div className="space-y-6">
           {/* Session Type Selection */}
           <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
               Session Type
             </h2>
             <div className="space-y-2">
@@ -201,10 +201,10 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                     )}>
                       {st.icon}
                     </div>
-                    <span className="text-sm font-bold text-slate-900">{st.label}</span>
+                    <span className="text-sm font-bold text-themed">{st.label}</span>
                     <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">20-30 min</span>
                   </div>
-                  <p className="text-xs text-slate-500">{st.description}</p>
+                  <p className="text-xs text-themed-tertiary">{st.description}</p>
                 </button>
               ))}
               {/* Standard session types */}
@@ -217,19 +217,19 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                       "border rounded-2xl p-4 text-left transition-all",
                       selectedType === st.type
                         ? "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
-                        : "border-slate-200 bg-white hover:border-teal-200",
+                        : "border-themed bg-surface-elevated hover:border-teal-200",
                     )}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <div className={cn(
                         "w-8 h-8 rounded-xl flex items-center justify-center",
-                        selectedType === st.type ? "bg-teal-100 text-teal-600" : "bg-slate-100 text-slate-500",
+                        selectedType === st.type ? "bg-teal-100 text-teal-600" : "bg-surface-hover text-themed-tertiary",
                       )}>
                         {st.icon}
                       </div>
-                      <span className="text-sm font-bold text-slate-900">{st.label}</span>
+                      <span className="text-sm font-bold text-themed">{st.label}</span>
                     </div>
-                    <p className="text-xs text-slate-500">{st.description}</p>
+                    <p className="text-xs text-themed-tertiary">{st.description}</p>
                   </button>
                 ))}
               </div>
@@ -239,7 +239,7 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
           {/* Smart Batch Recommendations */}
           {selectedType && recommendations && recommendations.batches.length > 1 && (
             <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
                 <Zap size={12} className="text-amber-500" />
                 Smart Batches
               </h2>
@@ -254,23 +254,23 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                         "border rounded-xl p-4 text-left transition-all",
                         isSelected
                           ? "border-amber-300 bg-amber-50"
-                          : "border-slate-200 bg-white hover:border-amber-200",
+                          : "border-themed bg-surface-elevated hover:border-amber-200",
                       )}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="text-sm font-bold text-slate-800">{batch.audience}</span>
+                        <span className="text-sm font-bold text-themed">{batch.audience}</span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <Clock size={11} className="text-slate-400" />
-                          <span className="text-[10px] font-bold text-slate-500">~{batch.estimatedMinutes} min</span>
+                          <Clock size={11} className="text-themed-muted" />
+                          <span className="text-[10px] font-bold text-themed-tertiary">~{batch.estimatedMinutes} min</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-[10px] font-black text-amber-700">{batch.count} video{batch.count !== 1 ? "s" : ""}</span>
-                        <span className="text-[10px] text-slate-400">·</span>
-                        <span className="text-[10px] text-slate-500">Formats: {batch.formats.join(", ")}</span>
+                        <span className="text-[10px] text-themed-muted">·</span>
+                        <span className="text-[10px] text-themed-tertiary">Formats: {batch.formats.join(", ")}</span>
                       </div>
                       {batch.reason && (
-                        <p className="text-[10px] text-slate-500 italic">{batch.reason}</p>
+                        <p className="text-[10px] text-themed-tertiary italic">{batch.reason}</p>
                       )}
                       {isSelected && (
                         <p className="text-[10px] font-bold text-amber-600 mt-1.5">Selected ✓</p>
@@ -286,7 +286,7 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
           {selectedType && availableData && (
             <section>
               <div className="flex items-center justify-between mb-3 px-1">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                   Select Videos ({selectedCodes.size} of {availableData.videos.length})
                 </h2>
                 {availableData.videos.length > 0 && (
@@ -297,7 +297,7 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
               </div>
               {availableData.videos.length === 0 ? (
                 <EmptyState
-                  icon={<Film size={24} className="text-slate-400" />}
+                  icon={<Film size={24} className="text-themed-muted" />}
                   headline="No videos ready"
                   description={`No videos are currently in ${SESSION_TYPES.find((s) => s.type === selectedType)?.statusFrom} status for this session type.`}
                   compact
@@ -312,17 +312,17 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                         "w-full flex items-center gap-3 border rounded-xl p-3 text-left transition-all",
                         selectedCodes.has(v.code)
                           ? "border-teal-300 bg-teal-50"
-                          : "border-slate-200 bg-white hover:border-teal-200",
+                          : "border-themed bg-surface-elevated hover:border-teal-200",
                       )}
                     >
                       <div className={cn(
                         "w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0",
-                        selectedCodes.has(v.code) ? "border-teal-500 bg-teal-500" : "border-slate-300",
+                        selectedCodes.has(v.code) ? "border-teal-500 bg-teal-500" : "border-themed",
                       )}>
                         {selectedCodes.has(v.code) && <Check size={12} className="text-white" />}
                       </div>
                       <span className="text-xs font-bold text-teal-700 font-mono">{v.code}</span>
-                      <span className="text-xs text-slate-900 flex-1 truncate">{v.title}</span>
+                      <span className="text-xs text-themed flex-1 truncate">{v.title}</span>
                       <FormatBadge format={v.format} />
                       <AudienceBadge audience={v.audience} label={v.audienceLabel} />
                     </button>
@@ -346,17 +346,17 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
           {/* Past Sessions */}
           {pastSessions.length > 0 && (
             <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
                 Past Sessions
               </h2>
               <div className="space-y-2">
                 {pastSessions.slice(0, 5).map((s) => (
-                  <div key={s.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                  <div key={s.id} className="bg-surface-elevated border border-themed rounded-xl p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-700 capitalize">{s.sessionType}</span>
-                      <span className="text-[10px] text-slate-400">{s.itemsCompleted}/{s.itemsTotal} completed</span>
+                      <span className="text-xs font-bold text-themed-secondary capitalize">{s.sessionType}</span>
+                      <span className="text-[10px] text-themed-muted">{s.itemsCompleted}/{s.itemsTotal} completed</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-2 text-[10px] text-themed-muted">
                       {s.durationMinutes && <span>{s.durationMinutes}m</span>}
                       <span>{new Date(s.completedAt!).toLocaleDateString()}</span>
                     </div>
@@ -378,15 +378,15 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
               <span className="text-2xl font-mono font-bold tabular-nums">{formatDuration(elapsed)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 capitalize">{activeSession.sessionType}</span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-themed-muted capitalize">{activeSession.sessionType}</span>
+              <span className="text-xs text-themed-muted">
                 {completedCodes.size}/{activeSession.items.length}
               </span>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
             <div
               className="h-full bg-teal-500 rounded-full transition-all duration-300"
               style={{ width: `${activeSession.items.length > 0 ? (completedCodes.size / activeSession.items.length) * 100 : 0}%` }}
@@ -410,19 +410,19 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
                     "w-full flex items-center gap-3 border rounded-xl p-4 text-left transition-all",
                     done
                       ? "border-emerald-200 bg-emerald-50"
-                      : "border-slate-200 bg-white hover:border-teal-200",
+                      : "border-themed bg-surface-elevated hover:border-teal-200",
                   )}
                 >
                   <div className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                    done ? "border-emerald-500 bg-emerald-500" : "border-slate-300",
+                    done ? "border-emerald-500 bg-emerald-500" : "border-themed",
                   )}>
                     {done && <Check size={14} className="text-white" />}
                   </div>
                   <span className={cn("text-xs font-bold font-mono", done ? "text-emerald-700" : "text-teal-700")}>{item.videoCode}</span>
-                  <span className={cn("text-sm flex-1 truncate", done ? "text-slate-400 line-through" : "text-slate-900")}>{item.title}</span>
+                  <span className={cn("text-sm flex-1 truncate", done ? "text-themed-muted line-through" : "text-themed")}>{item.title}</span>
                   <FormatBadge format={item.format} />
-                  {!done && <ChevronRight size={14} className="text-slate-300" />}
+                  {!done && <ChevronRight size={14} className="text-themed-muted" />}
                 </button>
               );
             })}
@@ -445,11 +445,11 @@ export const SessionView: React.FC<SessionViewProps> = ({ onNavigate }) => {
         <div className="space-y-6">
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
             <Check size={32} className="mx-auto mb-3 text-emerald-600" />
-            <h2 className="text-lg font-serif font-bold text-slate-900 mb-1">Session Complete</h2>
-            <p className="text-sm text-slate-600">
+            <h2 className="text-lg font-serif font-bold text-themed mb-1">Session Complete</h2>
+            <p className="text-sm text-themed-secondary">
               {completedCodes.size} of {activeSession.items.length} videos completed in {formatDuration(elapsed)}
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4 text-xs text-slate-500">
+            <div className="flex items-center justify-center gap-4 mt-4 text-xs text-themed-tertiary">
               <span className="capitalize font-bold">{activeSession.sessionType}</span>
               <span>{Math.round(elapsed / 60)} minutes</span>
               <span>

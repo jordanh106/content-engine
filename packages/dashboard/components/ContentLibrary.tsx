@@ -8,6 +8,7 @@ import { SearchInput } from "./ui/SearchInput.js";
 import { FilterBar } from "./ui/FilterBar.js";
 import { cn } from "../utils/cn.js";
 import { EmptyState } from "./ui/EmptyState.js";
+import { ScrollReveal, StaggeredList } from "./ui/animations.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -106,10 +107,10 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-serif font-bold text-slate-900">
+        <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
           Content Library
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-themed-tertiary mt-1">
           {videos.length} videos across {config?.audiences?.length || 0} audience segments
         </p>
       </div>
@@ -129,12 +130,12 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
           />
         </FeatureHint>
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 self-center mr-1">Style:</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted self-center mr-1">Style:</span>
           <button
             onClick={() => setStyleFilter(null)}
             className={cn(
               "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-colors",
-              !styleFilter ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300",
+              !styleFilter ? "bg-slate-900 text-white border-slate-900" : "bg-surface-elevated text-themed-secondary border-themed hover:border-themed",
             )}
           >
             All
@@ -148,7 +149,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
                 onClick={() => setStyleFilter(isActive ? null : s)}
                 className={cn(
                   "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-colors",
-                  isActive ? cn(info.color.bg, info.color.text, info.color.border) : "bg-white text-slate-600 border-slate-200 hover:border-slate-300",
+                  isActive ? cn(info.color.bg, info.color.text, info.color.border) : "bg-surface-elevated text-themed-secondary border-themed hover:border-themed",
                 )}
               >
                 {info.name}
@@ -159,7 +160,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
             onClick={() => setStyleFilter(styleFilter === "none" ? null : "none")}
             className={cn(
               "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border border-dashed transition-colors",
-              styleFilter === "none" ? "bg-slate-100 text-slate-700 border-slate-400" : "bg-white text-slate-400 border-slate-300 hover:border-slate-400",
+              styleFilter === "none" ? "bg-surface-hover text-themed-secondary border-themed" : "bg-surface-elevated text-themed-muted border-themed hover:border-themed",
             )}
           >
             No Style
@@ -169,15 +170,15 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
 
       {/* Results count + Sort */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           {filteredVideos.length} of {videos.length} videos
         </p>
         <div className="flex items-center gap-1.5">
-          <ArrowUpDown size={12} className="text-slate-400" />
+          <ArrowUpDown size={12} className="text-themed-muted" />
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+            className="text-xs font-medium text-themed-secondary bg-surface-elevated border border-themed rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -193,16 +194,16 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
         <div className="space-y-8 animate-pulse">
           {[...Array(2)].map((_, g) => (
             <section key={g}>
-              <div className="h-3 bg-slate-200 rounded w-32 mb-3" />
+              <div className="h-3 bg-surface-hover rounded w-32 mb-3" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="h-4 bg-slate-200 rounded w-3/4" />
-                    <div className="h-3 bg-slate-100 rounded w-full" />
-                    <div className="h-3 bg-slate-100 rounded w-5/6" />
+                  <div key={i} className="bg-surface-elevated border border-themed rounded-2xl p-4 space-y-3">
+                    <div className="h-4 bg-surface-hover rounded w-3/4" />
+                    <div className="h-3 bg-surface-hover rounded w-full" />
+                    <div className="h-3 bg-surface-hover rounded w-5/6" />
                     <div className="flex gap-1.5">
-                      <div className="h-5 bg-slate-100 rounded-full w-8" />
-                      <div className="h-5 bg-slate-100 rounded-full w-16" />
+                      <div className="h-5 bg-surface-hover rounded-full w-8" />
+                      <div className="h-5 bg-surface-hover rounded-full w-16" />
                     </div>
                   </div>
                 ))}
@@ -212,7 +213,7 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
         </div>
       ) : grouped.length === 0 ? (
         <EmptyState
-          icon={<Search size={24} className="text-slate-400" />}
+          icon={<Search size={24} className="text-themed-muted" />}
           headline="No videos match"
           description="Try adjusting your filters or search query to find what you're looking for."
           action={{ label: "Clear Filters", onClick: () => {
@@ -227,11 +228,11 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
       ) : (
         <div className="space-y-8">
           {grouped.map(([audienceId, group], groupIdx) => (
-            <section key={audienceId}>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+            <ScrollReveal key={audienceId} delay={groupIdx * 80} as="section">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
                 {group.label} ({group.videos.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" {...(groupIdx === 0 ? { "data-tour": "video-card" } : {})}>
+              <StaggeredList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" stagger={40} {...(groupIdx === 0 ? { "data-tour": "video-card" } : {})}>
                 {group.videos.map((video) => (
                   <VideoCard
                     key={video.code}
@@ -239,8 +240,8 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
                     onClick={() => onSelectVideo(video.code)}
                   />
                 ))}
-              </div>
-            </section>
+              </StaggeredList>
+            </ScrollReveal>
           ))}
         </div>
       )}

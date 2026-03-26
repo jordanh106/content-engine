@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Lightbulb, Flame, Users, Leaf, MessageCircle, Sparkles, Archive, RefreshCw, ArrowRight, Eye, Plus, Check, Shield, Inbox, Link, X, ChevronDown, ChevronUp, Send, Zap } from "lucide-react";
-import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId, InboxItem } from "../shared/types.js";
+import type { Idea, IdeaCategory, DashboardView, WatchlistIntelIdea, IdeaConcept, FormatId, InboxItem, ResearchIdea } from "../shared/types.js";
 import { IdeaDetail } from "./IdeaDetail.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
 import { IdeaGeneratorModal } from "./IdeaGeneratorModal.js";
@@ -11,6 +11,7 @@ import { EmptyState } from "./ui/EmptyState.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+import { ScrollReveal } from "./ui/animations.js";
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
   trending: { label: "Trending", icon: <Flame size={14} />, color: "text-orange-600 bg-orange-50" },
@@ -18,13 +19,13 @@ const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode
   evergreen: { label: "Evergreen", icon: <Leaf size={14} />, color: "text-emerald-600 bg-emerald-50" },
   audience: { label: "Audience", icon: <MessageCircle size={14} />, color: "text-sky-600 bg-sky-50" },
   personal: { label: "Personal", icon: <Sparkles size={14} />, color: "text-pink-600 bg-pink-50" },
-  archived: { label: "Archived", icon: <Archive size={14} />, color: "text-slate-500 bg-slate-100" },
+  archived: { label: "Archived", icon: <Archive size={14} />, color: "text-themed-tertiary bg-surface-hover" },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
   High: "bg-rose-100 text-rose-700",
   Medium: "bg-amber-100 text-amber-700",
-  Low: "bg-slate-100 text-slate-600",
+  Low: "bg-surface-hover text-themed-secondary",
 };
 
 // Extract clean FormatId (A-G) from strings like "C (Demo)" or "D (Myth Buster)"
@@ -115,26 +116,26 @@ const InspirationInbox: React.FC = () => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+    <div className="bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-hover transition-colors"
       >
         <div className="flex items-center gap-2">
           <Inbox size={15} className="text-amber-500" />
-          <span className="text-sm font-bold text-slate-800">Inspiration Inbox</span>
+          <span className="text-sm font-bold text-themed">Inspiration Inbox</span>
           {pendingCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
               {pendingCount}
             </span>
           )}
         </div>
-        {collapsed ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronUp size={14} className="text-slate-400" />}
+        {collapsed ? <ChevronDown size={14} className="text-themed-muted" /> : <ChevronUp size={14} className="text-themed-muted" />}
       </button>
 
       {!collapsed && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-themed-subtle">
           {/* Capture input */}
           <div className="px-4 py-3 space-y-2">
             <div className="relative">
@@ -145,25 +146,25 @@ const InspirationInbox: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="What caught your eye? Drop a link, a phrase, a thought... (⌘+Enter to save)"
                 rows={2}
-                className="w-full text-sm text-slate-800 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
+                className="w-full text-sm text-themed placeholder-slate-400 bg-surface-hover border border-themed rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent"
               />
             </div>
             {showUrl && (
               <div className="flex items-center gap-2">
-                <Link size={12} className="text-slate-400 shrink-0" />
+                <Link size={12} className="text-themed-muted shrink-0" />
                 <input
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="Source URL (optional)"
-                  className="flex-1 text-xs text-slate-700 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  className="flex-1 text-xs text-themed-secondary placeholder-slate-400 bg-surface-hover border border-themed rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300"
                 />
               </div>
             )}
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setShowUrl((v) => !v)}
-                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1"
+                className="text-[10px] font-bold text-themed-muted hover:text-themed-secondary transition-colors flex items-center gap-1"
               >
                 <Link size={10} />
                 {showUrl ? "Hide URL" : "+ Add URL"}
@@ -181,7 +182,7 @@ const InspirationInbox: React.FC = () => {
 
           {/* Inbox items */}
           {items.filter((i) => i.status === "inbox").length > 0 && (
-            <div className="border-t border-slate-100 divide-y divide-slate-50">
+            <div className="border-t border-themed-subtle divide-y divide-slate-50">
               {items
                 .filter((i) => i.status === "inbox")
                 .map((item) => (
@@ -193,7 +194,7 @@ const InspirationInbox: React.FC = () => {
                           type="text"
                           value={developing.topic}
                           onChange={(e) => setDeveloping({ ...developing, topic: e.target.value })}
-                          className="w-full text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          className="w-full text-sm text-themed bg-surface-hover border border-themed rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
                           placeholder="Topic for idea bank"
                           autoFocus
                         />
@@ -201,7 +202,7 @@ const InspirationInbox: React.FC = () => {
                           <select
                             value={developing.category}
                             onChange={(e) => setDeveloping({ ...developing, category: e.target.value as IdeaCategory })}
-                            className="flex-1 text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                            className="flex-1 text-xs bg-surface-elevated border border-themed rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
                           >
                             {CATEGORY_OPTIONS.map((c) => (
                               <option key={c.value} value={c.value}>{c.label}</option>
@@ -210,7 +211,7 @@ const InspirationInbox: React.FC = () => {
                           <select
                             value={developing.priority}
                             onChange={(e) => setDeveloping({ ...developing, priority: e.target.value as "High" | "Medium" | "Low" })}
-                            className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                            className="text-xs bg-surface-elevated border border-themed rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300"
                           >
                             <option value="High">High</option>
                             <option value="Medium">Medium</option>
@@ -228,7 +229,7 @@ const InspirationInbox: React.FC = () => {
                           </button>
                           <button
                             onClick={() => setDeveloping(null)}
-                            className="px-3 py-1.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                            className="px-3 py-1.5 rounded-full text-[10px] font-bold bg-surface-hover text-themed-secondary hover:bg-surface-hover transition-colors"
                           >
                             Cancel
                           </button>
@@ -238,7 +239,7 @@ const InspirationInbox: React.FC = () => {
                       // Normal item view
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-slate-800 leading-snug">{item.content}</p>
+                          <p className="text-sm text-themed leading-snug">{item.content}</p>
                           {item.sourceUrl && (
                             <a
                               href={item.sourceUrl}
@@ -249,7 +250,7 @@ const InspirationInbox: React.FC = () => {
                               {item.sourceUrl}
                             </a>
                           )}
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="text-[10px] text-themed-muted mt-0.5">
                             {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </p>
                         </div>
@@ -268,7 +269,7 @@ const InspirationInbox: React.FC = () => {
                           </button>
                           <button
                             onClick={() => dismissMutation.mutate(item.id)}
-                            className="w-6 h-6 rounded-full flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-400 transition-colors"
+                            className="w-6 h-6 rounded-full flex items-center justify-center bg-surface-hover text-themed-muted hover:bg-red-50 hover:text-red-400 transition-colors"
                           >
                             <X size={10} />
                           </button>
@@ -281,10 +282,183 @@ const InspirationInbox: React.FC = () => {
           )}
 
           {items.filter((i) => i.status === "inbox").length === 0 && (
-            <div className="px-4 py-3 text-center text-xs text-slate-400 border-t border-slate-100">
+            <div className="px-4 py-3 text-center text-xs text-themed-muted border-t border-themed-subtle">
               Inbox empty — capture something above
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================
+// Research Suggestions (ideas extracted from research outputs)
+// ============================================================
+
+type ResearchSuggestionsResponse = { suggestions: ResearchIdea[]; total: number; newCount: number };
+
+const ResearchSuggestions: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [collapsed, setCollapsed] = useState(false);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("dismissed-research-suggestions");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
+
+  const { data } = useQuery<ResearchSuggestionsResponse>({
+    queryKey: ["research-suggestions"],
+    queryFn: () => fetch("/api/ideas/research-suggestions").then((r) => r.json()),
+    staleTime: 60000,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (idea: ResearchIdea) => {
+      const res = await fetch("/api/ideas/ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ideas: [{
+            topic: idea.topic,
+            suggestedFormat: idea.suggestedFormat,
+            hookAngle: idea.hookAngle,
+            priority: idea.priority,
+            source: idea.source,
+            category: idea.category as IdeaCategory,
+          }],
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add idea");
+      return idea.topic;
+    },
+    onSuccess: (topic) => {
+      setAddedTopics((prev) => new Set([...prev, topic]));
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      queryClient.invalidateQueries({ queryKey: ["ideas-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["research-suggestions"] });
+    },
+  });
+
+  const handleDismiss = (topic: string) => {
+    const next = new Set([...dismissed, topic]);
+    setDismissed(next);
+    localStorage.setItem("dismissed-research-suggestions", JSON.stringify([...next]));
+  };
+
+  const suggestions = (data?.suggestions ?? []).filter(
+    (s) => !s.alreadyInBank && !dismissed.has(s.topic) && !addedTopics.has(s.topic),
+  );
+
+  if (suggestions.length === 0) return null;
+
+  return (
+    <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200/60 rounded-2xl p-4">
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center justify-between w-full"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-violet-500" />
+          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-violet-600">
+            From Research
+          </span>
+          <span className="px-2 py-0.5 rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold">
+            {suggestions.length} new
+          </span>
+        </div>
+        {collapsed ? <ChevronDown size={16} className="text-violet-400" /> : <ChevronUp size={16} className="text-violet-400" />}
+      </button>
+
+      {!collapsed && (
+        <div className="mt-3 flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
+          {suggestions.slice(0, 12).map((idea) => {
+            const isExpanded = expandedTopic === idea.topic;
+            const hasContext = idea.context || idea.gapDescription || (idea.platforms && idea.platforms.length > 0);
+            return (
+            <div
+              key={`${idea.sourceFile}-${idea.topic}`}
+              className={cn(
+                "flex-shrink-0 bg-surface-elevated rounded-xl border border-themed p-3 shadow-sm transition-all",
+                isExpanded ? "w-80" : "w-64",
+                hasContext ? "cursor-pointer hover:shadow-md hover:border-violet-300" : "hover:shadow-md",
+              )}
+              onClick={() => hasContext && setExpandedTopic(isExpanded ? null : idea.topic)}
+            >
+              <h4 className="text-[13px] font-semibold text-themed leading-snug line-clamp-2 mb-2">
+                {idea.topic}
+              </h4>
+              {idea.hookAngle && (
+                <p className="text-[10px] text-themed-tertiary line-clamp-1 mb-2 italic">
+                  "{idea.hookAngle}"
+                </p>
+              )}
+              <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                {idea.suggestedFormat && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700">
+                    {idea.suggestedFormat}
+                  </span>
+                )}
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded text-[9px] font-bold",
+                  PRIORITY_COLORS[idea.priority] ?? PRIORITY_COLORS.Medium,
+                )}>
+                  {idea.priority}
+                </span>
+                {idea.platforms && idea.platforms.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-100 text-sky-700">
+                    {idea.platforms.join(" / ")}
+                  </span>
+                )}
+              </div>
+
+              {/* Expanded context preview */}
+              {isExpanded && (
+                <div className="mb-2.5 space-y-2 border-t border-themed-subtle pt-2">
+                  {idea.context && (
+                    <div>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-violet-500">Why it's trending</span>
+                      <p className="text-[11px] text-themed-secondary leading-snug mt-0.5">{idea.context}</p>
+                    </div>
+                  )}
+                  {idea.gapDescription && (
+                    <div>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-500">Content gap</span>
+                      <p className="text-[11px] text-themed-secondary leading-snug mt-0.5">{idea.gapDescription}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Collapsed hint */}
+              {!isExpanded && hasContext && (
+                <div className="text-[9px] text-violet-400 mb-2 flex items-center gap-1">
+                  <Eye size={10} /> Click to preview context
+                </div>
+              )}
+
+              <div className="text-[9px] text-themed-muted mb-2.5 truncate">{idea.source}</div>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); addMutation.mutate(idea); }}
+                  disabled={addMutation.isPending}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-teal-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-teal-700 transition-colors disabled:opacity-50"
+                >
+                  <Plus size={11} /> Add
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDismiss(idea.topic); }}
+                  className="px-2.5 py-1.5 rounded-lg bg-surface-hover text-themed-muted hover:bg-surface-hover hover:text-themed-secondary transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -342,9 +516,9 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb size={20} className="text-amber-500" />
-            <h2 className="text-lg font-serif font-bold text-slate-900">Idea Bank</h2>
+            <h2 className="text-lg font-serif font-bold text-themed">Idea Bank</h2>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-themed-tertiary">
             Content ideas staged for future planning. Click an idea to develop, edit, or archive it.
           </p>
           {syncMessage && (
@@ -399,7 +573,7 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
               syncing
-                ? "bg-slate-100 text-slate-400 cursor-wait"
+                ? "bg-surface-hover text-themed-muted cursor-wait"
                 : "bg-teal-600 text-white hover:bg-teal-700",
             )}
           >
@@ -422,6 +596,9 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
       {/* Inspiration Inbox */}
       <InspirationInbox />
 
+      {/* Research Suggestions */}
+      <ResearchSuggestions />
+
       {/* Category Filter Chips */}
       <div className="flex flex-wrap gap-2">
         {categories.map((cat) => {
@@ -437,7 +614,7 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors",
                 activeCategory === cat
                   ? "bg-teal-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300",
+                  : "bg-surface-elevated border border-themed text-themed-secondary hover:border-themed",
               )}
             >
               {meta?.icon}
@@ -445,7 +622,7 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
               {count > 0 && (
                 <span className={cn(
                   "ml-1 px-1.5 py-0.5 rounded-full text-[10px]",
-                  activeCategory === cat ? "bg-teal-700" : "bg-slate-100",
+                  activeCategory === cat ? "bg-teal-700" : "bg-surface-hover",
                 )}>
                   {count}
                 </span>
@@ -462,11 +639,11 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
 
       {/* Ideas List */}
       {isLoading ? (
-        <div className="text-center py-12 text-slate-400 text-sm">Loading ideas...</div>
+        <div className="text-center py-12 text-themed-muted text-sm">Loading ideas...</div>
       ) : ideas.length === 0 ? (
         <div>
           <EmptyState
-            icon={<Lightbulb size={24} className="text-slate-400" />}
+            icon={<Lightbulb size={24} className="text-themed-muted" />}
             headline="No ideas yet"
             description={activeCategory === "all"
               ? "Run /viral-scout or /last30days to discover content ideas, or add them manually."
@@ -578,12 +755,12 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
         {displayIdeas.map((idea, i) => {
           const wasAdded = addedTopics.has(idea.topic);
           return (
-            <div key={i} className="bg-white border border-violet-100 rounded-xl p-3">
+            <div key={i} className="bg-surface-elevated border border-violet-100 rounded-xl p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{idea.topic}</p>
+                  <p className="text-sm font-medium text-themed">{idea.topic}</p>
                   {idea.hookAngle && (
-                    <p className="text-xs text-slate-500 mt-0.5">{idea.hookAngle}</p>
+                    <p className="text-xs text-themed-tertiary mt-0.5">{idea.hookAngle}</p>
                   )}
                   {idea.whyNonObvious && (
                     <p className="text-[11px] text-violet-600 mt-1 italic">"{idea.whyNonObvious}"</p>
@@ -593,12 +770,12 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
                       <span className="text-[10px] text-violet-500">Inspired by: {idea.inspiredBy}</span>
                     )}
                     {idea.suggestedFormat && (
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                         {idea.suggestedFormat}
                       </span>
                     )}
                     {idea.targetAudience && (
-                      <span className="text-[10px] text-slate-400">{idea.targetAudience}</span>
+                      <span className="text-[10px] text-themed-muted">{idea.targetAudience}</span>
                     )}
                   </div>
                 </div>
@@ -645,14 +822,14 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void; highlighted?: boolea
       onClick={onClick}
       data-topic={idea.topic}
       className={cn(
-        "bg-white border border-slate-200 rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer",
+        "bg-surface-elevated border border-themed rounded-2xl p-4 md:p-5 hover:border-teal-300 hover:shadow-sm transition-all cursor-pointer",
         highlighted && "ring-2 ring-teal-400 ring-offset-1 border-teal-300"
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-slate-900 text-sm">{idea.topic}</p>
+            <p className="font-medium text-themed text-sm">{idea.topic}</p>
             {concept?.approved && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[8px] font-bold flex-shrink-0">
                 <Shield size={8} /> Concept Ready
@@ -665,14 +842,14 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void; highlighted?: boolea
             )}
           </div>
           {idea.hookAngle && (
-            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{idea.hookAngle}</p>
+            <p className="text-xs text-themed-tertiary mt-1 line-clamp-2">{idea.hookAngle}</p>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {idea.suggestedFormat && (() => {
               const fmtId = extractFormatId(idea.suggestedFormat);
               return fmtId
                 ? <FormatBadge format={fmtId} />
-                : <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{idea.suggestedFormat}</span>;
+                : <span className="text-[10px] font-bold uppercase tracking-wider text-themed-muted">{idea.suggestedFormat}</span>;
             })()}
             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", meta.color)}>
               {meta.label}
@@ -684,10 +861,10 @@ const IdeaCard: React.FC<{ idea: Idea; onClick: () => void; highlighted?: boolea
         </div>
         <div className="text-right shrink-0">
           {idea.dateAdded && (
-            <p className="text-[10px] text-slate-400">{idea.dateAdded}</p>
+            <p className="text-[10px] text-themed-muted">{idea.dateAdded}</p>
           )}
           {idea.source && (
-            <p className="text-[10px] text-slate-400 mt-0.5 max-w-[120px] truncate">{idea.source}</p>
+            <p className="text-[10px] text-themed-muted mt-0.5 max-w-[120px] truncate">{idea.source}</p>
           )}
         </div>
       </div>

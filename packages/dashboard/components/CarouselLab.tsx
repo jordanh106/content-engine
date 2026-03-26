@@ -130,7 +130,7 @@ type PlatformOption = (typeof PLATFORM_OPTIONS)[number];
 
 const SLIDE_TYPE_STYLES: Record<string, { label: string; color: string }> = {
   cover:   { label: "Cover",   color: "bg-violet-100 text-violet-700 border-violet-200" },
-  content: { label: "Content", color: "bg-slate-100 text-slate-600 border-slate-200"   },
+  content: { label: "Content", color: "bg-surface-hover text-themed-secondary border-themed"   },
   rehook:  { label: "Rehook",  color: "bg-sky-100 text-sky-700 border-sky-200"         },
   cta:     { label: "CTA",     color: "bg-teal-100 text-teal-700 border-teal-200"      },
 };
@@ -150,9 +150,9 @@ function wordCount(text: string) {
 function WordCountBadge({ text, targets }: { text: string; targets: [number, number] }) {
   const count = wordCount(text);
   const [min, max] = targets;
-  if (!text.trim()) return <span className="text-[11px] text-slate-300">{min}–{max} words optimal</span>;
+  if (!text.trim()) return <span className="text-[11px] text-themed-muted">{min}–{max} words optimal</span>;
   if (count >= min && count <= max) return <span className="text-[11px] text-emerald-500 font-bold">{count} words ✓</span>;
-  if (count < min) return <span className="text-[11px] text-slate-400">{count} / {min}+ words</span>;
+  if (count < min) return <span className="text-[11px] text-themed-muted">{count} / {min}+ words</span>;
   return <span className="text-[11px] text-amber-500 font-bold">{count} words (aim for {max})</span>;
 }
 
@@ -220,21 +220,21 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
     <div className="space-y-4">
       {/* Slide preview card */}
       <div className={cn(
-        "w-full max-w-[280px] mx-auto rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm overflow-hidden",
+        "w-full max-w-[280px] mx-auto rounded-2xl border border-themed bg-gradient-to-br from-slate-50 to-white shadow-sm overflow-hidden",
         aspectClass
       )}>
         <div className="h-full flex flex-col p-4 gap-2">
           <span className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border self-start", typeStyle.color)}>
             {typeStyle.label}
           </span>
-          <p className="text-sm font-black text-slate-800 leading-tight flex-1">
-            {heading || <span className="text-slate-300 italic">Heading…</span>}
+          <p className="text-sm font-black text-themed leading-tight flex-1">
+            {heading || <span className="text-themed-muted italic">Heading…</span>}
           </p>
-          <p className="text-xs text-slate-600 leading-snug">
-            {bodyText || <span className="text-slate-300 italic">Body copy…</span>}
+          <p className="text-xs text-themed-secondary leading-snug">
+            {bodyText || <span className="text-themed-muted italic">Body copy…</span>}
           </p>
           {visualSuggestion && (
-            <p className="text-[10px] italic text-slate-400 border-t border-slate-100 pt-1.5">
+            <p className="text-[10px] italic text-themed-muted border-t border-themed-subtle pt-1.5">
               Visual: {visualSuggestion}
             </p>
           )}
@@ -244,31 +244,31 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
       {/* Edit fields */}
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
-            Heading <span className="text-slate-300 normal-case tracking-normal font-normal">(max 8 words)</span>
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">
+            Heading <span className="text-themed-muted normal-case tracking-normal font-normal">(max 8 words)</span>
           </label>
           <input
             type="text"
             value={heading}
             onChange={handleChange(setHeading)}
             placeholder="Bold, attention-grabbing headline"
-            className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
+            className="w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-300"
           />
         </div>
         <div>
-          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
-            Body <span className="text-slate-300 normal-case tracking-normal font-normal">(max 20 words)</span>
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">
+            Body <span className="text-themed-muted normal-case tracking-normal font-normal">(max 20 words)</span>
           </label>
           <textarea
             value={bodyText}
             onChange={handleChange(setBodyText)}
             placeholder="Supporting detail or key insight"
             rows={2}
-            className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-300"
+            className="w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-300"
           />
         </div>
         <div>
-          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">
+          <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">
             Visual Direction
           </label>
           <input
@@ -276,7 +276,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             value={visualSuggestion}
             onChange={handleChange(setVisualSuggestion)}
             placeholder="What should this slide look like?"
-            className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300"
+            className="w-full text-sm bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed-secondary placeholder-slate-300"
           />
         </div>
         {dirty && (
@@ -289,7 +289,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
               {saving ? <Loader2 size={10} className="animate-spin" /> : null}
               Save
             </button>
-            <button onClick={handleRevert} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+            <button onClick={handleRevert} className="text-xs text-themed-muted hover:text-themed-secondary flex items-center gap-1">
               <RotateCcw size={10} /> Revert
             </button>
           </div>
@@ -323,24 +323,24 @@ function CarouselCard({ carousel, isActive, onSelect }: CarouselCardProps) {
         "w-full text-left p-3 rounded-xl border transition-all",
         isActive
           ? "border-violet-400 bg-violet-50"
-          : "border-slate-200 bg-white hover:border-violet-300 hover:bg-slate-50"
+          : "border-themed bg-surface-elevated hover:border-violet-300 hover:bg-surface-hover"
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">{title}</p>
-        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">
+        <p className="text-xs font-bold text-themed leading-snug line-clamp-2">{title}</p>
+        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-hover text-themed-tertiary shrink-0">
           {platConfig?.abbr ?? carousel.platform.slice(0, 2).toUpperCase()}
         </span>
       </div>
       <div className="flex items-center gap-2 mt-1.5">
         <span className={cn(
           "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-          STATUS_STYLES[carousel.status]?.color ?? "bg-slate-100 text-slate-500"
+          STATUS_STYLES[carousel.status]?.color ?? "bg-surface-hover text-themed-tertiary"
         )}>
           {STATUS_STYLES[carousel.status]?.label ?? carousel.status}
         </span>
-        <span className="text-[10px] text-slate-400">{carousel.slideCount} slides</span>
-        <span className="text-[10px] text-slate-400">{new Date(carousel.createdAt).toLocaleDateString()}</span>
+        <span className="text-[10px] text-themed-muted">{carousel.slideCount} slides</span>
+        <span className="text-[10px] text-themed-muted">{new Date(carousel.createdAt).toLocaleDateString()}</span>
       </div>
     </button>
   );
@@ -369,36 +369,36 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
 
   return (
     <div className={cn(
-      "border-l border-slate-200 bg-slate-50 transition-all overflow-hidden",
+      "border-l border-themed bg-surface-hover transition-all overflow-hidden",
       open ? "w-[260px] shrink-0" : "w-0"
     )}>
       {open && (
         <div className="p-4 space-y-4 w-[260px]">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Analytics</p>
-            <button onClick={onToggle} className="text-slate-400 hover:text-slate-600">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Analytics</p>
+            <button onClick={onToggle} className="text-themed-muted hover:text-themed-secondary">
               <ChevronRight size={14} />
             </button>
           </div>
 
           <div className="space-y-1">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Library</p>
-            <p className="text-2xl font-black text-slate-800">{carousels.length}</p>
-            <p className="text-[10px] text-slate-400">carousels total</p>
+            <p className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Library</p>
+            <p className="text-2xl font-black text-themed">{carousels.length}</p>
+            <p className="text-[10px] text-themed-muted">carousels total</p>
           </div>
 
           {Object.keys(byCounts).length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">By Platform</p>
+              <p className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">By Platform</p>
               {Object.entries(byCounts).map(([p, n]) => (
                 <div key={p} className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-600 capitalize">{p.replace("_", " ")}</span>
+                  <span className="text-[11px] text-themed-secondary capitalize">{p.replace("_", " ")}</span>
                   <div className="flex items-center gap-1.5">
                     <div
                       className="h-1.5 bg-violet-400 rounded-full"
                       style={{ width: `${Math.max(8, (n / carousels.length) * 60)}px` }}
                     />
-                    <span className="text-[10px] font-bold text-slate-500">{n}</span>
+                    <span className="text-[10px] font-bold text-themed-tertiary">{n}</span>
                   </div>
                 </div>
               ))}
@@ -407,8 +407,8 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
 
           {topPerformer && (
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Score</p>
-              <p className="text-[11px] font-semibold text-slate-700 line-clamp-2">
+              <p className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Top Score</p>
+              <p className="text-[11px] font-semibold text-themed-secondary line-clamp-2">
                 {topPerformer.ideaTopic ?? topPerformer.hookLine?.slice(0, 40)}
               </p>
               <p className="text-xs font-black text-emerald-600">
@@ -419,12 +419,12 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
 
           {latestVersioned && (
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Versions</p>
+              <p className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Versions</p>
               {latestVersioned.templateVersion && (
-                <p className="text-[10px] text-slate-500">Template <span className="font-mono text-violet-600">{latestVersioned.templateVersion}</span></p>
+                <p className="text-[10px] text-themed-tertiary">Template <span className="font-mono text-violet-600">{latestVersioned.templateVersion}</span></p>
               )}
               {latestVersioned.strategyVersion && (
-                <p className="text-[10px] text-slate-500">Strategy <span className="font-mono text-violet-600">{latestVersioned.strategyVersion}</span></p>
+                <p className="text-[10px] text-themed-tertiary">Strategy <span className="font-mono text-violet-600">{latestVersioned.strategyVersion}</span></p>
               )}
             </div>
           )}
@@ -696,11 +696,11 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   return (
     <div className="flex h-full overflow-hidden">
       {/* ── Left: Library + Spark Starters ──────────────────────────────── */}
-      <div className="w-[260px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col overflow-hidden">
-        <div className="p-3 border-b border-slate-200">
+      <div className="w-[260px] shrink-0 border-r border-themed bg-surface-hover flex flex-col overflow-hidden">
+        <div className="p-3 border-b border-themed">
           <div className="flex items-center gap-2">
             <LayoutGrid size={14} className="text-violet-600" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Carousel Lab</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-tertiary">Carousel Lab</span>
           </div>
         </div>
 
@@ -708,24 +708,24 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           {carousels.length === 0 ? (
             /* Empty state: Spark Starters fill the panel */
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 pt-1">Spark Starters</p>
-              <p className="text-[11px] text-slate-400 leading-relaxed">Tap any to pre-fill the form and jump straight to generating.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted pt-1">Spark Starters</p>
+              <p className="text-[11px] text-themed-muted leading-relaxed">Tap any to pre-fill the form and jump straight to generating.</p>
               {SPARK_STARTERS.map((spark) => {
                 const meta = ARCHETYPE_META[spark.archetype];
                 return (
                   <button
                     key={spark.topic}
                     onClick={() => applySparkStarter(spark)}
-                    className="w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                    className="w-full text-left p-3 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm">{spark.icon}</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 group-hover:text-violet-600">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-themed-muted group-hover:text-violet-600">
                         {spark.archetype}
                       </span>
                     </div>
-                    <p className="text-xs font-semibold text-slate-700 line-clamp-3 leading-snug">{spark.topic}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">{meta.descriptor}</p>
+                    <p className="text-xs font-semibold text-themed-secondary line-clamp-3 leading-snug">{spark.topic}</p>
+                    <p className="text-[10px] text-themed-muted mt-0.5 truncate">{meta.descriptor}</p>
                   </button>
                 );
               })}
@@ -741,17 +741,17 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   onSelect={() => { setActiveCarouselId(c.id); setActiveSlideIndex(0); }}
                 />
               ))}
-              <div className="pt-1 border-t border-slate-200">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1.5">Spark Starters</p>
+              <div className="pt-1 border-t border-themed">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-1.5">Spark Starters</p>
                 <div className="space-y-1.5">
                   {SPARK_STARTERS.map((spark) => (
                     <button
                       key={spark.topic}
                       onClick={() => applySparkStarter(spark)}
-                      className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 rounded-lg border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
                     >
                       <span className="text-sm shrink-0">{spark.icon}</span>
-                      <p className="text-[11px] font-semibold text-slate-600 line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
+                      <p className="text-[11px] font-semibold text-themed-secondary line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
                     </button>
                   ))}
                 </div>
@@ -760,7 +760,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           )}
         </div>
 
-        <div className="p-3 border-t border-slate-200">
+        <div className="p-3 border-t border-themed">
           <button
             onClick={() => setActiveCarouselId(null)}
             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-violet-600 text-white text-[11px] font-bold hover:bg-violet-700 transition-colors"
@@ -773,9 +773,9 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
       {/* ── Center: Creator + Editor ─────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-surface-elevated border-b border-themed px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               {activeCarousel
                 ? (activeCarousel.ideaTopic ?? activeCarousel.hookLine?.slice(0, 40) ?? "Carousel")
                 : "New Carousel"}
@@ -794,7 +794,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAnalyticsOpen((v) => !v)}
-              className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600"
+              className="flex items-center gap-1 text-[10px] font-bold text-themed-muted hover:text-themed-secondary"
             >
               <BarChart2 size={12} /> Analytics
             </button>
@@ -804,7 +804,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
         <div className="p-5 space-y-6">
           {/* ── Creator (shown when no active carousel) */}
           {!activeCarousel && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-5">
+            <div className="bg-surface-elevated border border-themed rounded-2xl p-5 space-y-5">
               {/* Mode toggle */}
               <div className="flex items-center gap-2">
                 {(["fresh", "from-video"] as const).map((m) => (
@@ -815,7 +815,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                       mode === m
                         ? "bg-violet-600 text-white border-violet-600"
-                        : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
+                        : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                     )}
                   >
                     {m === "fresh" ? "Fresh Start" : "From Video"}
@@ -829,7 +829,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                   {/* Platform */}
                   <div>
-                    <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Platform</label>
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-2">Platform</label>
                     <div className="flex flex-wrap gap-2">
                       {PLATFORM_OPTIONS.map((opt, i) => (
                         <button
@@ -839,7 +839,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
                               ? "bg-violet-600 text-white border-violet-600"
-                              : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
+                              : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                           )}
                         >
                           {opt.label}
@@ -855,8 +855,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     side="bottom"
                   >
                     <div>
-                      <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">
-                        Your Voice <span className="text-slate-300 normal-case tracking-normal font-normal">(pick your hook archetype)</span>
+                      <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-2">
+                        Your Voice <span className="text-themed-muted normal-case tracking-normal font-normal">(pick your hook archetype)</span>
                       </label>
 
                       {archetype ? (
@@ -866,7 +866,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-black text-violet-800 capitalize">{archetype}</p>
                             <p className="text-xs text-violet-600">{ARCHETYPE_META[archetype].descriptor}</p>
-                            <p className="text-[11px] italic text-slate-500 mt-1 line-clamp-1">
+                            <p className="text-[11px] italic text-themed-tertiary mt-1 line-clamp-1">
                               e.g. "{ARCHETYPE_META[archetype].exampleHook}"
                             </p>
                           </div>
@@ -886,14 +886,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                               <button
                                 key={a.id}
                                 onClick={() => setArchetype(a.id)}
-                                className="text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                                className="text-left p-4 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group"
                               >
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-xl">{meta.icon}</span>
-                                  <span className="text-sm font-black text-slate-700 group-hover:text-violet-700">{a.label}</span>
+                                  <span className="text-sm font-black text-themed-secondary group-hover:text-violet-700">{a.label}</span>
                                 </div>
-                                <p className="text-xs text-slate-500 leading-relaxed mb-1.5">{meta.descriptor}</p>
-                                <p className="text-[11px] italic text-slate-400 line-clamp-2">"{meta.exampleHook}"</p>
+                                <p className="text-xs text-themed-tertiary leading-relaxed mb-1.5">{meta.descriptor}</p>
+                                <p className="text-[11px] italic text-themed-muted line-clamp-2">"{meta.exampleHook}"</p>
                               </button>
                             );
                           })}
@@ -907,11 +907,11 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                     <div className="space-y-4 animate-in fade-in duration-200">
                       {/* Audience */}
                       <div>
-                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">Audience</label>
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">Audience</label>
                         <select
                           value={audience}
                           onChange={(e) => setAudience(e.target.value)}
-                          className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700"
+                          className="w-full text-sm bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed-secondary"
                         >
                           <option value="">Any audience</option>
                           {audiences.map((a) => (
@@ -923,7 +923,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       {/* Topic with word count */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Topic</label>
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted">Topic</label>
                           <WordCountBadge text={topic} targets={wordTargets.topic} />
                         </div>
                         <textarea
@@ -931,7 +931,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           onChange={(e) => setTopic(e.target.value)}
                           placeholder="e.g. Text neck and forward head posture"
                           rows={2}
-                          className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                          className="w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
                         />
                       </div>
                     </div>
@@ -943,8 +943,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       {/* Cover Hook with quick-fill */}
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">
-                            Cover Hook <span className="text-slate-300 normal-case tracking-normal font-normal">(optional)</span>
+                          <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted">
+                            Cover Hook <span className="text-themed-muted normal-case tracking-normal font-normal">(optional)</span>
                           </label>
                           <WordCountBadge text={hookLine} targets={wordTargets.hook} />
                         </div>
@@ -953,7 +953,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           value={hookLine}
                           onChange={(e) => setHookLine(e.target.value)}
                           placeholder="e.g. Your neck will pay for your phone habit."
-                          className="w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                          className="w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
                         />
 
                         {/* Hook pattern quick-fill */}
@@ -966,21 +966,21 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                         </button>
 
                         {showHookPatterns && (
-                          <div className="mt-2 border border-slate-200 rounded-xl overflow-hidden">
+                          <div className="mt-2 border border-themed rounded-xl overflow-hidden">
                             {HOOK_PATTERNS.map((pat, i) => (
                               <div
                                 key={pat.id}
                                 className={cn(
                                   "flex items-start gap-3 px-3 py-3 hover:bg-violet-50 transition-colors",
-                                  i < HOOK_PATTERNS.length - 1 && "border-b border-slate-100"
+                                  i < HOOK_PATTERNS.length - 1 && "border-b border-themed-subtle"
                                 )}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 mb-0.5">
                                     <Stars count={pat.stars} />
-                                    <span className="text-xs font-bold text-slate-600">{pat.name}</span>
+                                    <span className="text-xs font-bold text-themed-secondary">{pat.name}</span>
                                   </div>
-                                  <p className="text-[11px] italic text-slate-500 line-clamp-1">"{pat.template}"</p>
+                                  <p className="text-[11px] italic text-themed-tertiary line-clamp-1">"{pat.template}"</p>
                                 </div>
                                 <button
                                   onClick={() => {
@@ -1011,8 +1011,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <div className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Content Points</div>
-                            <div className="text-[11px] text-slate-400 normal-case tracking-normal font-normal">One per slide, 3-5 recommended</div>
+                            <div className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted">Content Points</div>
+                            <div className="text-[11px] text-themed-muted normal-case tracking-normal font-normal">One per slide, 3-5 recommended</div>
                           </div>
                           {topic.trim().split(/\s+/).length >= 3 && (
                             <button
@@ -1031,7 +1031,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                         <div className="space-y-2">
                           {talkingPoints.map((pt, i) => (
                             <div key={i} className="flex gap-2 items-center">
-                              <span className="text-xs font-bold text-slate-400 w-5 shrink-0">{i + 1}.</span>
+                              <span className="text-xs font-bold text-themed-muted w-5 shrink-0">{i + 1}.</span>
                               <textarea
                                 rows={2}
                                 value={pt}
@@ -1041,12 +1041,12 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                   setTalkingPoints(next);
                                 }}
                                 placeholder={DEFAULT_POINTS[i] ?? `Point ${i + 1}`}
-                                className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-700 placeholder-slate-300 resize-y"
+                                className="flex-1 text-sm bg-surface-elevated border border-themed rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed-secondary placeholder-slate-300 resize-y"
                               />
                               {talkingPoints.length > 1 && (
                                 <button
                                   onClick={() => setTalkingPoints(talkingPoints.filter((_, j) => j !== i))}
-                                  className="text-slate-300 hover:text-rose-400"
+                                  className="text-themed-muted hover:text-rose-400"
                                 >
                                   <X size={12} />
                                 </button>
@@ -1066,8 +1066,8 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                       {/* CTA — ranked presets + custom */}
                       <div>
-                        <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Call to Action</label>
-                        <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-2">Call to Action</label>
+                        <div className="border border-themed rounded-xl overflow-hidden">
                           {CTA_TEMPLATES.map((cta, i) => {
                             const isSelected = ctaMode === "preset" && ctaText === cta.text;
                             return (
@@ -1076,22 +1076,22 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                                 onClick={() => { setCtaMode("preset"); setCtaText(cta.text); }}
                                 className={cn(
                                   "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
-                                  i < CTA_TEMPLATES.length && "border-b border-slate-100",
-                                  isSelected ? "bg-violet-50" : "bg-white hover:bg-slate-50"
+                                  i < CTA_TEMPLATES.length && "border-b border-themed-subtle",
+                                  isSelected ? "bg-violet-50" : "bg-surface-elevated hover:bg-surface-hover"
                                 )}
                               >
                                 <div className={cn(
                                   "w-3.5 h-3.5 rounded-full border-2 shrink-0 transition-colors",
-                                  isSelected ? "border-violet-600 bg-violet-600" : "border-slate-300"
+                                  isSelected ? "border-violet-600 bg-violet-600" : "border-themed"
                                 )} />
                                 <div className="flex-1 min-w-0">
-                                  <p className={cn("text-sm font-semibold", isSelected ? "text-violet-800" : "text-slate-700")}>
+                                  <p className={cn("text-sm font-semibold", isSelected ? "text-violet-800" : "text-themed-secondary")}>
                                     {cta.text}
                                   </p>
                                 </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <Stars count={cta.stars} />
-                                  <span className="text-[10px] text-slate-400">{cta.platform}</span>
+                                  <span className="text-[10px] text-themed-muted">{cta.platform}</span>
                                 </div>
                               </button>
                             );
@@ -1102,14 +1102,14 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             onClick={() => setCtaMode("custom")}
                             className={cn(
                               "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
-                              ctaMode === "custom" ? "bg-violet-50" : "bg-white hover:bg-slate-50"
+                              ctaMode === "custom" ? "bg-violet-50" : "bg-surface-elevated hover:bg-surface-hover"
                             )}
                           >
                             <div className={cn(
                               "w-3.5 h-3.5 rounded-full border-2 shrink-0",
-                              ctaMode === "custom" ? "border-violet-600 bg-violet-600" : "border-slate-300"
+                              ctaMode === "custom" ? "border-violet-600 bg-violet-600" : "border-themed"
                             )} />
-                            <span className="text-sm font-semibold text-slate-500">Custom…</span>
+                            <span className="text-sm font-semibold text-themed-tertiary">Custom…</span>
                           </button>
                         </div>
 
@@ -1119,7 +1119,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             value={ctaMode === "custom" ? ctaText : ""}
                             onChange={(e) => setCtaText(e.target.value)}
                             placeholder="Write your own call to action"
-                            className="mt-2 w-full text-base bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                            className="mt-2 w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
                           />
                         )}
                       </div>
@@ -1148,7 +1148,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 <>
                   {/* Platform for from-video */}
                   <div>
-                    <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-2">Platform</label>
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-2">Platform</label>
                     <div className="flex flex-wrap gap-2">
                       {PLATFORM_OPTIONS.map((opt, i) => (
                         <button
@@ -1158,7 +1158,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
                               ? "bg-violet-600 text-white border-violet-600"
-                              : "bg-white text-slate-500 border-slate-200 hover:border-violet-400"
+                              : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                           )}
                         >
                           {opt.label}
@@ -1169,13 +1169,13 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-black uppercase tracking-[0.12em] text-slate-400 block mb-1.5">Search Video Library</label>
+                      <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">Search Video Library</label>
                       <input
                         type="text"
                         value={videoSearch}
                         onChange={(e) => setVideoSearch(e.target.value)}
                         placeholder="Search by code or title…"
-                        className="w-full text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-slate-800 placeholder-slate-400"
+                        className="w-full text-sm bg-surface-elevated border border-themed rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto space-y-1">
@@ -1187,12 +1187,12 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                             "w-full text-left px-3 py-2 rounded-xl border text-[11px] transition-colors",
                             selectedVideoCode === v.code
                               ? "border-violet-400 bg-violet-50 font-bold text-violet-800"
-                              : "border-slate-200 bg-white hover:border-violet-300 text-slate-700"
+                              : "border-themed bg-surface-elevated hover:border-violet-300 text-themed-secondary"
                           )}
                         >
-                          <span className="font-mono text-[9px] text-slate-400 mr-2">{String(v.code)}</span>
+                          <span className="font-mono text-[9px] text-themed-muted mr-2">{String(v.code)}</span>
                           {String(v.title).slice(0, 60)}
-                          <span className="ml-2 text-[9px] text-slate-400">{String(v.format)} · {String(v.audience)}</span>
+                          <span className="ml-2 text-[9px] text-themed-muted">{String(v.format)} · {String(v.audience)}</span>
                         </button>
                       ))}
                     </div>
@@ -1221,30 +1221,30 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={cn(
                     "text-[9px] font-bold px-2 py-0.5 rounded-full",
-                    STATUS_STYLES[activeCarousel.status]?.color ?? "bg-slate-100 text-slate-500"
+                    STATUS_STYLES[activeCarousel.status]?.color ?? "bg-surface-hover text-themed-tertiary"
                   )}>
                     {STATUS_STYLES[activeCarousel.status]?.label ?? activeCarousel.status}
                   </span>
-                  <span className="text-[10px] text-slate-400 capitalize">{activeCarousel.platform}</span>
+                  <span className="text-[10px] text-themed-muted capitalize">{activeCarousel.platform}</span>
                   {activeCarousel.hookArchetype && (
                     <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
                       {activeCarousel.hookArchetype}
                     </span>
                   )}
                   {activeCarousel.audience && (
-                    <span className="text-[10px] text-slate-400">{activeCarousel.audience}</span>
+                    <span className="text-[10px] text-themed-muted">{activeCarousel.audience}</span>
                   )}
                 </div>
                 <button
                   onClick={() => { if (confirm("Delete this carousel?")) deleteMutation.mutate(activeCarousel.id); }}
-                  className="text-slate-300 hover:text-rose-400 transition-colors"
+                  className="text-themed-muted hover:text-rose-400 transition-colors"
                 >
                   <X size={14} />
                 </button>
               </div>
 
               {activeCarousel.hookLine && (
-                <p className="text-sm font-bold italic text-slate-700 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
+                <p className="text-sm font-bold italic text-themed-secondary bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
                   "{activeCarousel.hookLine}"
                 </p>
               )}
@@ -1261,10 +1261,10 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                           "shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border transition-all",
                           activeSlideIndex === i
                             ? "border-violet-400 bg-violet-50 ring-2 ring-violet-300 ring-offset-1"
-                            : "border-slate-200 bg-white hover:border-violet-300"
+                            : "border-themed bg-surface-elevated hover:border-violet-300"
                         )}
                       >
-                        <span className="text-[9px] font-black text-slate-500">{i + 1}</span>
+                        <span className="text-[9px] font-black text-themed-tertiary">{i + 1}</span>
                         <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded-full", ts.color)}>
                           {ts.label}
                         </span>
@@ -1275,16 +1275,16 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
               )}
 
               {slides.length > 0 ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
                   <FeatureHint id="carousel-slide-editor" content="Edit each slide's heading, body copy, and visual direction. Changes save directly to the database — use Revert to undo." side="top">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-4">
                       Edit Slide {activeSlideIndex + 1}
                     </p>
                   </FeatureHint>
 
                   {/* Show slide image if available */}
                   {slides[activeSlideIndex]?.imagePath && (
-                    <div className="mb-4 rounded-xl overflow-hidden border border-slate-200">
+                    <div className="mb-4 rounded-xl overflow-hidden border border-themed">
                       <img
                         src={slides[activeSlideIndex].imagePath!}
                         alt={`Slide ${activeSlideIndex + 1}`}
@@ -1302,12 +1302,12 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   />
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-3 text-sm text-slate-400 py-8">
+                <div className="flex flex-col items-center gap-3 text-sm text-themed-muted py-8">
                   {activeCarousel.status === "generating" ? (
                     <>
                       <Loader2 size={24} className="animate-spin text-teal-500" />
-                      <p className="font-medium text-slate-600">Generating AI slide images...</p>
-                      <p className="text-xs text-slate-400">This takes ~30 seconds for {activeCarousel.slideCount} slides. Page auto-refreshes.</p>
+                      <p className="font-medium text-themed-secondary">Generating AI slide images...</p>
+                      <p className="text-xs text-themed-muted">This takes ~30 seconds for {activeCarousel.slideCount} slides. Page auto-refreshes.</p>
                     </>
                   ) : (
                     <>
@@ -1318,7 +1318,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-themed-subtle">
                 <button
                   onClick={handleCopyText}
                   disabled={slides.length === 0}
@@ -1348,7 +1348,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   </button>
                 </FeatureHint>
 
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-themed-muted">
                   ID: <span className="font-mono">{activeCarousel.id}</span>
                 </span>
               </div>
@@ -1369,15 +1369,15 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
       {/* ── Canva Push Modal ─────────────────────────────────────────────── */}
       {canvaModalOpen && activeCarousel && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-black text-slate-800">Push to Canva</p>
-              <button onClick={() => setCanvaModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <p className="text-sm font-black text-themed">Push to Canva</p>
+              <button onClick={() => setCanvaModalOpen(false)} className="text-themed-muted hover:text-themed-secondary">
                 <X size={16} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-themed-secondary">
               Run this command in Claude Code to create a Canva presentation with your slides:
             </p>
 
@@ -1389,25 +1389,25 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
-                className="text-slate-500 hover:text-teal-300 shrink-0"
+                className="text-themed-tertiary hover:text-teal-300 shrink-0"
               >
                 {copied ? <Check size={12} /> : <Copy size={12} />}
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-themed-tertiary">
               The skill will use Canva MCP to create a designed presentation with your brand kit, then save the URL here automatically.
             </p>
 
-            <div className="border-t border-slate-100 pt-3 space-y-2">
-              <p className="text-[10px] text-slate-400">Already have the Canva URL? Paste it directly:</p>
+            <div className="border-t border-themed-subtle pt-3 space-y-2">
+              <p className="text-[10px] text-themed-muted">Already have the Canva URL? Paste it directly:</p>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={manualCanvaUrl}
                   onChange={(e) => setManualCanvaUrl(e.target.value)}
                   placeholder="https://www.canva.com/design/…"
-                  className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                  className="flex-1 text-xs bg-surface-hover border border-themed rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
                 />
                 <button
                   onClick={handleSaveCanvaUrl}

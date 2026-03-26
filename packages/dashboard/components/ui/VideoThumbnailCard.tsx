@@ -84,7 +84,7 @@ export type VideoThumbnailCardProps = {
 const ACTION_ITEMS: { action: CardAction; label: string; icon: React.ReactNode; color: string }[] = [
   { action: "star", label: "Star", icon: <Star size={13} />, color: "text-amber-600 hover:bg-amber-50" },
   { action: "save", label: "Save", icon: <Bookmark size={13} />, color: "text-teal-600 hover:bg-teal-50" },
-  { action: "archive", label: "Archive", icon: <Archive size={13} />, color: "text-slate-500 hover:bg-slate-50" },
+  { action: "archive", label: "Archive", icon: <Archive size={13} />, color: "text-themed-tertiary hover:bg-slate-50" },
   { action: "delete", label: "Delete", icon: <Trash2 size={13} />, color: "text-rose-500 hover:bg-rose-50" },
 ];
 
@@ -237,7 +237,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
           {/* Left swipe = Archive (slate) */}
           {swipeDelta < 0 && (
             <div className="absolute inset-0 rounded-2xl bg-slate-200 flex items-center justify-end pr-6">
-              <Archive size={20} className={`text-slate-500 transition-transform ${swipeDelta < -80 ? "scale-125" : ""}`} />
+              <Archive size={20} className={`text-themed-tertiary transition-transform ${swipeDelta < -80 ? "scale-125" : ""}`} />
             </div>
           )}
         </>
@@ -246,9 +246,9 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
       <div
         className={`
           group transition-all duration-200
-          bg-white rounded-2xl overflow-hidden
-          border shadow-sm
-          ${selected ? "border-teal-400 ring-2 ring-teal-400/30 shadow-md" : "border-slate-100 hover:shadow-md hover:border-slate-200"}
+          bg-surface-elevated rounded-2xl
+          border shadow-themed-sm
+          ${selected ? "border-teal-400 ring-2 ring-teal-400/30 shadow-themed-md" : "border-themed hover:shadow-themed-md hover:border-themed"}
           ${isSm ? "w-52 flex-shrink-0" : "w-full"}
           ${selectable ? "cursor-pointer" : ""}
         `}
@@ -259,7 +259,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
       >
         {/* Thumbnail area with blurred backdrop for mixed aspect ratios */}
         <div
-          className="relative aspect-video overflow-hidden bg-black/90 cursor-pointer"
+          className="relative aspect-video overflow-hidden rounded-t-2xl bg-black/90 cursor-pointer"
           onClick={handleCardClick}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -293,8 +293,8 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
           {/* Placeholder when no thumbnail */}
           {!hasThumbnail && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-              <Play size={isSm ? 20 : 32} className="text-slate-400 mb-1" />
-              <span className="text-slate-500 font-medium text-center px-4 leading-tight text-[10px]">
+              <Play size={isSm ? 20 : 32} className="text-themed-muted mb-1" />
+              <span className="text-themed-tertiary font-medium text-center px-4 leading-tight text-[10px]">
                 {title.slice(0, 50)}
               </span>
             </div>
@@ -340,7 +340,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
             <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black z-10 ${
               outlierScore >= 3 ? "bg-emerald-500 text-white" :
               outlierScore >= 1.5 ? "bg-amber-400 text-amber-900" :
-              "bg-white/80 text-slate-600 backdrop-blur-sm"
+              "bg-white/80 text-themed-secondary backdrop-blur-sm"
             }`}>
               {outlierScore.toFixed(1)}x
             </span>
@@ -356,7 +356,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
               className={`absolute top-2 left-2 w-7 h-7 rounded-full z-10 flex items-center justify-center transition-all ${
                 selected
                   ? "bg-teal-500 text-white shadow-md"
-                  : "bg-white/80 text-slate-400 backdrop-blur-sm hover:bg-white hover:text-slate-600"
+                  : "bg-white/80 text-themed-muted backdrop-blur-sm hover:bg-white hover:text-themed-secondary"
               }`}
             >
               {selected ? <Check size={14} strokeWidth={3} /> : <div className="w-4 h-4 rounded-full border-2 border-slate-300" />}
@@ -384,16 +384,16 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
         <div className={`${isSm ? "p-2.5" : "p-3.5"}`}>
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className={`font-semibold text-slate-800 leading-snug line-clamp-2 ${isSm ? "text-[11px]" : "text-[13px]"}`}>
+              <h3 className={`font-semibold text-themed leading-snug line-clamp-2 ${isSm ? "text-[11px]" : "text-[13px]"}`}>
                 {title}
               </h3>
               <div className={`flex items-center gap-1.5 mt-1.5 ${isSm ? "text-[9px]" : "text-[11px]"}`}>
-                <span className="text-slate-500 truncate">{subtitle}</span>
+                <span className="text-themed-tertiary truncate">{subtitle}</span>
                 <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold ${PLATFORM_COLORS[platform] ?? "bg-slate-200 text-slate-700"}`}>
                   {platform}
                 </span>
               </div>
-              <div className={`flex items-center gap-2 mt-1 text-slate-400 ${isSm ? "text-[9px]" : "text-[10px]"}`}>
+              <div className={`flex items-center gap-2 mt-1 text-themed-muted ${isSm ? "text-[9px]" : "text-[10px]"}`}>
                 {views !== undefined && views > 0 && (
                   <span className="flex items-center gap-0.5">
                     <Eye size={10} />
@@ -411,13 +411,13 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
               <div ref={menuRef} className="relative shrink-0">
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-600"
+                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-surface-hover transition-all text-themed-muted hover:text-themed-secondary"
                 >
                   <MoreHorizontal size={16} />
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-30">
+                  <div className="absolute right-0 bottom-full mb-1 w-36 bg-surface-elevated border border-themed rounded-xl shadow-xl py-1.5 z-30">
                     {ACTION_ITEMS.map((item) => (
                       <button
                         key={item.action}

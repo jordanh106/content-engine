@@ -15,7 +15,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
   return (
     <button
       onClick={onClick}
-      className="bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-teal-200 hover:shadow-sm transition-all w-full"
+      className="bg-surface-elevated border border-themed rounded-2xl p-4 text-left hover:border-teal-200 hover:shadow-themed-sm transition-all w-full"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-bold text-teal-700 font-mono">
@@ -23,10 +23,10 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onClick }) => {
         </span>
         <StatusBadge status={video.status} />
       </div>
-      <h3 className="text-sm font-serif font-semibold text-slate-900 leading-snug mb-2">
+      <h3 className="text-sm font-serif font-semibold text-themed leading-snug mb-2">
         {video.title}
       </h3>
-      <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+      <p className="text-xs text-themed-tertiary line-clamp-2 mb-3 leading-relaxed">
         {video.scriptPreview}
       </p>
       <div className="flex flex-wrap gap-1.5">

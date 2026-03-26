@@ -1,5 +1,117 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THEME SYSTEM — CSS Custom Properties
+   Switch between light and dark by toggling .dark class on <html>
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Surfaces */
+  --surface-body: #f1f5f9;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-elevated: #ffffff;
+  --surface-hover: #f1f5f9;
+  --surface-border: #e2e8f0;
+  --surface-border-subtle: #f1f5f9;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverted: #ffffff;
+
+  /* Accent */
+  --accent: #0d9488;
+  --accent-light: #ccfbf1;
+  --accent-hover: #0f766e;
+  --accent-glow: transparent;
+
+  /* Charts */
+  --chart-grid: #e2e8f0;
+  --chart-axis: #94a3b8;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e2e8f0;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-track: transparent;
+}
+
+:root.dark {
+  /* Surfaces — deep cinematic navy */
+  --surface-body: #080b16;
+  --surface-primary: #0c1021;
+  --surface-secondary: #111631;
+  --surface-elevated: #161c3a;
+  --surface-hover: #1c2345;
+  --surface-border: #232b52;
+  --surface-border-subtle: #1a2040;
+
+  /* Text */
+  --text-primary: #f1f5f9;
+  --text-secondary: #a1adc4;
+  --text-tertiary: #7b8baa;
+  --text-muted: #4e5d7a;
+  --text-inverted: #0f172a;
+
+  /* Accent — teal glows on dark */
+  --accent: #2dd4bf;
+  --accent-light: rgba(45,212,191,0.1);
+  --accent-hover: #14b8a6;
+  --accent-glow: 0 0 20px rgba(45,212,191,0.15);
+
+  /* Charts */
+  --chart-grid: #232b52;
+  --chart-axis: #4e5d7a;
+  --chart-tooltip-bg: #161c3a;
+  --chart-tooltip-border: #232b52;
+
+  /* Shadows — colored glow on dark */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #2a3358;
+  --scrollbar-track: #0c1021;
+}
+
+/* Themed utility classes */
+.bg-surface { background-color: var(--surface-primary); }
+.bg-surface-body { background-color: var(--surface-body); }
+.bg-surface-secondary { background-color: var(--surface-secondary); }
+.bg-surface-elevated { background-color: var(--surface-elevated); }
+.bg-surface-hover { background-color: var(--surface-hover); }
+.border-themed { border-color: var(--surface-border); }
+.border-themed-subtle { border-color: var(--surface-border-subtle); }
+.text-themed { color: var(--text-primary); }
+.text-themed-secondary { color: var(--text-secondary); }
+.text-themed-tertiary { color: var(--text-tertiary); }
+.text-themed-muted { color: var(--text-muted); }
+.shadow-themed-sm { box-shadow: var(--shadow-sm); }
+.shadow-themed-md { box-shadow: var(--shadow-md); }
+.accent-glow { box-shadow: var(--accent-glow); }
+
+/* Global body background */
+body {
+  background-color: var(--surface-body);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar theming */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
 @keyframes slide-up {
   from {
     transform: translateY(100%);
@@ -37,4 +149,44 @@
 
 .animate-fade-in {
   animation: fade-in 0.15s ease-out;
+}
+
+/* Scroll-triggered reveal animations (Sanjaya-inspired) */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes reveal-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes reveal-scale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* View entrance transition */
+@keyframes view-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-view-enter {
+  animation: view-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-reveal, .animate-view-enter, .animate-stagger {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

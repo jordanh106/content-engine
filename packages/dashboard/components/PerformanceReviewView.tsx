@@ -61,7 +61,7 @@ const VERDICT_CONFIG: Record<StrategyFindingVerdict, { label: string; color: str
   KEEP:        { label: "Keep",        color: "text-emerald-700", bg: "bg-emerald-50",  border: "border-emerald-200", icon: <CheckCircle2 size={16} className="text-emerald-600" /> },
   PROMOTE:     { label: "Promote",     color: "text-amber-700",   bg: "bg-amber-50",    border: "border-amber-200",   icon: <ArrowUpRight size={16} className="text-amber-600" /> },
   DEMOTE:      { label: "Demote",      color: "text-rose-700",    bg: "bg-rose-50",     border: "border-rose-200",    icon: <XCircle size={16} className="text-rose-600" /> },
-  INVESTIGATE: { label: "Investigate", color: "text-slate-600",   bg: "bg-slate-50",    border: "border-slate-200",   icon: <HelpCircle size={16} className="text-slate-500" /> },
+  INVESTIGATE: { label: "Investigate", color: "text-themed-secondary",   bg: "bg-surface-hover",    border: "border-themed",   icon: <HelpCircle size={16} className="text-themed-tertiary" /> },
 };
 
 function confidenceLabel(c: HookPatternStat["confidence"]) {
@@ -155,25 +155,25 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
     .sort((a, b) => String(a.formatId).localeCompare(String(b.formatId)));
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto bg-surface-hover p-4 md:p-6 space-y-6">
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-serif font-bold text-slate-900">Strategy</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Performance patterns by hook type, format, and platform</p>
+        <h1 className="text-2xl font-serif font-bold text-themed">Strategy</h1>
+        <p className="text-sm text-themed-tertiary mt-0.5">Performance patterns by hook type, format, and platform</p>
       </div>
 
       {/* Coverage Banner */}
-      <div className={`rounded-xl border p-4 flex items-start gap-3 ${coverage.hookCoveragePct < 30 ? "bg-amber-50 border-amber-200" : "bg-white border-slate-200"}`}>
+      <div className={`rounded-xl border p-4 flex items-start gap-3 ${coverage.hookCoveragePct < 30 ? "bg-amber-50 border-amber-200" : "bg-surface-elevated border-themed"}`}>
         <Activity size={18} className={coverage.hookCoveragePct < 30 ? "text-amber-600 mt-0.5 shrink-0" : "text-teal-600 mt-0.5 shrink-0"} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-sm font-semibold text-themed">
             {coverage.totalVideos} metric {coverage.totalVideos === 1 ? "entry" : "entries"} analyzed
             {" · "}Hook coverage: {coverage.hookCoveragePct}%
             {" · "}Format coverage: {coverage.formatCoveragePct}%
           </p>
           {dataRange && (
-            <p className="text-xs text-slate-500 mt-0.5">{dataRange.earliest} → {dataRange.latest} ({dataRange.days} days)</p>
+            <p className="text-xs text-themed-tertiary mt-0.5">{dataRange.earliest} → {dataRange.latest} ({dataRange.days} days)</p>
           )}
           {coverage.hookCoveragePct < 30 && (
             <p className="text-xs text-amber-700 mt-1">Tag metric entries with hook pattern to improve coverage. Use the entry form in Metrics.</p>
@@ -181,17 +181,17 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
         </div>
         {coverage.totalVideos > 0 && (
           <div className="text-right shrink-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Avg Score</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-themed-muted">Avg Score</p>
             <p className="text-lg font-bold text-teal-700">{pct(avgWeightedEngagement)}</p>
           </div>
         )}
       </div>
 
       {/* Hook Pattern Matrix */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Hook Pattern Performance</h2>
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+        <h2 className="text-sm font-black uppercase tracking-widest text-themed-muted mb-4">Hook Pattern Performance</h2>
         {matrixRows.length === 0 ? (
-          <div className="text-center py-10 text-slate-400">
+          <div className="text-center py-10 text-themed-muted">
             <Brain size={32} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">No hook pattern data yet.</p>
             <p className="text-xs mt-1">Tag metric entries with hookPatternUsed to populate this table.</p>
@@ -200,10 +200,10 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-[10px] font-black uppercase tracking-widest text-slate-400 pb-2 pr-4">Pattern</th>
+                <tr className="border-b border-themed-subtle">
+                  <th className="text-left text-[10px] font-black uppercase tracking-widest text-themed-muted pb-2 pr-4">Pattern</th>
                   {PLATFORMS.map((p) => (
-                    <th key={p} className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400 pb-2 px-3 min-w-[90px]">{p}</th>
+                    <th key={p} className="text-center text-[10px] font-black uppercase tracking-widest text-themed-muted pb-2 px-3 min-w-[90px]">{p}</th>
                   ))}
                 </tr>
               </thead>
@@ -211,20 +211,20 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
                 {matrixRows.map(([pattern, platformMap]) => {
                   const label = HOOK_PATTERN_LABELS[pattern as keyof typeof HOOK_PATTERN_LABELS] ?? pattern;
                   return (
-                    <tr key={pattern} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 pr-4 font-medium text-slate-700 whitespace-nowrap">{label}</td>
+                    <tr key={pattern} className="hover:bg-surface-hover transition-colors">
+                      <td className="py-2.5 pr-4 font-medium text-themed-secondary whitespace-nowrap">{label}</td>
                       {PLATFORMS.map((platform) => {
                         const stat = platformMap.get(platform) ?? platformMap.get(platform.toLowerCase()) ?? null;
                         if (!stat) {
                           return (
-                            <td key={platform} className="py-2.5 px-3 text-center text-slate-300 text-xs">—</td>
+                            <td key={platform} className="py-2.5 px-3 text-center text-themed-muted text-xs">—</td>
                           );
                         }
                         const score = stat.weightedEngagement;
                         const isAboveAvg = score > avgWeightedEngagement;
                         return (
                           <td key={platform} className="py-2.5 px-3 text-center">
-                            <div className={`inline-flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg ${isAboveAvg ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-500"}`}>
+                            <div className={`inline-flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg ${isAboveAvg ? "bg-emerald-50 text-emerald-700" : "bg-surface-hover text-themed-tertiary"}`}>
                               <span className="font-bold text-sm">{pct(score)}</span>
                               <span className="text-[9px] font-black uppercase tracking-wider opacity-60">{confidenceLabel(stat.confidence)} n={stat.videoCount}</span>
                             </div>
@@ -236,16 +236,16 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
                 })}
               </tbody>
             </table>
-            <p className="text-[10px] text-slate-400 mt-3">Score = 0.4 × save rate + 0.3 × share rate + 0.3 × comment rate. Green = above average.</p>
+            <p className="text-[10px] text-themed-muted mt-3">Score = 0.4 × save rate + 0.3 × share rate + 0.3 × comment rate. Green = above average.</p>
           </div>
         )}
       </div>
 
       {/* Format Performance Bar Chart */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
-        <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Format Performance (Save Rate %)</h2>
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+        <h2 className="text-sm font-black uppercase tracking-widest text-themed-muted mb-4">Format Performance (Save Rate %)</h2>
         {formatChartData.length === 0 ? (
-          <div className="text-center py-10 text-slate-400">
+          <div className="text-center py-10 text-themed-muted">
             <TrendingUp size={32} className="mx-auto mb-2 opacity-30" />
             <p className="text-sm">No format data yet. Add metrics entries to see format performance.</p>
           </div>
@@ -277,26 +277,26 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
 
       {/* Top Outlier Videos */}
       {topOutliers.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
-          <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Top Outliers by Save Rate</h2>
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+          <h2 className="text-sm font-black uppercase tracking-widest text-themed-muted mb-4">Top Outliers by Save Rate</h2>
           <div className="space-y-2">
             {topOutliers.map((v, i) => (
-              <div key={`${v.videoCode}-${v.platform}`} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+              <div key={`${v.videoCode}-${v.platform}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-hover hover:bg-surface-hover transition-colors">
                 <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 text-xs font-bold shrink-0">{i + 1}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-slate-800 text-sm">{v.videoCode}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{v.platform}</span>
+                    <span className="font-mono font-bold text-themed text-sm">{v.videoCode}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-themed-muted">{v.platform}</span>
                     {v.hookPatternUsed && (
                       <span className="text-[10px] font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-full">
                         {HOOK_PATTERN_LABELS[v.hookPatternUsed as keyof typeof HOOK_PATTERN_LABELS] ?? v.hookPatternUsed}
                       </span>
                     )}
                     {v.formatId && (
-                      <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">Format {v.formatId}</span>
+                      <span className="text-[10px] font-medium text-themed-tertiary bg-surface-hover px-1.5 py-0.5 rounded-full">Format {v.formatId}</span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">{v.views.toLocaleString()} views · {v.saves.toLocaleString()} saves</p>
+                  <p className="text-xs text-themed-tertiary mt-0.5">{v.views.toLocaleString()} views · {v.saves.toLocaleString()} saves</p>
                 </div>
                 <div className="text-right shrink-0">
                   <Trophy size={12} className="text-amber-500 mx-auto mb-0.5" />
@@ -309,11 +309,11 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
       )}
 
       {/* Strategy Analysis AI Button */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5">
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">AI Strategy Analysis</h2>
-            <p className="text-xs text-slate-500 mt-1">Compare your performance data against hook-patterns.md. Get KEEP / PROMOTE / DEMOTE recommendations.</p>
+            <h2 className="text-sm font-black uppercase tracking-widest text-themed-muted">AI Strategy Analysis</h2>
+            <p className="text-xs text-themed-tertiary mt-1">Compare your performance data against hook-patterns.md. Get KEEP / PROMOTE / DEMOTE recommendations.</p>
           </div>
           <button
             onClick={() => analyzeMutation.mutate()}
@@ -345,9 +345,9 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
         {aiResult && (
           <div className="space-y-4">
             {/* Summary */}
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Summary</p>
-              <p className="text-sm text-slate-700 leading-relaxed">{aiResult.summary}</p>
+            <div className="bg-surface-hover rounded-xl p-4 border border-themed-subtle">
+              <p className="text-[10px] font-black uppercase tracking-widest text-themed-muted mb-1">Summary</p>
+              <p className="text-sm text-themed-secondary leading-relaxed">{aiResult.summary}</p>
             </div>
 
             {/* Findings grouped by verdict */}
@@ -360,7 +360,7 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
                   <div className="flex items-center gap-2 mb-2">
                     {cfg.icon}
                     <span className={`text-[10px] font-black uppercase tracking-widest ${cfg.color}`}>{cfg.label}</span>
-                    <span className="text-[10px] text-slate-400">({group.length})</span>
+                    <span className="text-[10px] text-themed-muted">({group.length})</span>
                   </div>
                   <div className="space-y-2">
                     {group.map((f: StrategyFinding, i: number) => (
@@ -371,11 +371,11 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
                               <span className={`font-semibold text-sm ${cfg.color}`}>
                                 {HOOK_PATTERN_LABELS[f.hookPattern as keyof typeof HOOK_PATTERN_LABELS] ?? f.hookPattern}
                               </span>
-                              <span className="text-[10px] text-slate-500">{f.platform}</span>
-                              <span className="text-[10px] text-slate-400">{f.confidence}</span>
+                              <span className="text-[10px] text-themed-tertiary">{f.platform}</span>
+                              <span className="text-[10px] text-themed-muted">{f.confidence}</span>
                             </div>
-                            <p className="text-xs text-slate-600 mt-1">{f.evidence}</p>
-                            <p className="text-xs text-slate-700 mt-1.5 font-medium">{f.recommendation}</p>
+                            <p className="text-xs text-themed-secondary mt-1">{f.evidence}</p>
+                            <p className="text-xs text-themed-secondary mt-1.5 font-medium">{f.recommendation}</p>
                           </div>
                         </div>
                       </div>
@@ -400,7 +400,7 @@ export const PerformanceReviewView: React.FC<Props> = ({ onNavigate: _onNavigate
                   <><Save size={14} />Save to Strategy Log</>
                 )}
               </button>
-              <span className="text-xs text-slate-400">{new Date(aiResult.generatedAt).toLocaleString()}</span>
+              <span className="text-xs text-themed-muted">{new Date(aiResult.generatedAt).toLocaleString()}</span>
             </div>
           </div>
         )}

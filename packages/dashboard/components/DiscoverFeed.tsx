@@ -18,6 +18,7 @@ import { VideoGrid } from "./ui/VideoGrid.js";
 import { BulkActionBar } from "./ui/BulkActionBar.js";
 import { VideoBottomSheet } from "./ui/VideoBottomSheet.js";
 import type { CardAction } from "./ui/VideoThumbnailCard.js";
+import { ScrollReveal } from "./ui/animations.js";
 import type { DashboardView, CreatorVideo, TrendingTopic } from "../shared/types.js";
 
 const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
@@ -258,27 +259,30 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 pb-24 md:pb-8">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2.5 mb-1">
-          <Compass size={22} className="text-teal-600" />
-          <h1 className="text-2xl font-bold text-slate-900 font-serif">Discover</h1>
+      <ScrollReveal delay={0}>
+        <div>
+          <div className="flex items-center gap-2.5 mb-1">
+            <Compass size={22} className="text-teal-600" />
+            <h1 className="text-2xl font-bold text-themed font-serif">Discover</h1>
+          </div>
+          <p className="text-sm text-themed-tertiary">
+            Video inspiration from creators you follow and across the web.
+          </p>
         </div>
-        <p className="text-sm text-slate-500">
-          Video inspiration from creators you follow and across the web.
-        </p>
-      </div>
+      </ScrollReveal>
 
       {/* URL input card (hidden on mobile, replaced by FAB) */}
-      <div className="hidden md:block bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+      <ScrollReveal delay={60}>
+      <div className="hidden md:block bg-surface-elevated border border-themed rounded-2xl p-4 shadow-sm">
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-themed-muted" />
             <input
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmitUrl()}
               placeholder="Paste YouTube, TikTok, or Instagram URL..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-slate-50"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-themed text-sm text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-surface-hover"
             />
           </div>
           <button
@@ -301,9 +305,11 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
           <p className="text-xs text-amber-600 mt-2">Video already exists in your feed.</p>
         )}
       </div>
+      </ScrollReveal>
 
       {/* Status tabs + Sort/Filter bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
+      <ScrollReveal delay={120}>
+      <div className="bg-surface-elevated border border-themed rounded-2xl p-4 shadow-sm space-y-4">
         {/* Status tabs */}
         <div className="flex gap-2 flex-wrap">
           {STATUS_TABS.map((tab) => {
@@ -316,7 +322,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
                   inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all
                   ${activeStatus === tab.key
                     ? "bg-teal-600 text-white shadow-sm"
-                    : "bg-slate-50 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-700"
+                    : "bg-surface-hover border border-themed text-themed-secondary hover:border-teal-300 hover:text-teal-700"
                   }
                 `}
               >
@@ -325,7 +331,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
                 <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   activeStatus === tab.key
                     ? "bg-white/20 text-white"
-                    : "bg-slate-200/60 text-slate-500"
+                    : "bg-slate-200/60 text-themed-tertiary"
                 }`}>
                   {count}
                 </span>
@@ -336,7 +342,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
 
         {/* Sort + Date filter */}
         <div className="flex flex-wrap items-center gap-3 text-[11px]">
-          <span className="text-slate-400 font-semibold uppercase tracking-wider">Sort</span>
+          <span className="text-themed-muted font-semibold uppercase tracking-wider">Sort</span>
           <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
             {SORT_OPTIONS.map((opt) => (
               <button
@@ -344,8 +350,8 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
                 onClick={() => setSort(opt.key)}
                 className={`px-3 py-1.5 rounded-md font-bold transition-colors ${
                   sort === opt.key
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-themed shadow-sm"
+                    : "text-themed-tertiary hover:text-themed-secondary"
                 }`}
               >
                 {opt.label}
@@ -355,7 +361,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
 
           <div className="w-px h-5 bg-slate-200" />
 
-          <span className="text-slate-400 font-semibold uppercase tracking-wider">Published</span>
+          <span className="text-themed-muted font-semibold uppercase tracking-wider">Published</span>
           <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
             {DATE_FILTERS.map((opt) => (
               <button
@@ -363,8 +369,8 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
                 onClick={() => setDateRange(opt.key)}
                 className={`px-2.5 py-1.5 rounded-md font-bold transition-colors ${
                   dateRange === opt.key
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-themed shadow-sm"
+                    : "text-themed-tertiary hover:text-themed-secondary"
                 }`}
               >
                 {opt.label}
@@ -373,8 +379,10 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Video grid */}
+      <ScrollReveal delay={180}>
       <VideoGrid
         videos={videos}
         onVideoClick={handleVideoClick}
@@ -389,10 +397,10 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
         emptyState={
           <div className="text-center py-20 space-y-4">
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
-              <Compass size={28} className="text-slate-400" />
+              <Compass size={28} className="text-themed-muted" />
             </div>
-            <h3 className="text-lg font-bold text-slate-700">No videos yet</h3>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
+            <h3 className="text-lg font-bold text-themed-secondary">No videos yet</h3>
+            <p className="text-sm text-themed-muted max-w-sm mx-auto leading-relaxed">
               Paste a YouTube or TikTok URL above, or scan creators from the Watchlist to start building your inspiration feed.
             </p>
             <button
@@ -404,6 +412,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
           </div>
         }
       />
+      </ScrollReveal>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
@@ -425,10 +434,10 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
         <section className="pt-2">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={16} className="text-violet-500" />
-            <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-themed-tertiary">
               Trending Topics
             </h2>
-            <span className="text-[10px] text-slate-400 font-medium">from weekly intelligence digest</span>
+            <span className="text-[10px] text-themed-muted font-medium">from weekly intelligence digest</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {trending.map((topic, i) => {
@@ -481,14 +490,14 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
             <h3 className="text-sm font-bold text-slate-800 mb-3">Add Video</h3>
             <div className="flex gap-3">
               <div className="relative flex-1">
-                <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-themed-muted" />
                 <input
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { handleSubmitUrl(); setShowUrlModal(false); } }}
                   placeholder="Paste URL..."
                   autoFocus
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-slate-50"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-themed text-sm text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-surface-hover"
                 />
               </div>
               <button

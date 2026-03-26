@@ -68,6 +68,7 @@ import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+import { ScrollReveal } from "./ui/animations.js";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -166,20 +167,20 @@ const INSIGHT_STYLES: Record<string, { icon: React.ReactNode; border: string; bg
 const CONFIDENCE_STYLES: Record<string, string> = {
   high: "bg-emerald-100 text-emerald-700",
   medium: "bg-amber-100 text-amber-700",
-  low: "bg-slate-100 text-slate-600",
+  low: "bg-surface-hover text-themed-secondary",
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
   High: "bg-rose-100 text-rose-700",
   Medium: "bg-amber-100 text-amber-700",
-  Low: "bg-slate-100 text-slate-600",
+  Low: "bg-surface-hover text-themed-secondary",
 };
 
 const PLATFORM_PILL_COLORS: Record<string, string> = {
   IG: "bg-pink-100 text-pink-700",
   TikTok: "bg-slate-800 text-white",
   FB: "bg-blue-100 text-blue-700",
-  All: "bg-slate-100 text-slate-700",
+  All: "bg-surface-hover text-themed-secondary",
   Shorts: "bg-red-100 text-red-700",
 };
 
@@ -187,7 +188,7 @@ function platformPillClass(platform: string): string {
   for (const [key, cls] of Object.entries(PLATFORM_PILL_COLORS)) {
     if (platform.toLowerCase().includes(key.toLowerCase())) return cls;
   }
-  return "bg-slate-100 text-slate-600";
+  return "bg-surface-hover text-themed-secondary";
 }
 
 // Audience Segment Analytics Component
@@ -214,38 +215,38 @@ const AudienceAnalytics: React.FC = () => {
   if (audiences.length === 0) return null;
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+    <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center justify-between w-full text-left"
       >
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
           Performance by Audience
         </p>
-        {expanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+        {expanded ? <ChevronUp size={14} className="text-themed-muted" /> : <ChevronDown size={14} className="text-themed-muted" />}
       </button>
 
       {expanded && (
         <div className="mt-4">
           <div className="space-y-3">
             {audiences.map((a) => (
-              <div key={a.audience} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+              <div key={a.audience} className="flex items-center gap-3 p-3 bg-surface-hover rounded-xl">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{a.label}</p>
-                  <p className="text-[10px] text-slate-500">{a.videoCount} video{a.videoCount !== 1 ? "s" : ""}</p>
+                  <p className="text-sm font-medium text-themed truncate">{a.label}</p>
+                  <p className="text-[10px] text-themed-tertiary">{a.videoCount} video{a.videoCount !== 1 ? "s" : ""}</p>
                 </div>
                 <div className="flex items-center gap-4 text-right shrink-0">
                   <div>
-                    <p className="text-xs font-bold text-slate-700 tabular-nums">{a.avgViews.toLocaleString()}</p>
-                    <p className="text-[9px] text-slate-400">avg views</p>
+                    <p className="text-xs font-bold text-themed-secondary tabular-nums">{a.avgViews.toLocaleString()}</p>
+                    <p className="text-[9px] text-themed-muted">avg views</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-teal-600 tabular-nums">{a.engagementRate}%</p>
-                    <p className="text-[9px] text-slate-400">eng rate</p>
+                    <p className="text-[9px] text-themed-muted">eng rate</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-violet-600 tabular-nums">{a.saveRate}%</p>
-                    <p className="text-[9px] text-slate-400">save rate</p>
+                    <p className="text-[9px] text-themed-muted">save rate</p>
                   </div>
                 </div>
               </div>
@@ -583,20 +584,21 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       {/* ================================================================ */}
 
       {/* Header */}
+      <ScrollReveal delay={0}>
       <header className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Search size={20} className="text-teal-600" />
-              <h2 className="text-lg font-serif font-bold text-slate-900">Content Intelligence</h2>
+              <h2 className="text-lg font-serif font-bold text-themed">Content Intelligence</h2>
               {intel && (
-                <span className="flex items-center gap-1 ml-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <span className="flex items-center gap-1 ml-2 text-[10px] font-bold text-themed-muted uppercase tracking-widest">
                   <Calendar size={10} />
                   {intel.date}
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-themed-tertiary">
               Market trends, social signals, hook patterns, and strategic opportunities.
             </p>
             {/* Data source counts */}
@@ -608,7 +610,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   </span>
                 )}
                 {counts.xPosts > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-700">
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-themed-secondary">
                     <Hash size={10} /> {counts.xPosts} X posts
                   </span>
                 )}
@@ -623,7 +625,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   </span>
                 )}
                 {(counts as Record<string, number>).tiktokResults > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-800">
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-themed">
                     <Hash size={10} /> {(counts as Record<string, number>).tiktokResults} TikTok
                   </span>
                 )}
@@ -641,8 +643,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0 border",
               insightsLoading
-                ? "border-violet-200 text-violet-400 cursor-wait bg-white"
-                : "border-violet-300 text-violet-600 bg-white hover:bg-violet-50",
+                ? "border-violet-200 text-violet-400 cursor-wait bg-surface-elevated"
+                : "border-violet-300 text-violet-600 bg-surface-elevated hover:bg-violet-50",
             )}
             title="Synthesize existing research data into strategic recommendations"
           >
@@ -652,14 +654,14 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         </div>
 
         {/* Research Trigger */}
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+        <div className="bg-surface-hover border border-themed rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Radio size={14} className="text-teal-600" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               Research
             </p>
             {research && (
-              <span className="text-[10px] text-slate-400 ml-auto">
+              <span className="text-[10px] text-themed-muted ml-auto">
                 Last: "{research.topic}" ({new Date(research.generated_at).toLocaleDateString()})
               </span>
             )}
@@ -670,7 +672,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               value={researchTopic}
               onChange={(e) => setResearchTopic(e.target.value)}
               placeholder="Topic to research (e.g. chiropractic content marketing)"
-              className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 px-3 py-2 border border-themed rounded-xl text-sm bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-teal-500"
               disabled={researchRunning}
             />
             <button
@@ -693,12 +695,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           )}
         </div>
       </header>
+      </ScrollReveal>
 
       {/* Intelligence Cards */}
       {intelLoading ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-12 text-center">
           <Loader2 size={32} className="text-teal-500 animate-spin mx-auto mb-3" />
-          <p className="text-sm text-slate-500">Loading market intelligence...</p>
+          <p className="text-sm text-themed-tertiary">Loading market intelligence...</p>
         </div>
       ) : intelError ? (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-3">
@@ -711,10 +714,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       ) : intel ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Trending Topics */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Flame size={14} className="text-orange-500" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Trending Topics
               </p>
             </div>
@@ -722,8 +725,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               {intel.trendingTopics.map((topic, i) => (
                 <div key={i} className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{topic.topic}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{topic.context}</p>
+                    <p className="text-sm font-medium text-themed">{topic.topic}</p>
+                    <p className="text-xs text-themed-tertiary mt-0.5">{topic.context}</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {topic.platforms.map((p) => (
@@ -743,24 +746,24 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* Hook Patterns */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <MessageSquareQuote size={14} className="text-violet-500" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Hook Patterns
               </p>
             </div>
             {intel.hookPatterns.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-xs text-slate-400">No hook patterns found in this research digest.</p>
-                <p className="text-[10px] text-slate-300 mt-1">Run research above or use /viral-scout to surface hook patterns.</p>
+                <p className="text-xs text-themed-muted">No hook patterns found in this research digest.</p>
+                <p className="text-[10px] text-themed-muted mt-1">Run research above or use /viral-scout to surface hook patterns.</p>
               </div>
             ) : (
               <div className="space-y-2.5">
                 {intel.hookPatterns.map((hook, i) => (
                   <div key={i}>
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{hook.type}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-themed-muted">{hook.type}</span>
                       <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", platformPillClass(hook.platform))}>
                         {hook.platform}
                       </span>
@@ -768,7 +771,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                         {hook.priority}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700 italic">"{hook.text}"</p>
+                    <p className="text-sm text-themed-secondary italic">"{hook.text}"</p>
                   </div>
                 ))}
               </div>
@@ -776,28 +779,28 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* Content Gaps */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Target size={14} className="text-amber-500" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Content Gaps
               </p>
             </div>
             <div className="space-y-3">
               {intel.contentGaps.map((gap, i) => (
                 <div key={i}>
-                  <p className="text-sm font-medium text-slate-900">{gap.area}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{gap.description}</p>
+                  <p className="text-sm font-medium text-themed">{gap.area}</p>
+                  <p className="text-xs text-themed-tertiary mt-0.5">{gap.description}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Format Trends */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <LayoutGrid size={14} className="text-teal-500" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Format Trends
               </p>
             </div>
@@ -811,10 +814,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     {ft.format}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-themed">
                       {FORMATS[ft.format as keyof typeof FORMATS]?.name ?? ft.format}
                     </p>
-                    <p className="text-xs text-slate-500">{ft.trend}</p>
+                    <p className="text-xs text-themed-tertiary">{ft.trend}</p>
                   </div>
                 </div>
               ))}
@@ -822,10 +825,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-          <Search size={48} className="text-slate-300 mx-auto mb-4" />
-          <p className="text-lg font-serif text-slate-700">No intelligence data yet</p>
-          <p className="text-sm text-slate-500 mt-2">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-12 text-center">
+          <Search size={48} className="text-themed-muted mx-auto mb-4" />
+          <p className="text-lg font-serif text-themed-secondary">No intelligence data yet</p>
+          <p className="text-sm text-themed-tertiary mt-2">
             Run the Content Intelligence workflow or use Research above to gather market data.
           </p>
         </div>
@@ -839,10 +842,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <Globe size={14} className="text-teal-500" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               Social Signals
             </p>
-            <span className="text-[10px] text-slate-400 ml-2">
+            <span className="text-[10px] text-themed-muted ml-2">
               "{research.topic}" ({research.range.from} to {research.range.to})
             </span>
           </div>
@@ -850,10 +853,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Reddit Signals */}
             {research.reddit.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Hash size={14} className="text-orange-500" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Reddit ({research.reddit.length})
                   </p>
                 </div>
@@ -868,20 +871,20 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                               "px-1.5 py-0.5 rounded text-[9px] font-bold",
                               thread.score >= 70 ? "bg-emerald-100 text-emerald-700"
                                 : thread.score >= 40 ? "bg-amber-100 text-amber-700"
-                                : "bg-slate-100 text-slate-600",
+                                : "bg-surface-hover text-themed-secondary",
                             )}>
                               {thread.score}
                             </span>
                           </div>
-                          <p className="text-sm text-slate-900 leading-tight">{thread.title}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{thread.why_relevant}</p>
+                          <p className="text-sm text-themed leading-tight">{thread.title}</p>
+                          <p className="text-xs text-themed-tertiary mt-0.5">{thread.why_relevant}</p>
                           {thread.comment_insights.length > 0 && (
                             <p className="text-xs text-teal-600 mt-1 italic">
                               "{thread.comment_insights[0]}"
                             </p>
                           )}
                         </div>
-                        <a href={thread.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                        <a href={thread.url} target="_blank" rel="noopener noreferrer" className="text-themed-muted hover:text-teal-500 shrink-0 mt-1">
                           <ExternalLink size={12} />
                         </a>
                       </div>
@@ -893,10 +896,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
             {/* X Signals */}
             {research.x.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[14px] font-black text-slate-700">X</span>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <span className="text-[14px] font-black text-themed-secondary">X</span>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Posts ({research.x.length})
                   </p>
                 </div>
@@ -906,26 +909,26 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[9px] font-bold text-slate-600">@{post.author_handle}</span>
+                            <span className="text-[9px] font-bold text-themed-secondary">@{post.author_handle}</span>
                             <span className={cn(
                               "px-1.5 py-0.5 rounded text-[9px] font-bold",
                               post.score >= 70 ? "bg-emerald-100 text-emerald-700"
                                 : post.score >= 40 ? "bg-amber-100 text-amber-700"
-                                : "bg-slate-100 text-slate-600",
+                                : "bg-surface-hover text-themed-secondary",
                             )}>
                               {post.score}
                             </span>
                             {post.engagement && (
-                              <span className="text-[9px] text-slate-400">
+                              <span className="text-[9px] text-themed-muted">
                                 {post.engagement.likes ? `${post.engagement.likes} likes` : ""}
                                 {post.engagement.reposts ? ` ${post.engagement.reposts} reposts` : ""}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-slate-900 leading-tight">{post.text.slice(0, 150)}{post.text.length > 150 ? "..." : ""}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{post.why_relevant}</p>
+                          <p className="text-sm text-themed leading-tight">{post.text.slice(0, 150)}{post.text.length > 150 ? "..." : ""}</p>
+                          <p className="text-xs text-themed-tertiary mt-0.5">{post.why_relevant}</p>
                         </div>
-                        <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                        <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-themed-muted hover:text-teal-500 shrink-0 mt-1">
                           <ExternalLink size={12} />
                         </a>
                       </div>
@@ -937,10 +940,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
             {/* Web Results (if no Reddit/X but web exists) */}
             {research.reddit.length === 0 && research.x.length === 0 && research.web.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 md:col-span-2">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-5 md:col-span-2">
                 <div className="flex items-center gap-2 mb-3">
                   <Globe size={14} className="text-sky-500" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Web Results ({research.web.length})
                   </p>
                 </div>
@@ -951,10 +954,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-[9px] font-bold text-sky-600">{result.source_domain}</span>
                         </div>
-                        <p className="text-sm text-slate-900 leading-tight">{result.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{result.snippet.slice(0, 120)}</p>
+                        <p className="text-sm text-themed leading-tight">{result.title}</p>
+                        <p className="text-xs text-themed-tertiary mt-0.5">{result.snippet.slice(0, 120)}</p>
                       </div>
-                      <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-teal-500 shrink-0 mt-1">
+                      <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-themed-muted hover:text-teal-500 shrink-0 mt-1">
                         <ExternalLink size={12} />
                       </a>
                     </div>
@@ -968,10 +971,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           {(research.reddit_error || research.x_error) && (
             <div className="mt-2 flex gap-4">
               {research.reddit_error && (
-                <p className="text-[10px] text-amber-500">Reddit: {research.reddit_error.slice(0, 80)}</p>
+                <p className="text-[10px] text-themed-muted">Reddit: temporarily unavailable</p>
               )}
               {research.x_error && (
-                <p className="text-[10px] text-amber-500">X: {research.x_error.slice(0, 80)}</p>
+                <p className="text-[10px] text-themed-muted">X: temporarily unavailable</p>
               )}
             </div>
           )}
@@ -983,13 +986,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-violet-500" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               AI Strategy Analysis
             </p>
           </div>
 
           {insightsLoading && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+            <div className="bg-surface-elevated border border-themed rounded-2xl p-8 text-center">
               <Loader2 size={24} className="text-violet-500 animate-spin mx-auto mb-3" />
               <p className="text-sm text-violet-600">Analyzing market intelligence and building strategy...</p>
             </div>
@@ -1004,8 +1007,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           {insightsData && !insightsLoading && (
             <div className="space-y-4">
               {/* Summary */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-4">
-                <p className="text-sm text-slate-700">{insightsData.summary}</p>
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+                <p className="text-sm text-themed-secondary">{insightsData.summary}</p>
               </div>
 
               {/* Insight Cards */}
@@ -1020,8 +1023,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           {insight.type}
                         </span>
                       </div>
-                      <p className="font-medium text-slate-900 text-sm">{insight.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">{insight.detail}</p>
+                      <p className="font-medium text-themed text-sm">{insight.title}</p>
+                      <p className="text-xs text-themed-tertiary mt-1">{insight.detail}</p>
                     </div>
                   );
                 })}
@@ -1032,16 +1035,16 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 <div>
                   <div className="flex items-center gap-2 mb-3 mt-4">
                     <Zap size={14} className="text-amber-500" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                       Content Recommendations
                     </p>
                   </div>
                   <div className="space-y-2">
                     {insightsData.recommendations.map((rec, i) => (
-                      <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4 flex items-start justify-between gap-3">
+                      <div key={i} className="bg-surface-elevated border border-themed rounded-2xl p-4 flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 text-sm">{rec.ideaTopic}</p>
-                          <p className="text-xs text-slate-500 mt-1">{rec.reason}</p>
+                          <p className="font-medium text-themed text-sm">{rec.ideaTopic}</p>
+                          <p className="text-xs text-themed-tertiary mt-1">{rec.reason}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <span
                               className="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black text-white"
@@ -1049,7 +1052,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                             >
                               {rec.suggestedFormat}
                             </span>
-                            <span className="text-[10px] font-bold text-slate-400">
+                            <span className="text-[10px] font-bold text-themed-muted">
                               {rec.suggestedPlatform.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                             </span>
                             <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold", CONFIDENCE_STYLES[rec.confidenceScore] ?? CONFIDENCE_STYLES.medium)}>
@@ -1088,24 +1091,24 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       {/* BUSINESS OUTCOMES ATTRIBUTION                                    */}
       {/* ================================================================ */}
 
-      <section className="border border-slate-200 rounded-2xl p-5 bg-white">
+      <section className="border border-themed rounded-2xl p-5 bg-surface-elevated">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Users size={14} className="text-teal-600" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Business Outcomes</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Business Outcomes</p>
             </div>
-            <p className="text-sm text-slate-600 mb-1">
+            <p className="text-sm text-themed-secondary mb-1">
               When a patient says they found you on social, tap to log it.
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-slate-900">
+              <span className="text-3xl font-bold text-themed">
                 {attributionData?.attributions.find((a) => a.monthKey === new Date().toISOString().slice(0, 7))?.count ?? 0}
               </span>
-              <span className="text-sm text-slate-400">this month</span>
-              <span className="text-slate-300 mx-1">|</span>
-              <span className="text-sm font-semibold text-slate-600">{attributionData?.total ?? 0}</span>
-              <span className="text-sm text-slate-400">all-time</span>
+              <span className="text-sm text-themed-muted">this month</span>
+              <span className="text-themed-muted mx-1">|</span>
+              <span className="text-sm font-semibold text-themed-secondary">{attributionData?.total ?? 0}</span>
+              <span className="text-sm text-themed-muted">all-time</span>
             </div>
           </div>
           <button
@@ -1115,7 +1118,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               "shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 transition-all",
               tappedAttribution
                 ? "bg-teal-50 border-teal-300 text-teal-700"
-                : "bg-white border-slate-200 text-slate-600 hover:border-teal-300 hover:bg-teal-50 active:scale-95",
+                : "bg-surface-elevated border-themed text-themed-secondary hover:border-teal-300 hover:bg-teal-50 active:scale-95",
             )}
           >
             {tappedAttribution ? (
@@ -1137,10 +1140,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       {/* YOUTUBE AUTO-SYNC                                                */}
       {/* ================================================================ */}
 
-      <section className="border border-slate-200 rounded-2xl p-5 bg-white">
+      <section className="border border-themed rounded-2xl p-5 bg-surface-elevated">
         <div className="flex items-center gap-2 mb-3">
           <Youtube size={14} className="text-rose-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">YouTube Auto-Sync</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">YouTube Auto-Sync</p>
           {ytStatus?.connected && (
             <span className="ml-auto text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
               <CheckCircle2 size={10} />
@@ -1152,10 +1155,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         {!ytStatus?.connected ? (
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm text-slate-600 mb-1">
+              <p className="text-sm text-themed-secondary mb-1">
                 Connect your YouTube channel to pull views, likes, and comments automatically.
               </p>
-              <p className="text-xs text-slate-400">No manual metric entry for YouTube Shorts or Long-form.</p>
+              <p className="text-xs text-themed-muted">No manual metric entry for YouTube Shorts or Long-form.</p>
             </div>
             <a
               href="/api/metrics/youtube/auth"
@@ -1169,8 +1172,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-800">{ytStatus.channelName}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-semibold text-themed">{ytStatus.channelName}</p>
+                <p className="text-xs text-themed-muted">
                   {ytStatus.linkedVideos ?? 0} videos linked
                   {ytStatus.connectedAt && ` · connected ${new Date(ytStatus.connectedAt).toLocaleDateString()}`}
                 </p>
@@ -1178,7 +1181,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               <button
                 onClick={() => ytDisconnectMutation.mutate()}
                 disabled={ytDisconnectMutation.isPending}
-                className="text-[10px] text-slate-400 hover:text-rose-500 transition-colors underline"
+                className="text-[10px] text-themed-muted hover:text-rose-500 transition-colors underline"
               >
                 Disconnect
               </button>
@@ -1188,7 +1191,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               <button
                 onClick={() => ytMatchMutation.mutate()}
                 disabled={ytMatchMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-700 hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-themed text-[11px] font-bold uppercase tracking-wider text-themed-secondary hover:border-teal-300 hover:text-teal-700 transition-colors disabled:opacity-50"
               >
                 {ytMatchMutation.isPending ? (
                   <Loader2 size={11} className="animate-spin" />
@@ -1222,10 +1225,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             )}
 
             {ytMatchResult && (
-              <div className="border border-slate-100 rounded-xl overflow-hidden">
+              <div className="border border-themed-subtle rounded-xl overflow-hidden">
                 <button
                   onClick={() => setYtMatchExpanded((x) => !x)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-surface-hover text-xs font-semibold text-themed-secondary hover:bg-surface-hover transition-colors"
                 >
                   <span>
                     Matched {ytMatchResult.matched} of {ytMatchResult.channelVideosFound} channel videos
@@ -1236,9 +1239,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   <div className="px-3 py-2 max-h-48 overflow-y-auto space-y-1">
                     {ytMatchResult.matches.map((m) => (
                       <div key={m.youtubeVideoId} className="flex items-start justify-between gap-2">
-                        <p className="text-xs text-slate-600 leading-snug flex-1 line-clamp-1">{m.youtubeTitle}</p>
+                        <p className="text-xs text-themed-secondary leading-snug flex-1 line-clamp-1">{m.youtubeTitle}</p>
                         <span className="shrink-0 text-[10px] font-bold text-teal-700 font-mono">{m.videoCode}</span>
-                        <span className="shrink-0 text-[10px] text-slate-400">{m.matchScore}%</span>
+                        <span className="shrink-0 text-[10px] text-themed-muted">{m.matchScore}%</span>
                       </div>
                     ))}
                   </div>
@@ -1253,11 +1256,11 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       {/* PERFORMANCE METRICS SECTION                                      */}
       {/* ================================================================ */}
 
-      <div className="border-t border-slate-200 pt-6">
+      <div className="border-t border-themed pt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-slate-400" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <TrendingUp size={16} className="text-themed-muted" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               Performance Tracking
             </p>
           </div>
@@ -1265,7 +1268,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             {hasPerformanceData && (
               <button
                 onClick={() => setShowPerformance(!showPerformance)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-themed-tertiary hover:text-themed-secondary transition-colors"
               >
                 {showPerformance ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 {showPerformance ? "Collapse" : "Expand"}
@@ -1277,7 +1280,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
                 syncing || runNowRunning
-                  ? "bg-slate-100 text-slate-400 cursor-wait"
+                  ? "bg-surface-hover text-themed-muted cursor-wait"
                   : "bg-teal-600 text-white hover:bg-teal-700",
               )}
             >
@@ -1290,7 +1293,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
                 runNowRunning
-                  ? "bg-slate-100 text-slate-400 cursor-wait"
+                  ? "bg-surface-hover text-themed-muted cursor-wait"
                   : "bg-emerald-600 text-white hover:bg-emerald-700",
               )}
               title="Trigger n8n workflow now and sync results"
@@ -1300,7 +1303,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             </button>
             <button
               onClick={() => setShowEntryForm(!showEntryForm)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-widest hover:border-slate-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-elevated border border-themed text-themed-tertiary rounded-full text-[10px] font-bold uppercase tracking-widest hover:border-themed transition-colors"
             >
               {showEntryForm ? <X size={12} /> : <Plus size={12} />}
               Manual
@@ -1319,9 +1322,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
         {showEntryForm && (
           <form
             onSubmit={handleSubmitMetric}
-            className="bg-white border border-slate-200 rounded-2xl p-5 mt-4"
+            className="bg-surface-elevated border border-themed rounded-2xl p-5 mt-4"
           >
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-4">
               Log Performance
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1330,13 +1333,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 placeholder="Video code (e.g. P1)"
                 value={formCode}
                 onChange={(e) => setFormCode(e.target.value)}
-                className="col-span-2 md:col-span-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="col-span-2 md:col-span-1 px-3 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               />
               <select
                 value={formPlatform}
                 onChange={(e) => setFormPlatform(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 {PLATFORMS.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
@@ -1346,32 +1349,32 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
               <div className="flex items-center gap-1">
-                <Eye size={14} className="text-slate-400" />
-                <input type="number" placeholder="Views" value={formViews} onChange={(e) => setFormViews(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <Eye size={14} className="text-themed-muted" />
+                <input type="number" placeholder="Views" value={formViews} onChange={(e) => setFormViews(e.target.value)} className="w-full px-2 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <div className="flex items-center gap-1">
-                <Heart size={14} className="text-slate-400" />
-                <input type="number" placeholder="Likes" value={formLikes} onChange={(e) => setFormLikes(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <Heart size={14} className="text-themed-muted" />
+                <input type="number" placeholder="Likes" value={formLikes} onChange={(e) => setFormLikes(e.target.value)} className="w-full px-2 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <div className="flex items-center gap-1">
-                <Bookmark size={14} className="text-slate-400" />
-                <input type="number" placeholder="Saves" value={formSaves} onChange={(e) => setFormSaves(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <Bookmark size={14} className="text-themed-muted" />
+                <input type="number" placeholder="Saves" value={formSaves} onChange={(e) => setFormSaves(e.target.value)} className="w-full px-2 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <div className="flex items-center gap-1">
-                <Share2 size={14} className="text-slate-400" />
-                <input type="number" placeholder="Shares" value={formShares} onChange={(e) => setFormShares(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <Share2 size={14} className="text-themed-muted" />
+                <input type="number" placeholder="Shares" value={formShares} onChange={(e) => setFormShares(e.target.value)} className="w-full px-2 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <div className="flex items-center gap-1">
-                <MessageCircle size={14} className="text-slate-400" />
-                <input type="number" placeholder="Comments" value={formComments} onChange={(e) => setFormComments(e.target.value)} className="w-full px-2 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <MessageCircle size={14} className="text-themed-muted" />
+                <input type="number" placeholder="Comments" value={formComments} onChange={(e) => setFormComments(e.target.value)} className="w-full px-2 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
               </div>
               <select
                 value={formHookPattern}
                 onChange={(e) => setFormHookPattern(e.target.value)}
-                className="col-span-2 md:col-span-2 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-600"
+                className="col-span-2 md:col-span-2 px-3 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-themed-secondary"
               >
                 <option value="">Hook pattern (optional)</option>
                 {HOOK_PATTERNS.map((p) => (
@@ -1390,7 +1393,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
         {/* No performance data message */}
         {!hasPerformanceData && !showEntryForm && (
-          <p className="text-xs text-slate-400 mt-3">
+          <p className="text-xs text-themed-muted mt-3">
             Performance tracking will appear here once you start publishing content. Use Sync after configuring your platform API credentials.
           </p>
         )}
@@ -1400,9 +1403,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           <div className="space-y-6 mt-4">
             {/* Trend Chart */}
             {trends.length > 1 && (
-              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+              <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Performance Over Time
                   </p>
                   <div className="flex gap-1.5">
@@ -1414,7 +1417,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
                           trendPlatform === p.value
                             ? "bg-teal-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                            : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                         )}
                       >
                         {p.label}
@@ -1439,7 +1442,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     <Line type="monotone" dataKey="views" stroke={TREND_LINE_COLORS.views} strokeWidth={2} dot={false} name="Views" />
                     <Line type="monotone" dataKey="saves" stroke={TREND_LINE_COLORS.saves} strokeWidth={2} dot={false} name="Saves" />
                     <Line type="monotone" dataKey="likes" stroke={TREND_LINE_COLORS.likes} strokeWidth={1.5} dot={false} name="Likes" />
-                    <Legend iconType="circle" iconSize={8} formatter={(value: string) => <span className="text-xs text-slate-600">{value}</span>} />
+                    <Legend iconType="circle" iconSize={8} formatter={(value: string) => <span className="text-xs text-themed-secondary">{value}</span>} />
                   </LineChart>
                 </ResponsiveContainer>
               </section>
@@ -1447,20 +1450,20 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
             {/* Top Performers */}
             <section>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
                 Top Performers
               </p>
-              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+              <div className="bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100">
-                        <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Video</th>
-                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Views</th>
-                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Saves</th>
-                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Eng. Rate</th>
-                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Save Rate</th>
-                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                      <tr className="border-b border-themed-subtle">
+                        <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Video</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Views</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Saves</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Eng. Rate</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Save Rate</th>
+                        <th className="text-right px-3 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">
                           <FeatureHint id="outlier-score" content={FEATURE_HINTS["outlier-score"].content} side="top">
                             <span>Outlier</span>
                           </FeatureHint>
@@ -1478,27 +1481,27 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           ? "bg-emerald-100 text-emerald-700"
                           : null;
                         return (
-                        <tr key={p.videoCode} className="border-b border-slate-50 hover:bg-slate-50">
+                        <tr key={p.videoCode} className="border-b border-slate-50 hover:bg-surface-hover">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               {p.format && (
                                 <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: FORMAT_COLORS[p.format] ?? "#94a3b8" }} />
                               )}
-                              <span className="font-medium text-slate-900">{p.videoCode}</span>
-                              <span className="text-slate-500 truncate max-w-[200px]">{p.title}</span>
+                              <span className="font-medium text-themed">{p.videoCode}</span>
+                              <span className="text-themed-tertiary truncate max-w-[200px]">{p.title}</span>
                             </div>
                           </td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalViews ?? 0).toLocaleString()}</td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0).toLocaleString()}</td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{p.engagementRate > 0 ? `${p.engagementRate}%` : "—"}</td>
-                          <td className="text-right px-3 py-3 text-slate-700 tabular-nums">{(p.totalSaves ?? 0) > 0 ? `${p.saveRate}%` : "—"}</td>
+                          <td className="text-right px-3 py-3 text-themed-secondary tabular-nums">{(p.totalViews ?? 0).toLocaleString()}</td>
+                          <td className="text-right px-3 py-3 text-themed-secondary tabular-nums">{(p.totalSaves ?? 0).toLocaleString()}</td>
+                          <td className="text-right px-3 py-3 text-themed-secondary tabular-nums">{p.engagementRate > 0 ? `${p.engagementRate}%` : "—"}</td>
+                          <td className="text-right px-3 py-3 text-themed-secondary tabular-nums">{(p.totalSaves ?? 0) > 0 ? `${p.saveRate}%` : "—"}</td>
                           <td className="text-right px-3 py-3">
                             {outlierCls ? (
                               <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${outlierCls}`}>
                                 {outlier}x
                               </span>
                             ) : (
-                              <span className="text-slate-300 text-[10px]">—</span>
+                              <span className="text-themed-muted text-[10px]">—</span>
                             )}
                           </td>
                         </tr>
@@ -1512,13 +1515,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+              <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Avg Views by Format
                   </p>
                   {rawFormats.length < 3 && (
-                    <span className="text-[10px] text-slate-400 italic">Publish more formats to compare</span>
+                    <span className="text-[10px] text-themed-muted italic">Publish more formats to compare</span>
                   )}
                 </div>
                 <ResponsiveContainer width="100%" height={240}>
@@ -1538,7 +1541,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   const topFmt = [...formats].filter((f) => f.avgViews > 0).sort((a, b) => b.avgViews - a.avgViews)[0];
                   if (!topFmt) return null;
                   return (
-                    <p className="text-[11px] text-slate-500 mt-3 italic">
+                    <p className="text-[11px] text-themed-tertiary mt-3 italic">
                       Format {topFmt.format} leads with {topFmt.avgViews.toLocaleString()} avg views. Prioritize more {FORMATS[topFmt.format as keyof typeof FORMATS]?.name ?? topFmt.format} videos to maximize reach.
                     </p>
                   );
@@ -1546,8 +1549,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
               </section>
 
               {platforms.length > 0 && (
-                <section className="bg-white border border-slate-200 rounded-2xl p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+                <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-4">
                     Views by Platform
                   </p>
                   <ResponsiveContainer width="100%" height={240}>
@@ -1569,7 +1572,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                         ))}
                       </Pie>
                       <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Views"]} />
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value: string) => <span className="text-xs text-slate-600">{value}</span>} />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value: string) => <span className="text-xs text-themed-secondary">{value}</span>} />
                     </PieChart>
                   </ResponsiveContainer>
                 </section>
@@ -1577,13 +1580,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* Engagement Rate by Format */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-5">
+            <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                   Engagement & Save Rate by Format
                 </p>
                 {rawFormats.length < 3 && (
-                  <span className="text-[10px] text-slate-400 italic">Publish more formats to compare</span>
+                  <span className="text-[10px] text-themed-muted italic">Publish more formats to compare</span>
                 )}
               </div>
               <ResponsiveContainer width="100%" height={240}>
@@ -1603,15 +1606,15 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                 const note = topSave
                   ? `Format ${topSave.format} drives the most saves (${topSave.saveRate}%) — ideal for evergreen content worth bookmarking.`
                   : `Format ${topEng!.format} has your highest engagement rate (${topEng!.engagementRate}%) — audiences respond well to this format.`;
-                return <p className="text-[11px] text-slate-500 mt-3 italic">{note}</p>;
+                return <p className="text-[11px] text-themed-tertiary mt-3 italic">{note}</p>;
               })()}
             </section>
 
             {/* Production Velocity */}
             {velocityData && velocityData.transitions.length > 0 && (
-              <section className="bg-white border border-slate-200 rounded-2xl p-5">
+              <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Production Velocity
                   </p>
                   <div className="flex items-center gap-3">
@@ -1619,7 +1622,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                       <span className="text-xs text-emerald-600 font-bold">{velocityData.completedVideos} published</span>
                     )}
                     {velocityData.avgDaysTotal > 0 && (
-                      <span className="text-xs text-slate-500">{velocityData.avgDaysTotal}d avg total</span>
+                      <span className="text-xs text-themed-tertiary">{velocityData.avgDaysTotal}d avg total</span>
                     )}
                   </div>
                 </div>
@@ -1659,7 +1662,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     Bottleneck at {velocityData.bottleneck.stage} ({velocityData.bottleneck.avgDays}d avg). Consider a focused session to clear this stage.
                   </p>
                 ) : velocityData.avgDaysTotal > 0 ? (
-                  <p className="text-[11px] text-slate-500 mt-3 italic">
+                  <p className="text-[11px] text-themed-tertiary mt-3 italic">
                     Average {velocityData.avgDaysTotal}d from start to publish. Batch sessions reduce this significantly.
                   </p>
                 ) : null}
@@ -1673,9 +1676,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Content Mix Compliance */}
               {contentMixData && contentMixData.totalPublished > 0 && (
-                <section className="bg-white border border-slate-200 rounded-2xl p-5">
+                <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                       Content Mix
                     </p>
                     {contentMixData.compliant ? (
@@ -1695,12 +1698,12 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                       return (
                         <div key={type}>
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="font-medium text-slate-700">{label}</span>
-                            <span className="text-slate-500">
+                            <span className="font-medium text-themed-secondary">{label}</span>
+                            <span className="text-themed-tertiary">
                               {Math.round(actual * 100)}% / {Math.round(target * 100)}%
                             </span>
                           </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
                             <div
                               className={cn(
                                 "h-full rounded-full transition-all",
@@ -1712,15 +1715,15 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                         </div>
                       );
                     })}
-                    <p className="text-[10px] text-slate-400 mt-2">{contentMixData.totalPublished} published videos</p>
+                    <p className="text-[10px] text-themed-muted mt-2">{contentMixData.totalPublished} published videos</p>
                   </div>
                 </section>
               )}
 
               {/* Platform Cadence */}
               {cadenceData && cadenceData.overall.length > 0 && (
-                <section className="bg-white border border-slate-200 rounded-2xl p-5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
+                <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-4">
                     Platform Cadence
                   </p>
                   <div className="space-y-2.5">
@@ -1728,9 +1731,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                       const label = p.platform.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
                       return (
                         <div key={p.platform} className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-slate-700 w-32 truncate">{label}</span>
+                          <span className="text-xs font-medium text-themed-secondary w-32 truncate">{label}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-slate-500">
+                            <span className="text-xs tabular-nums text-themed-tertiary">
                               {p.avgPerWeek}/{p.target} per week
                             </span>
                             {p.onTrack ? (
@@ -1746,12 +1749,12 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     })}
                   </div>
                   {cadenceData.weeks.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-slate-100">
-                      <p className="text-[10px] font-bold text-slate-400 mb-2">Last 4 Weeks</p>
+                    <div className="mt-4 pt-3 border-t border-themed-subtle">
+                      <p className="text-[10px] font-bold text-themed-muted mb-2">Last 4 Weeks</p>
                       <div className="grid grid-cols-4 gap-1 text-[10px]">
                         {cadenceData.weeks.map((w) => (
                           <div key={w.weekStart} className="text-center">
-                            <p className="text-slate-400 truncate">{w.weekLabel.split(" - ")[0]}</p>
+                            <p className="text-themed-muted truncate">{w.weekLabel.split(" - ")[0]}</p>
                             {w.platforms.map((p) => (
                               <div
                                 key={p.platform}

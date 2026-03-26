@@ -61,7 +61,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 const PLATFORM_COLORS: Record<string, string> = {
   instagram_reels: "bg-pink-50 text-pink-700 border-pink-200",
-  tiktok: "bg-slate-50 text-slate-700 border-slate-300",
+  tiktok: "bg-surface-hover text-themed-secondary border-themed",
   youtube_shorts: "bg-red-50 text-red-700 border-red-200",
   youtube_long: "bg-red-50 text-red-700 border-red-200",
 };
@@ -94,13 +94,13 @@ const ScoreBadge: React.FC<{ score: ScoreBreakdown }> = ({ score }) => {
         {score.total} · {context}
       </button>
       {showBreakdown && (
-        <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-xl p-3 shadow-xl min-w-[180px]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Score Breakdown</p>
+        <div className="absolute right-0 top-full mt-1 z-20 bg-surface-elevated border border-themed rounded-xl p-3 shadow-xl min-w-[180px]">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Score Breakdown</p>
           {categories.map((cat) => (
             <div key={cat.label} className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-slate-600">{cat.label}</span>
+              <span className="text-xs text-themed-secondary">{cat.label}</span>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-16 h-1.5 bg-surface-hover rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full",
@@ -109,7 +109,7 @@ const ScoreBadge: React.FC<{ score: ScoreBreakdown }> = ({ score }) => {
                     style={{ width: `${(cat.value / cat.max) * 100}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 tabular-nums w-8 text-right">
+                <span className="text-[10px] font-bold text-themed-tertiary tabular-nums w-8 text-right">
                   {cat.value}/{cat.max}
                 </span>
               </div>
@@ -122,7 +122,7 @@ const ScoreBadge: React.FC<{ score: ScoreBreakdown }> = ({ score }) => {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600",
+  draft: "bg-surface-hover text-themed-secondary",
   approved: "bg-emerald-100 text-emerald-700",
   posted: "bg-teal-100 text-teal-700",
 };
@@ -133,7 +133,7 @@ const CharCount: React.FC<{ text: string; platform: string }> = ({ text, platfor
   if (!limits) return null;
   const len = text.length;
   const ratio = len / limits.max;
-  const color = ratio > 1 ? "text-red-500" : ratio > 0.9 ? "text-amber-500" : "text-slate-400";
+  const color = ratio > 1 ? "text-red-500" : ratio > 0.9 ? "text-amber-500" : "text-themed-muted";
   const hookText = text.split("\n")[0] || "";
   const hookLen = hookText.length;
   const showHook = platform === "instagram_reels" || platform === "tiktok";
@@ -146,7 +146,7 @@ const CharCount: React.FC<{ text: string; platform: string }> = ({ text, platfor
       {showHook && (
         <span className={cn(
           "text-[10px] font-bold tabular-nums",
-          hookLen > limits.hookVisible ? "text-amber-500" : "text-slate-400",
+          hookLen > limits.hookVisible ? "text-amber-500" : "text-themed-muted",
         )}>
           Hook: {hookLen} / {limits.hookVisible} visible
         </span>
@@ -205,14 +205,14 @@ const PlatformPreview: React.FC<{ caption: string; platform: string }> = ({ capt
   const title = caption.split("\n")[0] || caption;
   const body = caption.split("\n").slice(1).join("\n").trim();
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 max-w-[280px]">
-      <p className="text-sm font-bold text-slate-900 line-clamp-2">
+    <div className="bg-surface-elevated border border-themed rounded-xl p-4 max-w-[280px]">
+      <p className="text-sm font-bold text-themed line-clamp-2">
         {title.length > titleLimit ? title.slice(0, titleLimit) + "..." : title}
       </p>
       {body && (
-        <p className="text-xs text-slate-500 mt-1 line-clamp-3">{body}</p>
+        <p className="text-xs text-themed-tertiary mt-1 line-clamp-3">{body}</p>
       )}
-      <div className="flex items-center gap-3 mt-3 text-slate-400">
+      <div className="flex items-center gap-3 mt-3 text-themed-muted">
         <span className="text-xs">👍</span>
         <span className="text-xs">👎</span>
         <span className="text-xs">↗ Share</span>
@@ -699,20 +699,20 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-serif font-bold text-slate-900">Caption Studio</h1>
+            <h1 className="text-2xl font-serif font-bold text-themed">Caption Studio</h1>
             <ViewHelp {...VIEW_HELP.CAPTIONS} />
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-themed-tertiary mt-1">
             Generate and manage social media captions for your videos
           </p>
         </div>
         {activePersona && (
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Generating as</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-themed-muted">Generating as</span>
             <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0", CAPTION_AVATAR_COLOR_MAP[activePersona.avatarColor ?? "teal"] ?? "bg-teal-600")}>
               {activePersona.initials ?? activePersona.name.slice(0, 2).toUpperCase()}
             </span>
-            <span className="text-[10px] font-bold text-slate-700">{activePersona.name}</span>
+            <span className="text-[10px] font-bold text-themed-secondary">{activePersona.name}</span>
           </div>
         )}
       </div>
@@ -720,8 +720,8 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Video Selector */}
         <div className="lg:w-80 shrink-0">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3">
               Content Library
             </p>
 
@@ -735,7 +735,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
                     statusFilter === s
                       ? "bg-teal-600 text-white"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                      : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                   )}
                 >
                   {s === "all" ? "All" : s.slice(0, 4)}
@@ -747,7 +747,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
             <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
               {captionableVideos.length === 0 && (
                 <EmptyState
-                  icon={<MessageSquareText size={24} className="text-slate-400" />}
+                  icon={<MessageSquareText size={24} className="text-themed-muted" />}
                   headline="No videos found"
                   description="Add videos to your content library to generate captions."
                   compact
@@ -763,7 +763,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         type="checkbox"
                         checked={batchSelected.has(v.code)}
                         onChange={() => toggleBatchSelect(v.code)}
-                        className="mt-3.5 w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 shrink-0"
+                        className="mt-3.5 w-4 h-4 rounded border-themed text-teal-600 focus:ring-teal-500 shrink-0"
                       />
                       <button
                         onClick={() => setSelectedVideo(v.code)}
@@ -771,25 +771,25 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           "flex-1 text-left p-3 rounded-xl border transition-colors",
                           selectedVideo === v.code
                             ? "border-teal-300 bg-teal-50"
-                            : "border-slate-200 hover:border-slate-300 bg-white",
+                            : "border-themed hover:border-themed bg-surface-elevated",
                         )}
                       >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-bold text-slate-500">{v.code}</span>
-                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", FORMAT_COLORS[v.format] || "bg-slate-100")}>
+                        <span className="font-mono text-xs font-bold text-themed-tertiary">{v.code}</span>
+                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", FORMAT_COLORS[v.format] || "bg-surface-hover")}>
                           {v.format}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-slate-800 line-clamp-1">{v.title}</p>
+                      <p className="text-sm font-medium text-themed line-clamp-1">{v.title}</p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-themed-muted">
                           {v.status}
                         </span>
                         <span className={cn(
                           "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
                           count >= 4 ? "bg-emerald-100 text-emerald-700" :
                           count > 0 ? "bg-amber-100 text-amber-700" :
-                          "bg-slate-100 text-slate-500",
+                          "bg-surface-hover text-themed-tertiary",
                         )}>
                           {count}/4
                         </span>
@@ -817,12 +817,12 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               <div className="mt-3 space-y-1">
                 {batchProgress.map((r) => (
                   <div key={r.videoCode} className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-slate-500">{r.videoCode}</span>
+                    <span className="font-mono text-themed-tertiary">{r.videoCode}</span>
                     <span className={cn(
                       "text-[10px] font-bold px-2 py-0.5 rounded-full",
                       r.status === "success" ? "bg-emerald-100 text-emerald-700" :
                       r.status === "error" ? "bg-red-100 text-red-700" :
-                      "bg-slate-100 text-slate-500",
+                      "bg-surface-hover text-themed-tertiary",
                     )}>
                       {r.status}
                     </span>
@@ -838,27 +838,27 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           {!selectedVideo ? (
             <div className="space-y-4">
               {/* Describe Your Video - freeform caption generation */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-6">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Wand2 size={18} className="text-teal-600" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     Describe Your Video
                   </p>
                 </div>
-                <p className="text-sm text-slate-500 mb-4">
+                <p className="text-sm text-themed-tertiary mb-4">
                   Generate captions for any video, even outside your content library. Describe what's in it, the hook, and any trending sound or format.
                 </p>
                 <textarea
                   value={freeformDesc}
                   onChange={(e) => setFreeformDesc(e.target.value)}
                   placeholder="Example: I filmed a reaction to a viral chiropractic compilation with the 'oh no' sound. Text overlay says 'When patients say they crack their own neck' and I slowly turn to look at the camera."
-                  className="w-full p-3 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full p-3 border border-themed rounded-xl text-sm text-themed-secondary placeholder:text-themed-muted resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   rows={4}
                 />
 
                 {/* Mood chips */}
                 <div className="mt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Mood / Tone</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mb-2">Mood / Tone</p>
                   <div className="flex flex-wrap gap-1.5">
                     {["Educational", "Humorous", "Inspirational", "Casual", "Trending", "Professional"].map((m) => (
                       <button
@@ -868,7 +868,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors",
                           freeformMood === m
                             ? "bg-teal-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                            : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                         )}
                       >
                         {m}
@@ -879,7 +879,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
                 {/* Platform selection */}
                 <div className="mt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Platforms</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mb-2">Platforms</p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
                       <button
@@ -893,7 +893,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           "px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors",
                           freeformPlatforms.has(key)
                             ? "bg-teal-600 text-white"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                            : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover",
                         )}
                       >
                         {label}
@@ -908,7 +908,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     value={freeformTags}
                     onChange={(e) => setFreeformTags(e.target.value)}
                     placeholder="Tags (comma-separated): chiropractic, humor, trending"
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full p-2.5 border border-themed rounded-xl text-sm text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
 
@@ -929,19 +929,19 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         value={freeformVisualHook}
                         onChange={(e) => setFreeformVisualHook(e.target.value)}
                         placeholder="Visual hook: What's the first thing viewers SEE?"
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
                       />
                       <input
                         value={freeformTextOverlay}
                         onChange={(e) => setFreeformTextOverlay(e.target.value)}
                         placeholder="Text overlay: What text appears on screen?"
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
                       />
                       <input
                         value={freeformAudioContext}
                         onChange={(e) => setFreeformAudioContext(e.target.value)}
                         placeholder="Audio: Trending sound, original voiceover, ASMR..."
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-white"
+                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
                       />
                     </div>
                   )}
@@ -980,7 +980,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 {freeformDesc.trim() && (
                   <button
                     onClick={() => handleCopyAsPrompt("", [...freeformPlatforms].join(", "), freeformDesc)}
-                    className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-500 text-[10px] font-bold hover:border-slate-400 hover:text-slate-700 transition-colors"
+                    className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-tertiary text-[10px] font-bold hover:border-slate-400 hover:text-themed-secondary transition-colors"
                     title="Copy a structured prompt to use in Claude or ChatGPT"
                   >
                     {copiedPrompt ? <Check size={12} /> : <Copy size={12} />}
@@ -990,8 +990,8 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               </div>
 
               {/* Or select from library / analyze video */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center">
-                <p className="text-sm text-slate-400 mb-3">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-6 text-center">
+                <p className="text-sm text-themed-muted mb-3">
                   Or select a video from the Content Library on the left
                 </p>
                 <button
@@ -1007,11 +1007,11 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           ) : (
             <div className="space-y-4">
               {/* Video context */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-bold text-slate-500">{selectedVideo}</span>
-                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", FORMAT_COLORS[videoDetail?.format] || "bg-slate-100")}>
+                    <span className="font-mono text-sm font-bold text-themed-tertiary">{selectedVideo}</span>
+                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", FORMAT_COLORS[videoDetail?.format] || "bg-surface-hover")}>
                       {videoDetail?.format ? `${videoDetail.format} - ${FORMATS[videoDetail.format as FormatId]?.name || ""}` : ""}
                     </span>
                   </div>
@@ -1032,7 +1032,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     </button>
                     <button
                       onClick={() => setShowTemplates(!showTemplates)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
                     >
                       <FileText size={12} />
                       Templates
@@ -1040,7 +1040,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     <button
                       onClick={() => setShowUpload(true)}
                       disabled={analysisLoading}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors disabled:opacity-50"
                     >
                       {analysisLoading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                       {analysisLoading ? analysisStep : "Analyze"}
@@ -1061,20 +1061,20 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     </button>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-slate-800 mt-2">{videoDetail?.title || ""}</p>
+                <p className="text-sm font-medium text-themed mt-2">{videoDetail?.title || ""}</p>
 
                 {/* Collapsible script */}
                 {videoDetail?.script && (
                   <div className="mt-3">
                     <button
                       onClick={() => setScriptExpanded(!scriptExpanded)}
-                      className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600"
+                      className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted hover:text-themed-secondary"
                     >
                       {scriptExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       Video Script
                     </button>
                     {scriptExpanded && (
-                      <div className="mt-2 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                      <div className="mt-2 p-3 bg-surface-hover rounded-xl text-sm text-themed-secondary whitespace-pre-wrap max-h-60 overflow-y-auto">
                         {videoDetail.script}
                       </div>
                     )}
@@ -1112,26 +1112,26 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
               {/* Hook Lab Panel */}
               {hookLabOpen && hookVariants.length > 0 && (
-                <div className="bg-white border border-violet-200 rounded-2xl p-4">
+                <div className="bg-surface-elevated border border-violet-200 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Zap size={14} className="text-violet-500" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Hook Lab</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Hook Lab</p>
                     </div>
-                    <button onClick={() => setHookLabOpen(false)} className="text-slate-400 hover:text-slate-600">
+                    <button onClick={() => setHookLabOpen(false)} className="text-themed-muted hover:text-themed-secondary">
                       <X size={14} />
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 mb-3">6 Kallaway archetypes. Click to copy. Each uses a different hook psychology.</p>
+                  <p className="text-xs text-themed-tertiary mb-3">6 Kallaway archetypes. Click to copy. Each uses a different hook psychology.</p>
                   <div className="space-y-2">
                     {hookVariants.map((hook, i) => (
                       <button
                         key={i}
                         onClick={() => { navigator.clipboard.writeText(hook.text); }}
-                        className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-violet-200 hover:bg-violet-50/50 transition-colors group"
+                        className="w-full text-left p-3 rounded-xl border border-themed-subtle hover:border-violet-200 hover:bg-violet-50/50 transition-colors group"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm text-slate-700 font-medium">{hook.text}</p>
+                          <p className="text-sm text-themed-secondary font-medium">{hook.text}</p>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className={cn(
                               "text-[10px] font-bold px-1.5 py-0.5 rounded-full",
@@ -1141,15 +1141,15 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                             )}>
                               {hook.score}/33
                             </span>
-                            <Copy size={12} className="text-slate-300 group-hover:text-violet-500 transition-colors" />
+                            <Copy size={12} className="text-themed-muted group-hover:text-violet-500 transition-colors" />
                           </div>
                         </div>
                         <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider mt-1 inline-block">{hook.type}</span>
                         {hook.breakdown && (
                           <div className="mt-2 pt-2 border-t border-slate-50 space-y-0.5">
-                            <p className="text-[10px] text-slate-400"><span className="font-bold text-teal-600">Context:</span> {hook.breakdown.contextLean}</p>
-                            <p className="text-[10px] text-slate-400"><span className="font-bold text-amber-600">Interrupt:</span> {hook.breakdown.patternInterrupt}</p>
-                            <p className="text-[10px] text-slate-400"><span className="font-bold text-rose-600">Snapback:</span> {hook.breakdown.snapback}</p>
+                            <p className="text-[10px] text-themed-muted"><span className="font-bold text-teal-600">Context:</span> {hook.breakdown.contextLean}</p>
+                            <p className="text-[10px] text-themed-muted"><span className="font-bold text-amber-600">Interrupt:</span> {hook.breakdown.patternInterrupt}</p>
+                            <p className="text-[10px] text-themed-muted"><span className="font-bold text-rose-600">Snapback:</span> {hook.breakdown.snapback}</p>
                           </div>
                         )}
                       </button>
@@ -1160,32 +1160,32 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
               {/* Templates Dropdown */}
               {showTemplates && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <FileText size={14} className="text-slate-500" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Saved Templates</p>
+                      <FileText size={14} className="text-themed-tertiary" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Saved Templates</p>
                     </div>
-                    <button onClick={() => setShowTemplates(false)} className="text-slate-400 hover:text-slate-600">
+                    <button onClick={() => setShowTemplates(false)} className="text-themed-muted hover:text-themed-secondary">
                       <X size={14} />
                     </button>
                   </div>
                   {!templatesData?.templates?.length ? (
-                    <p className="text-xs text-slate-400">No templates saved yet. Save a caption as a template using the bookmark icon on any caption card.</p>
+                    <p className="text-xs text-themed-muted">No templates saved yet. Save a caption as a template using the bookmark icon on any caption card.</p>
                   ) : (
                     <div className="space-y-2">
                       {templatesData.templates.map((t) => (
-                        <div key={t.id} className="p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                        <div key={t.id} className="p-3 rounded-xl border border-themed-subtle hover:border-themed transition-colors">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-slate-700">{t.name}</span>
+                            <span className="text-sm font-medium text-themed-secondary">{t.name}</span>
                             <div className="flex items-center gap-1.5">
                               {t.platform && (
-                                <span className="text-[10px] font-bold text-slate-400">{PLATFORM_LABELS[t.platform] || t.platform}</span>
+                                <span className="text-[10px] font-bold text-themed-muted">{PLATFORM_LABELS[t.platform] || t.platform}</span>
                               )}
-                              <span className="text-[10px] text-slate-300">Used {t.usageCount}x</span>
+                              <span className="text-[10px] text-themed-muted">Used {t.usageCount}x</span>
                             </div>
                           </div>
-                          <p className="text-xs text-slate-500 line-clamp-2">{t.template}</p>
+                          <p className="text-xs text-themed-tertiary line-clamp-2">{t.template}</p>
                         </div>
                       ))}
                     </div>
@@ -1194,16 +1194,16 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               )}
 
               {/* AI Chat Refinement */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
                 <button
                   onClick={() => setChatOpen(!chatOpen)}
                   className="flex items-center gap-2 w-full"
                 >
                   <Sparkles size={14} className="text-teal-600" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                     AI Refinement
                   </span>
-                  {chatOpen ? <ChevronUp size={12} className="text-slate-400 ml-auto" /> : <ChevronDown size={12} className="text-slate-400 ml-auto" />}
+                  {chatOpen ? <ChevronUp size={12} className="text-themed-muted ml-auto" /> : <ChevronDown size={12} className="text-themed-muted ml-auto" />}
                 </button>
 
                 {chatOpen && (
@@ -1212,14 +1212,14 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     <div className="space-y-2">
                       {CHAT_CHIP_GROUPS.map((group) => (
                         <div key={group.label}>
-                          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-300 mb-1">{group.label}</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-themed-muted mb-1">{group.label}</p>
                           <div className="flex flex-wrap gap-1">
                             {group.chips.map((chip) => (
                               <button
                                 key={chip}
                                 onClick={() => handleChatSubmit(chip)}
                                 disabled={chatLoading}
-                                className="px-2 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                className="px-2 py-0.5 rounded-full border border-themed text-[10px] font-bold text-themed-secondary hover:bg-surface-hover transition-colors disabled:opacity-50"
                               >
                                 {chip}
                               </button>
@@ -1238,7 +1238,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         </button>
                         <button
                           onClick={() => setShowHashtagGroups(!showHashtagGroups)}
-                          className="px-2.5 py-1 rounded-full border border-slate-200 text-[10px] font-bold text-slate-500 hover:bg-slate-50 transition-colors flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-full border border-themed text-[10px] font-bold text-themed-tertiary hover:bg-surface-hover transition-colors flex items-center gap-1"
                         >
                           <Bookmark size={10} />
                           Saved Groups
@@ -1257,7 +1257,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                               onClick={() => {
                                 navigator.clipboard.writeText(tag);
                               }}
-                              className="px-2 py-0.5 rounded-full bg-white border border-teal-200 text-xs text-teal-700 hover:bg-teal-100 transition-colors"
+                              className="px-2 py-0.5 rounded-full bg-surface-elevated border border-teal-200 text-xs text-teal-700 hover:bg-teal-100 transition-colors"
                               title="Click to copy"
                             >
                               {tag}
@@ -1277,18 +1277,18 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
                     {/* Saved Hashtag Groups */}
                     {showHashtagGroups && (
-                      <div className="p-3 bg-slate-50 rounded-xl">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Saved Hashtag Groups</p>
+                      <div className="p-3 bg-surface-hover rounded-xl">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Saved Hashtag Groups</p>
                         {!hashtagGroupsData?.groups?.length ? (
-                          <p className="text-xs text-slate-400">No groups saved yet. Suggest hashtags first, then save them as a group.</p>
+                          <p className="text-xs text-themed-muted">No groups saved yet. Suggest hashtags first, then save them as a group.</p>
                         ) : (
                           <div className="space-y-2">
                             {hashtagGroupsData.groups.map((g) => {
                               const tags: string[] = (() => { try { return JSON.parse(g.hashtags); } catch { return []; } })();
                               return (
-                                <div key={g.id} className="p-2 bg-white rounded-lg border border-slate-100">
+                                <div key={g.id} className="p-2 bg-surface-elevated rounded-lg border border-themed-subtle">
                                   <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-medium text-slate-700">{g.name}</span>
+                                    <span className="text-xs font-medium text-themed-secondary">{g.name}</span>
                                     <button
                                       onClick={() => navigator.clipboard.writeText(tags.join(" "))}
                                       className="text-[10px] font-bold text-teal-600 hover:underline"
@@ -1298,9 +1298,9 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                                   </div>
                                   <div className="flex flex-wrap gap-1">
                                     {tags.slice(0, 8).map((tag) => (
-                                      <span key={tag} className="text-[10px] text-slate-500">{tag}</span>
+                                      <span key={tag} className="text-[10px] text-themed-tertiary">{tag}</span>
                                     ))}
-                                    {tags.length > 8 && <span className="text-[10px] text-slate-400">+{tags.length - 8}</span>}
+                                    {tags.length > 8 && <span className="text-[10px] text-themed-muted">+{tags.length - 8}</span>}
                                   </div>
                                 </div>
                               );
@@ -1314,7 +1314,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     {chatHistory.length > 0 && (
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {chatHistory.map((msg, i) => (
-                          <div key={i} className={cn("text-xs rounded-xl p-2.5", msg.role === "user" ? "bg-slate-50 text-slate-700 ml-8" : "bg-teal-50 text-teal-800 mr-8")}>
+                          <div key={i} className={cn("text-xs rounded-xl p-2.5", msg.role === "user" ? "bg-surface-hover text-themed-secondary ml-8" : "bg-teal-50 text-teal-800 mr-8")}>
                             {msg.content}
                           </div>
                         ))}
@@ -1333,7 +1333,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           }
                         }}
                         placeholder="Tell AI how to refine captions..."
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="flex-1 px-3 py-2 border border-themed rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         disabled={chatLoading}
                       />
                       <button
@@ -1349,14 +1349,14 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               </div>
 
               {/* Tab toggle: Edit | Publish Kit */}
-              <div className="flex gap-1 bg-slate-100 rounded-full p-1 w-fit">
+              <div className="flex gap-1 bg-surface-hover rounded-full p-1 w-fit">
                 {(["edit", "publish"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setWorkspaceTab(tab)}
                     className={cn(
                       "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
-                      workspaceTab === tab ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700",
+                      workspaceTab === tab ? "bg-surface-elevated text-themed shadow-sm" : "text-themed-tertiary hover:text-themed-secondary",
                     )}
                   >
                     {tab === "edit" ? "Edit" : "Publish Kit"}
@@ -1372,12 +1372,12 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     const covered = platforms.filter((p) => captions.some((c) => c.platform === p)).length;
                     const approved = platforms.filter((p) => captions.some((c) => c.platform === p && (c.status === "approved" || c.status === "posted"))).length;
                     return (
-                      <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                      <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Platform Coverage</p>
-                          <span className="text-sm font-bold text-slate-700">{covered}/4 platforms</span>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Platform Coverage</p>
+                          <span className="text-sm font-bold text-themed-secondary">{covered}/4 platforms</span>
                         </div>
-                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-surface-hover rounded-full overflow-hidden">
                           <div
                             className={cn("h-full rounded-full transition-all", approved === 4 ? "bg-emerald-500" : "bg-teal-500")}
                             style={{ width: `${(covered / 4) * 100}%` }}
@@ -1406,7 +1406,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     const platCaps = captions.filter((c) => c.platform === plat);
                     const approved = platCaps.find((c) => c.status === "approved") || platCaps[0];
                     return (
-                      <div key={plat} className="bg-white border border-slate-200 rounded-2xl p-4">
+                      <div key={plat} className="bg-surface-elevated border border-themed rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className={cn("text-[10px] font-bold px-2 py-1 rounded-full border", PLATFORM_COLORS[plat])}>
                             {PLATFORM_LABELS[plat]}
@@ -1423,7 +1423,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         </div>
                         {approved ? (
                           <>
-                            <p className="text-sm text-slate-700 whitespace-pre-wrap mb-3 line-clamp-4">{approved.caption}</p>
+                            <p className="text-sm text-themed-secondary whitespace-pre-wrap mb-3 line-clamp-4">{approved.caption}</p>
                             <button
                               onClick={() => handleCopy(approved.id, approved.caption)}
                               className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors"
@@ -1438,7 +1438,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                               if (selectedVideo) generateMutation.mutate({ videoCode: selectedVideo, platforms: [plat] });
                             }}
                             disabled={generateMutation.isPending}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
                           >
                             <Sparkles size={14} />
                             Generate
@@ -1489,7 +1489,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           });
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
                     >
                       <Check size={14} />
                       Mark All Posted
@@ -1519,13 +1519,13 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {workspaceTab === "edit" && captionsByPlatform.map(({ platform, captions: platCaptions }) => {
                 const isPreview = previewPlatforms.has(platform);
                 return (
-                <div key={platform} className="bg-white border border-slate-200 rounded-2xl p-4">
+                <div key={platform} className="bg-surface-elevated border border-themed rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className={cn("text-[10px] font-bold px-2 py-1 rounded-full border", PLATFORM_COLORS[platform])}>
                         {PLATFORM_LABELS[platform] || platform}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-themed-muted">
                         {platCaptions.length} variant{platCaptions.length !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -1534,7 +1534,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         onClick={() => togglePreview(platform)}
                         className={cn(
                           "p-1.5 rounded-lg transition-colors",
-                          isPreview ? "bg-teal-50 text-teal-600" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
+                          isPreview ? "bg-teal-50 text-teal-600" : "text-themed-muted hover:bg-surface-hover hover:text-themed-secondary",
                         )}
                         title={isPreview ? "Show raw text" : "Show preview"}
                       >
@@ -1545,7 +1545,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           if (selectedVideo) generateMutation.mutate({ videoCode: selectedVideo, platforms: [platform] });
                         }}
                         disabled={generateMutation.isPending}
-                        className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+                        className="p-1.5 rounded-lg text-themed-muted hover:bg-surface-hover hover:text-themed-secondary disabled:opacity-50"
                         title={`Regenerate ${PLATFORM_LABELS[platform]}`}
                       >
                         <RefreshCw size={14} className={generateMutation.isPending ? "animate-spin" : ""} />
@@ -1554,14 +1554,14 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                   </div>
 
                   {platCaptions.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-2">No captions yet</p>
+                    <p className="text-sm text-themed-muted py-2">No captions yet</p>
                   ) : (
                     <div className="space-y-3">
                       {platCaptions.map((cap) => (
-                        <div key={cap.id} className="border border-slate-100 rounded-xl p-3">
+                        <div key={cap.id} className="border border-themed-subtle rounded-xl p-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-slate-400">v{cap.variant}</span>
+                              <span className="text-[10px] font-bold text-themed-muted">v{cap.variant}</span>
                               <button
                                 onClick={() => {
                                   const next = cap.status === "draft" ? "approved" : cap.status === "approved" ? "posted" : "draft";
@@ -1576,21 +1576,21 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleStartEdit(cap)}
-                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                className="p-1.5 rounded-lg hover:bg-surface-hover text-themed-muted hover:text-themed-secondary"
                                 title="Edit"
                               >
                                 <Pencil size={14} />
                               </button>
                               <button
                                 onClick={() => handleCopy(cap.id, cap.caption)}
-                                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-teal-600"
+                                className="p-1.5 rounded-lg hover:bg-surface-hover text-themed-muted hover:text-teal-600"
                                 title="Copy"
                               >
                                 {copiedId === cap.id ? <Check size={14} className="text-teal-500" /> : <Copy size={14} />}
                               </button>
                               <button
                                 onClick={() => deleteMutation.mutate(cap.id)}
-                                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-themed-muted hover:text-red-500"
                                 title="Delete"
                               >
                                 <Trash2 size={14} />
@@ -1601,25 +1601,25 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           {editingId === cap.id ? (
                             <div>
                               <div className="mb-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1 block">
                                   Hook Line
                                 </label>
                                 <input
                                   value={editHook}
                                   onChange={(e) => setEditHook(e.target.value)}
-                                  className="w-full p-2 border border-slate-200 rounded-lg text-sm text-slate-700 bg-amber-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                  className="w-full p-2 border border-themed rounded-lg text-sm text-themed-secondary bg-amber-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
                                   placeholder="First line your audience sees..."
                                 />
                                 <CharCount text={editHook} platform={platform} />
                               </div>
                               <div className="mb-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 block">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1 block">
                                   Body
                                 </label>
                                 <textarea
                                   value={editBody}
                                   onChange={(e) => setEditBody(e.target.value)}
-                                  className="w-full p-2 border border-slate-200 rounded-lg text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                  className="w-full p-2 border border-themed rounded-lg text-sm text-themed-secondary resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
                                   rows={4}
                                 />
                               </div>
@@ -1638,7 +1638,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                                   </button>
                                   <button
                                     onClick={() => setEditingId(null)}
-                                    className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
+                                    className="px-3 py-1 rounded-full bg-surface-hover text-themed-secondary text-[10px] font-bold uppercase tracking-wider"
                                   >
                                     Cancel
                                   </button>
@@ -1653,7 +1653,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                             <PlatformPreview caption={cap.caption} platform={platform} />
                           ) : (
                             <>
-                              <p className="text-sm text-slate-700 whitespace-pre-wrap">{cap.caption}</p>
+                              <p className="text-sm text-themed-secondary whitespace-pre-wrap">{cap.caption}</p>
                               <CharCount text={cap.caption} platform={platform} />
                             </>
                           )}
@@ -1670,7 +1670,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           {/* Upload overlay - renders regardless of video selection */}
           {showUpload && (
             <div
-              className="mt-4 bg-white border-2 border-dashed border-teal-300 rounded-2xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-colors"
+              className="mt-4 bg-surface-elevated border-2 border-dashed border-teal-300 rounded-2xl p-8 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-colors"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => {
@@ -1685,15 +1685,15 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               }}
             >
               <Upload size={32} className="mx-auto text-teal-400 mb-3" />
-              <p className="text-sm font-medium text-slate-700 mb-1">
+              <p className="text-sm font-medium text-themed-secondary mb-1">
                 Drop a video file here or click to browse
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-themed-muted">
                 MP4, MOV, or WebM (max 200MB). AI will analyze visuals and audio.
               </p>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowUpload(false); }}
-                className="mt-3 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+                className="mt-3 text-[10px] font-bold text-themed-muted hover:text-themed-secondary uppercase tracking-widest"
               >
                 Cancel
               </button>
@@ -1702,21 +1702,21 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
           {/* Video Analysis Results - renders regardless of video selection */}
           {videoAnalysis && (
-            <div className="mt-4 bg-white border border-slate-200 rounded-2xl p-4">
+            <div className="mt-4 bg-surface-elevated border border-themed rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                   Video Analysis
                 </p>
                 <button
                   onClick={() => setVideoAnalysis(null)}
-                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+                  className="p-1 rounded-lg hover:bg-surface-hover text-themed-muted"
                 >
                   <X size={14} />
                 </button>
               </div>
 
               {/* Visual description & mood */}
-              <p className="text-sm text-slate-700 mb-2">{videoAnalysis.visualDescription || ""}</p>
+              <p className="text-sm text-themed-secondary mb-2">{videoAnalysis.visualDescription || ""}</p>
               {videoAnalysis.mood ? (
                 <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold mb-3">
                   {videoAnalysis.mood}
@@ -1726,7 +1726,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Hook suggestions */}
               {videoAnalysis.hookSuggestions && videoAnalysis.hookSuggestions.length > 0 ? (
                 <div className="mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hook Ideas</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1.5">Hook Ideas</p>
                   <div className="flex flex-wrap gap-1.5">
                     {videoAnalysis.hookSuggestions.map((hook, i) => (
                       <button
@@ -1745,7 +1745,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Hashtag suggestions from analysis */}
               {videoAnalysis.hashtagSuggestions && videoAnalysis.hashtagSuggestions.length > 0 ? (
                 <div className="mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Hashtags</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1.5">Hashtags</p>
                   <div className="flex flex-wrap gap-1">
                     {videoAnalysis.hashtagSuggestions.map((tag, i) => (
                       <button
@@ -1763,10 +1763,10 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Caption suggestions per platform */}
               {videoAnalysis.captionSuggestions && Object.keys(videoAnalysis.captionSuggestions).length > 0 ? (
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Caption Suggestions</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Caption Suggestions</div>
                   <div className="space-y-2">
                     {Object.entries(videoAnalysis.captionSuggestions).map(([plat, caption]) => (
-                      <div key={plat} className={`rounded-xl border p-3 ${PLATFORM_COLORS[plat] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+                      <div key={plat} className={`rounded-xl border p-3 ${PLATFORM_COLORS[plat] || "bg-surface-hover text-themed-secondary border-themed"}`}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] font-black uppercase tracking-[0.15em]">{PLATFORM_LABELS[plat] || plat}</span>
                           <button
@@ -1807,7 +1807,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* CTA Suggestion */}
               {videoAnalysis.ctaSuggestion ? (
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Coupled CTA</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Coupled CTA</div>
                   <div className="rounded-xl border border-teal-200 bg-teal-50 p-3 flex items-start justify-between gap-2">
                     <p className="text-xs text-teal-800 leading-relaxed">{videoAnalysis.ctaSuggestion}</p>
                     <button
@@ -1823,11 +1823,11 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Waterfall Ideas */}
               {videoAnalysis.waterfallIdeas && videoAnalysis.waterfallIdeas.length > 0 ? (
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Content Waterfall</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Content Waterfall</div>
                   <div className="space-y-1.5">
                     {videoAnalysis.waterfallIdeas.map((idea, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
-                        <span className="text-slate-400 font-bold shrink-0">{i + 1}.</span>
+                      <div key={i} className="flex items-start gap-2 text-xs text-themed-secondary">
+                        <span className="text-themed-muted font-bold shrink-0">{i + 1}.</span>
                         <span>{idea}</span>
                       </div>
                     ))}
@@ -1840,13 +1840,13 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 <div className="mt-3">
                   <button
                     onClick={() => setScriptExpanded(!scriptExpanded)}
-                    className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600"
+                    className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted hover:text-themed-secondary"
                   >
                     {scriptExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     Transcript
                   </button>
                   {scriptExpanded && (
-                    <p className="mt-1 text-xs text-slate-600 bg-slate-50 rounded-xl p-3">
+                    <p className="mt-1 text-xs text-themed-secondary bg-surface-hover rounded-xl p-3">
                       {videoAnalysis.transcript}
                     </p>
                   )}
@@ -1856,12 +1856,12 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Key moments */}
               {videoAnalysis.keyMoments && videoAnalysis.keyMoments.length > 0 ? (
                 <div className="mt-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1.5">Key Moments</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1.5">Key Moments</p>
                   <div className="space-y-1">
                     {videoAnalysis.keyMoments.map((m, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className="font-mono text-slate-400 w-10">{m.timestamp}</span>
-                        <span className="text-slate-600">{m.description}</span>
+                        <span className="font-mono text-themed-muted w-10">{m.timestamp}</span>
+                        <span className="text-themed-secondary">{m.description}</span>
                       </div>
                     ))}
                   </div>
@@ -1881,29 +1881,29 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           )}
 
           {scheduleOpen ? (
-            <div className="bg-white border border-teal-200 rounded-xl p-4 space-y-3">
+            <div className="bg-surface-elevated border border-teal-200 rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900">Schedule Video</h4>
-                <button onClick={() => setScheduleOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <h4 className="text-sm font-bold text-themed">Schedule Video</h4>
+                <button onClick={() => setScheduleOpen(false)} className="p-1 text-themed-muted hover:text-themed-secondary">
                   <X size={14} />
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Date</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-themed-muted block mb-1">Date</label>
                   <input
                     type="date"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 text-sm border border-themed rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Platform</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-themed-muted block mb-1">Platform</label>
                   <select
                     value={schedulePlatform}
                     onChange={(e) => setSchedulePlatform(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-themed rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-surface-elevated"
                   >
                     {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
@@ -1936,7 +1936,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
           {onNavigate && (
             <button
               onClick={() => onNavigate("CALENDAR")}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-semibold text-slate-500 hover:text-teal-600 transition-colors"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-xs font-semibold text-themed-tertiary hover:text-teal-600 transition-colors"
             >
               View full calendar <ArrowRight size={12} />
             </button>

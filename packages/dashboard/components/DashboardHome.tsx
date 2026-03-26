@@ -33,6 +33,8 @@ import type {
   CreatorVideo,
 } from "../shared/types.js";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
+import { ScrollReveal, CountUp, RotatingText } from "./ui/animations.js";
+import { ProgressRing } from "./ui/ProgressRing.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
@@ -61,7 +63,7 @@ const STATUS_ICONS: Record<ProductionStatus, React.ReactNode> = {
 };
 
 const STATUS_COLORS: Record<ProductionStatus, { bg: string; text: string; ring: string }> = {
-  SCRIPTED: { bg: "bg-slate-100", text: "text-slate-600", ring: "ring-slate-300" },
+  SCRIPTED: { bg: "bg-slate-100", text: "text-themed-secondary", ring: "ring-slate-300" },
   RECORDING: { bg: "bg-amber-100", text: "text-amber-600", ring: "ring-amber-300" },
   GENERATING: { bg: "bg-sky-100", text: "text-sky-600", ring: "ring-sky-300" },
   ASSEMBLED: { bg: "bg-teal-100", text: "text-teal-600", ring: "ring-teal-300" },
@@ -336,33 +338,33 @@ const AutomationStatus: React.FC = () => {
   }
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+    <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
         <div className="flex items-center gap-2">
           <Clock size={14} className="text-teal-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Automations</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Automations</p>
         </div>
         <div className="flex items-center gap-2">
           {allOk && <span className="text-[10px] font-bold text-emerald-600">All healthy</span>}
           {anyError && <span className="text-[10px] font-bold text-rose-600">Error detected</span>}
-          <ChevronRight size={12} className={`text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} />
+          <ChevronRight size={12} className={`text-themed-muted transition-transform ${expanded ? "rotate-90" : ""}`} />
         </div>
       </button>
 
       {expanded && (
         <div className="mt-3 space-y-2">
           {data.workflows.map((wf) => (
-            <div key={wf.id} className={`flex items-center gap-3 p-3 rounded-lg ${wf.lastStatus === "error" ? "bg-rose-50" : wf.active ? "bg-emerald-50" : "bg-slate-50"}`}>
+            <div key={wf.id} className={`flex items-center gap-3 p-3 rounded-lg ${wf.lastStatus === "error" ? "bg-rose-50" : wf.active ? "bg-emerald-50" : "bg-surface-hover"}`}>
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${wf.lastStatus === "error" ? "bg-rose-500" : wf.active ? "bg-emerald-500" : "bg-slate-400"}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-700 truncate">{wf.label}</p>
-                <p className="text-[10px] text-slate-500">{wf.schedule} {wf.active ? "" : "(inactive)"}</p>
+                <p className="text-xs font-medium text-themed-secondary truncate">{wf.label}</p>
+                <p className="text-[10px] text-themed-tertiary">{wf.schedule} {wf.active ? "" : "(inactive)"}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className={`text-[10px] font-bold ${wf.lastStatus === "success" ? "text-emerald-600" : wf.lastStatus === "error" ? "text-rose-600" : "text-slate-500"}`}>
+                <p className={`text-[10px] font-bold ${wf.lastStatus === "success" ? "text-emerald-600" : wf.lastStatus === "error" ? "text-rose-600" : "text-themed-tertiary"}`}>
                   {wf.lastStatus}
                 </p>
-                <p className="text-[10px] text-slate-400">{timeAgo(wf.lastRun)}</p>
+                <p className="text-[10px] text-themed-muted">{timeAgo(wf.lastRun)}</p>
               </div>
             </div>
           ))}
@@ -386,15 +388,15 @@ const RenderQueueStatus: React.FC = () => {
   const recentJobs = data.jobs.filter((j) => j.status === "completed" || j.status === "failed").slice(0, 5);
 
   return (
-    <section className="bg-white border border-slate-200 rounded-2xl p-5">
+    <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
       <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-violet-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Render Queue</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Render Queue</p>
         </div>
         <div className="flex items-center gap-3">
           {data.running > 0 && <span className="text-[10px] font-bold text-amber-600">{data.running} running</span>}
-          {data.queued > 0 && <span className="text-[10px] font-bold text-slate-500">{data.queued} queued</span>}
+          {data.queued > 0 && <span className="text-[10px] font-bold text-themed-tertiary">{data.queued} queued</span>}
           <span className="text-[10px] text-emerald-600">{data.completed} done</span>
           {data.failed > 0 && <span className="text-[10px] text-rose-500">{data.failed} failed</span>}
         </div>
@@ -405,16 +407,16 @@ const RenderQueueStatus: React.FC = () => {
           {activeJobs.map((j) => (
             <div key={j.id} className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg">
               <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-xs font-medium text-slate-700">{j.videoCode}</span>
-              <span className="text-[10px] text-slate-500">{j.compositionId}</span>
+              <span className="text-xs font-medium text-themed-secondary">{j.videoCode}</span>
+              <span className="text-[10px] text-themed-tertiary">{j.compositionId}</span>
               <span className="ml-auto text-[10px] font-bold text-amber-600 uppercase">{j.status}</span>
             </div>
           ))}
           {recentJobs.map((j) => (
             <div key={j.id} className={`flex items-center gap-2 p-2 rounded-lg ${j.status === "completed" ? "bg-emerald-50" : "bg-rose-50"}`}>
               <div className={`w-2 h-2 rounded-full ${j.status === "completed" ? "bg-emerald-500" : "bg-rose-500"}`} />
-              <span className="text-xs font-medium text-slate-700">{j.videoCode}</span>
-              <span className="text-[10px] text-slate-500">{j.compositionId}</span>
+              <span className="text-xs font-medium text-themed-secondary">{j.videoCode}</span>
+              <span className="text-[10px] text-themed-tertiary">{j.compositionId}</span>
               <span className={`ml-auto text-[10px] font-bold uppercase ${j.status === "completed" ? "text-emerald-600" : "text-rose-600"}`}>{j.status}</span>
             </div>
           ))}
@@ -437,7 +439,7 @@ const ProductionTimeline: React.FC<{ onSelectVideo: (code: string) => void }> = 
     <section>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5 hover:text-slate-600 transition-colors"
+        className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5 hover:text-themed-secondary transition-colors"
       >
         <Clock size={12} />
         Production Timeline ({data.timeline.length})
@@ -445,17 +447,17 @@ const ProductionTimeline: React.FC<{ onSelectVideo: (code: string) => void }> = 
       </button>
 
       {expanded && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-4 space-y-2">
           {data.timeline.slice(0, 8).map((v) => (
             <button
               key={v.code}
               onClick={() => onSelectVideo(v.code)}
-              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors text-left"
+              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surface-hover transition-colors text-left"
             >
               <div className={`w-2 h-8 rounded-full ${FORMAT_COLORS_MAP[v.format] || "bg-slate-300"}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-800 truncate">{v.code}: {v.title}</p>
-                <p className="text-[10px] text-slate-400">{v.currentStatus} - {v.audienceLabel}</p>
+                <p className="text-[10px] text-themed-muted">{v.currentStatus} - {v.audienceLabel}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
@@ -464,7 +466,7 @@ const ProductionTimeline: React.FC<{ onSelectVideo: (code: string) => void }> = 
                     style={{ width: `${(v.stageIndex / (v.totalStages - 1)) * 100}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 w-8 text-right">
+                <span className="text-[10px] font-bold text-themed-tertiary w-8 text-right">
                   {v.projectedDaysRemaining}d
                 </span>
               </div>
@@ -569,7 +571,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
   if (isLoading) {
     return (
-      <div className="text-center py-12 text-slate-400">Loading...</div>
+      <div className="text-center py-12 text-themed-muted">Loading...</div>
     );
   }
 
@@ -600,15 +602,16 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* What's Next Hero Card */}
+      <ScrollReveal delay={0}>
       <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
           What's Next
         </h2>
         <div className={`bg-gradient-to-r ${whatsNext.gradient} border ${whatsNext.borderColor} rounded-2xl p-6`}>
-          <h3 className="text-lg font-serif font-bold text-slate-900 mb-2">
+          <h3 className="text-lg font-serif font-bold text-themed mb-2">
             {whatsNext.headline}
           </h3>
-          <p className="text-sm text-slate-600 mb-4 max-w-xl">
+          <p className="text-sm text-themed-secondary mb-4 max-w-xl">
             {whatsNext.description}
           </p>
           <button
@@ -620,13 +623,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Pipeline Stepper */}
+      <ScrollReveal delay={80}>
       <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
           Content Pipeline
         </h2>
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
           <div className="flex items-center justify-between overflow-x-auto gap-1">
             {stages.map((stage, i) => {
               const count = pipeline?.summary[stage.status] ?? 0;
@@ -650,7 +655,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                         STATUS_ICONS[stage.status]
                       )}
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-700 transition-colors">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary group-hover:text-themed-secondary transition-colors">
                       {stage.label}
                     </span>
                   </button>
@@ -662,52 +667,54 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
             })}
           </div>
           {bottleneckStatus && maxCount > 0 && (
-            <p className="text-xs text-slate-500 mt-3 text-center">
-              <span className="font-semibold text-slate-700">{maxCount} video{maxCount > 1 ? "s" : ""}</span> in {bottleneckStatus.toLowerCase()} stage
+            <p className="text-xs text-themed-tertiary mt-3 text-center">
+              <span className="font-semibold text-themed-secondary">{maxCount} video{maxCount > 1 ? "s" : ""}</span> in {bottleneckStatus.toLowerCase()} stage
             </p>
           )}
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Quick Stats */}
+      <ScrollReveal delay={160}>
       <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
           Quick Stats
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <CalendarCheck size={14} />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{pipeline?.summary.PUBLISHED ?? 0}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Published</p>
+            <p className="text-2xl font-bold text-themed"><CountUp to={pipeline?.summary.PUBLISHED ?? 0} /></p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Published</p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
                 <Eye size={14} />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-2xl font-bold text-themed">
               {metricsData?.totalViews ? (metricsData.totalViews >= 1000 ? `${(metricsData.totalViews / 1000).toFixed(1)}K` : metricsData.totalViews) : "---"}
             </p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Total Views</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Total Views</p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
                 <Layers size={14} />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{carouselData?.completed ?? 0}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Carousels</p>
+            <p className="text-2xl font-bold text-themed"><CountUp to={carouselData?.completed ?? 0} /></p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Carousels</p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
                 <Trophy size={14} />
@@ -715,18 +722,19 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
             </div>
             {metricsData?.topPerformer ? (
               <>
-                <p className="text-sm font-bold text-slate-900 line-clamp-1">{metricsData.topPerformer.code}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Top Performer</p>
+                <p className="text-sm font-bold text-themed line-clamp-1">{metricsData.topPerformer.code}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Top Performer</p>
               </>
             ) : (
               <>
-                <p className="text-sm text-slate-400 italic">No data yet</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">Top Performer</p>
+                <p className="text-sm text-themed-muted italic">No data yet</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Top Performer</p>
               </>
             )}
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       {/* Content Mix */}
       {pipeline && (() => {
@@ -759,9 +767,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         return (
           <section>
             <FeatureHint id="content-mix" content={FEATURE_HINTS["content-mix"].content} side="bottom">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1">Content Mix</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">Content Mix</h2>
             </FeatureHint>
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+            <div className="bg-surface-elevated border border-themed rounded-2xl p-4 space-y-3">
               {/* Stacked bar */}
               <div className="flex rounded-full overflow-hidden h-3 gap-0.5">
                 {TIERS.map((t) => {
@@ -783,24 +791,25 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                   return (
                     <div key={t.key} className="flex items-center gap-1.5">
                       <div className={`w-2.5 h-2.5 rounded-sm ${t.color}`} />
-                      <span className="text-[10px] font-bold text-slate-600">{t.label}</span>
-                      <span className="text-[10px] text-slate-400">{t.desc}</span>
-                      <span className="text-[10px] font-bold text-slate-700">{pct}%</span>
+                      <span className="text-[10px] font-bold text-themed-secondary">{t.label}</span>
+                      <span className="text-[10px] text-themed-muted">{t.desc}</span>
+                      <span className="text-[10px] font-bold text-themed-secondary">{pct}%</span>
                     </div>
                   );
                 })}
               </div>
-              <p className="text-[10px] text-slate-400">Kallaway: ~90 min total content = superfan. Short-form at 20s avg needs 270 videos. Long-form at 60 min needs only 1.5.</p>
+              <p className="text-[10px] text-themed-muted">Kallaway: ~90 min total content = superfan. Short-form at 20s avg needs 270 videos. Long-form at 60 min needs only 1.5.</p>
             </div>
           </section>
         );
       })()}
 
       {/* Blowing Up Right Now - Outlier Videos */}
+      <ScrollReveal delay={80}>
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted flex items-center gap-1.5">
               <Flame size={12} className="text-orange-500" />
               Blowing Up Right Now
             </h2>
@@ -833,8 +842,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </section>
       )}
+      </ScrollReveal>
 
       {/* Trend Pulse */}
+      <ScrollReveal delay={120}>
       {pulseData?.digest && (() => {
         const digest = pulseData.digest;
         const topics = digest.trendingTopics.slice(0, 4);
@@ -845,14 +856,14 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           : "";
         return (
           <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
               <Signal size={12} className="text-teal-500" />
               Trend Pulse
             </h2>
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50">
-                <span className="text-[10px] text-slate-400">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-themed-subtle bg-surface-hover">
+                <span className="text-[10px] text-themed-muted">
                   {dateLabel ? `From ${dateLabel} digest` : "Latest digest"} · n8n auto-updated
                 </span>
                 <button
@@ -867,7 +878,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 {/* Trending Topics */}
                 {topics.length > 0 && (
                   <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Trending Now</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Trending Now</p>
                     <div className="space-y-2">
                       {topics.map((t, i) => (
                         <div key={i} className="flex items-start justify-between gap-3">
@@ -900,15 +911,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 {/* Hook Patterns */}
                 {hooks.length > 0 && (
                   <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Hook Patterns Spotted</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Hook Patterns Spotted</p>
                     <div className="space-y-2">
                       {hooks.map((h, i) => (
                         <div key={i} className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-slate-700 italic line-clamp-1">"{h.text}"</p>
+                            <p className="text-sm text-themed-secondary italic line-clamp-1">"{h.text}"</p>
                             <div className="flex gap-1 mt-0.5">
                               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 uppercase">{h.type}</span>
-                              <span className="text-[9px] text-slate-400">{h.platform}</span>
+                              <span className="text-[9px] text-themed-muted">{h.platform}</span>
                             </div>
                           </div>
                           <button
@@ -917,7 +928,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                               setCopiedHook(h.text);
                               setTimeout(() => setCopiedHook(null), 2000);
                             }}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-surface-hover text-themed-tertiary hover:bg-slate-100 transition-colors"
                           >
                             {copiedHook === h.text ? <Check size={10} /> : <Copy size={10} />}
                             {copiedHook === h.text ? "Copied" : "Copy"}
@@ -931,14 +942,14 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 {/* Content Gaps */}
                 {gaps.length > 0 && (
                   <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2">Content Gaps</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Content Gaps</p>
                     <div className="space-y-2">
                       {gaps.map((g, i) => (
                         <div key={i} className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium text-slate-800">{g.area}</span>
                             {g.description && (
-                              <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{g.description}</p>
+                              <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{g.description}</p>
                             )}
                           </div>
                           <button
@@ -959,8 +970,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </section>
         );
       })()}
+      </ScrollReveal>
 
       {/* Superfan Pipeline (Kallaway 90-Minute Rule) */}
+      <ScrollReveal delay={80}>
       {(() => {
         const published = pipeline?.summary.PUBLISHED ?? 0;
         const TARGET = 270;
@@ -968,24 +981,25 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         const estMinutes = Math.round(published * 25 / 60); // ~25s avg short-form video
         return (
           <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
               <Zap size={12} className="text-violet-500" />
               Superfan Pipeline
             </h2>
-            <div className="bg-white border border-slate-200 rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-bold text-slate-700">{published} / {TARGET} videos</p>
-                <p className="text-sm font-bold text-violet-600">{pct}%</p>
-              </div>
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-teal-500 transition-all duration-500"
-                  style={{ width: `${pct}%` }}
+            <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+              <div className="flex items-center gap-5">
+                <ProgressRing
+                  value={pct}
+                  size={90}
+                  strokeWidth={7}
+                  color="#8b5cf6"
+                  label={`${pct}%`}
+                  sublabel="complete"
                 />
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-[10px] text-slate-400">~{estMinutes} min of content published</p>
-                <p className="text-[10px] text-slate-400">Goal: 90 min (superfan territory)</p>
+                <div className="flex-1 space-y-1.5">
+                  <p className="text-sm font-bold text-themed">{published} / {TARGET} videos</p>
+                  <p className="text-[10px] text-themed-muted">~{estMinutes} min of content published</p>
+                  <p className="text-[10px] text-themed-muted">Goal: 90 min (superfan territory)</p>
+                </div>
               </div>
               {published === 0 ? (
                 <button
@@ -996,7 +1010,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                   <ArrowRight size={13} className="text-violet-500 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
                 </button>
               ) : (
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-themed-muted mt-1">
                   270 short-form videos ≈ 90 min of watched content. That's when casual viewers become superfans.
                 </p>
               )}
@@ -1004,29 +1018,41 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </section>
         );
       })()}
+      </ScrollReveal>
 
       {/* Content Health Score */}
+      <ScrollReveal delay={80}>
       {healthData && (
         <section>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 px-1 flex items-center gap-1.5">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
             <Heart size={12} className="text-rose-500" />
             Content Health
           </h2>
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <div className="flex items-center gap-4 mb-3">
-              <span className={`text-3xl font-black ${healthData.score >= 75 ? "text-emerald-600" : healthData.score >= 50 ? "text-amber-600" : "text-rose-600"}`}>
-                {healthData.score}
-              </span>
-              <span className="text-sm text-slate-400">/100</span>
+          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
+            <div className="flex items-center gap-5 mb-4">
+              <ProgressRing
+                value={healthData.score}
+                size={80}
+                strokeWidth={7}
+                color={healthData.score >= 75 ? "#10b981" : healthData.score >= 50 ? "#f59e0b" : "#ef4444"}
+                label={String(healthData.score)}
+                sublabel="/100"
+              />
+              <div>
+                <p className="text-sm font-bold text-themed">
+                  {healthData.score >= 75 ? "Healthy" : healthData.score >= 50 ? "Needs Attention" : "Critical"}
+                </p>
+                <p className="text-[10px] text-themed-muted mt-0.5">Based on content freshness, coverage, and velocity</p>
+              </div>
             </div>
             <div className="space-y-3">
               {Object.entries(healthData.dimensions).map(([key, dim]) => (
                 <div key={key}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-slate-600 capitalize">{key}</span>
-                    <span className="text-[10px] text-slate-400">{dim.detail}</span>
+                    <span className="text-[10px] font-semibold text-themed-secondary capitalize">{key}</span>
+                    <span className="text-[10px] text-themed-muted">{dim.detail}</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${dim.score >= dim.max * 0.75 ? "bg-emerald-500" : dim.score >= dim.max * 0.5 ? "bg-amber-500" : "bg-rose-500"}`}
                       style={{ width: `${(dim.score / dim.max) * 100}%` }}
@@ -1038,26 +1064,33 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </section>
       )}
+      </ScrollReveal>
 
       {/* Production Timeline */}
-      <ProductionTimeline onSelectVideo={onSelectVideo} />
+      <ScrollReveal delay={80}>
+        <ProductionTimeline onSelectVideo={onSelectVideo} />
+      </ScrollReveal>
 
       {/* Render Queue Status */}
-      <RenderQueueStatus />
+      <ScrollReveal delay={80}>
+        <RenderQueueStatus />
+      </ScrollReveal>
 
       {/* Automation Status */}
-      <AutomationStatus />
+      <ScrollReveal delay={80}>
+        <AutomationStatus />
+      </ScrollReveal>
 
       {/* Keyboard shortcut hint */}
       <ViewHelp {...VIEW_HELP.HOME} />
       <div className="hidden md:flex justify-center pt-2">
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-themed-muted">
           Press{" "}
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-themed rounded">
             {navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl"}+K
           </kbd>{" "}
           for command palette.{" "}
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-themed rounded">
             1-9
           </kbd>{" "}
           for quick nav.
