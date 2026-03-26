@@ -1785,7 +1785,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                   thumbnailUrl={video.thumbnailUrl}
                   videoUrl={video.videoUrl}
                   title={video.videoTitle || `@${video.creatorHandle} video`}
-                  subtitle={`@${video.creatorHandle}`}
+                  subtitle={video.creatorHandle}
                   platform={video.platform}
                   views={video.views ?? undefined}
                   outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}

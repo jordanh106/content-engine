@@ -74,19 +74,19 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
   const { data: timelineData } = useQuery<TimelineResponse>({
     queryKey: ["timeline", code],
     queryFn: () => fetch(`/api/videos/${code}/timeline`).then((r) => r.json()),
-    enabled: activeTab === "timeline",
+    staleTime: 60000,
   });
 
   const { data: productionPlanData } = useQuery<{ available: boolean; plan: ProductionPlan | null }>({
     queryKey: ["production-plan", code],
     queryFn: () => fetch(`/api/videos/${code}/production-plan`).then((r) => r.json()),
-    enabled: activeTab === "produce",
+    staleTime: 60000,
   });
 
   const { data: produceData } = useQuery<ProduceTabData>({
     queryKey: ["produce", code],
     queryFn: () => fetch(`/api/produce/${code}`).then((r) => r.json()),
-    enabled: activeTab === "produce",
+    staleTime: 60000,
   });
 
   const latestJob: RenderJob | null = renderJobs?.jobs?.[0] ?? null;
@@ -195,6 +195,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                     {video.code}
                   </span>
                   <StatusBadge status={video.status} />
+                  <AdvanceStatusButton video={video} onAdvanced={() => queryClient.invalidateQueries({ queryKey: ["video-detail", code] })} />
                 </div>
                 <h2 className="text-lg font-serif font-bold text-slate-900 leading-snug">
                   {video.title}
@@ -363,31 +364,157 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
             <div className="text-center py-12 text-slate-400">Video not found</div>
           ) : (
             <>
-              {activeTab === "script" && <ScriptTab video={video} />}
-              {activeTab === "shots" && <ShotsTab video={video} />}
-              {activeTab === "timeline" && timelineData && (
-                <TimelineView
-                  items={timelineData.items}
-                  formatTiming={timelineData.formatTiming}
-                  totalDuration={timelineData.totalDuration}
-                />
-              )}
-              {activeTab === "timeline" && !timelineData && (
-                <div className="text-center py-12 text-slate-400">Loading timeline...</div>
-              )}
-              {activeTab === "produce" && (
+              <NextStepBanner video={video} activeTab={activeTab} />
+              <div style={{ display: activeTab === "script" ? "block" : "none" }}>
+                <ScriptTab video={video} />
+              </div>
+              <div style={{ display: activeTab === "shots" ? "block" : "none" }}>
+                <ShotsTab video={video} />
+              </div>
+              <div style={{ display: activeTab === "timeline" ? "block" : "none" }}>
+                {timelineData ? (
+                  <TimelineView
+                    items={timelineData.items}
+                    formatTiming={timelineData.formatTiming}
+                    totalDuration={timelineData.totalDuration}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-slate-400">Loading timeline...</div>
+                )}
+              </div>
+              <div style={{ display: activeTab === "produce" ? "block" : "none" }}>
                 <ProduceTab code={code} plan={productionPlanData?.plan ?? null} produceData={produceData ?? null} />
-              )}
-              {activeTab === "publish" && <PublishTab code={code} />}
-              {activeTab === "storyboard" && <StoryboardTab code={code} />}
-              {activeTab === "waterfall" && <WaterfallTab code={code} />}
-              {activeTab === "carousels" && <CarouselsTab code={code} />}
-              {activeTab === "info" && <InfoTab video={video} code={code} />}
+              </div>
+              <div style={{ display: activeTab === "publish" ? "block" : "none" }}>
+                <PublishTab code={code} />
+              </div>
+              <div style={{ display: activeTab === "storyboard" ? "block" : "none" }}>
+                <StoryboardTab code={code} />
+              </div>
+              <div style={{ display: activeTab === "waterfall" ? "block" : "none" }}>
+                <WaterfallTab code={code} />
+              </div>
+              <div style={{ display: activeTab === "carousels" ? "block" : "none" }}>
+                <CarouselsTab code={code} />
+              </div>
+              <div style={{ display: activeTab === "info" ? "block" : "none" }}>
+                <InfoTab video={video} code={code} />
+              </div>
             </>
           )}
         </div>
       </div>
     </>
+  );
+};
+
+// ============================================
+// ============================================
+// Next Step Banner — contextual guidance based on status + active tab
+// ============================================
+
+const STATUS_FLOW: Record<string, { next: string; label: string }> = {
+  SCRIPTED: { next: "RECORDING", label: "Recording" },
+  RECORDING: { next: "GENERATING", label: "Generating" },
+  GENERATING: { next: "ASSEMBLED", label: "Assembled" },
+  ASSEMBLED: { next: "SCHEDULED", label: "Scheduled" },
+  SCHEDULED: { next: "PUBLISHED", label: "Published" },
+};
+
+const NextStepBanner: React.FC<{ video: VideoDetailResponse; activeTab: string }> = ({ video, activeTab }) => {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  let message = "";
+  let icon = <ChevronRight size={14} />;
+
+  const status = video.status?.toUpperCase() || "";
+
+  if (status === "SCRIPTED" && activeTab === "script") {
+    if (!video.productionStyle) {
+      message = "Next: Choose a production style in the Info tab to determine your workflow.";
+    } else {
+      message = "Script ready? Start a Session to batch-record voiceovers for this audience.";
+    }
+  } else if (status === "SCRIPTED" && activeTab === "shots") {
+    message = "Review your Cinema Studio prompts. Edit or regenerate any that need refinement before recording.";
+  } else if (status === "RECORDING" && (activeTab === "shots" || activeTab === "produce")) {
+    message = "Recording phase: Complete your shots, then advance to Generating for motion graphics.";
+  } else if (status === "GENERATING") {
+    message = "Generate Remotion graphics and Cinema Studio visuals, then advance to Assembled.";
+  } else if (status === "ASSEMBLED") {
+    message = "Video assembled. Generate captions, review, then schedule for publishing.";
+  }
+
+  if (!message) return null;
+
+  return (
+    <div className="mb-4 flex items-start gap-2 px-3 py-2.5 bg-teal-50 border border-teal-200 rounded-xl">
+      <div className="text-teal-600 mt-0.5 shrink-0">{icon}</div>
+      <p className="text-xs text-teal-800 leading-relaxed flex-1">{message}</p>
+      <button onClick={() => setDismissed(true)} className="text-teal-400 hover:text-teal-600 shrink-0">
+        <X size={12} />
+      </button>
+    </div>
+  );
+};
+
+// ============================================
+// Advance Status Button — prominent next-status action
+// ============================================
+
+const AdvanceStatusButton: React.FC<{ video: VideoDetailResponse; onAdvanced: () => void }> = ({ video, onAdvanced }) => {
+  const [confirming, setConfirming] = useState(false);
+  const status = video.status?.toUpperCase() || "";
+  const flow = STATUS_FLOW[status];
+
+  if (!flow || status === "PUBLISHED") return null;
+
+  const advanceMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/pipeline/${video.code}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: flow.next }),
+      });
+      if (!r.ok) throw new Error("Failed to advance status");
+      return r.json();
+    },
+    onSuccess: () => {
+      setConfirming(false);
+      onAdvanced();
+    },
+  });
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => advanceMutation.mutate()}
+          disabled={advanceMutation.isPending}
+          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+        >
+          {advanceMutation.isPending ? <Loader2 size={8} className="animate-spin" /> : <Check size={8} />}
+          Confirm
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-slate-500 hover:bg-slate-100"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 hover:bg-teal-100 hover:text-teal-700 transition-colors"
+    >
+      <ChevronRight size={8} />
+      {flow.label}
+    </button>
   );
 };
 
@@ -402,8 +529,24 @@ const ADAPT_PLATFORMS = [
   { key: "youtube_long", label: "YT Long", note: "3-5 min, expanded with B-roll cues" },
 ];
 
+type ScriptVersion = { id: number; version: number; script: string; changeNote: string | null; createdAt: string };
+
 const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
-  const lines = video.script.split("\n");
+  const queryClient = useQueryClient();
+
+  // ── Edit state
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(video.script);
+  const [saved, setSaved] = useState(false);
+
+  // ── AI Refine state
+  const [refineOpen, setRefineOpen] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState("");
+
+  // ── Version history state
+  const [showVersions, setShowVersions] = useState(false);
+
+  // ── Adapt state (preserved from original)
   const [adaptedScript, setAdaptedScript] = useState<string | null>(null);
   const [adaptPlatform, setAdaptPlatform] = useState<string | null>(null);
   const [adaptOpen, setAdaptOpen] = useState(false);
@@ -411,6 +554,56 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
   const handleAdaptEnter = () => { if (adaptTimerRef.current) clearTimeout(adaptTimerRef.current); setAdaptOpen(true); };
   const handleAdaptLeave = () => { adaptTimerRef.current = setTimeout(() => setAdaptOpen(false), 250); };
 
+  // Reset draft when video changes or exits edit mode
+  const startEditing = () => { setDraft(video.script); setEditing(true); setSaved(false); };
+  const cancelEditing = () => { setDraft(video.script); setEditing(false); setSaved(false); setRefineOpen(false); };
+
+  // ── Fetch version count
+  const { data: versionsData } = useQuery<{ versions: ScriptVersion[] }>({
+    queryKey: ["script-versions", video.code],
+    queryFn: () => fetch(`/api/videos/${video.code}/script-versions`).then((r) => r.json()),
+  });
+  const versionCount = versionsData?.versions?.length ?? 0;
+
+  // ── Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${video.code}/script`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script: draft }),
+      });
+      if (!r.ok) throw new Error("Save failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      setSaved(true);
+      setEditing(false);
+      queryClient.invalidateQueries({ queryKey: ["video-detail", video.code] });
+      queryClient.invalidateQueries({ queryKey: ["script-versions", video.code] });
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  // ── Refine mutation
+  const refineMutation = useMutation({
+    mutationFn: async (instruction: string) => {
+      const r = await fetch(`/api/videos/${video.code}/refine-script`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentScript: draft, instruction }),
+      });
+      if (!r.ok) throw new Error("Refine failed");
+      return r.json() as Promise<{ script: string }>;
+    },
+    onSuccess: (data) => {
+      setDraft(data.script);
+      setRefinePrompt("");
+      setRefineOpen(false);
+    },
+  });
+
+  // ── Adapt mutation
   const adaptMutation = useMutation({
     mutationFn: async (platform: string) => {
       const r = await fetch(`/api/videos/${video.code}/adapt-script`, {
@@ -427,75 +620,210 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
     },
   });
 
+  const hasChanges = draft !== video.script;
+  const displayScript = editing ? draft : video.script;
+  const lines = displayScript.split("\n");
+
+  // Quick refine suggestions
+  const REFINE_SUGGESTIONS = [
+    "Make the hook stronger",
+    "Shorten to 15 seconds",
+    "Add more personality and humor",
+    "Make it more empathetic",
+    "Simplify the language",
+  ];
+
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-          Voiceover Script
-        </p>
         <div className="flex items-center gap-2">
-          <div className="relative" onMouseEnter={handleAdaptEnter} onMouseLeave={handleAdaptLeave}>
-            <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors">
-              <Wand2 size={10} />
-              Adapt
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            Voiceover Script
+          </p>
+          {versionCount > 0 && (
+            <button
+              onClick={() => setShowVersions(!showVersions)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+            >
+              <GitBranch size={9} />
+              {versionCount} {versionCount === 1 ? "version" : "versions"}
             </button>
-            {adaptOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10">
-                {ADAPT_PLATFORMS.map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => { adaptMutation.mutate(p.key); setAdaptOpen(false); }}
-                    disabled={adaptMutation.isPending}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
-                  >
-                    <span className="text-xs font-medium text-slate-800">{p.label}</span>
-                    <span className="block text-[10px] text-slate-400">{p.note}</span>
-                  </button>
-                ))}
+          )}
+          {saved && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+              <Check size={10} /> Saved
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!editing ? (
+            <>
+              <button
+                onClick={startEditing}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors"
+              >
+                <FileText size={10} />
+                Edit
+              </button>
+              <div className="relative" onMouseEnter={handleAdaptEnter} onMouseLeave={handleAdaptLeave}>
+                <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors">
+                  <Wand2 size={10} />
+                  Adapt
+                </button>
+                {adaptOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10">
+                    {ADAPT_PLATFORMS.map((p) => (
+                      <button
+                        key={p.key}
+                        onClick={() => { adaptMutation.mutate(p.key); setAdaptOpen(false); }}
+                        disabled={adaptMutation.isPending}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <span className="text-xs font-medium text-slate-800">{p.label}</span>
+                        <span className="block text-[10px] text-slate-400">{p.note}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <CopyButton text={adaptedScript || video.script} label="Copy Script" />
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setRefineOpen(!refineOpen)}
+                disabled={refineMutation.isPending}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors"
+              >
+                {refineMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                AI Refine
+              </button>
+              <button
+                onClick={cancelEditing}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveMutation.mutate()}
+                disabled={!hasChanges || saveMutation.isPending}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 transition-colors"
+              >
+                {saveMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                Save Draft
+              </button>
+            </>
+          )}
+          <CopyButton text={adaptedScript || displayScript} label="Copy" />
         </div>
       </div>
 
-      {video.deliveryCues.length > 0 && (
+      {/* AI Refine Panel */}
+      {refineOpen && editing && (
+        <div className="mb-4 border border-violet-200 bg-violet-50 rounded-xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-3">
+            AI Refinement
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {REFINE_SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => refineMutation.mutate(s)}
+                disabled={refineMutation.isPending}
+                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-white border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-40"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={refinePrompt}
+              onChange={(e) => setRefinePrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
+              placeholder="Or type a custom instruction..."
+              className="flex-1 px-3 py-2 text-sm border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+            />
+            <button
+              onClick={() => { if (refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
+              disabled={!refinePrompt.trim() || refineMutation.isPending}
+              className="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 disabled:opacity-40 transition-colors"
+            >
+              {refineMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            </button>
+          </div>
+          {refineMutation.isError && (
+            <p className="text-xs text-rose-500 mt-2">{(refineMutation.error as Error)?.message}</p>
+          )}
+        </div>
+      )}
+
+      {/* Delivery cues */}
+      {video.deliveryCues.length > 0 && !editing && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {video.deliveryCues.map((cue, i) => (
-            <span
-              key={i}
-              className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-full"
-            >
+            <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
               {cue}
             </span>
           ))}
         </div>
       )}
 
-      <div className="bg-slate-50 rounded-xl p-4 space-y-3">
-        {lines.map((line, i) => {
-          if (!line.trim()) return <div key={i} className="h-3" />;
+      {/* Script body — edit mode or preview mode */}
+      {editing ? (
+        <div className="relative">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full min-h-[300px] p-4 text-sm leading-relaxed text-slate-700 bg-white border border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 font-mono resize-y"
+            spellCheck
+          />
+          {hasChanges && (
+            <div className="absolute top-2 right-2">
+              <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Unsaved changes</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+          {lines.map((line, i) => {
+            if (!line.trim()) return <div key={i} className="h-3" />;
+            const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
+            return (
+              <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-amber-600 font-semibold italic" : "text-slate-700")}>
+                {line}
+              </p>
+            );
+          })}
+        </div>
+      )}
 
-          // Highlight delivery cues
-          const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
+      {/* Version History Drawer */}
+      {showVersions && versionsData?.versions && versionsData.versions.length > 0 && (
+        <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden">
+          <div className="bg-slate-50 px-4 py-2 flex items-center justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Version History</p>
+            <button onClick={() => setShowVersions(false)} className="text-slate-400 hover:text-slate-600">
+              <X size={12} />
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+            {versionsData.versions.map((v) => (
+              <div key={v.id} className="px-4 py-3 hover:bg-slate-50 cursor-pointer group" onClick={() => { setDraft(v.script); setEditing(true); }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">v{v.version}</span>
+                  <span className="text-[10px] text-slate-400">{new Date(v.createdAt).toLocaleDateString()}</span>
+                </div>
+                {v.changeNote && <p className="text-[10px] text-slate-500 mt-0.5">{v.changeNote}</p>}
+                <p className="text-[10px] text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity mt-1">Click to load this version</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-          return (
-            <p
-              key={i}
-              className={cn(
-                "text-sm leading-relaxed",
-                isCue
-                  ? "text-amber-600 font-semibold italic"
-                  : "text-slate-700",
-              )}
-            >
-              {line}
-            </p>
-          );
-        })}
-      </div>
-
-      {/* Adapted Script */}
+      {/* Adapted Script (preserved) */}
       {adaptMutation.isPending && (
         <div className="mt-4 flex items-center gap-2 text-sm text-violet-600">
           <Loader2 size={14} className="animate-spin" /> Adapting script...
@@ -529,6 +857,9 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
       )}
       {adaptMutation.isError && (
         <p className="text-xs text-rose-500 mt-2">{(adaptMutation.error as Error)?.message}</p>
+      )}
+      {saveMutation.isError && (
+        <p className="text-xs text-rose-500 mt-2">Save failed: {(saveMutation.error as Error)?.message}</p>
       )}
 
       {/* Consistency Check */}

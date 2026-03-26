@@ -1795,6 +1795,24 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 > [Direct to camera] 'People see baby chiropractor videos online and think we're cracking their spines. Let me show you what really happens.' — Real walkthrough of a gentle infant adjustment with narration and visible nervous system explanation. Directly addresses the viral controversy with trust and transparency.
 
+
+#### A12: Why Your Neck Hurts MORE After Sleeping (Sleep Position Analysis)
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Why does your neck hurt MORE after sleeping?
+
+
+#### E2: Is Prenatal Chiropractic Safe? What a Real Adjustment Actually Looks Like
+
+**Format:** E (Walkthrough) | **Duration:** 50s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [Direct to camera] Most moms think this will hurt. It does not. Here is what actually happens.
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

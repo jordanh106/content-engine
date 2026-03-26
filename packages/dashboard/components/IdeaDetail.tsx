@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Shield,
   Zap,
+  ChevronRight,
 } from "lucide-react";
 import type { Idea, IdeaCategory, FormatId, ConversationMessage, VaultHook, VaultStyle, ScriptVersion, IdeaConcept } from "../shared/types.js";
 import { FORMATS } from "../shared/types.js";
@@ -30,6 +31,7 @@ type IdeaDetailProps = {
   idea: Idea;
   onClose: () => void;
   onUpdated: () => void;
+  onSelectVideo?: (code: string) => void;
 };
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; color: string }> = {
@@ -258,7 +260,7 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
   );
 };
 
-export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated }) => {
+export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated, onSelectVideo }) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("context");
   const [editedPriority, setEditedPriority] = useState(idea.priority);
@@ -1310,33 +1312,22 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
               <p className="text-sm text-emerald-700 font-medium">
                 Video {startProductionMutation.data.videoCode} created in content library
               </p>
-              <p className="text-xs text-emerald-600 mt-0.5">
-                Find it in Pipeline (SCRIPTED) or Library. Idea has been archived.
+              <p className="text-xs text-emerald-600 mt-0.5 mb-2">
+                Idea archived. Video is now in the Pipeline as SCRIPTED.
               </p>
+              {onSelectVideo && (
+                <button
+                  onClick={() => { onSelectVideo(startProductionMutation.data.videoCode); onClose(); }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+                >
+                  Open Video <ChevronRight size={12} />
+                </button>
+              )}
             </div>
           )}
 
           <div className="flex items-center gap-3">
-            {!startProductionMutation.isSuccess && (
-              <button
-                onClick={() => startProductionMutation.mutate()}
-                disabled={startProductionMutation.isPending}
-                className={cn(
-                  "flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
-                  startProductionMutation.isPending
-                    ? "bg-slate-100 text-slate-400 cursor-wait"
-                    : "bg-violet-600 text-white hover:bg-violet-700",
-                )}
-              >
-                {startProductionMutation.isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Rocket size={14} />
-                )}
-                {startProductionMutation.isPending ? "Creating..." : "Start Production"}
-              </button>
-            )}
-
+            {/* Primary action: Develop Script */}
             <button
               onClick={() => developMutation.mutate()}
               disabled={developMutation.isPending}
@@ -1358,6 +1349,27 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   ? "Regenerate"
                   : "Develop Script"}
             </button>
+
+            {/* Secondary action: Start Production (only after script exists) */}
+            {!startProductionMutation.isSuccess && developMutation.data && (
+              <button
+                onClick={() => startProductionMutation.mutate()}
+                disabled={startProductionMutation.isPending}
+                className={cn(
+                  "flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
+                  startProductionMutation.isPending
+                    ? "bg-slate-100 text-slate-400 cursor-wait"
+                    : "bg-violet-600 text-white hover:bg-violet-700",
+                )}
+              >
+                {startProductionMutation.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Rocket size={14} />
+                )}
+                {startProductionMutation.isPending ? "Creating..." : "Start Production"}
+              </button>
+            )}
 
             {!confirmArchive ? (
               <button

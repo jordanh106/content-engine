@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import { db } from "../db.js";
 import { videoStatus, contentWaterfall, performanceMetrics, scriptVersions, vaultHooks, thumbnailConcepts } from "../../shared/schema.js";
-import { parseContentLibrary } from "../parsers/content-library.js";
+import { parseContentLibrary, updateVideoScript, invalidateCache } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
 import { parseVibeMotion } from "../parsers/vibe-motion.js";
@@ -836,6 +836,147 @@ Return ONLY JSON, no markdown.`,
 
     const completedCount = items.filter((i) => i.completed).length;
     res.json({ items, completedCount, totalCount: items.length, allComplete: completedCount === items.length });
+  });
+
+  // ── Phase 1: Script Editor API ──────────────────────────────────────
+
+  // PUT /api/videos/:code/script - Update script in content-library.md + create version
+  router.put("/:code/script", (req, res) => {
+    try {
+      const { code } = req.params;
+      const { script, changeNote } = req.body as { script: string; changeNote?: string };
+
+      if (!script || typeof script !== "string") {
+        res.status(400).json({ error: "Missing script field" });
+        return;
+      }
+
+      // Verify video exists
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      // Write to content-library.md
+      const success = updateVideoScript(contentLibraryPath, code, script);
+      if (!success) {
+        res.status(500).json({ error: "Failed to update script in content-library.md" });
+        return;
+      }
+
+      // Get current max version for this video
+      const existing = db
+        .select()
+        .from(scriptVersions)
+        .where(eq(scriptVersions.videoCode, code))
+        .all();
+      const maxVersion = existing.reduce((max, v) => Math.max(max, v.version ?? 0), 0);
+      const newVersion = maxVersion + 1;
+
+      // Create script version record
+      db.insert(scriptVersions).values({
+        videoCode: code,
+        ideaTopic: video.title,
+        version: newVersion,
+        script,
+        changeNote: changeNote || `Manual edit v${newVersion}`,
+      }).run();
+
+      res.json({ success: true, version: newVersion });
+    } catch (error) {
+      console.error("[videos] PUT /:code/script error:", error);
+      res.status(500).json({ error: "Failed to save script" });
+    }
+  });
+
+  // GET /api/videos/:code/script-versions - List all versions for a video
+  router.get("/:code/script-versions", (req, res) => {
+    try {
+      const { code } = req.params;
+      const versions = db
+        .select()
+        .from(scriptVersions)
+        .where(eq(scriptVersions.videoCode, code))
+        .orderBy(desc(scriptVersions.version))
+        .all();
+
+      res.json({ versions });
+    } catch (error) {
+      console.error("[videos] GET /:code/script-versions error:", error);
+      res.status(500).json({ error: "Failed to fetch script versions" });
+    }
+  });
+
+  // POST /api/videos/:code/refine-script - AI refinement (returns suggestion, doesn't persist)
+  router.post("/:code/refine-script", async (req, res) => {
+    let client: Anthropic | null = null;
+    try {
+      client = new Anthropic();
+    } catch {
+      res.status(503).json({ error: "AI unavailable. Set ANTHROPIC_API_KEY." });
+      return;
+    }
+
+    try {
+      const { code } = req.params;
+      const { currentScript, instruction } = req.body as { currentScript: string; instruction: string };
+
+      if (!currentScript || !instruction) {
+        res.status(400).json({ error: "Missing currentScript or instruction" });
+        return;
+      }
+
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      // Load brand voice
+      const brandPath = path.resolve(contentLibraryPath, "../../brand.md");
+      let brandVoice = "";
+      try { brandVoice = fs.readFileSync(brandPath, "utf-8"); } catch { /* no brand file */ }
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{
+          role: "user",
+          content: `You are refining a video script for a chiropractic practice. Apply the user's instruction while preserving the script's format, delivery cues, and educational value.
+
+BRAND VOICE (follow this):
+${brandVoice.slice(0, 1500)}
+
+CURRENT SCRIPT (Format ${video.format} - ${video.formatName}, ${video.duration}s):
+${currentScript}
+
+USER INSTRUCTION: "${instruction}"
+
+Rules:
+- Keep delivery cues in [brackets] (e.g., [Warm, empathetic])
+- No emdashes. Use commas, periods, or restructure.
+- Maintain the educational core message
+- Match the target duration (~${video.duration}s when spoken)
+- Patient-facing tone: warm, educational, empowering
+
+Return the refined script text only. No explanation, no JSON wrapper.`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        res.status(500).json({ error: "No AI response" });
+        return;
+      }
+
+      res.json({ script: textBlock.text.trim(), instruction });
+    } catch (error) {
+      console.error("[videos] POST /:code/refine-script error:", error);
+      res.status(500).json({ error: "Failed to refine script" });
+    }
   });
 
   return router;

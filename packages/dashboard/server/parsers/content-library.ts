@@ -210,3 +210,76 @@ export function parseContentLibrary(filePath: string): ParsedVideo[] {
 export function getContentLibraryPath(industryDir: string): string {
   return path.join(industryDir, "content-library.md");
 }
+
+/**
+ * Update a video's script in content-library.md.
+ * Finds the video by code, replaces the blockquote script lines,
+ * preserves all other content (metadata, shots, vibe motion).
+ */
+export function updateVideoScript(filePath: string, videoCode: string, newScript: string): boolean {
+  const content = fs.readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
+
+  // Find the video header line: #### CODE: Title
+  const headerPattern = new RegExp(`^####\\s+${videoCode}:\\s+`);
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (headerPattern.test(lines[i])) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx === -1) return false;
+
+  // Find the "**Voiceover Script:**" line after the header
+  let voiceoverIdx = -1;
+  for (let i = headerIdx + 1; i < lines.length && i < headerIdx + 10; i++) {
+    if (lines[i].startsWith("**Voiceover")) {
+      voiceoverIdx = i;
+      break;
+    }
+  }
+  if (voiceoverIdx === -1) return false;
+
+  // Find the range of blockquote lines (the script body)
+  let scriptStart = voiceoverIdx + 1;
+  // Skip any blank lines between the voiceover header and first blockquote
+  while (scriptStart < lines.length && lines[scriptStart].trim() === "") scriptStart++;
+
+  let scriptEnd = scriptStart;
+  while (scriptEnd < lines.length) {
+    const l = lines[scriptEnd].trim();
+    if (l.startsWith(">")) {
+      scriptEnd++;
+    } else if (l === "") {
+      // Could be paragraph break within script — peek ahead
+      let peek = scriptEnd + 1;
+      while (peek < lines.length && lines[peek].trim() === "") peek++;
+      if (peek < lines.length && lines[peek].trim().startsWith(">")) {
+        scriptEnd = peek;
+        continue;
+      }
+      break;
+    } else {
+      break;
+    }
+  }
+
+  // Build the new blockquote lines from the script text
+  const newScriptLines = newScript
+    .split("\n")
+    .map((line) => {
+      if (line.trim() === "") return "";
+      // Don't double-prefix if already has >
+      return line.startsWith("> ") ? line : `> ${line}`;
+    });
+
+  // Splice: remove old script lines, insert new ones
+  const before = lines.slice(0, scriptStart);
+  const after = lines.slice(scriptEnd);
+  const updated = [...before, ...newScriptLines, ...after];
+
+  fs.writeFileSync(filePath, updated.join("\n"), "utf-8");
+  invalidateCache();
+  return true;
+}

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { desc, eq, gte, lte, and, sql, like } from "drizzle-orm";
+import { desc, eq, gte, lte, and, sql, like, inArray } from "drizzle-orm";
 import { db } from "../db.js";
 import { creatorVideos } from "../../shared/schema.js";
 import { parseViralInsights } from "../parsers/viral-insights.js";
@@ -13,7 +13,7 @@ export function createDiscoverRouter(
 ) {
   const router = Router();
 
-  // GET /api/discover/feed - All creator videos with filters + trending topics
+  // GET /api/discover/feed - Paginated creator videos with filters + trending topics
   router.get("/feed", (_req, res) => {
     try {
       const {
@@ -22,7 +22,12 @@ export function createDiscoverRouter(
         platform,
         dateRange,
         search,
+        limit: limitStr,
+        offset: offsetStr,
       } = _req.query as Record<string, string | undefined>;
+
+      const limit = Math.min(parseInt(limitStr || "30", 10) || 30, 100);
+      const offset = parseInt(offsetStr || "0", 10) || 0;
 
       // Build conditions
       const conditions = [];
@@ -65,34 +70,81 @@ export function createDiscoverRouter(
         }
       });
 
-      // Fire-and-forget thumbnail resolution for any missing
-      for (const row of sorted.slice(0, 30)) {
+      // Paginate
+      const page = sorted.slice(offset, offset + limit);
+      const hasMore = offset + limit < sorted.length;
+
+      // Fire-and-forget thumbnail resolution for current page
+      for (const row of page) {
         if (row.videoUrl && row.videoUrl !== "unknown" && (!row.thumbnailUrl || !row.thumbnailUrl.startsWith("/thumbnails/"))) {
           ensureThumbnail(row, thumbnailsDir).catch(() => {});
         }
       }
 
-      // Status counts
-      const allRows = db.select().from(creatorVideos).all();
-      const statusCounts: Record<string, number> = { all: allRows.length, inbox: 0, starred: 0, saved: 0, archived: 0 };
-      for (const r of allRows) {
-        const s = r.status || "inbox";
-        statusCounts[s] = (statusCounts[s] || 0) + 1;
+      // Status counts + trending only on first page
+      let statusCounts: Record<string, number> | null = null;
+      let trending: TrendingTopic[] | null = null;
+
+      if (offset === 0) {
+        const allRows = db.select().from(creatorVideos).all();
+        statusCounts = { all: allRows.length, inbox: 0, starred: 0, saved: 0, archived: 0 };
+        for (const r of allRows) {
+          const s = r.status || "inbox";
+          statusCounts[s] = (statusCounts[s] || 0) + 1;
+        }
+
+        const digest = parseViralInsights(viralInsightsDir);
+        trending = digest?.trendingTopics ?? [];
       }
 
-      // Trending topics from latest viral insights
-      const digest = parseViralInsights(viralInsightsDir);
-      const trending: TrendingTopic[] = digest?.trendingTopics ?? [];
-
       res.json({
-        videos: sorted,
+        videos: page,
         total: sorted.length,
         statusCounts,
         trending,
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null,
       });
     } catch (error) {
       console.error("[discover] Error building feed:", error);
       res.status(500).json({ error: "Failed to build discover feed" });
+    }
+  });
+
+  // PUT /api/discover/batch-status - Bulk update video statuses
+  router.put("/batch-status", (req, res) => {
+    try {
+      const { ids, status: newStatus } = req.body as { ids: number[]; status: string };
+      if (!ids?.length || !newStatus) {
+        res.status(400).json({ error: "ids and status are required" });
+        return;
+      }
+      const validStatuses = ["inbox", "starred", "saved", "archived"];
+      if (!validStatuses.includes(newStatus)) {
+        res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
+        return;
+      }
+      db.update(creatorVideos).set({ status: newStatus }).where(inArray(creatorVideos.id, ids)).run();
+      res.json({ updated: ids.length });
+    } catch (error) {
+      console.error("[discover] Error batch updating status:", error);
+      res.status(500).json({ error: "Failed to batch update" });
+    }
+  });
+
+  // DELETE /api/discover/batch - Bulk delete videos
+  router.delete("/batch", (req, res) => {
+    try {
+      const { ids } = req.body as { ids: number[] };
+      if (!ids?.length) {
+        res.status(400).json({ error: "ids are required" });
+        return;
+      }
+      db.delete(creatorVideos).where(inArray(creatorVideos.id, ids)).run();
+      res.json({ deleted: ids.length });
+    } catch (error) {
+      console.error("[discover] Error batch deleting:", error);
+      res.status(500).json({ error: "Failed to batch delete" });
     }
   });
 

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useState, useCallback } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Compass,
   Link2,
@@ -7,26 +7,33 @@ import {
   Star,
   Bookmark,
   Archive,
-  Inbox,
   TrendingUp,
   Plus,
-  Check,
   Sparkles,
+  X,
+  Trash2,
+  CheckSquare,
 } from "lucide-react";
 import { VideoGrid } from "./ui/VideoGrid.js";
+import { BulkActionBar } from "./ui/BulkActionBar.js";
+import { VideoBottomSheet } from "./ui/VideoBottomSheet.js";
 import type { CardAction } from "./ui/VideoThumbnailCard.js";
 import type { DashboardView, CreatorVideo, TrendingTopic } from "../shared/types.js";
+
+const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
 type DiscoverFeedProps = {
   onSelectVideo: (code: string) => void;
   onNavigate: (view: DashboardView) => void;
 };
 
-type FeedResponse = {
+type FeedPage = {
   videos: CreatorVideo[];
   total: number;
-  statusCounts: Record<string, number>;
-  trending: TrendingTopic[];
+  statusCounts: Record<string, number> | null;
+  trending: TrendingTopic[] | null;
+  hasMore: boolean;
+  nextOffset: number | null;
 };
 
 const STATUS_TABS = [
@@ -52,7 +59,6 @@ const DATE_FILTERS = [
   { key: "90", label: "90 days" },
 ] as const;
 
-// Gradient colors for trending topic cards
 const TOPIC_GRADIENTS = [
   "from-violet-500 to-purple-600",
   "from-teal-500 to-emerald-600",
@@ -68,19 +74,33 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
   const [sort, setSort] = useState("dateAdded");
   const [dateRange, setDateRange] = useState("all");
   const [urlInput, setUrlInput] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
+  const [bottomSheetVideo, setBottomSheetVideo] = useState<CreatorVideo | null>(null);
+  const [showUrlModal, setShowUrlModal] = useState(false);
 
-  // Build query params
-  const params = new URLSearchParams();
-  if (activeStatus !== "all") params.set("status", activeStatus);
-  params.set("sort", sort);
-  if (dateRange !== "all") params.set("dateRange", dateRange);
-
-  const { data, isLoading } = useQuery<FeedResponse>({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery<FeedPage>({
     queryKey: ["discover-feed", activeStatus, sort, dateRange],
-    queryFn: () => fetch(`/api/discover/feed?${params}`).then((r) => r.json()),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams();
+      if (activeStatus !== "all") params.set("status", activeStatus);
+      params.set("sort", sort);
+      if (dateRange !== "all") params.set("dateRange", dateRange);
+      if (pageParam) params.set("offset", String(pageParam));
+      params.set("limit", "30");
+      return fetch(`/api/discover/feed?${params}`).then((r) => r.json());
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
   });
 
-  // Quick-add URL mutation
   const addUrlMutation = useMutation({
     mutationFn: async (url: string) => {
       const r = await fetch("/api/discover/add-url", {
@@ -100,7 +120,6 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     },
   });
 
-  // Status update mutation
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const r = await fetch(`/api/creator-videos/${id}/status`, {
@@ -116,7 +135,6 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     },
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const r = await fetch(`/api/creator-videos/${id}`, { method: "DELETE" });
@@ -128,7 +146,50 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     },
   });
 
+  // Bulk action mutations
+  const batchStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: number[]; status: string }) => {
+      const r = await fetch("/api/discover/batch-status", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, status }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      queryClient.invalidateQueries({ queryKey: ["discover-feed"] });
+    },
+  });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const r = await fetch("/api/discover/batch", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      queryClient.invalidateQueries({ queryKey: ["discover-feed"] });
+    },
+  });
+
   const handleVideoClick = (video: CreatorVideo) => {
+    if (selectionMode) {
+      toggleSelect(video.id);
+      return;
+    }
+    if (isMobile) {
+      setBottomSheetVideo(video);
+      return;
+    }
     if (video.videoUrl && video.videoUrl !== "unknown") {
       window.open(video.videoUrl, "_blank", "noopener");
     }
@@ -149,120 +210,167 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     addUrlMutation.mutate(url);
   };
 
-  const videos = data?.videos ?? [];
-  const statusCounts = data?.statusCounts ?? {};
-  const trending = data?.trending ?? [];
+  const toggleSelect = useCallback((id: number, shiftKey = false) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && lastSelectedId !== null) {
+        // Range select
+        const allVideos = videos;
+        const lastIdx = allVideos.findIndex((v) => v.id === lastSelectedId);
+        const curIdx = allVideos.findIndex((v) => v.id === id);
+        if (lastIdx >= 0 && curIdx >= 0) {
+          const [start, end] = lastIdx < curIdx ? [lastIdx, curIdx] : [curIdx, lastIdx];
+          for (let i = start; i <= end; i++) {
+            next.add(allVideos[i].id);
+          }
+        }
+      } else if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    setLastSelectedId(id);
+    if (!selectionMode) setSelectionMode(true);
+  }, [lastSelectedId, selectionMode]);
+
+  const handleBulkAction = (action: string) => {
+    const ids = Array.from(selectedIds);
+    if (action === "delete") {
+      batchDeleteMutation.mutate(ids);
+    } else {
+      batchStatusMutation.mutate({ ids, status: action });
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+    setLastSelectedId(null);
+  };
+
+  // Flatten paginated data
+  const videos = data?.pages.flatMap((p) => p.videos) ?? [];
+  const statusCounts = data?.pages[0]?.statusCounts ?? {};
+  const trending = data?.pages[0]?.trending ?? [];
 
   return (
-    <div className="space-y-5 pb-24 md:pb-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 pb-24 md:pb-8">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Compass size={20} className="text-teal-600" />
-          <h1 className="text-xl font-bold text-slate-900 font-serif">Discover</h1>
+        <div className="flex items-center gap-2.5 mb-1">
+          <Compass size={22} className="text-teal-600" />
+          <h1 className="text-2xl font-bold text-slate-900 font-serif">Discover</h1>
         </div>
         <p className="text-sm text-slate-500">
           Video inspiration from creators you follow and across the web.
         </p>
       </div>
 
-      {/* Paste URL input */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmitUrl()}
-            placeholder="Paste YouTube, TikTok, or Instagram URL..."
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30 bg-white"
-          />
+      {/* URL input card (hidden on mobile, replaced by FAB) */}
+      <div className="hidden md:block bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmitUrl()}
+              placeholder="Paste YouTube, TikTok, or Instagram URL..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-slate-50"
+            />
+          </div>
+          <button
+            onClick={handleSubmitUrl}
+            disabled={addUrlMutation.isPending || !urlInput.trim()}
+            className="px-5 py-3 rounded-xl bg-teal-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2 shrink-0 shadow-sm"
+          >
+            {addUrlMutation.isPending ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Plus size={14} />
+            )}
+            Add
+          </button>
         </div>
-        <button
-          onClick={handleSubmitUrl}
-          disabled={addUrlMutation.isPending || !urlInput.trim()}
-          className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 shrink-0"
-        >
-          {addUrlMutation.isPending ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Plus size={14} />
-          )}
-          Add
-        </button>
-      </div>
-      {addUrlMutation.isError && (
-        <p className="text-xs text-rose-500">{(addUrlMutation.error as Error).message}</p>
-      )}
-      {addUrlMutation.isSuccess && (addUrlMutation.data as { duplicate: boolean }).duplicate && (
-        <p className="text-xs text-amber-600">Video already exists in your feed.</p>
-      )}
-
-      {/* Status tabs with counts */}
-      <div className="flex gap-2 flex-wrap">
-        {STATUS_TABS.map((tab) => {
-          const count = tab.key === "all" ? statusCounts.all ?? 0 : statusCounts[tab.key] ?? 0;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveStatus(tab.key)}
-              className={`
-                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all
-                ${activeStatus === tab.key
-                  ? "bg-teal-600 text-white shadow-sm"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-700"
-                }
-              `}
-            >
-              {tab.icon}
-              {tab.label}
-              <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                activeStatus === tab.key
-                  ? "bg-white/20 text-white"
-                  : "bg-slate-100 text-slate-500"
-              }`}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
+        {addUrlMutation.isError && (
+          <p className="text-xs text-rose-500 mt-2">{(addUrlMutation.error as Error).message}</p>
+        )}
+        {addUrlMutation.isSuccess && (addUrlMutation.data as { duplicate: boolean }).duplicate && (
+          <p className="text-xs text-amber-600 mt-2">Video already exists in your feed.</p>
+        )}
       </div>
 
-      {/* Sort + Date filter row */}
-      <div className="flex flex-wrap items-center gap-3 text-[11px]">
-        <span className="text-slate-400 font-medium">Sort:</span>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setSort(opt.key)}
-              className={`px-2.5 py-1 rounded-md font-bold transition-colors ${
-                sort === opt.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+      {/* Status tabs + Sort/Filter bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
+        {/* Status tabs */}
+        <div className="flex gap-2 flex-wrap">
+          {STATUS_TABS.map((tab) => {
+            const count = tab.key === "all" ? statusCounts.all ?? 0 : statusCounts[tab.key] ?? 0;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveStatus(tab.key)}
+                className={`
+                  inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all
+                  ${activeStatus === tab.key
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "bg-slate-50 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-700"
+                  }
+                `}
+              >
+                {tab.icon}
+                {tab.label}
+                <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  activeStatus === tab.key
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/60 text-slate-500"
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <span className="text-slate-300">|</span>
-        <span className="text-slate-400 font-medium">Published:</span>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
-          {DATE_FILTERS.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setDateRange(opt.key)}
-              className={`px-2 py-1 rounded-md font-bold transition-colors ${
-                dateRange === opt.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* Sort + Date filter */}
+        <div className="flex flex-wrap items-center gap-3 text-[11px]">
+          <span className="text-slate-400 font-semibold uppercase tracking-wider">Sort</span>
+          <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSort(opt.key)}
+                className={`px-3 py-1.5 rounded-md font-bold transition-colors ${
+                  sort === opt.key
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-5 bg-slate-200" />
+
+          <span className="text-slate-400 font-semibold uppercase tracking-wider">Published</span>
+          <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
+            {DATE_FILTERS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setDateRange(opt.key)}
+                className={`px-2.5 py-1.5 rounded-md font-bold transition-colors ${
+                  dateRange === opt.key
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -272,16 +380,24 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
         onVideoClick={handleVideoClick}
         onVideoAction={handleVideoAction}
         isLoading={isLoading}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={fetchNextPage}
+        selectionMode={selectionMode}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
         emptyState={
-          <div className="text-center py-16 space-y-3">
-            <Compass size={40} className="text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-600">No videos yet</h3>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto">
-              Paste a YouTube or TikTok URL above, or scan creators from the Watchlist to start discovering.
+          <div className="text-center py-20 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
+              <Compass size={28} className="text-slate-400" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-700">No videos yet</h3>
+            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
+              Paste a YouTube or TikTok URL above, or scan creators from the Watchlist to start building your inspiration feed.
             </p>
             <button
               onClick={() => onNavigate("WATCHLIST")}
-              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-teal-700"
+              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-teal-600 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-teal-700 shadow-sm"
             >
               Go to Watchlist
             </button>
@@ -289,34 +405,49 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
         }
       />
 
-      {/* Trending Topics section (below video grid) */}
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          totalCount={videos.length}
+          onAction={handleBulkAction}
+          onSelectAll={() => {
+            setSelectedIds(new Set(videos.map((v) => v.id)));
+            if (!selectionMode) setSelectionMode(true);
+          }}
+          onDeselectAll={exitSelectionMode}
+          isPending={batchStatusMutation.isPending || batchDeleteMutation.isPending}
+        />
+      )}
+
+      {/* Trending Topics */}
       {trending.length > 0 && (
-        <section className="pt-4 border-t border-slate-100">
-          <div className="flex items-center gap-2 mb-3">
+        <section className="pt-2">
+          <div className="flex items-center gap-2 mb-4">
             <Sparkles size={16} className="text-violet-500" />
             <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
               Trending Topics
             </h2>
-            <span className="text-[10px] text-slate-400">from weekly intelligence digest</span>
+            <span className="text-[10px] text-slate-400 font-medium">from weekly intelligence digest</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {trending.map((topic, i) => {
               const gradient = TOPIC_GRADIENTS[i % TOPIC_GRADIENTS.length];
               return (
                 <div
                   key={i}
                   onClick={() => onNavigate("IDEAS")}
-                  className="relative overflow-hidden rounded-xl p-3.5 cursor-pointer group hover:shadow-md transition-all"
+                  className="relative overflow-hidden rounded-2xl p-4 cursor-pointer group hover:shadow-md transition-all"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
                   <div className="relative z-10">
-                    <div className="flex items-start justify-between mb-1.5">
+                    <div className="flex items-start justify-between mb-2">
                       <TrendingUp size={14} className="text-white/70" />
-                      <span className="text-white/60 text-[9px] font-medium">{topic.platforms.join(", ")}</span>
+                      <span className="text-white/60 text-[9px] font-semibold uppercase tracking-wider">{topic.platforms.join(", ")}</span>
                     </div>
                     <h3 className="text-white font-bold text-sm leading-tight">{topic.topic}</h3>
                     {topic.context && (
-                      <p className="text-white/70 text-[10px] mt-1 leading-snug line-clamp-2">{topic.context}</p>
+                      <p className="text-white/70 text-[10px] mt-1.5 leading-snug line-clamp-2">{topic.context}</p>
                     )}
                   </div>
                 </div>
@@ -324,6 +455,62 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
             })}
           </div>
         </section>
+      )}
+
+      {/* Mobile FAB for adding URLs */}
+      {!selectionMode && (
+        <button
+          onClick={() => setShowUrlModal(true)}
+          className="md:hidden fixed bottom-24 right-4 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg hover:bg-teal-700 flex items-center justify-center z-30 active:scale-95 transition-transform"
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Mobile URL input modal */}
+      {showUrlModal && (
+        <div className="fixed inset-0 z-50 animate-fade-in" onClick={() => setShowUrlModal(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="fixed bottom-0 inset-x-0 bg-white rounded-t-3xl p-5 animate-slide-up safe-area-bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-center mb-3">
+              <div className="w-10 h-1 rounded-full bg-slate-300" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-800 mb-3">Add Video</h3>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Link2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { handleSubmitUrl(); setShowUrlModal(false); } }}
+                  placeholder="Paste URL..."
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 bg-slate-50"
+                />
+              </div>
+              <button
+                onClick={() => { handleSubmitUrl(); setShowUrlModal(false); }}
+                disabled={addUrlMutation.isPending || !urlInput.trim()}
+                className="px-5 py-3 rounded-xl bg-teal-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center gap-2 shrink-0"
+              >
+                {addUrlMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile bottom sheet for video details */}
+      {bottomSheetVideo && (
+        <VideoBottomSheet
+          video={bottomSheetVideo}
+          onAction={(action) => handleVideoAction(bottomSheetVideo, action)}
+          onClose={() => setBottomSheetVideo(null)}
+        />
       )}
     </div>
   );

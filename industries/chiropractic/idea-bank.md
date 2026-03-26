@@ -139,4 +139,5 @@ Move ideas here after they've been promoted to the calendar. Keep for reference.
 | When Should My Child First See a Chiropractor? | A (Explainer) | 2026-03-18 | |
 | Why Your Kid's Backpack is Causing Shoulder Problems | A | 2026-03-19 | |
 | What Actually Happens at a Baby's First Chiropractic Visit | E | 2026-03-20 | |
+| Is Prenatal Chiropractic Safe? What a Real Adjustment Actually Looks Like | E (Walkthrough) with Myth Buster elements | 2026-03-25 | |
 - **Why lower back pain returns every morning** | Format: | Hook: | Priority: High | Source: Inspiration Inbox | Date: 2026-03-18 | Category: evergreen
