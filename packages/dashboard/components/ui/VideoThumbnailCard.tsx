@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Eye, Play, MoreHorizontal, Star, Bookmark, Archive, Trash2, Check, Loader2 } from "lucide-react";
+import { MetricBadge } from "./MetricBadge.js";
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
@@ -69,6 +70,8 @@ export type VideoThumbnailCardProps = {
   subtitle: string;
   platform: string;
   views?: number;
+  likes?: number;
+  saves?: number;
   outlierScore?: number;
   durationSeconds?: number;
   createdAt?: string;
@@ -95,6 +98,8 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
   subtitle,
   platform,
   views,
+  likes,
+  saves,
   outlierScore,
   durationSeconds,
   createdAt,
@@ -259,7 +264,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
       >
         {/* Thumbnail area with blurred backdrop for mixed aspect ratios */}
         <div
-          className="relative aspect-video overflow-hidden rounded-t-2xl bg-black/90 cursor-pointer"
+          className={`relative ${isSm ? "aspect-video" : "aspect-[9/16]"} overflow-hidden rounded-t-2xl bg-black/90 cursor-pointer`}
           onClick={handleCardClick}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -376,8 +381,17 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
             </span>
           )}
 
-          {/* Subtle gradient overlay at bottom for depth */}
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent z-[2] pointer-events-none" />
+          {/* Hook text overlay at bottom */}
+          {!isSm && !showPreview && (
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-16 pb-3 px-3 z-[3] pointer-events-none">
+              <p className="text-white text-[12px] font-bold leading-snug line-clamp-3 drop-shadow-lg">
+                {title}
+              </p>
+            </div>
+          )}
+          {isSm && (
+            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/30 to-transparent z-[2] pointer-events-none" />
+          )}
         </div>
 
         {/* Info section */}
@@ -387,22 +401,20 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
               <h3 className={`font-semibold text-themed leading-snug line-clamp-2 ${isSm ? "text-[11px]" : "text-[13px]"}`}>
                 {title}
               </h3>
-              <div className={`flex items-center gap-1.5 mt-1.5 ${isSm ? "text-[9px]" : "text-[11px]"}`}>
+              <div className={`flex items-center gap-1.5 mt-1 ${isSm ? "text-[9px]" : "text-[11px]"}`}>
                 <span className="text-themed-tertiary truncate">{subtitle}</span>
-                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold ${PLATFORM_COLORS[platform] ?? "bg-slate-200 text-slate-700"}`}>
+                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold ${PLATFORM_COLORS[platform] ?? "bg-surface-hover text-themed-secondary"}`}>
                   {platform}
                 </span>
-              </div>
-              <div className={`flex items-center gap-2 mt-1 text-themed-muted ${isSm ? "text-[9px]" : "text-[10px]"}`}>
-                {views !== undefined && views > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    <Eye size={10} />
-                    {formatViews(views)} views
-                  </span>
-                )}
                 {createdAt && (
-                  <span>{timeAgo(createdAt)}</span>
+                  <span className="text-themed-muted text-[9px] ml-auto shrink-0">{timeAgo(createdAt)}</span>
                 )}
+              </div>
+              {/* Color-coded metric badges */}
+              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                {views !== undefined && views > 0 && <MetricBadge type="views" value={views} />}
+                {likes !== undefined && likes > 0 && <MetricBadge type="engagement" value={likes} />}
+                {saves !== undefined && saves > 0 && <MetricBadge type="saves" value={saves} />}
               </div>
             </div>
 

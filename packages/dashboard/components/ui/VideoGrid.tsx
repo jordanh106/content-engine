@@ -21,11 +21,14 @@ type VideoGridProps = {
 
 const SkeletonCard: React.FC = () => (
   <div className="w-full">
-    <div className="aspect-video bg-slate-200 animate-pulse rounded-2xl" />
+    <div className="aspect-[9/16] bg-surface-hover animate-pulse rounded-2xl" />
     <div className="mt-3 space-y-2 px-1">
-      <div className="h-4 bg-slate-200 rounded animate-pulse w-5/6" />
-      <div className="h-3 bg-slate-100 rounded animate-pulse w-1/2" />
-      <div className="h-2.5 bg-slate-100 rounded animate-pulse w-1/3" />
+      <div className="h-3 bg-surface-hover rounded animate-pulse w-5/6" />
+      <div className="h-2.5 bg-surface-hover rounded animate-pulse w-1/2" />
+      <div className="flex gap-1 mt-1">
+        <div className="h-4 bg-surface-hover rounded w-12 animate-pulse" />
+        <div className="h-4 bg-surface-hover rounded w-10 animate-pulse" />
+      </div>
     </div>
   </div>
 );
@@ -54,8 +57,8 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
           <SkeletonCard key={i} />
         ))}
       </div>
@@ -68,7 +71,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {videos.map((video) => (
           <VideoThumbnailCard
             key={video.id}
@@ -78,6 +81,8 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
             subtitle={video.creatorHandle}
             platform={video.platform}
             views={typeof video.views === "number" ? video.views : undefined}
+            likes={typeof video.likes === "number" ? video.likes : undefined}
+            saves={typeof video.saves === "number" ? video.saves : undefined}
             outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
             durationSeconds={video.durationSeconds ?? undefined}
             createdAt={video.createdAt}

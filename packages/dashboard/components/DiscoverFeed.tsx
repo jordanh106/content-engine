@@ -19,6 +19,8 @@ import { BulkActionBar } from "./ui/BulkActionBar.js";
 import { VideoBottomSheet } from "./ui/VideoBottomSheet.js";
 import type { CardAction } from "./ui/VideoThumbnailCard.js";
 import { ScrollReveal } from "./ui/animations.js";
+import { FilterSidebar, DEFAULT_FILTERS } from "./ui/FilterSidebar.js";
+import type { FilterValues } from "./ui/FilterSidebar.js";
 import type { DashboardView, CreatorVideo, TrendingTopic } from "../shared/types.js";
 
 const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
@@ -37,27 +39,9 @@ type FeedPage = {
   nextOffset: number | null;
 };
 
-const STATUS_TABS = [
-  { key: "all", label: "All", icon: <Compass size={13} /> },
-  { key: "starred", label: "Starred", icon: <Star size={13} /> },
-  { key: "saved", label: "Saved", icon: <Bookmark size={13} /> },
-  { key: "archived", label: "Archived", icon: <Archive size={13} /> },
-] as const;
-
-const SORT_OPTIONS = [
-  { key: "dateAdded", label: "Date Added" },
-  { key: "views", label: "Views" },
-  { key: "outlier", label: "Outlier" },
-  { key: "creator", label: "Creator" },
-] as const;
-
-const DATE_FILTERS = [
-  { key: "all", label: "All time" },
-  { key: "7", label: "7 days" },
-  { key: "14", label: "14 days" },
-  { key: "30", label: "30 days" },
-  { key: "60", label: "60 days" },
-  { key: "90", label: "90 days" },
+const FEED_TABS = [
+  { key: "feed", label: "Feed", icon: <Compass size={13} /> },
+  { key: "vault", label: "Vault", icon: <Bookmark size={13} /> },
 ] as const;
 
 const TOPIC_GRADIENTS = [
@@ -71,9 +55,8 @@ const TOPIC_GRADIENTS = [
 
 export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNavigate }) => {
   const queryClient = useQueryClient();
-  const [activeStatus, setActiveStatus] = useState("all");
-  const [sort, setSort] = useState("dateAdded");
-  const [dateRange, setDateRange] = useState("all");
+  const [activeTab, setActiveTab] = useState<"feed" | "vault">("feed");
+  const [filters, setFilters] = useState<FilterValues>({ ...DEFAULT_FILTERS });
   const [urlInput, setUrlInput] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -88,12 +71,17 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery<FeedPage>({
-    queryKey: ["discover-feed", activeStatus, sort, dateRange],
+    queryKey: ["discover-feed", activeTab, filters],
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams();
-      if (activeStatus !== "all") params.set("status", activeStatus);
-      params.set("sort", sort);
-      if (dateRange !== "all") params.set("dateRange", dateRange);
+      // Vault tab shows only starred/saved
+      if (activeTab === "vault") params.set("status", "starred,saved");
+      params.set("sort", filters.sort);
+      if (filters.dateRange !== "all") params.set("dateRange", filters.dateRange);
+      if (filters.platform !== "all") params.set("platform", filters.platform);
+      if (filters.keyword) params.set("search", filters.keyword);
+      if (filters.channel) params.set("handle", filters.channel);
+      if (filters.minOutlier > 0) params.set("minOutlierScore", String(filters.minOutlier * 100));
       if (pageParam) params.set("offset", String(pageParam));
       params.set("limit", "30");
       return fetch(`/api/discover/feed?${params}`).then((r) => r.json());
@@ -307,83 +295,36 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
       </div>
       </ScrollReveal>
 
-      {/* Status tabs + Sort/Filter bar */}
-      <ScrollReveal delay={120}>
-      <div className="bg-surface-elevated border border-themed rounded-2xl p-4 shadow-sm space-y-4">
-        {/* Status tabs */}
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_TABS.map((tab) => {
-            const count = tab.key === "all" ? statusCounts.all ?? 0 : statusCounts[tab.key] ?? 0;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveStatus(tab.key)}
-                className={`
-                  inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all
-                  ${activeStatus === tab.key
-                    ? "bg-teal-600 text-white shadow-sm"
-                    : "bg-surface-hover border border-themed text-themed-secondary hover:border-teal-300 hover:text-teal-700"
-                  }
-                `}
-              >
-                {tab.icon}
-                {tab.label}
-                <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeStatus === tab.key
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200/60 text-themed-tertiary"
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Sort + Date filter */}
-        <div className="flex flex-wrap items-center gap-3 text-[11px]">
-          <span className="text-themed-muted font-semibold uppercase tracking-wider">Sort</span>
-          <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSort(opt.key)}
-                className={`px-3 py-1.5 rounded-md font-bold transition-colors ${
-                  sort === opt.key
-                    ? "bg-white text-themed shadow-sm"
-                    : "text-themed-tertiary hover:text-themed-secondary"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="w-px h-5 bg-slate-200" />
-
-          <span className="text-themed-muted font-semibold uppercase tracking-wider">Published</span>
-          <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5">
-            {DATE_FILTERS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setDateRange(opt.key)}
-                className={`px-2.5 py-1.5 rounded-md font-bold transition-colors ${
-                  dateRange === opt.key
-                    ? "bg-white text-themed shadow-sm"
-                    : "text-themed-tertiary hover:text-themed-secondary"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Feed / Vault tabs */}
+      <div className="flex gap-2">
+        {FEED_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as "feed" | "vault")}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-bold transition-all ${
+              activeTab === tab.key
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-surface-elevated border border-themed text-themed-secondary hover:text-themed"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <span className="text-[10px] text-themed-muted self-center">{videos.length} videos</span>
       </div>
-      </ScrollReveal>
 
-      {/* Video grid */}
-      <ScrollReveal delay={180}>
-      <VideoGrid
+      {/* Two-column layout: Filter sidebar + Video grid */}
+      <div className="flex gap-6">
+        {/* Filter sidebar (desktop only) */}
+        <div className="hidden md:block">
+          <FilterSidebar filters={filters} onChange={setFilters} />
+        </div>
+
+        {/* Video grid */}
+        <div className="flex-1 min-w-0">
+        <VideoGrid
         videos={videos}
         onVideoClick={handleVideoClick}
         onVideoAction={handleVideoAction}
@@ -412,7 +353,8 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
           </div>
         }
       />
-      </ScrollReveal>
+        </div>{/* end flex-1 */}
+      </div>{/* end two-column flex */}
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
