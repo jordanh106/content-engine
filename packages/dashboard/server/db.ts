@@ -444,6 +444,11 @@ try {
   sqlite.exec(`ALTER TABLE creator_videos ADD COLUMN status TEXT NOT NULL DEFAULT 'inbox'`);
 } catch { /* column already exists */ }
 
+// Migration: Add notes column to creator_videos
+try {
+  sqlite.exec(`ALTER TABLE creator_videos ADD COLUMN notes TEXT`);
+} catch { /* column already exists */ }
+
 // Migration: Create production_checklist table
 sqlite.exec(`CREATE TABLE IF NOT EXISTS production_checklist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

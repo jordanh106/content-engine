@@ -304,6 +304,19 @@ Respond with JSON only:
     }
   });
 
+  // PUT /api/creator-videos/:id/notes - Update video notes
+  router.put("/:id/notes", (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { notes } = req.body;
+      db.update(creatorVideos).set({ notes: notes || null }).where(eq(creatorVideos.id, id)).run();
+      res.json({ id, notes });
+    } catch (error) {
+      console.error("[creator-videos] Error updating notes:", error);
+      res.status(500).json({ error: "Failed to update notes" });
+    }
+  });
+
   // DELETE /api/creator-videos/:id - Remove a video and its cached thumbnail
   router.delete("/:id", (req, res) => {
     try {

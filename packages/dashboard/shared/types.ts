@@ -1024,6 +1024,7 @@ export type CreatorVideo = {
   saves: number;
   outlierScoreX100: number | null;
   status: string;
+  notes: string | null;
   recordedAt: string;
   createdAt: string;
 };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   FileText,
   Zap,
@@ -10,6 +10,8 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { MetricBadge } from "./MetricBadge.js";
 import type { CreatorVideo, VideoBreakdown } from "../../shared/types.js";
@@ -83,6 +85,9 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
           </a>
         )}
       </div>
+
+      {/* Your Notes */}
+      <VideoNotes videoId={video.id} initialNotes={video.notes} />
 
       {/* Tab bar */}
       <div className="flex border-b border-themed overflow-x-auto">
@@ -215,32 +220,222 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
             )}
 
             {activeTab === "adapt" && (
-              <div className="space-y-4 text-center py-6">
-                <Wand2 size={32} className="text-blue-400 mx-auto" />
-                <h3 className="text-base font-bold text-themed">Create Your Version</h3>
-                <p className="text-sm text-themed-tertiary max-w-md mx-auto">
-                  Adapt this video's hook and structure for your brand. We'll rewrite it in your voice
-                  with your audience in mind.
-                </p>
-                <button
-                  onClick={() => {
-                    if (onCreateScript) {
-                      onCreateScript(
-                        breakdown.oneSentenceConcept || breakdown.hookFormat || video.videoTitle || "",
-                        breakdown.topic || video.videoTitle || ""
-                      );
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg"
-                >
-                  <Wand2 size={16} />
-                  Create My Version
-                </button>
-              </div>
+              <AdaptTab
+                video={video}
+                breakdown={breakdown}
+                onCreateScript={onCreateScript}
+              />
             )}
           </>
         )}
       </div>
+    </div>
+  );
+};
+
+// ─── Editable Notes ──────────────────────────────────────────────────────────
+
+const VideoNotes: React.FC<{ videoId: number; initialNotes: string | null }> = ({ videoId, initialNotes }) => {
+  const [editing, setEditing] = useState(false);
+  const [notes, setNotes] = useState(initialNotes || "");
+  const [saved, setSaved] = useState(false);
+
+  const saveMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const r = await fetch(`/api/creator-videos/${videoId}/notes`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: text }),
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => {
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  return (
+    <div className="px-4 py-3 border-b border-themed">
+      <div className="flex items-center gap-2 mb-1.5">
+        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Your Notes</h4>
+        {!editing && (
+          <button onClick={() => setEditing(true)} className="text-[10px] font-bold text-blue-400 hover:text-blue-300">
+            Edit
+          </button>
+        )}
+        {saved && <span className="text-[10px] text-emerald-400 font-bold">Saved</span>}
+      </div>
+      {editing ? (
+        <div className="space-y-2">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add your notes about this video..."
+            rows={3}
+            autoFocus
+            className="w-full px-3 py-2 rounded-lg bg-surface-hover border border-themed text-sm text-themed placeholder:text-themed-muted focus:outline-none focus:border-blue-500 resize-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => saveMutation.mutate(notes)}
+              disabled={saveMutation.isPending}
+              className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[10px] font-bold hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saveMutation.isPending ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => { setEditing(false); setNotes(initialNotes || ""); }}
+              className="px-3 py-1 rounded-lg text-[10px] font-bold text-themed-muted hover:text-themed-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className={`text-sm leading-relaxed ${notes ? "text-themed-secondary" : "text-themed-muted italic"}`}>
+          {notes || "Add your notes about this video..."}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// ─── Adapt Tab with AI Niche Adaptations ─────────────────────────────────────
+
+type AdaptTabProps = {
+  video: CreatorVideo;
+  breakdown: VideoBreakdown;
+  onCreateScript?: (hook: string, topic: string) => void;
+};
+
+type NicheAdaptation = {
+  title: string;
+  description: string;
+  hook: string;
+};
+
+const AdaptTab: React.FC<AdaptTabProps> = ({ video, breakdown, onCreateScript }) => {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+  // Generate 3 niche-specific adaptation options
+  const adaptMutation = useMutation({
+    mutationFn: async () => {
+      const topic = breakdown.topic || video.videoTitle || "";
+      const hook = breakdown.oneSentenceConcept || breakdown.hookFormat || "";
+      const angle = breakdown.angle || "";
+
+      // Try the AI endpoint first
+      try {
+        const r = await fetch("/api/video-director/adapt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, hook, angle, originalTitle: video.videoTitle }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          return data.adaptations as NicheAdaptation[];
+        }
+      } catch { /* fallback below */ }
+
+      // Fallback: generate locally based on breakdown data
+      return [
+        {
+          title: `Chiropractic approach to ${topic}`,
+          description: `Replace the general advice with specific benefits of chiropractic adjustments, such as spinal alignment and nervous system regulation, to address ${topic}.`,
+          hook: `Most people don't realize how chiropractic care can help with ${topic}...`,
+        },
+        {
+          title: `Family wellness angle on ${topic}`,
+          description: `Reframe for families -- highlight how this affects children and parents differently, and what gentle pediatric chiropractic care can do.`,
+          hook: `If your family is dealing with ${topic}, here's what nobody tells you...`,
+        },
+        {
+          title: `Myth-busting ${topic}`,
+          description: `Use a contrarian approach -- challenge the common belief about ${topic} and present the chiropractic perspective as the unexpected solution.`,
+          hook: `Everything you've been told about ${topic} is wrong. Here's why...`,
+        },
+      ] as NicheAdaptation[];
+    },
+  });
+
+  // Auto-generate on mount
+  React.useEffect(() => {
+    if (!adaptMutation.data && !adaptMutation.isPending) {
+      adaptMutation.mutate();
+    }
+  }, []);
+
+  const adaptations = adaptMutation.data || [];
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h3 className="text-sm font-bold text-themed flex items-center gap-2">
+          <Sparkles size={16} className="text-blue-400" />
+          How to Personalize for Your Content Niche
+        </h3>
+        <p className="text-[11px] text-themed-muted mt-1">
+          3 ways to adapt this video's approach for your chiropractic content.
+        </p>
+      </div>
+
+      {/* Loading state */}
+      {adaptMutation.isPending && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={20} className="text-blue-400 animate-spin mr-2" />
+          <span className="text-sm text-themed-muted">Generating adaptations...</span>
+        </div>
+      )}
+
+      {/* Adaptation options */}
+      {adaptations.map((adaptation, i) => (
+        <button
+          key={i}
+          onClick={() => setSelectedIdx(selectedIdx === i ? null : i)}
+          className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+            selectedIdx === i
+              ? "border-blue-500 bg-blue-500/5"
+              : "border-themed hover:border-blue-500/30 bg-surface-hover"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black ${
+              selectedIdx === i ? "bg-blue-500 text-white" : "bg-surface-elevated text-themed-muted border border-themed"
+            }`}>
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-[12px] font-bold text-themed uppercase tracking-wide">{adaptation.title}</h4>
+              <p className="text-[11px] text-themed-secondary mt-1 leading-relaxed">{adaptation.description}</p>
+              {selectedIdx === i && (
+                <div className="mt-3 p-3 bg-surface-elevated rounded-lg border border-themed">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Suggested Hook</p>
+                  <p className="text-sm text-themed italic">"{adaptation.hook}"</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </button>
+      ))}
+
+      {/* Create button */}
+      {selectedIdx !== null && adaptations[selectedIdx] && (
+        <button
+          onClick={() => {
+            const a = adaptations[selectedIdx];
+            onCreateScript?.(a.hook, a.title);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg"
+        >
+          <Wand2 size={16} />
+          Create Script from Option {selectedIdx + 1}
+          <ArrowRight size={14} />
+        </button>
+      )}
     </div>
   );
 };
