@@ -3,6 +3,7 @@ import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Eye, Users, ExternalLink, ChevronDown, ChevronUp, Radar, Sparkles, TrendingUp, UserPlus, RefreshCw, Plus, Check, Trash2, X, Loader2, BarChart3, ArrowUp, ArrowDown, Video, Search, Zap, Bookmark, ArrowRight, Dna, Link, Palette, Music, Film, Copy, LayoutGrid, List } from "lucide-react";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
+import { VideoIntelligencePanel } from "./ui/VideoIntelligencePanel.js";
 import { FeatureHint } from "./ui/FeatureHint.js";
 import { FEATURE_HINTS } from "../shared/help-content.js";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
@@ -1538,6 +1539,36 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
 
 // ─── Videos Tab ──────────────────────────────────────────────────────────────
 
+// ─── Recalculate Scores Button ───────────────────────────────────────────────
+
+const RecalcScoresButton: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+  const recalcMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/creator-videos/recalculate-scores", { method: "POST" });
+      if (!r.ok) throw new Error("Failed");
+      return r.json() as Promise<{ updated: number; skipped: number; total: number }>;
+    },
+    onSuccess: (data) => {
+      onDone();
+      alert(`Scores updated: ${data.updated} videos scored, ${data.skipped} skipped (no views/baseline)`);
+    },
+  });
+
+  return (
+    <button
+      onClick={() => recalcMutation.mutate()}
+      disabled={recalcMutation.isPending}
+      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-themed-muted hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
+      title="Recalculate outlier scores for all videos"
+    >
+      {recalcMutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+      Recalc Scores
+    </button>
+  );
+};
+
+// ─── Videos Tab ──────────────────────────────────────────────────────────────
+
 type VideosTabProps = { creators: EnrichedCreator[] };
 
 const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
@@ -1547,6 +1578,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
   const [sortBy, setSortBy] = useState<"outlierScore" | "views" | "publishedAt">("outlierScore");
   const [searchHandle, setSearchHandle] = useState("");
   const [expandedVideo, setExpandedVideo] = useState<number | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<CreatorVideo | null>(null);
   const [analyzeUrlOpen, setAnalyzeUrlOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [urlInput, setUrlInput] = useState("");
@@ -1684,11 +1716,23 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
             </button>
           ))}
         </div>
-        {scanMutation.isSuccess && (
-          <p className="text-xs text-teal-600 mt-2">
-            Scanned {(scanMutation.data as { handle: string }).handle}: {(scanMutation.data as { videosFound: number }).videosFound} videos found
-          </p>
-        )}
+        {scanMutation.isSuccess && (() => {
+          const result = scanMutation.data as { handle: string; videosFound: number };
+          return result.videosFound > 0 ? (
+            <p className="text-xs text-teal-600 mt-2">
+              Scanned {result.handle}: {result.videosFound} videos found
+            </p>
+          ) : (
+            <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <p className="text-xs text-amber-400 font-semibold">
+                Web search couldn't find videos for {result.handle}
+              </p>
+              <p className="text-[10px] text-themed-muted mt-1">
+                Try pasting a video URL from their profile using "Analyze Any Video URL" above, or add videos directly in the Discover feed.
+              </p>
+            </div>
+          );
+        })()}
         {scanMutation.isError && (
           <p className="text-xs text-rose-500 mt-2">{(scanMutation.error as Error).message}</p>
         )}
@@ -1760,7 +1804,10 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-themed-muted">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs text-themed-muted">{videos.length} video{videos.length !== 1 ? "s" : ""} found</p>
+              <RecalcScoresButton onDone={() => queryClient.invalidateQueries({ queryKey: ["creator-videos"] })} />
+            </div>
             <div className="flex gap-1 bg-surface-hover rounded-lg p-0.5">
               <button
                 onClick={() => setViewMode("grid")}
@@ -1791,13 +1838,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                   outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
                   durationSeconds={video.durationSeconds ?? undefined}
                   createdAt={video.createdAt}
-                  onClick={() => {
-                    if (video.videoUrl && video.videoUrl !== "unknown") {
-                      window.open(video.videoUrl, "_blank", "noopener");
-                    } else {
-                      setExpandedVideo(expandedVideo === video.id ? null : video.id);
-                    }
-                  }}
+                  onClick={() => setSelectedVideo(video)}
                 />
               ))}
             </div>
@@ -1814,6 +1855,47 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
             </div>
           )}
         </div>
+      )}
+      {/* Video Intelligence Panel (slide-out) */}
+      {selectedVideo && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-40"
+            onClick={() => setSelectedVideo(null)}
+          />
+          <div className="fixed inset-0 md:inset-y-0 md:right-0 md:left-auto md:w-[560px] bg-white z-50 flex flex-col shadow-xl overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h2 className="text-sm font-bold text-slate-900 line-clamp-1">
+                {selectedVideo.videoTitle || `@${selectedVideo.creatorHandle}`}
+              </h2>
+              <div className="flex items-center gap-2">
+                {selectedVideo.videoUrl && selectedVideo.videoUrl !== "unknown" && (
+                  <a
+                    href={selectedVideo.videoUrl}
+                    target="_blank"
+                    rel="noopener"
+                    className="p-2 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                    title="Open on platform"
+                  >
+                    <ExternalLink size={16} />
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 p-4">
+              <VideoIntelligencePanel
+                video={selectedVideo}
+                onClose={() => setSelectedVideo(null)}
+              />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

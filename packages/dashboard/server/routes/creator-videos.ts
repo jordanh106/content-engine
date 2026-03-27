@@ -174,21 +174,36 @@ export function createCreatorVideosRouter(contentLibraryPath: string, thumbnails
       const platform = (req.body.platform as string) || "Instagram";
       console.log(`[creator-videos] Scanning @${handle} on ${platform}...`);
 
-      const scanPrompt = `Search for the most recent and top-performing videos from @${handle} on ${platform}. Find 5-10 of their recent videos with view counts, likes, and any engagement data available.
+      // Platform-specific search strategy for better results
+      const platformSearchHints: Record<string, string> = {
+        Instagram: `Search strategy: First search "site:instagram.com/${handle}" to find their profile. Then search "@${handle} instagram reels viral" and "@${handle} instagram chiropractic" to find their popular content. Look for any articles, compilations, or social blade/similar stats pages that list their video performance.`,
+        TikTok: `Search strategy: First search "site:tiktok.com/@${handle}" to find their profile. Then search "@${handle} tiktok viral video" and "@${handle} tiktok most viewed". Also try searching "${handle} tiktok" without the @ symbol. Look for any compilation articles or social media analytics pages.`,
+        YouTube: `Search strategy: Search "site:youtube.com/@${handle}" or "site:youtube.com/c/${handle}" to find their channel. Then search "@${handle} youtube most popular video" to find top content.`,
+      };
+
+      const searchHint = platformSearchHints[platform] || `Search for @${handle} on ${platform} and find their recent videos.`;
+
+      const scanPrompt = `Find 5-10 recent or popular videos from the content creator @${handle} on ${platform}.
+
+${searchHint}
+
+IMPORTANT: Use multiple search queries to maximize results. If your first search doesn't find individual videos, try different search terms. Even partial data (just titles or just a profile description) is better than returning zero results.
 
 For each video found, provide:
-- title or description
-- approximate view count
-- likes count (if available)
-- comments count (if available)
-- approximate publish date
-- video URL (if available)
+- title or description (from the video caption or article mentioning it)
+- approximate view count (0 if unknown)
+- likes count (0 if unknown)
+- comments count (0 if unknown)
+- approximate publish date ("unknown" if not found)
+- video URL (the direct link to the video, or the creator's profile URL if individual video URL not found)
 
-Respond with JSON only:
+If you truly cannot find ANY videos after multiple searches, still return at least the creator's profile information and set videos to an empty array.
+
+Respond with JSON only (no markdown, no explanation):
 {
   "creator": "@${handle}",
   "platform": "${platform}",
-  "avgViews": estimated average views across their recent content,
+  "avgViews": estimated average views or null if unknown,
   "videos": [
     {
       "title": "video title or description",
@@ -1156,6 +1171,112 @@ ${framePaths.length} video frames attached.`;
           fs.rmdirSync(framesDir);
         }
       } catch { /* best effort */ }
+    }
+  });
+
+  // POST /api/creator-videos/:id/summarize - Generate AI summary from breakdown data
+  router.post("/:id/summarize", async (req, res) => {
+    let client: Anthropic | null = null;
+    try { client = new Anthropic(); } catch {
+      res.status(503).json({ error: "AI unavailable" });
+      return;
+    }
+
+    try {
+      const id = parseInt(req.params.id, 10);
+      const rows = db.select().from(videoBreakdowns).where(eq(videoBreakdowns.creatorVideoId, id)).limit(1).all();
+      if (!rows.length) {
+        res.status(404).json({ error: "No breakdown found for this video" });
+        return;
+      }
+
+      const bd = rows[0];
+
+      // Return cached summary if exists
+      if (bd.summary) {
+        res.json({ summary: bd.summary });
+        return;
+      }
+
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        messages: [{
+          role: "user",
+          content: `Write a concise 2-3 sentence summary of this video. Focus on what makes it effective and what content creators can learn from it.
+
+Topic: ${bd.topic || "Unknown"}
+Angle: ${bd.angle || "Unknown"}
+Hook Format: ${bd.hookFormat || "Unknown"}
+Story Structure: ${bd.storyStyle || bd.storyStructure || "Unknown"}
+Visual Format: ${bd.visualFormat || "Unknown"}
+Core Concept: ${bd.oneSentenceConcept || "Unknown"}
+
+Rules:
+- No emdashes
+- Be specific about why this video works
+- Mention the hook technique and content structure
+- Keep it to 2-3 sentences max`,
+        }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === "text");
+      const summary = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
+
+      // Cache it
+      if (summary) {
+        db.update(videoBreakdowns).set({ summary }).where(eq(videoBreakdowns.creatorVideoId, id)).run();
+      }
+
+      res.json({ summary });
+    } catch (err) {
+      console.error("[creator-videos] summarize error:", err);
+      res.status(500).json({ error: "Failed to generate summary" });
+    }
+  });
+
+  // POST /api/creator-videos/recalculate-scores - Batch recalculate outlier scores for all videos
+  router.post("/recalculate-scores", (_req, res) => {
+    try {
+      const allVideos = db.select().from(creatorVideos).all();
+
+      // Group by creator handle
+      const byCreator = new Map<string, typeof allVideos>();
+      for (const v of allVideos) {
+        const handle = v.creatorHandle;
+        if (!handle) continue;
+        if (!byCreator.has(handle)) byCreator.set(handle, []);
+        byCreator.get(handle)!.push(v);
+      }
+
+      let updated = 0;
+      let skipped = 0;
+
+      for (const [handle, videos] of byCreator) {
+        const avgViews = getAvgViews(handle);
+        if (!avgViews || avgViews <= 0) {
+          skipped += videos.length;
+          continue;
+        }
+
+        for (const v of videos) {
+          if (!v.views || v.views <= 0) {
+            skipped++;
+            continue;
+          }
+          const score = Math.round((v.views / avgViews) * 100);
+          db.update(creatorVideos)
+            .set({ outlierScoreX100: score })
+            .where(eq(creatorVideos.id, v.id))
+            .run();
+          updated++;
+        }
+      }
+
+      res.json({ updated, skipped, total: allVideos.length });
+    } catch (err) {
+      console.error("[creator-videos] recalculate-scores error:", err);
+      res.status(500).json({ error: "Failed to recalculate scores" });
     }
   });
 
