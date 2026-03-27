@@ -633,6 +633,27 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  SCRIPT_WIZARD: {
+    title: "Create",
+    description:
+      "AI-powered script creation wizard. Describe a topic, generate hook variations, pick one, then generate a full script with conversational refinement.",
+    tips: [
+      { label: "Hook Variations", detail: "Generate 6 AI hook options, each with a predicted performance level. Pick the one that resonates." },
+      { label: "Chat Refinement", detail: "After generating a script, use the chat input to refine it: 'Make the hook more provocative', 'Shorten to 30s', etc." },
+      { label: "Duration Slider", detail: "Adjust target duration with the slider. Word count updates automatically." },
+    ],
+  },
+  INTELLIGENCE: {
+    title: "Intelligence",
+    description:
+      "Unified analytics hub with 4 tabs: Performance metrics, content Opportunities, Ideas bank, and Watchlist creator tracking.",
+    tips: [
+      { label: "Performance", detail: "Top performers, engagement charts, format analytics, and content health score." },
+      { label: "Opportunities", detail: "Scored content gaps based on trending topics and competitor analysis." },
+      { label: "Ideas", detail: "Your idea bank and inspiration inbox. Categorized by trending, competitor, evergreen, audience." },
+      { label: "Watchlist", detail: "Track competitor creators, scan their recent videos, analyze hooks and formats." },
+    ],
+  },
   DISCOVER_FEED: {
     title: "Discover",
     description:

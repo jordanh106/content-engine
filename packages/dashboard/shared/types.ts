@@ -179,6 +179,7 @@ export type VideoDetailResponse = ParsedVideo & {
 export const DASHBOARD_VIEWS = [
   "HOME",
   "DISCOVER_FEED",
+  "SCRIPT_WIZARD",
   "PIPELINE",
   "LIBRARY",
   "IDEAS",
@@ -191,6 +192,7 @@ export const DASHBOARD_VIEWS = [
   "METRICS",
   "STRATEGY",
   "CAROUSEL_LAB",
+  "INTELLIGENCE",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];

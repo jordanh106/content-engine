@@ -37,6 +37,7 @@ type ScriptWizardProps = {
   initialHook?: string;
   onClose: () => void;
   onSaveScript?: (script: string, topic: string) => void;
+  inline?: boolean; // When true, renders as full-page view instead of modal overlay
 };
 
 export const ScriptWizard: React.FC<ScriptWizardProps> = ({
@@ -44,6 +45,7 @@ export const ScriptWizard: React.FC<ScriptWizardProps> = ({
   initialHook = "",
   onClose,
   onSaveScript,
+  inline = false,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>(initialTopic ? "hook" : "topic");
   const [topic, setTopic] = useState(initialTopic);
@@ -139,13 +141,21 @@ export const ScriptWizard: React.FC<ScriptWizardProps> = ({
     low: "bg-slate-500/15 text-themed-muted",
   };
 
+  const containerClass = inline
+    ? "p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-8"
+    : "fixed inset-0 z-50 flex items-center justify-center";
+
+  const dialogClass = inline
+    ? "bg-surface-elevated rounded-2xl border border-themed shadow-2xl flex flex-col overflow-hidden min-h-[70vh]"
+    : "relative w-[95%] max-w-3xl max-h-[85vh] bg-surface-elevated rounded-2xl border border-themed shadow-2xl flex flex-col overflow-hidden";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className={containerClass}>
+      {/* Backdrop (modal only) */}
+      {!inline && <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />}
 
       {/* Dialog */}
-      <div className="relative w-[95%] max-w-3xl max-h-[85vh] bg-surface-elevated rounded-2xl border border-themed shadow-2xl flex flex-col overflow-hidden">
+      <div className={dialogClass}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-themed">
           <h2 className="text-lg font-bold text-themed font-serif">New Script</h2>

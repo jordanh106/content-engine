@@ -24,7 +24,10 @@ import { FieldManual } from "./FieldManual.js";
 import { PerformanceReviewView } from "./PerformanceReviewView.js";
 import { CarouselLab } from "./CarouselLab.js";
 import { DiscoverFeed } from "./DiscoverFeed.js";
+import { IntelligenceView } from "./IntelligenceView.js";
+import { ScriptWizard } from "./ScriptWizard.js";
 import { ViewTransition } from "./ui/animations.js";
+import { QuickCaptureFAB } from "./ui/QuickCaptureFAB.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -69,17 +72,16 @@ const AppInner: React.FC = () => {
 
       switch (e.key) {
         case "1": setView("HOME"); break;
-        case "2": setView("OPPORTUNITIES"); break;
-        case "3": setView("IDEAS"); break;
-        case "4": setView("LIBRARY"); break;
-        case "5": setView("PIPELINE"); break;
-        case "6": setView("SESSION"); break;
+        case "2": setView("DISCOVER_FEED"); break;
+        case "3": setView("LIBRARY"); break;
+        case "4": setView("PIPELINE"); break;
+        case "5": setView("SESSION"); break;
+        case "6": setView("INTELLIGENCE"); break;
         case "7": setView("CALENDAR"); break;
-        case "8": setView("CAPTIONS"); break;
-        case "9": setView("METRICS"); break;
-        case "v": setVaultOpen((prev) => !prev); break;
-        case "w": setView("WATCHLIST"); break;
+        case "c": setView("SCRIPT_WIZARD"); break;
         case "d": setView("DISCOVER_FEED"); break;
+        case "i": setView("INTELLIGENCE"); break;
+        case "v": setVaultOpen((prev) => !prev); break;
         case "?": setGuideOpen((prev) => !prev); break;
       }
     };
@@ -139,6 +141,8 @@ const AppInner: React.FC = () => {
           {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
           {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
           {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
+          {view === "INTELLIGENCE" && <IntelligenceView onNavigate={handleNavigate} />}
+          {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => handleNavigate("HOME")} inline />}
         </ViewTransition>
 
         {selectedVideoCode && (
@@ -154,6 +158,9 @@ const AppInner: React.FC = () => {
 
       {/* Creator Personas panel */}
       {personasOpen && <PersonaPanel onClose={() => setPersonasOpen(false)} />}
+
+      {/* Quick Capture FAB */}
+      <QuickCaptureFAB />
 
       {/* Field Manual */}
       <FieldManual

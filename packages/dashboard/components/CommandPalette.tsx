@@ -152,26 +152,32 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   type CommandItemWithShortcut = CommandItem & { shortcut?: string };
 
   const navigationItems: CommandItemWithShortcut[] = [
+    // Primary nav (matches sidebar)
     { id: "home", label: "Home", icon: <LayoutDashboard size={16} />, action: () => nav("HOME"), group: "navigation", keywords: "dashboard overview", shortcut: "1" },
     { id: "discover", label: "Discover", icon: <Compass size={16} />, action: () => nav("DISCOVER_FEED"), group: "navigation", keywords: "discover feed trending outliers inspiration videos", shortcut: "D" },
-    { id: "opportunities", label: "Opportunities", icon: <Radar size={16} />, action: () => nav("OPPORTUNITIES"), group: "navigation", keywords: "discover trends scoring", shortcut: "2" },
-    { id: "ideas", label: "Ideas", icon: <Lightbulb size={16} />, action: () => nav("IDEAS"), group: "navigation", keywords: "idea bank brainstorm", shortcut: "3" },
-    { id: "watchlist", label: "Watchlist", icon: <Eye size={16} />, action: () => nav("WATCHLIST"), group: "navigation", keywords: "creators competitors", shortcut: "W" },
-    { id: "library", label: "Library", icon: <Library size={16} />, action: () => nav("LIBRARY"), group: "navigation", keywords: "content videos scripts", shortcut: "4" },
-    { id: "pipeline", label: "Pipeline", icon: <Columns3 size={16} />, action: () => nav("PIPELINE"), group: "navigation", keywords: "production status kanban", shortcut: "5" },
-    { id: "session", label: "Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "navigation", keywords: "recording batch produce", shortcut: "6" },
+    { id: "create", label: "Create Script", icon: <Hash size={16} />, action: () => nav("SCRIPT_WIZARD"), group: "navigation", keywords: "script wizard write hook generate new", shortcut: "C" },
+    { id: "library", label: "Library", icon: <Library size={16} />, action: () => nav("LIBRARY"), group: "navigation", keywords: "content videos scripts", shortcut: "3" },
+    { id: "pipeline", label: "Pipeline", icon: <Columns3 size={16} />, action: () => nav("PIPELINE"), group: "navigation", keywords: "production status kanban", shortcut: "4" },
+    { id: "session", label: "Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "navigation", keywords: "recording batch produce", shortcut: "5" },
+    { id: "intelligence", label: "Intelligence", icon: <TrendingUp size={16} />, action: () => nav("INTELLIGENCE"), group: "navigation", keywords: "analytics metrics performance opportunities ideas watchlist", shortcut: "I" },
     { id: "calendar", label: "Calendar", icon: <Calendar size={16} />, action: () => nav("CALENDAR"), group: "navigation", keywords: "schedule publish plan", shortcut: "7" },
-    { id: "captions", label: "Captions", icon: <MessageSquareText size={16} />, action: () => nav("CAPTIONS"), group: "navigation", keywords: "caption studio hashtags", shortcut: "8" },
-    { id: "metrics", label: "Metrics", icon: <TrendingUp size={16} />, action: () => nav("METRICS"), group: "navigation", keywords: "analytics performance views", shortcut: "9" },
+    // Secondary nav (accessible via Cmd+K but not in sidebar)
+    { id: "captions", label: "Captions", icon: <MessageSquareText size={16} />, action: () => nav("CAPTIONS"), group: "navigation", keywords: "caption studio hashtags write post" },
+    { id: "carousel-lab", label: "Carousel Lab", icon: <Layers size={16} />, action: () => nav("CAROUSEL_LAB"), group: "navigation", keywords: "carousel thumbnail instagram linkedin slides" },
+    { id: "ideas", label: "Ideas", icon: <Lightbulb size={16} />, action: () => nav("IDEAS"), group: "navigation", keywords: "idea bank brainstorm inspiration" },
+    { id: "opportunities", label: "Opportunities", icon: <Radar size={16} />, action: () => nav("OPPORTUNITIES"), group: "navigation", keywords: "content gaps trends scoring" },
+    { id: "watchlist", label: "Watchlist", icon: <Eye size={16} />, action: () => nav("WATCHLIST"), group: "navigation", keywords: "creators competitors track scan" },
+    { id: "metrics", label: "Metrics", icon: <TrendingUp size={16} />, action: () => nav("METRICS"), group: "navigation", keywords: "analytics views engagement charts" },
   ];
 
   const actionItems: CommandItem[] = [
-    { id: "vault", label: "Open Vault", icon: <Bookmark size={16} />, action: () => { onOpenVault(); onOpenChange(false); }, group: "actions", keywords: "hooks styles" },
+    { id: "new-script", label: "New Script", icon: <Hash size={16} />, action: () => nav("SCRIPT_WIZARD"), group: "actions", keywords: "create write hook generate video" },
+    { id: "quick-capture", label: "Quick Capture Idea", icon: <Lightbulb size={16} />, action: () => { onOpenChange(false); /* FAB handles this via N key */ }, group: "actions", keywords: "idea inspiration note capture inbox" },
+    { id: "vault", label: "Open Vault", icon: <Bookmark size={16} />, action: () => { onOpenVault(); onOpenChange(false); }, group: "actions", keywords: "hooks styles saved" },
     { id: "guide", label: "Open Field Manual", icon: <BookOpen size={16} />, action: () => { onOpenGuide?.(); onOpenChange(false); }, group: "actions", keywords: "help guide manual how to learn reference" },
-    { id: "gen-opps", label: "Generate Opportunities", icon: <Zap size={16} />, action: () => nav("OPPORTUNITIES"), group: "actions", keywords: "ai analyze score" },
-    { id: "run-research", label: "Run Research", icon: <Search size={16} />, action: () => nav("METRICS"), group: "actions", keywords: "last30days reddit x" },
-    { id: "start-session", label: "Start Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "actions", keywords: "record batch produce" },
-    { id: "gen-carousel", label: "Generate Carousel", icon: <Layers size={16} />, action: () => nav("CAROUSEL_LAB"), group: "actions", keywords: "carousel thumbnail instagram linkedin tiktok slides" },
+    { id: "start-session", label: "Start Session", icon: <Timer size={16} />, action: () => nav("SESSION"), group: "actions", keywords: "record batch produce tonight" },
+    { id: "gen-carousel", label: "Generate Carousel", icon: <Layers size={16} />, action: () => nav("CAROUSEL_LAB"), group: "actions", keywords: "carousel thumbnail slides" },
+    { id: "write-captions", label: "Write Captions", icon: <MessageSquareText size={16} />, action: () => nav("CAPTIONS"), group: "actions", keywords: "caption post instagram tiktok youtube" },
     { id: "export-backup", label: "Export Backup", icon: <FileText size={16} />, action: () => {
       window.open("/api/analytics/backup", "_blank");
       onOpenChange(false);

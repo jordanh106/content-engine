@@ -20,6 +20,8 @@ import {
   Users,
   LayoutGrid,
   Compass,
+  Wand2,
+  Zap,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
@@ -41,39 +43,28 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "DISCOVER",
-    phase: "discover",
+    label: "CREATE",
+    phase: "create",
     items: [
       { view: "DISCOVER_FEED", label: "Discover", icon: <Compass size={18} /> },
-      { view: "OPPORTUNITIES", label: "Opportunities", icon: <Radar size={18} /> },
-      { view: "IDEAS", label: "Ideas", icon: <Lightbulb size={18} /> },
-      { view: "WATCHLIST", label: "Watchlist", icon: <Eye size={18} /> },
+      { view: "SCRIPT_WIZARD", label: "Create", icon: <Wand2 size={18} /> },
+      { view: "LIBRARY", label: "Library", icon: <Library size={18} /> },
     ],
   },
   {
     label: "PRODUCE",
     phase: "produce",
     items: [
-      { view: "LIBRARY", label: "Library", icon: <Library size={18} /> },
       { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={18} /> },
       { view: "SESSION", label: "Session", icon: <Timer size={18} /> },
-      { view: "CAROUSEL_LAB", label: "Carousel Lab", icon: <LayoutGrid size={18} /> },
     ],
   },
   {
-    label: "PUBLISH",
-    phase: "publish",
+    label: "ANALYZE",
+    phase: "analyze",
     items: [
+      { view: "INTELLIGENCE", label: "Intelligence", icon: <Brain size={18} /> },
       { view: "CALENDAR", label: "Calendar", icon: <Calendar size={18} /> },
-      { view: "CAPTIONS", label: "Captions", icon: <MessageSquareText size={18} /> },
-    ],
-  },
-  {
-    label: "MEASURE",
-    phase: "measure",
-    items: [
-      { view: "METRICS", label: "Metrics", icon: <TrendingUp size={18} /> },
-      { view: "STRATEGY", label: "Strategy", icon: <Brain size={18} /> },
     ],
   },
 ];
