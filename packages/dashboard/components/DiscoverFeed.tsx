@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Compass,
   Link2,
@@ -63,6 +63,14 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
   const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
   const [bottomSheetVideo, setBottomSheetVideo] = useState<CreatorVideo | null>(null);
   const [showUrlModal, setShowUrlModal] = useState(false);
+
+  // Fetch unique channel handles for filter dropdown
+  const { data: channelsData } = useQuery<{ channels: string[] }>({
+    queryKey: ["discover-channels"],
+    queryFn: () => fetch("/api/discover/channels").then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+  const channelList = channelsData?.channels ?? [];
 
   const {
     data,
@@ -319,7 +327,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
       <div className="flex gap-6">
         {/* Filter sidebar (desktop only) */}
         <div className="hidden md:block">
-          <FilterSidebar filters={filters} onChange={setFilters} />
+          <FilterSidebar filters={filters} onChange={setFilters} channels={channelList} />
         </div>
 
         {/* Video grid */}

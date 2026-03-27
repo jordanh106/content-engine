@@ -22,6 +22,7 @@ export function createDiscoverRouter(
         platform,
         dateRange,
         search,
+        handle,
         limit: limitStr,
         offset: offsetStr,
       } = _req.query as Record<string, string | undefined>;
@@ -49,6 +50,9 @@ export function createDiscoverRouter(
         conditions.push(
           sql`(${creatorVideos.videoTitle} LIKE ${"%" + search + "%"} OR ${creatorVideos.creatorHandle} LIKE ${"%" + search + "%"})`,
         );
+      }
+      if (handle) {
+        conditions.push(eq(creatorVideos.creatorHandle, handle));
       }
 
       const rows = conditions.length > 0
@@ -145,6 +149,21 @@ export function createDiscoverRouter(
     } catch (error) {
       console.error("[discover] Error batch deleting:", error);
       res.status(500).json({ error: "Failed to batch delete" });
+    }
+  });
+
+  // GET /api/discover/channels - Unique creator handles for filter dropdown
+  router.get("/channels", (_req, res) => {
+    try {
+      const rows = db
+        .selectDistinct({ handle: creatorVideos.creatorHandle })
+        .from(creatorVideos)
+        .orderBy(creatorVideos.creatorHandle)
+        .all();
+      res.json({ channels: rows.map((r) => r.handle) });
+    } catch (error) {
+      console.error("[discover] Error fetching channels:", error);
+      res.status(500).json({ error: "Failed to fetch channels" });
     }
   });
 
