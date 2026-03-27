@@ -174,17 +174,7 @@ export function createCreatorVideosRouter(contentLibraryPath: string, thumbnails
       const platform = (req.body.platform as string) || "Instagram";
       console.log(`[creator-videos] Scanning @${handle} on ${platform}...`);
 
-      const response = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2000,
-        tools: [{
-          type: "web_search_20250305" as const,
-          name: "web_search" as const,
-          max_uses: 3,
-        }],
-        messages: [{
-          role: "user",
-          content: `Search for the most recent and top-performing videos from @${handle} on ${platform}. Find 5-10 of their recent videos with view counts, likes, and any engagement data available.
+      const scanPrompt = `Search for the most recent and top-performing videos from @${handle} on ${platform}. Find 5-10 of their recent videos with view counts, likes, and any engagement data available.
 
 For each video found, provide:
 - title or description
@@ -209,18 +199,72 @@ Respond with JSON only:
       "videoUrl": "url if found"
     }
   ]
-}`,
-        }],
-      }, { timeout: 60_000 });
+}`;
 
-      // Extract text from response
-      const textBlock = response.content.find((b) => b.type === "text");
-      if (!textBlock || textBlock.type !== "text") {
-        res.status(500).json({ error: "No response from AI" });
+      // Agentic tool use loop: keep calling until we get a text response
+      const messages: Anthropic.MessageParam[] = [{ role: "user", content: scanPrompt }];
+      let finalText = "";
+      let loopCount = 0;
+      const maxLoops = 5;
+
+      while (loopCount < maxLoops) {
+        loopCount++;
+        console.log(`[creator-videos] Scan loop ${loopCount} for @${handle}...`);
+
+        const response = await client.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4000,
+          tools: [{
+            type: "web_search_20250305" as const,
+            name: "web_search" as const,
+            max_uses: 5,
+          }],
+          messages,
+        }, { timeout: 90_000 });
+
+        // Collect all text blocks from this response
+        const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === "text");
+        if (textBlocks.length > 0) {
+          finalText = textBlocks.map((b) => b.text).join("\n");
+        }
+
+        // If Claude is done, break
+        if (response.stop_reason === "end_turn" || response.stop_reason === "max_tokens") {
+          break;
+        }
+
+        // If Claude wants to use more tools, feed the response back as assistant message
+        // and add an empty user turn to continue
+        if (response.stop_reason === "tool_use") {
+          messages.push({ role: "assistant", content: response.content });
+          // For server-side tools like web_search, the results are already in the response.
+          // We need to provide tool_result blocks for any tool_use blocks.
+          const toolUseBlocks = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+          if (toolUseBlocks.length > 0) {
+            messages.push({
+              role: "user",
+              content: toolUseBlocks.map((tu) => ({
+                type: "tool_result" as const,
+                tool_use_id: tu.id,
+                content: "Search completed. Please provide the JSON response now.",
+              })),
+            });
+          }
+          continue;
+        }
+
+        // Any other stop reason, break
+        break;
+      }
+
+      if (!finalText) {
+        console.error(`[creator-videos] No text response after ${loopCount} loops for @${handle}`);
+        res.status(500).json({ error: "No response from AI after web search" });
         return;
       }
 
-      const parsed = JSON.parse(stripCodeFences(textBlock.text));
+      console.log(`[creator-videos] Got ${finalText.length} chars of text for @${handle}`);
+      const parsed = JSON.parse(stripCodeFences(finalText));
       const avgViews = parsed.avgViews || null;
 
       // Update channel snapshot with latest avgViews
