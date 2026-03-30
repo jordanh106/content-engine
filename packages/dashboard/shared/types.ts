@@ -1543,7 +1543,7 @@ export type GeneratedCarousel = {
   talkingPoints: string[];
   ctaText: string | null;
   status: CarouselStatus;
-  generationSource: "manual" | "scheduled";
+  generationSource: "manual" | "scheduled" | "remix" | "multiplied";
   templateVersion: string | null;
   strategyVersion: string | null;
   compositeScore: number | null;
@@ -1552,9 +1552,59 @@ export type GeneratedCarousel = {
   audience: string | null;
   canvaDesignId: string | null;
   canvaDesignUrl: string | null;
+  remixSourceUrl: string | null;
+  remixSourceType: string | null;
+  sourceCarouselId: number | null;
   createdAt: string;
   completedAt: string | null;
   slides?: CarouselSlide[];
+};
+
+// Carousel Remix: structural analysis from screenshot/URL
+export type CarouselRemixAnalysis = {
+  layoutPattern: string;
+  hookTechnique: string;
+  contentFlow: string;
+  slideCount: number;
+  ctaStyle: string;
+  colorScheme: string;
+  slideSummaries: string[];
+};
+
+// Carousel Autopsy: performance analysis
+export type CarouselAutopsy = {
+  carouselId: number;
+  compositeScore: number;
+  averageScore: number;
+  delta: number;
+  strengths: string[];
+  weaknesses: string[];
+  improvements: Array<{ slideIndex: number; original: string; suggested: string; reason: string }>;
+};
+
+// Carousel Watch: competitor monitoring
+export type CarouselWatchAccount = {
+  id: number;
+  platform: string;
+  handle: string;
+  displayName: string | null;
+  createdAt: string;
+};
+
+export type CarouselWatchPost = {
+  id: number;
+  accountId: number;
+  postUrl: string;
+  platform: string;
+  postType: string;
+  thumbnailUrl: string | null;
+  caption: string | null;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  analysis: CarouselRemixAnalysis | null;
+  fetchedAt: string;
 };
 
 export type CarouselGenerateRequest = {

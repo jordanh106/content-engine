@@ -77,6 +77,9 @@ export function createCarouselsRouter(contentLibraryPath: string, carouselImages
       audience: (row as Record<string, unknown>).audience as string | null ?? null,
       canvaDesignId: (row as Record<string, unknown>).canvaDesignId as string | null ?? null,
       canvaDesignUrl: (row as Record<string, unknown>).canvaDesignUrl as string | null ?? null,
+      remixSourceUrl: (row as Record<string, unknown>).remixSourceUrl as string | null ?? null,
+      remixSourceType: (row as Record<string, unknown>).remixSourceType as string | null ?? null,
+      sourceCarouselId: (row as Record<string, unknown>).sourceCarouselId as number | null ?? null,
       createdAt: row.createdAt ?? "",
       completedAt: row.completedAt,
       slides: slides?.map((s) => ({
@@ -920,6 +923,718 @@ Return ONLY the JSON array. No preamble, no explanation.`;
     } catch (err) {
       console.error("[carousels] GET /experiments error:", err);
       res.status(500).json({ error: "Failed to fetch experiments" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 1: Carousel Remix — Analyze screenshot/URL and generate original carousel
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  router.post("/remix-analyze", async (req, res) => {
+    try {
+      const { url, imageBase64, topic, audience, archetype, platform, aspectRatio } = req.body as {
+        url?: string;
+        imageBase64?: string;
+        topic: string;
+        audience?: string;
+        archetype?: string;
+        platform?: string;
+        aspectRatio?: string;
+      };
+
+      if (!url && !imageBase64) {
+        res.status(400).json({ error: "Provide either a URL or image" });
+        return;
+      }
+      if (!topic?.trim()) {
+        res.status(400).json({ error: "Topic is required to generate original content" });
+        return;
+      }
+
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      // Build image content for Claude vision
+      let imageContent: Array<{ type: "image"; source: { type: "base64"; media_type: string; data: string } }> = [];
+
+      if (imageBase64) {
+        // Direct screenshot upload
+        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        imageContent = [{
+          type: "image",
+          source: { type: "base64", media_type: "image/png", data: cleanBase64 },
+        }];
+      } else if (url) {
+        // Try to fetch post image via oEmbed or direct fetch
+        try {
+          const oembedUrl = url.includes("instagram.com")
+            ? `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&access_token=${process.env.INSTAGRAM_TOKEN || ""}`
+            : url.includes("tiktok.com")
+            ? `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
+            : url.includes("linkedin.com")
+            ? null
+            : null;
+
+          if (oembedUrl) {
+            const oembedRes = await fetch(oembedUrl);
+            if (oembedRes.ok) {
+              const oembedData = await oembedRes.json() as { thumbnail_url?: string };
+              if (oembedData.thumbnail_url) {
+                const imgRes = await fetch(oembedData.thumbnail_url);
+                if (imgRes.ok) {
+                  const buffer = Buffer.from(await imgRes.arrayBuffer());
+                  imageContent = [{
+                    type: "image",
+                    source: { type: "base64", media_type: "image/jpeg", data: buffer.toString("base64") },
+                  }];
+                }
+              }
+            }
+          }
+        } catch {
+          // Image fetch failed, proceed with text-only analysis
+        }
+      }
+
+      // Claude vision analysis of the carousel structure
+      const analysisPrompt = `Analyze this social media carousel post and extract its structural DNA.${url ? ` Source URL: ${url}` : ""}
+
+Return a JSON object with these fields:
+{
+  "layoutPattern": "text-over-gradient | split-layout | minimal-text | bold-typography | image-heavy",
+  "hookTechnique": "listicle-promise | myth-opener | stat-anchor | regret-frame | quick-win | contrarian",
+  "contentFlow": "problem-solution | listicle | story-arc | myth-truth | step-by-step",
+  "slideCount": number,
+  "ctaStyle": "save-first | share-trigger | follow | action | comment",
+  "colorScheme": "dark-gradient | light-clean | bold-contrast | pastel | brand-heavy",
+  "slideSummaries": ["brief summary of each slide's content/purpose"]
+}
+
+Be specific and actionable. If you can't see images, infer from the URL and context.
+Return ONLY the JSON object.`;
+
+      const userContent = imageContent.length > 0
+        ? [...imageContent, { type: "text" as const, text: analysisPrompt }]
+        : [{ type: "text" as const, text: analysisPrompt }];
+
+      const analysisMsg = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 800,
+        messages: [{ role: "user" as const, content: userContent as any }],
+      });
+
+      const analysisRaw = (analysisMsg.content[0] as { text: string }).text.trim();
+      const analysisClean = extractJson(analysisRaw);
+      const analysis = JSON.parse(analysisClean);
+
+      // Now generate original content based on the detected structure
+      const slideCount = analysis.slideCount || 5;
+      const pointCount = Math.max(1, Math.min(slideCount - 2, 6)); // minus cover and CTA
+
+      const generatePrompt = `Generate original carousel content inspired by this structural pattern, but with completely original content for MY niche.
+
+STRUCTURAL PATTERN DETECTED:
+- Layout: ${analysis.layoutPattern}
+- Hook technique: ${analysis.hookTechnique}
+- Content flow: ${analysis.contentFlow}
+- Slide count: ${slideCount}
+- CTA style: ${analysis.ctaStyle}
+
+MY CONTENT:
+- Topic: ${topic}
+- Audience: ${audience || "general"}
+- Archetype: ${archetype || "teacher"}
+- Brand: Collective Family Chiropractic
+
+Generate a JSON object:
+{
+  "hookLine": "original hook using the ${analysis.hookTechnique} technique for my topic",
+  "talkingPoints": [${pointCount} original content points as "Title. Supporting detail" strings],
+  "ctaText": "CTA using ${analysis.ctaStyle} style",
+  "suggestedArchetype": "best matching archetype"
+}
+
+RULES:
+- 100% original content, zero copied text
+- Adapt the STRUCTURE, not the content
+- Use real facts relevant to chiropractic
+- No emdashes, no filler words
+- Sentence fragments, not full sentences
+
+Return ONLY the JSON object.`;
+
+      const genMsg = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        messages: [{ role: "user", content: generatePrompt }],
+      });
+
+      const genRaw = (genMsg.content[0] as { text: string }).text.trim();
+      const genClean = extractJson(genRaw);
+      const generated = JSON.parse(genClean);
+
+      res.json({
+        analysis,
+        generated: {
+          hookLine: generated.hookLine,
+          talkingPoints: generated.talkingPoints,
+          ctaText: generated.ctaText,
+          suggestedArchetype: generated.suggestedArchetype,
+        },
+        sourceUrl: url || null,
+        sourceType: imageBase64 ? "screenshot" : "url",
+      });
+    } catch (err) {
+      console.error("[carousels] remix-analyze error:", err);
+      res.status(500).json({ error: "Failed to analyze carousel for remix" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 2: Cross-Platform Multiplier — Generate optimized variants for other platforms
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const PLATFORM_SLIDE_TARGETS: Record<string, number> = {
+    instagram_portrait: 7, instagram_square: 7, linkedin: 6, tiktok: 5,
+  };
+
+  const PLATFORM_CTA_DEFAULTS: Record<string, string> = {
+    instagram: "Save this for your next visit",
+    linkedin: "Share this with someone who needs it",
+    tiktok: "Which one surprised you most?",
+  };
+
+  router.post("/:id/multiply", async (req, res) => {
+    try {
+      const sourceId = parseInt(req.params.id, 10);
+      const { targetPlatforms } = req.body as {
+        targetPlatforms: Array<{ platform: string; aspectRatio: string }>;
+      };
+
+      if (!targetPlatforms?.length) {
+        res.status(400).json({ error: "targetPlatforms required" });
+        return;
+      }
+
+      // Fetch source carousel
+      const sourceRows = db.select().from(generatedCarousels).where(eq(generatedCarousels.id, sourceId)).limit(1).all();
+      if (sourceRows.length === 0) { res.status(404).json({ error: "Source carousel not found" }); return; }
+      const source = sourceRows[0];
+      const sourceTalkingPoints: string[] = JSON.parse(source.talkingPoints || "[]");
+
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const createdCarousels: number[] = [];
+
+      for (const target of targetPlatforms) {
+        const platformKey = target.platform === "instagram"
+          ? (target.aspectRatio === "4:5" ? "instagram_portrait" : "instagram_square")
+          : target.platform;
+        const targetSlides = PLATFORM_SLIDE_TARGETS[platformKey] || 6;
+        const targetPointCount = Math.max(1, targetSlides - 2);
+        const ctaText = PLATFORM_CTA_DEFAULTS[target.platform] || source.ctaText || "Save this";
+
+        // Rewrite content for platform
+        const rewritePrompt = `Rewrite this carousel content for ${target.platform} (${target.aspectRatio}).
+
+ORIGINAL CONTENT (${source.platform}, ${sourceTalkingPoints.length} points):
+Hook: "${source.hookLine}"
+Points:
+${sourceTalkingPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
+
+TARGET: ${target.platform} needs ${targetPointCount} content points.
+${targetPointCount < sourceTalkingPoints.length ? "Condense: merge the weakest points, keep the strongest." : "Expand: add relevant supporting points."}
+
+Platform word targets for ${platformKey}:
+${platformKey === "tiktok" ? "Titles: 3-6 words, Body: 12-20 words (ultra punchy)" : platformKey === "linkedin" ? "Titles: 5-10 words, Body: 25-40 words (slightly more professional)" : "Titles: 4-8 words, Body: 15-30 words"}
+
+Return JSON:
+{
+  "hookLine": "rewritten hook optimized for ${target.platform}",
+  "talkingPoints": [exactly ${targetPointCount} "Title. Body" strings]
+}
+
+RULES: Original content reworded, not copied. No emdashes. Sentence fragments. Return ONLY JSON.`;
+
+        const msg = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 500,
+          messages: [{ role: "user", content: rewritePrompt }],
+        });
+
+        const raw = (msg.content[0] as { text: string }).text.trim();
+        const cleaned = extractJson(raw);
+        const rewritten = JSON.parse(cleaned);
+
+        const slideCount = 1 + (rewritten.talkingPoints?.length || targetPointCount) + 1;
+        const templateVersion = getGitVersion(templatesDir);
+        const strategyVersion = getGitVersion(strategyPath);
+
+        const result = sqlite.prepare(`
+          INSERT INTO generated_carousels (idea_topic, platform, aspect_ratio, slide_count, hook_line, talking_points, cta_text, status, generation_source, template_version, strategy_version, hook_archetype, audience, source_carousel_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'generating', 'multiplied', ?, ?, ?, ?, ?)
+        `).run(
+          source.ideaTopic, target.platform, target.aspectRatio, slideCount,
+          rewritten.hookLine || source.hookLine, JSON.stringify(rewritten.talkingPoints || sourceTalkingPoints),
+          ctaText, templateVersion, strategyVersion,
+          (source as Record<string, unknown>).hookArchetype as string || null,
+          (source as Record<string, unknown>).audience as string || null,
+          sourceId,
+        );
+
+        const carouselId = Number(result.lastInsertRowid);
+        createdCarousels.push(carouselId);
+
+        // Generate images in background
+        const slides = buildSlideData(
+          rewritten.hookLine || source.hookLine || "Untitled",
+          source.ideaTopic || "carousel",
+          rewritten.talkingPoints || sourceTalkingPoints,
+          ctaText, target.platform, target.aspectRatio,
+        );
+        generateCarouselImages(carouselId, slides, target.aspectRatio).catch((err) => {
+          console.error(`[carousels] Multiply generation failed for ${carouselId}:`, err);
+          sqlite.prepare("UPDATE generated_carousels SET status = 'failed' WHERE id = ?").run(carouselId);
+        });
+      }
+
+      res.json({ sourceId, createdCarouselIds: createdCarousels });
+    } catch (err) {
+      console.error("[carousels] multiply error:", err);
+      res.status(500).json({ error: "Failed to multiply carousel" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 4: Engagement Autopsy — Diagnose why a carousel over/underperformed
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  router.post("/:id/autopsy", async (req, res) => {
+    try {
+      const carouselId = parseInt(req.params.id, 10);
+
+      // Get carousel data
+      const rows = db.select().from(generatedCarousels).where(eq(generatedCarousels.id, carouselId)).limit(1).all();
+      if (rows.length === 0) { res.status(404).json({ error: "Carousel not found" }); return; }
+      const carousel = rows[0];
+
+      // Get slides
+      const slides = db.select().from(carouselSlides)
+        .where(eq(carouselSlides.carouselId, carouselId))
+        .orderBy(carouselSlides.slideIndex).all();
+
+      // Get this carousel's metrics
+      const metrics = sqlite.prepare(`
+        SELECT views, likes, saves, shares, comments FROM performance_metrics
+        WHERE video_code = ? AND platform = ?
+        ORDER BY recorded_at DESC LIMIT 1
+      `).get(carousel.videoCode, carousel.platform) as { views: number; likes: number; saves: number; shares: number; comments: number } | undefined;
+
+      // Get average metrics for same platform + archetype
+      const avgRows = sqlite.prepare(`
+        SELECT AVG(pm.saves * 1.0 / CASE WHEN pm.views > 0 THEN pm.views ELSE 1 END) as avg_save_rate,
+               AVG(pm.shares * 1.0 / CASE WHEN pm.views > 0 THEN pm.views ELSE 1 END) as avg_share_rate,
+               AVG((pm.likes + pm.comments + pm.saves + pm.shares) * 1.0 / CASE WHEN pm.views > 0 THEN pm.views ELSE 1 END) as avg_engagement_rate,
+               COUNT(*) as sample_size
+        FROM generated_carousels gc
+        JOIN performance_metrics pm ON pm.video_code = gc.video_code AND pm.platform = gc.platform
+        WHERE gc.platform = ? AND gc.status = 'completed' AND pm.views > 50
+      `).get(carousel.platform) as { avg_save_rate: number; avg_share_rate: number; avg_engagement_rate: number; sample_size: number };
+
+      const views = metrics?.views || 0;
+      const saveRate = views > 0 ? (metrics?.saves || 0) / views : 0;
+      const shareRate = views > 0 ? (metrics?.shares || 0) / views : 0;
+      const engagementRate = views > 0 ? ((metrics?.likes || 0) + (metrics?.comments || 0) + (metrics?.saves || 0) + (metrics?.shares || 0)) / views : 0;
+      const compositeScore = saveRate * 0.4 + shareRate * 0.3 + engagementRate * 0.2;
+
+      const avgComposite = (avgRows?.avg_save_rate || 0) * 0.4 + (avgRows?.avg_share_rate || 0) * 0.3 + (avgRows?.avg_engagement_rate || 0) * 0.2;
+
+      // AI analysis
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const slideTexts = slides.map((s, i) => `Slide ${i + 1} (${(s as Record<string, unknown>).slideType || "content"}): ${(s as Record<string, unknown>).heading || ""} — ${(s as Record<string, unknown>).bodyText || ""}`).join("\n");
+
+      const prompt = `Analyze this carousel's performance and give actionable improvements.
+
+CAROUSEL:
+Platform: ${carousel.platform}
+Hook: "${carousel.hookLine}"
+Topic: "${carousel.ideaTopic}"
+Archetype: ${(carousel as Record<string, unknown>).hookArchetype || "unknown"}
+Slides:
+${slideTexts}
+
+PERFORMANCE:
+This carousel: composite score ${(compositeScore * 100).toFixed(2)}%
+  - Save rate: ${(saveRate * 100).toFixed(2)}%
+  - Share rate: ${(shareRate * 100).toFixed(2)}%
+  - Engagement rate: ${(engagementRate * 100).toFixed(2)}%
+  - Views: ${views}
+
+Platform average: composite ${(avgComposite * 100).toFixed(2)}% (sample: ${avgRows?.sample_size || 0})
+Delta: ${compositeScore > avgComposite ? "+" : ""}${((compositeScore - avgComposite) * 100).toFixed(2)}%
+
+${metrics ? "" : "NOTE: No metrics data found yet. Provide general analysis based on content quality."}
+
+Return JSON:
+{
+  "verdict": "overperformer" | "average" | "underperformer",
+  "strengths": ["2-3 things that worked well"],
+  "weaknesses": ["2-3 things that could improve"],
+  "improvements": [
+    {"slideIndex": 0, "original": "current text", "suggested": "improved text", "reason": "why this is better"}
+  ]
+}
+
+Focus on: hook strength, content flow, comprehension (readability), CTA effectiveness, slide count for platform.
+Return ONLY JSON.`;
+
+      const msg = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 800,
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      const raw = (msg.content[0] as { text: string }).text.trim();
+      const cleaned = extractJson(raw);
+      const analysis = JSON.parse(cleaned);
+
+      res.json({
+        carouselId,
+        compositeScore: Math.round(compositeScore * 10000) / 10000,
+        averageScore: Math.round(avgComposite * 10000) / 10000,
+        delta: Math.round((compositeScore - avgComposite) * 10000) / 10000,
+        metrics: metrics || null,
+        sampleSize: avgRows?.sample_size || 0,
+        ...analysis,
+      });
+    } catch (err) {
+      console.error("[carousels] autopsy error:", err);
+      res.status(500).json({ error: "Failed to generate autopsy" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 5: Trend Pulse — Live trending carousel topics from niche
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  router.get("/trending", async (_req, res) => {
+    try {
+      // Check cache first (6 hour TTL)
+      const cached = sqlite.prepare(
+        "SELECT data, created_at FROM research_reports WHERE type = 'carousel_trending' AND created_at > datetime('now', '-6 hours') ORDER BY created_at DESC LIMIT 1"
+      ).get() as { data: string; created_at: string } | undefined;
+
+      if (cached) {
+        res.json(JSON.parse(cached.data));
+        return;
+      }
+
+      // Use Perplexity or Claude to find trending carousel topics
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const prompt = `You are a social media trend analyst for a chiropractic practice. Find 6 trending carousel-worthy topics RIGHT NOW.
+
+Search for what's trending on Instagram and TikTok in: health, wellness, chiropractic, posture, back pain, neck pain, pregnancy wellness, kids health, exercise recovery, desk ergonomics.
+
+For each trend, provide:
+{
+  "trends": [
+    {
+      "topic": "specific carousel topic (e.g. 'neck hump from phone use')",
+      "hookLine": "scroll-stopping hook for this topic",
+      "archetype": "teacher|contrarian|fortuneteller|experimenter|magician|investigator",
+      "audience": "best audience segment",
+      "platform": "instagram|tiktok|linkedin",
+      "aspectRatio": "4:5|1:1|9:16",
+      "proof": "why this is trending (mention source/data)",
+      "engagementSignal": "high|medium"
+    }
+  ]
+}
+
+Focus on topics with PROVEN engagement signals. Prioritize topics that got high saves/shares.
+Return ONLY the JSON object.`;
+
+      const perplexityKey = process.env.PERPLEXITY_API_KEY;
+      let trendsData: { trends: unknown[] } | null = null;
+
+      if (perplexityKey) {
+        try {
+          const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${perplexityKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "sonar",
+              messages: [{ role: "user", content: prompt }],
+            }),
+          });
+          if (perplexityRes.ok) {
+            const data = await perplexityRes.json() as { choices: Array<{ message: { content: string } }> };
+            const raw = data.choices[0]?.message?.content?.trim() ?? "";
+            trendsData = JSON.parse(extractJson(raw));
+          }
+        } catch {
+          // Fall back to Claude
+        }
+      }
+
+      if (!trendsData) {
+        const msg = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1200,
+          messages: [{ role: "user", content: prompt }],
+        });
+        const raw = (msg.content[0] as { text: string }).text.trim();
+        const parsed = JSON.parse(extractJson(raw));
+        // Normalize: AI might return array directly or {trends: [...]}
+        trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
+      }
+
+      // Normalize perplexity response too
+      if (trendsData && Array.isArray(trendsData)) {
+        trendsData = { trends: trendsData as unknown[] };
+      }
+
+      // Cache the result
+      sqlite.prepare(
+        "INSERT INTO research_reports (type, data) VALUES (?, ?)"
+      ).run("carousel_trending", JSON.stringify(trendsData));
+
+      res.json(trendsData);
+    } catch (err) {
+      console.error("[carousels] trending error:", err);
+      res.status(500).json({ error: "Failed to fetch trending topics" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 6: Slide-Level A/B Variants
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  router.post("/:id/slides/:slideIndex/variants", async (req, res) => {
+    try {
+      const carouselId = parseInt(req.params.id, 10);
+      const slideIndex = parseInt(req.params.slideIndex, 10);
+
+      // Get carousel context
+      const rows = db.select().from(generatedCarousels).where(eq(generatedCarousels.id, carouselId)).limit(1).all();
+      if (rows.length === 0) { res.status(404).json({ error: "Carousel not found" }); return; }
+      const carousel = rows[0];
+
+      // Get the specific slide
+      const slide = sqlite.prepare(
+        "SELECT * FROM carousel_slides WHERE carousel_id = ? AND slide_index = ?"
+      ).get(carouselId, slideIndex) as { heading: string; body_text: string; slide_type: string } | undefined;
+
+      if (!slide) { res.status(404).json({ error: "Slide not found" }); return; }
+
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const prompt = `Generate 3 alternative versions of this carousel slide, each using a different persuasion angle.
+
+CURRENT SLIDE (${slide.slide_type}, index ${slideIndex}):
+Heading: "${slide.heading || ""}"
+Body: "${slide.body_text || ""}"
+
+CAROUSEL CONTEXT:
+Topic: "${carousel.ideaTopic}"
+Hook: "${carousel.hookLine}"
+Platform: ${carousel.platform}
+Archetype: ${(carousel as Record<string, unknown>).hookArchetype || "teacher"}
+
+Generate 3 variants with different angles:
+1. Emotional — connects through feeling, empathy, personal experience
+2. Data-driven — leads with a specific number, stat, or research finding
+3. Contrarian — challenges an assumption, flips a common belief
+
+Return JSON:
+[
+  {"angle": "emotional", "heading": "new heading", "bodyText": "new body"},
+  {"angle": "data-driven", "heading": "new heading", "bodyText": "new body"},
+  {"angle": "contrarian", "heading": "new heading", "bodyText": "new body"}
+]
+
+RULES:
+- Same topic, completely different framing
+- Match platform word limits (${carousel.platform === "tiktok" ? "ultra short" : "standard"})
+- Sentence fragments, not full sentences
+- No emdashes
+- Return ONLY the JSON array.`;
+
+      const msg = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 500,
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      const raw = (msg.content[0] as { text: string }).text.trim();
+      const cleaned = extractJson(raw);
+      const variants = JSON.parse(cleaned);
+
+      res.json({ slideIndex, currentHeading: slide.heading, currentBody: slide.body_text, variants });
+    } catch (err) {
+      console.error("[carousels] slide variants error:", err);
+      res.status(500).json({ error: "Failed to generate variants" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FEATURE 7: Competitor Carousel Watch — Monitor accounts
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Add/list/remove watched accounts
+  router.get("/watch/accounts", (_req, res) => {
+    try {
+      const accounts = sqlite.prepare("SELECT * FROM carousel_watch_accounts ORDER BY created_at DESC").all();
+      res.json(accounts);
+    } catch (err) {
+      console.error("[carousels] watch accounts error:", err);
+      res.status(500).json({ error: "Failed to fetch watched accounts" });
+    }
+  });
+
+  router.post("/watch/accounts", (req, res) => {
+    try {
+      const { platform, handle, displayName } = req.body as { platform: string; handle: string; displayName?: string };
+      if (!platform || !handle) { res.status(400).json({ error: "platform and handle required" }); return; }
+
+      const cleanHandle = handle.replace(/^@/, "");
+      sqlite.prepare(
+        "INSERT OR IGNORE INTO carousel_watch_accounts (platform, handle, display_name) VALUES (?, ?, ?)"
+      ).run(platform, cleanHandle, displayName || null);
+
+      const account = sqlite.prepare(
+        "SELECT * FROM carousel_watch_accounts WHERE platform = ? AND handle = ?"
+      ).get(platform, cleanHandle);
+
+      res.json(account);
+    } catch (err) {
+      console.error("[carousels] add watch account error:", err);
+      res.status(500).json({ error: "Failed to add watch account" });
+    }
+  });
+
+  router.delete("/watch/accounts/:id", (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      sqlite.prepare("DELETE FROM carousel_watch_accounts WHERE id = ?").run(id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[carousels] delete watch account error:", err);
+      res.status(500).json({ error: "Failed to delete watch account" });
+    }
+  });
+
+  // Get watched posts feed
+  router.get("/watch/feed", (_req, res) => {
+    try {
+      const posts = sqlite.prepare(`
+        SELECT wp.*, wa.handle, wa.platform as account_platform, wa.display_name
+        FROM carousel_watch_posts wp
+        JOIN carousel_watch_accounts wa ON wa.id = wp.account_id
+        ORDER BY wp.fetched_at DESC
+        LIMIT 50
+      `).all();
+
+      // Parse analysis JSON
+      const mapped = (posts as Array<Record<string, unknown>>).map((p) => ({
+        ...p,
+        analysis: p.analysis_json ? JSON.parse(p.analysis_json as string) : null,
+      }));
+
+      res.json(mapped);
+    } catch (err) {
+      console.error("[carousels] watch feed error:", err);
+      res.status(500).json({ error: "Failed to fetch watch feed" });
+    }
+  });
+
+  // Manually trigger a scan for a watched account (stores posts in DB)
+  router.post("/watch/accounts/:id/scan", async (req, res) => {
+    try {
+      const accountId = parseInt(req.params.id, 10);
+      const account = sqlite.prepare("SELECT * FROM carousel_watch_accounts WHERE id = ?").get(accountId) as {
+        id: number; platform: string; handle: string;
+      } | undefined;
+
+      if (!account) { res.status(404).json({ error: "Account not found" }); return; }
+
+      // Use Anthropic web search to find recent posts
+      const { default: Anthropic } = await import("@anthropic-ai/sdk");
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const searchPrompt = `Find the 5 most recent carousel posts by @${account.handle} on ${account.platform}. For each post, provide:
+
+Return JSON array:
+[
+  {
+    "postUrl": "full URL to the post",
+    "caption": "first 100 chars of caption",
+    "thumbnailUrl": "thumbnail image URL if available, null otherwise",
+    "estimatedLikes": number or 0,
+    "estimatedComments": number or 0,
+    "hookTechnique": "listicle|myth|stat|story|contrarian|quick-win",
+    "contentFlow": "brief description of the carousel structure"
+  }
+]
+
+Only include carousel/multi-image posts, not single images or videos.
+If you can't find carousel posts, return an empty array [].
+Return ONLY the JSON array.`;
+
+      const msg = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 800,
+        tools: [{
+          type: "web_search_20250305",
+          name: "web_search",
+          max_uses: 3,
+        }],
+        messages: [{ role: "user", content: searchPrompt }],
+      });
+
+      // Extract text from the response (may have tool use blocks)
+      let responseText = "";
+      for (const block of msg.content) {
+        if (block.type === "text") responseText += block.text;
+      }
+
+      let posts: Array<Record<string, unknown>> = [];
+      try {
+        posts = JSON.parse(extractJson(responseText.trim()));
+        if (!Array.isArray(posts)) posts = [];
+      } catch {
+        posts = [];
+      }
+
+      let inserted = 0;
+      for (const post of posts) {
+        if (!post.postUrl) continue;
+        try {
+          sqlite.prepare(`
+            INSERT OR IGNORE INTO carousel_watch_posts (account_id, post_url, platform, thumbnail_url, caption, likes, comments, analysis_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            accountId, post.postUrl, account.platform,
+            post.thumbnailUrl || null, post.caption || null,
+            post.estimatedLikes || 0, post.estimatedComments || 0,
+            JSON.stringify({ hookTechnique: post.hookTechnique, contentFlow: post.contentFlow }),
+          );
+          inserted++;
+        } catch {
+          // Duplicate URL, skip
+        }
+      }
+
+      res.json({ account: account.handle, postsFound: posts.length, postsInserted: inserted });
+    } catch (err) {
+      console.error("[carousels] watch scan error:", err);
+      res.status(500).json({ error: "Failed to scan account" });
     }
   });
 

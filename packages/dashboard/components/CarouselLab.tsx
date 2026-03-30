@@ -2,7 +2,9 @@ import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutGrid, Plus, ChevronRight, RotateCcw, Copy, Check, ExternalLink,
-  BarChart2, Layers, X, Loader2, Image, ChevronDown,
+  BarChart2, Layers, X, Loader2, Image, ChevronDown, Sparkles, Globe,
+  Zap, TrendingUp, Eye, Trash2, RefreshCw, Upload, Link, Shuffle,
+  Microscope, FlaskConical,
 } from "lucide-react";
 import { cn } from "../utils/cn.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
@@ -168,6 +170,8 @@ function Stars({ count, max = 5 }: { count: number; max?: number }) {
 
 // ─── Slide Editor Card ─────────────────────────────────────────────────────────
 
+type SlideVariant = { angle: string; heading: string; bodyText: string };
+
 type SlideEditorProps = {
   slide: CarouselSlide;
   isActive: boolean;
@@ -182,6 +186,30 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
   const [visualSuggestion, setVisualSuggestion] = useState(slide.visualSuggestion ?? "");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [variants, setVariants] = useState<SlideVariant[] | null>(null);
+  const [loadingVariants, setLoadingVariants] = useState(false);
+
+  const handleGenerateVariants = async () => {
+    setLoadingVariants(true);
+    try {
+      const res = await fetch(`/api/carousels/${carouselId}/slides/${slide.slideIndex}/variants`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVariants(data.variants);
+      }
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const applyVariant = (v: SlideVariant) => {
+    setHeading(v.heading);
+    setBodyText(v.bodyText);
+    setDirty(true);
+    setVariants(null);
+  };
 
   const handleChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setter(e.target.value);
@@ -292,6 +320,40 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             <button onClick={handleRevert} className="text-xs text-themed-muted hover:text-themed-secondary flex items-center gap-1">
               <RotateCcw size={10} /> Revert
             </button>
+          </div>
+        )}
+
+        {/* Feature 6: A/B Variants */}
+        {slide.slideType === "content" && (
+          <div className="pt-2 border-t border-themed-subtle">
+            <button
+              onClick={handleGenerateVariants}
+              disabled={loadingVariants}
+              className="flex items-center gap-1.5 text-xs font-bold text-violet-500 hover:text-violet-700 disabled:opacity-40"
+            >
+              {loadingVariants ? <Loader2 size={10} className="animate-spin" /> : <FlaskConical size={10} />}
+              {loadingVariants ? "Generating..." : variants ? "Regenerate Variants" : "A/B Variants"}
+            </button>
+
+            {variants && (
+              <div className="mt-2 space-y-2">
+                {variants.map((v) => (
+                  <div key={v.angle} className="p-3 rounded-xl border border-themed bg-surface-hover">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-themed-muted">{v.angle}</span>
+                      <button
+                        onClick={() => applyVariant(v)}
+                        className="text-[10px] font-bold text-violet-500 hover:text-violet-700"
+                      >
+                        Use this
+                      </button>
+                    </div>
+                    <p className="text-xs font-bold text-themed leading-tight">{v.heading}</p>
+                    <p className="text-[11px] text-themed-secondary mt-0.5">{v.bodyText}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -449,8 +511,30 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
 
   // ── Creator mode
-  type Mode = "fresh" | "from-video";
+  type Mode = "fresh" | "from-video" | "remix";
   const [mode, setMode] = useState<Mode>("fresh");
+
+  // ── Remix state
+  const [remixUrl, setRemixUrl] = useState("");
+  const [remixImageBase64, setRemixImageBase64] = useState<string | null>(null);
+  const [remixAnalysis, setRemixAnalysis] = useState<{
+    analysis: Record<string, unknown>;
+    generated: { hookLine: string; talkingPoints: string[]; ctaText: string; suggestedArchetype: string };
+  } | null>(null);
+
+  // ── Multiply modal
+  const [showMultiply, setShowMultiply] = useState(false);
+  const [multiplyTargets, setMultiplyTargets] = useState<Array<{ platform: string; aspectRatio: string }>>([]);
+
+  // ── Autopsy state
+  const [autopsyData, setAutopsyData] = useState<Record<string, unknown> | null>(null);
+  const [autopsyLoading, setAutopsyLoading] = useState(false);
+
+  // ── Trend Pulse
+  const [showTrends, setShowTrends] = useState(false);
+
+  // ── Watch tab
+  const [leftTab, setLeftTab] = useState<"library" | "watch">("library");
 
   // ── Fresh start form
   const [platform, setPlatform] = useState<PlatformOption>(PLATFORM_OPTIONS[0]);
@@ -646,6 +730,101 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
     },
   });
 
+  // ── Remix mutation
+  const remixMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/carousels/remix-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: remixUrl || undefined,
+          imageBase64: remixImageBase64 || undefined,
+          topic,
+          audience: audience || undefined,
+          archetype: archetype || undefined,
+          platform: platform.platform,
+          aspectRatio: platform.aspectRatio,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to analyze");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setRemixAnalysis(data);
+      // Pre-fill form with generated content
+      if (data.generated) {
+        setHookLine(data.generated.hookLine || "");
+        setTalkingPoints(data.generated.talkingPoints || ["", "", ""]);
+        setCtaText(data.generated.ctaText || ctaText);
+        if (data.generated.suggestedArchetype) {
+          setArchetype(data.generated.suggestedArchetype as ArchetypeId);
+        }
+      }
+    },
+  });
+
+  // ── Multiply mutation
+  const multiplyMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeCarouselId) throw new Error("No carousel selected");
+      const res = await fetch(`/api/carousels/${activeCarouselId}/multiply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetPlatforms: multiplyTargets }),
+      });
+      if (!res.ok) throw new Error("Failed to multiply");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["carousels-lab"] });
+      setShowMultiply(false);
+      setMultiplyTargets([]);
+    },
+  });
+
+  // ── Trending topics query
+  const { data: trendingData, isLoading: trendingLoading, refetch: refetchTrends } = useQuery<{
+    trends: Array<{
+      topic: string; hookLine: string; archetype: string; audience: string;
+      platform: string; aspectRatio: string; proof: string; engagementSignal: string;
+    }>;
+  }>({
+    queryKey: ["carousel-trending"],
+    queryFn: async () => {
+      const res = await fetch("/api/carousels/trending");
+      if (!res.ok) throw new Error("Failed to fetch trends");
+      return res.json();
+    },
+    enabled: showTrends,
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours
+  });
+
+  // ── Watch accounts query
+  const { data: watchAccounts = [] } = useQuery<Array<{ id: number; platform: string; handle: string; display_name: string | null; created_at: string }>>({
+    queryKey: ["carousel-watch-accounts"],
+    queryFn: async () => {
+      const res = await fetch("/api/carousels/watch/accounts");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: leftTab === "watch",
+  });
+
+  // ── Watch feed query
+  const { data: watchFeed = [] } = useQuery<Array<{
+    id: number; handle: string; post_url: string; platform: string; caption: string;
+    likes: number; comments: number; analysis: Record<string, unknown> | null;
+  }>>({
+    queryKey: ["carousel-watch-feed"],
+    queryFn: async () => {
+      const res = await fetch("/api/carousels/watch/feed");
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: leftTab === "watch",
+    refetchInterval: 30000,
+  });
+
   // ── Retry failed/stuck carousel
   const retryMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -698,14 +877,181 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
       {/* ── Left: Library + Spark Starters ──────────────────────────────── */}
       <div className="w-[260px] shrink-0 border-r border-themed bg-surface-hover flex flex-col overflow-hidden">
         <div className="p-3 border-b border-themed">
-          <div className="flex items-center gap-2">
-            <LayoutGrid size={14} className="text-violet-600" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-tertiary">Carousel Lab</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <LayoutGrid size={14} className="text-violet-600" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-tertiary">Carousel Lab</span>
+            </div>
+          </div>
+          {/* Left panel tabs */}
+          <div className="flex items-center gap-1 mt-2">
+            {(["library", "watch"] as const).map((tab) => (
+              <button key={tab} onClick={() => setLeftTab(tab)}
+                className={cn("px-3 py-1 rounded-full text-[10px] font-bold transition-colors",
+                  leftTab === tab ? "bg-violet-600 text-white" : "text-themed-muted hover:bg-surface-hover"
+                )}>
+                {tab === "library" ? "Library" : "Watch"}
+              </button>
+            ))}
+            <button onClick={() => setShowTrends((v) => !v)}
+              className={cn("px-3 py-1 rounded-full text-[10px] font-bold transition-colors flex items-center gap-1",
+                showTrends ? "bg-amber-500 text-white" : "text-themed-muted hover:bg-surface-hover"
+              )}>
+              <Zap size={9} /> Trends
+            </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {carousels.length === 0 ? (
+          {/* Feature 5: Trend Pulse */}
+          {showTrends && (
+            <div className="space-y-2 pb-3 border-b border-themed">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-amber-600">Trending Now</p>
+                <button onClick={() => refetchTrends()} className="text-themed-muted hover:text-themed-secondary">
+                  <RefreshCw size={10} className={trendingLoading ? "animate-spin" : ""} />
+                </button>
+              </div>
+              {trendingLoading && <p className="text-[11px] text-themed-muted animate-pulse">Searching trends...</p>}
+              {trendingData?.trends?.map((trend, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const platOpt = PLATFORM_OPTIONS.find(
+                      (p) => p.platform === trend.platform && p.aspectRatio === trend.aspectRatio
+                    ) ?? PLATFORM_OPTIONS[0];
+                    setPlatform(platOpt);
+                    setArchetype((trend.archetype || "teacher") as ArchetypeId);
+                    setAudience(trend.audience || "");
+                    setTopic(trend.topic);
+                    setHookLine(trend.hookLine || "");
+                    setMode("fresh");
+                    setActiveCarouselId(null);
+                    setShowTrends(false);
+                  }}
+                  className="w-full text-left p-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 transition-all group"
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <TrendingUp size={10} className="text-amber-500" />
+                    <span className={cn("text-[9px] font-black uppercase tracking-wider",
+                      trend.engagementSignal === "high" ? "text-emerald-600" : "text-amber-600"
+                    )}>
+                      {trend.engagementSignal === "high" ? "Hot" : "Rising"}
+                    </span>
+                    <span className="text-[9px] text-themed-muted capitalize">{trend.platform}</span>
+                  </div>
+                  <p className="text-xs font-bold text-themed leading-snug line-clamp-2">{trend.topic}</p>
+                  <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{trend.proof}</p>
+                </button>
+              ))}
+              {!trendingLoading && !trendingData?.trends?.length && (
+                <p className="text-[11px] text-themed-muted">Click refresh to scan for trending topics.</p>
+              )}
+            </div>
+          )}
+
+          {/* Feature 7: Watch Tab */}
+          {leftTab === "watch" && (
+            <div className="space-y-3">
+              {/* Add account form */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Competitor Watch</p>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const handle = (form.elements.namedItem("handle") as HTMLInputElement).value;
+                  const platform = (form.elements.namedItem("platform") as HTMLSelectElement).value;
+                  if (!handle) return;
+                  fetch("/api/carousels/watch/accounts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ platform, handle }),
+                  }).then(() => queryClient.invalidateQueries({ queryKey: ["carousel-watch-accounts"] }));
+                  form.reset();
+                }} className="flex gap-1.5">
+                  <select name="platform" className="text-[10px] bg-surface-elevated border border-themed rounded-lg px-2 py-1.5">
+                    <option value="instagram">IG</option>
+                    <option value="tiktok">TT</option>
+                    <option value="linkedin">LI</option>
+                  </select>
+                  <input name="handle" placeholder="@handle" className="flex-1 text-[11px] bg-surface-elevated border border-themed rounded-lg px-2 py-1.5 placeholder-slate-400" />
+                  <button type="submit" className="px-2 py-1.5 rounded-lg bg-violet-600 text-white text-[10px] font-bold">+</button>
+                </form>
+              </div>
+
+              {/* Watched accounts */}
+              {watchAccounts.map((acct) => (
+                <div key={acct.id} className="p-3 rounded-xl border border-themed bg-surface-elevated">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-themed">@{acct.handle}</p>
+                      <span className="text-[9px] text-themed-muted uppercase">{acct.platform}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          fetch(`/api/carousels/watch/accounts/${acct.id}/scan`, { method: "POST" })
+                            .then(() => queryClient.invalidateQueries({ queryKey: ["carousel-watch-feed"] }));
+                        }}
+                        className="text-[10px] font-bold text-violet-500 hover:text-violet-700"
+                      >
+                        Scan
+                      </button>
+                      <button
+                        onClick={() => {
+                          fetch(`/api/carousels/watch/accounts/${acct.id}`, { method: "DELETE" })
+                            .then(() => queryClient.invalidateQueries({ queryKey: ["carousel-watch-accounts"] }));
+                        }}
+                        className="text-themed-muted hover:text-rose-400"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Watch feed */}
+              {watchFeed.length > 0 && (
+                <div className="pt-2 border-t border-themed space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Recent Posts</p>
+                  {watchFeed.map((post) => (
+                    <button
+                      key={post.id}
+                      onClick={() => {
+                        setMode("remix");
+                        setRemixUrl(post.post_url);
+                        setActiveCarouselId(null);
+                      }}
+                      className="w-full text-left p-3 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 transition-all"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[9px] font-bold text-themed-muted">@{post.handle}</span>
+                        {post.analysis?.hookTechnique ? (
+                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                            {String(post.analysis.hookTechnique)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="text-[11px] text-themed-secondary line-clamp-2">{post.caption || "No caption"}</p>
+                      <div className="flex items-center gap-2 mt-1 text-[9px] text-themed-muted">
+                        {post.likes > 0 && <span>{post.likes} likes</span>}
+                        {post.comments > 0 && <span>{post.comments} comments</span>}
+                        <span className="text-violet-500 font-bold ml-auto">Remix</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {watchAccounts.length === 0 && (
+                <p className="text-[11px] text-themed-muted text-center py-4">Add competitor accounts to monitor their carousel strategies.</p>
+              )}
+            </div>
+          )}
+
+          {/* Library tab content */}
+          {leftTab === "library" && carousels.length === 0 ? (
             /* Empty state: Spark Starters fill the panel */
             <div className="space-y-2">
               <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted pt-1">Spark Starters</p>
@@ -730,7 +1076,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 );
               })}
             </div>
-          ) : (
+          ) : leftTab === "library" ? (
             /* Library exists: show carousels + spark starters collapsed */
             <>
               {carousels.map((c) => (
@@ -757,12 +1103,12 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                 </div>
               </div>
             </>
-          )}
+          ) : null}
         </div>
 
         <div className="p-3 border-t border-themed">
           <button
-            onClick={() => setActiveCarouselId(null)}
+            onClick={() => { setActiveCarouselId(null); setLeftTab("library"); }}
             className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-violet-600 text-white text-[11px] font-bold hover:bg-violet-700 transition-colors"
           >
             <Plus size={12} /> New Carousel
@@ -806,19 +1152,23 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
           {!activeCarousel && (
             <div className="bg-surface-elevated border border-themed rounded-2xl p-5 space-y-5">
               {/* Mode toggle */}
-              <div className="flex items-center gap-2">
-                {(["fresh", "from-video"] as const).map((m) => (
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "fresh" as const, label: "Fresh Start", icon: <Sparkles size={11} /> },
+                  { id: "from-video" as const, label: "From Video", icon: <Layers size={11} /> },
+                  { id: "remix" as const, label: "Remix", icon: <Shuffle size={11} /> },
+                ]).map((m) => (
                   <button
-                    key={m}
-                    onClick={() => setMode(m)}
+                    key={m.id}
+                    onClick={() => setMode(m.id)}
                     className={cn(
-                      "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
-                      mode === m
+                      "px-4 py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5",
+                      mode === m.id
                         ? "bg-violet-600 text-white border-violet-600"
                         : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                     )}
                   >
-                    {m === "fresh" ? "Fresh Start" : "From Video"}
+                    {m.icon} {m.label}
                   </button>
                 ))}
               </div>
@@ -1211,6 +1561,129 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   </button>
                 </>
               )}
+
+              {/* ── Remix Mode ─────────────────────────────────────────────── */}
+              {mode === "remix" && (
+                <>
+                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-1">
+                    <p className="text-xs font-bold text-violet-800">How Remix works</p>
+                    <p className="text-[11px] text-violet-600">Paste a carousel URL or upload a screenshot. AI extracts the structural DNA (layout, hook technique, content flow) and generates 100% original content in your brand using the same proven structure.</p>
+                  </div>
+
+                  {/* Platform */}
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-2">Platform</label>
+                    <div className="flex flex-wrap gap-2">
+                      {PLATFORM_OPTIONS.map((opt, i) => (
+                        <button key={i} onClick={() => handlePlatformChange(opt)}
+                          className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors",
+                            platform === opt ? "bg-violet-600 text-white border-violet-600" : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
+                          )}>{opt.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Source: URL or Screenshot */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block">Inspiration Source</label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Link size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-themed-muted" />
+                        <input
+                          type="text"
+                          value={remixUrl}
+                          onChange={(e) => { setRemixUrl(e.target.value); setRemixImageBase64(null); }}
+                          placeholder="Paste Instagram/TikTok/LinkedIn URL..."
+                          className="w-full text-sm bg-surface-elevated border border-themed rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
+                        />
+                      </div>
+                      <label className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold border border-themed bg-surface-elevated text-themed-tertiary hover:border-violet-400 cursor-pointer transition-colors">
+                        <Upload size={12} /> Screenshot
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => { setRemixImageBase64(reader.result as string); setRemixUrl(""); };
+                          reader.readAsDataURL(file);
+                        }} />
+                      </label>
+                    </div>
+                    {remixImageBase64 && (
+                      <div className="flex items-center gap-2 text-xs text-emerald-600 font-bold">
+                        <Check size={12} /> Screenshot uploaded
+                        <button onClick={() => setRemixImageBase64(null)} className="text-themed-muted hover:text-rose-400"><X size={12} /></button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Topic for original content */}
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-[0.12em] text-themed-muted block mb-1.5">Your Topic</label>
+                    <textarea
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="What should YOUR version be about?"
+                      rows={2}
+                      className="w-full text-base bg-surface-elevated border border-themed rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 text-themed placeholder-slate-400"
+                    />
+                  </div>
+
+                  {/* Analyze + Generate */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => remixMutation.mutate()}
+                      disabled={remixMutation.isPending || (!remixUrl && !remixImageBase64) || !topic.trim()}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {remixMutation.isPending ? (
+                        <><Loader2 size={12} className="animate-spin" /> Analyzing...</>
+                      ) : (
+                        <><Shuffle size={12} /> Analyze &amp; Remix</>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Remix Analysis Results */}
+                  {remixAnalysis && (
+                    <div className="space-y-3 animate-in fade-in duration-200">
+                      <div className="bg-surface-hover border border-themed rounded-xl p-4 space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Detected Structure</p>
+                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                          {Object.entries(remixAnalysis.analysis).filter(([k]) => k !== "slideSummaries").map(([key, val]) => (
+                            <div key={key}>
+                              <span className="text-themed-muted capitalize">{key.replace(/([A-Z])/g, " $1")}:</span>{" "}
+                              <span className="font-bold text-themed-secondary">{String(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Generated Content Preview</p>
+                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-2">
+                        <p className="text-sm font-bold text-violet-800">"{remixAnalysis.generated.hookLine}"</p>
+                        <ul className="space-y-1">
+                          {remixAnalysis.generated.talkingPoints.map((pt, i) => (
+                            <li key={i} className="text-xs text-violet-700">{i + 1}. {pt}</li>
+                          ))}
+                        </ul>
+                        <p className="text-[11px] text-violet-600 italic">CTA: {remixAnalysis.generated.ctaText}</p>
+                      </div>
+
+                      <button
+                        onClick={() => generateMutation.mutate()}
+                        disabled={isGenerating}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+                      >
+                        {isGenerating ? (
+                          <><Loader2 size={12} className="animate-spin" /> Generating...</>
+                        ) : (
+                          <><Layers size={12} /> Generate Carousel from Remix</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -1339,6 +1812,36 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   </button>
                 )}
 
+                {/* Feature 2: Multiply */}
+                {activeCarousel.status === "completed" && (
+                  <button
+                    onClick={() => setShowMultiply(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border border-emerald-500 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                  >
+                    <Globe size={10} /> Multiply
+                  </button>
+                )}
+
+                {/* Feature 4: Autopsy */}
+                {activeCarousel.status === "completed" && (
+                  <button
+                    onClick={async () => {
+                      setAutopsyLoading(true);
+                      try {
+                        const res = await fetch(`/api/carousels/${activeCarousel.id}/autopsy`, { method: "POST" });
+                        if (res.ok) setAutopsyData(await res.json());
+                      } finally {
+                        setAutopsyLoading(false);
+                      }
+                    }}
+                    disabled={autopsyLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border border-amber-500 text-amber-600 hover:bg-amber-50 disabled:opacity-40 transition-colors"
+                  >
+                    {autopsyLoading ? <Loader2 size={10} className="animate-spin" /> : <Microscope size={10} />}
+                    {autopsyLoading ? "Analyzing..." : "Autopsy"}
+                  </button>
+                )}
+
                 <FeatureHint id="carousel-canva-push" content="After saving, run /carousel-lab push [id] in Claude Code to create a Canva design. The URL will appear here when done." side="top">
                   <button
                     onClick={() => setCanvaModalOpen(true)}
@@ -1350,8 +1853,69 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
 
                 <span className="text-[10px] text-themed-muted">
                   ID: <span className="font-mono">{activeCarousel.id}</span>
+                  {activeCarousel.sourceCarouselId && (
+                    <span className="ml-1 text-emerald-500">(from #{activeCarousel.sourceCarouselId})</span>
+                  )}
                 </span>
               </div>
+
+              {/* Feature 4: Autopsy Results */}
+              {autopsyData && (
+                <div className="bg-surface-hover border border-themed rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Engagement Autopsy</p>
+                    <button onClick={() => setAutopsyData(null)} className="text-themed-muted hover:text-themed-secondary"><X size={12} /></button>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-themed">{((autopsyData.compositeScore as number) * 100).toFixed(1)}%</p>
+                      <p className="text-[10px] text-themed-muted">Your Score</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-black text-themed-secondary">{((autopsyData.averageScore as number) * 100).toFixed(1)}%</p>
+                      <p className="text-[10px] text-themed-muted">Avg Score</p>
+                    </div>
+                    <div className="text-center">
+                      <p className={cn("text-2xl font-black", (autopsyData.delta as number) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {(autopsyData.delta as number) >= 0 ? "+" : ""}{((autopsyData.delta as number) * 100).toFixed(1)}%
+                      </p>
+                      <p className="text-[10px] text-themed-muted">Delta</p>
+                    </div>
+                  </div>
+
+                  {(autopsyData.strengths as string[])?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Strengths</p>
+                      {(autopsyData.strengths as string[]).map((s, i) => (
+                        <p key={i} className="text-xs text-themed-secondary">+ {s}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {(autopsyData.weaknesses as string[])?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Areas to Improve</p>
+                      {(autopsyData.weaknesses as string[]).map((s, i) => (
+                        <p key={i} className="text-xs text-themed-secondary">- {s}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {(autopsyData.improvements as Array<Record<string, unknown>>)?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Suggested Rewrites</p>
+                      {(autopsyData.improvements as Array<Record<string, unknown>>).map((imp, i) => (
+                        <div key={i} className="bg-surface-elevated rounded-xl p-3 border border-themed mt-1.5">
+                          <p className="text-[10px] text-themed-muted mb-1">Slide {(imp.slideIndex as number) + 1} — {imp.reason as string}</p>
+                          <p className="text-xs text-rose-500 line-through">{imp.original as string}</p>
+                          <p className="text-xs text-emerald-700 font-bold mt-0.5">{imp.suggested as string}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1365,6 +1929,67 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
         open={analyticsOpen}
         onToggle={() => setAnalyticsOpen(false)}
       />
+
+      {/* ── Multiply Modal ──────────────────────────────────────────────── */}
+      {showMultiply && activeCarousel && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-black text-themed">Cross-Platform Multiply</p>
+              <button onClick={() => setShowMultiply(false)} className="text-themed-muted hover:text-themed-secondary"><X size={16} /></button>
+            </div>
+            <p className="text-xs text-themed-secondary">
+              Generate optimized versions for other platforms. Content will be rewritten to match each platform's best practices (word count, slide count, CTA style).
+            </p>
+            <p className="text-[10px] text-themed-muted">
+              Source: {activeCarousel.platform} ({activeCarousel.aspectRatio}) — {activeCarousel.slideCount} slides
+            </p>
+
+            <div className="space-y-2">
+              {PLATFORM_OPTIONS
+                .filter((opt) => !(opt.platform === activeCarousel.platform && opt.aspectRatio === activeCarousel.aspectRatio))
+                .map((opt, i) => {
+                  const isSelected = multiplyTargets.some((t) => t.platform === opt.platform && t.aspectRatio === opt.aspectRatio);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        if (isSelected) {
+                          setMultiplyTargets(multiplyTargets.filter((t) => !(t.platform === opt.platform && t.aspectRatio === opt.aspectRatio)));
+                        } else {
+                          setMultiplyTargets([...multiplyTargets, { platform: opt.platform, aspectRatio: opt.aspectRatio }]);
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors",
+                        isSelected ? "border-emerald-400 bg-emerald-50" : "border-themed bg-surface-elevated hover:border-emerald-300"
+                      )}
+                    >
+                      <span className="text-xs font-bold text-themed-secondary">{opt.label}</span>
+                      <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center",
+                        isSelected ? "border-emerald-600 bg-emerald-600" : "border-themed"
+                      )}>
+                        {isSelected && <Check size={10} className="text-white" />}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+
+            <button
+              onClick={() => multiplyMutation.mutate()}
+              disabled={multiplyTargets.length === 0 || multiplyMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+            >
+              {multiplyMutation.isPending ? (
+                <><Loader2 size={12} className="animate-spin" /> Multiplying...</>
+              ) : (
+                <><Globe size={12} /> Generate {multiplyTargets.length} variant{multiplyTargets.length !== 1 ? "s" : ""}</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Canva Push Modal ─────────────────────────────────────────────── */}
       {canvaModalOpen && activeCarousel && (

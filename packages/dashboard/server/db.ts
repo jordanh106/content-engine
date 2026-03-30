@@ -652,8 +652,41 @@ addColumnIfMissing("generated_carousels", "hook_archetype", "TEXT");
 addColumnIfMissing("generated_carousels", "audience", "TEXT");
 addColumnIfMissing("generated_carousels", "canva_design_id", "TEXT");
 addColumnIfMissing("generated_carousels", "canva_design_url", "TEXT");
+addColumnIfMissing("generated_carousels", "remix_source_url", "TEXT");
+addColumnIfMissing("generated_carousels", "remix_source_type", "TEXT"); // "url" | "screenshot"
+addColumnIfMissing("generated_carousels", "source_carousel_id", "INTEGER"); // for cross-platform multiplied carousels
 addColumnIfMissing("carousel_slides", "heading", "TEXT");
 addColumnIfMissing("carousel_slides", "body_text", "TEXT");
+
+// Carousel Watch: tracked accounts for competitor carousel monitoring
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS carousel_watch_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform TEXT NOT NULL,
+    handle TEXT NOT NULL,
+    display_name TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(platform, handle)
+  );
+
+  CREATE TABLE IF NOT EXISTS carousel_watch_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id INTEGER NOT NULL REFERENCES carousel_watch_accounts(id) ON DELETE CASCADE,
+    post_url TEXT NOT NULL UNIQUE,
+    platform TEXT NOT NULL,
+    post_type TEXT DEFAULT 'carousel',
+    thumbnail_url TEXT,
+    caption TEXT,
+    likes INTEGER DEFAULT 0,
+    comments INTEGER DEFAULT 0,
+    shares INTEGER DEFAULT 0,
+    saves INTEGER DEFAULT 0,
+    analysis_json TEXT,
+    fetched_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_watch_posts_account ON carousel_watch_posts(account_id);
+`);
 addColumnIfMissing("carousel_slides", "visual_suggestion", "TEXT");
 
 // ============================================
