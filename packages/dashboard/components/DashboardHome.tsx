@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Zap,
   Loader2,
+  Eye,
+  Shuffle,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -419,17 +421,25 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
                     <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
                       {trend.archetype}
                     </span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
                     {trend.postUrl && (
                       <a
                         href={trend.postUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-[9px] font-bold text-teal-600 hover:text-teal-700 ml-auto flex items-center gap-0.5"
+                        className="text-[9px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-0.5"
                       >
-                        View Original <ArrowRight size={8} />
+                        <Eye size={8} /> View Original
                       </a>
                     )}
+                    <span
+                      onClick={(e) => { e.stopPropagation(); onNavigate("CAROUSEL_LAB"); }}
+                      className="text-[9px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-0.5 ml-auto cursor-pointer"
+                    >
+                      <Shuffle size={8} /> Remix
+                    </span>
                   </div>
                 </button>
               </div>
