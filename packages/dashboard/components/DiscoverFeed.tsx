@@ -22,6 +22,7 @@ import { ScrollReveal } from "./ui/animations.js";
 import { FilterSidebar, DEFAULT_FILTERS } from "./ui/FilterSidebar.js";
 import type { FilterValues } from "./ui/FilterSidebar.js";
 import type { DashboardView, CreatorVideo, TrendingTopic } from "../shared/types.js";
+import { useQuest } from "./context/QuestContext.js";
 
 const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
@@ -55,6 +56,7 @@ const TOPIC_GRADIENTS = [
 
 export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNavigate }) => {
   const queryClient = useQueryClient();
+  const { trackAction } = useQuest();
   const [activeTab, setActiveTab] = useState<"feed" | "vault">("feed");
   const [filters, setFilters] = useState<FilterValues>({ ...DEFAULT_FILTERS });
   const [urlInput, setUrlInput] = useState("");
@@ -198,6 +200,10 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
     } else {
       const statusMap: Record<string, string> = { star: "starred", save: "saved", archive: "archived" };
       statusMutation.mutate({ id: video.id, status: statusMap[action] || action });
+      // Track star action for quest progress
+      if (action === "star") {
+        trackAction("star_video");
+      }
     }
   };
 

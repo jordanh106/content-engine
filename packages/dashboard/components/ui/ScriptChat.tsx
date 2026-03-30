@@ -8,12 +8,12 @@ type ScriptChatProps = {
 };
 
 const QUICK_SUGGESTIONS = [
+  "Add a rehook between sections",
+  "Simplify to 6th grade reading level",
+  "Tighten the through-line, cut filler",
   "Make the hook more provocative",
-  "Shorten to 30 seconds",
-  "Add a CTA at the end",
-  "Make it more casual",
-  "Add a pattern interrupt",
-  "Strengthen the closing",
+  "Add delivery cues for pacing",
+  "Strengthen the closing CTA",
 ];
 
 export const ScriptChat: React.FC<ScriptChatProps> = ({

@@ -3,7 +3,7 @@ import { desc, eq, gte, lte, and, sql, like, inArray } from "drizzle-orm";
 import { db } from "../db.js";
 import { creatorVideos } from "../../shared/schema.js";
 import { parseViralInsights } from "../parsers/viral-insights.js";
-import { ensureThumbnail, resolveThumbnailUrl, cacheThumbnail } from "../lib/thumbnail-resolver.js";
+import { ensureThumbnail, resolveThumbnailUrl, cacheThumbnail, backfillAllThumbnails } from "../lib/thumbnail-resolver.js";
 import type { CreatorVideo, TrendingTopic } from "../../shared/types.js";
 
 export function createDiscoverRouter(
@@ -262,19 +262,8 @@ export function createDiscoverRouter(
   // POST /api/discover/backfill-thumbnails - Resolve missing thumbnails for all creator videos
   router.post("/backfill-thumbnails", async (_req, res) => {
     try {
-      const rows = db.select().from(creatorVideos).all();
-
-      const needsResolution = rows.filter(
-        (r) => r.videoUrl && r.videoUrl !== "unknown" && (!r.thumbnailUrl || !r.thumbnailUrl.startsWith("/thumbnails/")),
-      );
-
-      let resolved = 0;
-      for (const row of needsResolution) {
-        const result = await ensureThumbnail(row, thumbnailsDir);
-        if (result) resolved++;
-      }
-
-      res.json({ total: rows.length, resolved, alreadyCached: rows.length - needsResolution.length });
+      const stats = await backfillAllThumbnails(thumbnailsDir);
+      res.json(stats);
     } catch (error) {
       console.error("[discover] Error backfilling thumbnails:", error);
       res.status(500).json({ error: "Failed to backfill thumbnails" });

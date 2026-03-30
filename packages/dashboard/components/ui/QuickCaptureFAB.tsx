@@ -1,13 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Plus, X, Send, Loader2, Link2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Tooltip } from "./Tooltip.js";
+import { usePanel } from "../context/PanelContext.js";
 
-export const QuickCaptureFAB: React.FC = () => {
+export const QuickCaptureFAB: React.FC<{ isHidden?: boolean }> = ({ isHidden = false }) => {
+  const { panelCount } = usePanel();
+  const hidden = isHidden || panelCount > 0;
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
+
+  // Close when hidden by panel overlay
+  useEffect(() => {
+    if (hidden && open) setOpen(false);
+  }, [hidden, open]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -54,18 +63,19 @@ export const QuickCaptureFAB: React.FC = () => {
   return (
     <>
       {/* FAB button */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-40 w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl flex items-center justify-center transition-all active:scale-95 group"
-          title="Quick Capture (N)"
-        >
-          <Plus size={24} className="group-hover:rotate-90 transition-transform" />
-        </button>
+      {!open && !hidden && (
+        <Tooltip content="Quick Capture (N)" side="left">
+          <button
+            onClick={() => setOpen(true)}
+            className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-40 w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl flex items-center justify-center transition-all active:scale-95 group"
+          >
+            <Plus size={24} className="group-hover:rotate-90 transition-transform" />
+          </button>
+        </Tooltip>
       )}
 
       {/* Capture modal */}
-      {open && (
+      {open && !hidden && (
         <div className="fixed inset-0 z-50" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div

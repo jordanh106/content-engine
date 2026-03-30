@@ -28,6 +28,7 @@ import { FeatureHint } from "./ui/FeatureHint.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
 import { useOnboarding } from "./OnboardingProvider.js";
+import { useQuest } from "./context/QuestContext.js";
 import { QualityGateModal } from "./ui/QualityGateModal.js";
 
 type PipelineBoardProps = {
@@ -188,6 +189,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { trackEvent } = useOnboarding();
+  const { trackAction } = useQuest();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<ProductionStatus | null>("SCRIPTED");
   const [formatFilter, setFormatFilter] = useState<FormatId | null>(null);
@@ -335,8 +337,12 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
         queryClient.setQueryData(["pipeline"], context.previous);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       trackEvent("move-video");
+      trackAction("advance_status");
+      if (variables.status === "PUBLISHED") {
+        trackAction("publish_video");
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["pipeline"] });

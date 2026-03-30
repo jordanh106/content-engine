@@ -28,6 +28,7 @@ import type { DashboardView, CreatorPersona } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 import { useCreator } from "./context/CreatorContext.js";
 import { ThemeToggle } from "./ui/ThemeToggle.js";
+import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
 
 type NavItem = {
   view: DashboardView;
@@ -312,35 +313,43 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* Desktop sidebar */}
       <nav className="hidden md:flex flex-col w-56 bg-surface-secondary/80 backdrop-blur-xl border-r border-themed shrink-0 h-screen sticky top-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-2">
-          <div>
-            <h1 className="text-lg font-serif font-bold text-themed">Content Engine</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mt-0.5">
-              Production Dashboard
-            </p>
-          </div>
+        <div className="px-5 pt-5 pb-3">
+          <h1 className="text-lg font-serif font-bold text-themed">Content Engine</h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mt-0.5">
+            Production Dashboard
+          </p>
+        </div>
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-5 pb-2">
           <div className="flex items-center gap-1">
             <NotificationBell onNavigate={onNavigate} />
             <ThemeToggle />
+          </div>
+          <div className="flex items-center gap-1">
             {onOpenGuide && (
               <button
                 onClick={onOpenGuide}
                 className="p-1.5 rounded-lg text-themed-muted hover:text-sky-400 hover:bg-surface-hover transition-colors"
-                title="Field Manual (?)"
+                title="Field Manual"
               >
-                <BookOpen size={18} />
+                <BookOpen size={15} />
               </button>
             )}
             {onOpenVault && (
               <button
                 onClick={onOpenVault}
                 className="p-1.5 rounded-lg text-themed-muted hover:text-teal-400 hover:bg-surface-hover transition-colors"
-                title="Open Vault"
+                title="Vault"
               >
-                <Bookmark size={18} />
+                <Bookmark size={15} />
               </button>
             )}
           </div>
+        </div>
+
+        {/* Creator Level */}
+        <div className="border-b border-themed">
+          <CreatorLevelBadge variant="sidebar" />
         </div>
 
         {/* Nav groups */}

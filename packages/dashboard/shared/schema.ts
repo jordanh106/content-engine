@@ -206,6 +206,7 @@ export const videoBreakdowns = sqliteTable("video_breakdowns", {
   replicationPlan: text("replication_plan"),
   brollTypes: text("broll_types"),
   oneSentenceConcept: text("one_sentence_concept"),
+  summary: text("summary"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -445,6 +446,31 @@ export const generatedCarousels = sqliteTable("generated_carousels", {
   canvaDesignUrl: text("canva_design_url"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   completedAt: text("completed_at"),
+});
+
+// ============================================
+// Creator Growth System
+// ============================================
+
+export const creatorProgress = sqliteTable("creator_progress", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  level: integer("level").notNull().default(1),
+  levelName: text("level_name").notNull().default("Observer"),
+  xp: integer("xp").notNull().default(0),
+  questsCompleted: text("quests_completed").default("[]"), // JSON array of quest IDs
+  activeQuestId: text("active_quest_id"),
+  milestonesReached: text("milestones_reached").default("[]"), // JSON array of milestone IDs
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
+export const questEvents = sqliteTable("quest_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  questId: text("quest_id").notNull(),
+  eventType: text("event_type").notNull(), // "started" | "completed" | "skipped"
+  xpAwarded: integer("xp_awarded").default(0),
+  coachMessage: text("coach_message"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
 export const carouselSlides = sqliteTable("carousel_slides", {

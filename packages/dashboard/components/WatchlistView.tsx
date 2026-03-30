@@ -9,6 +9,8 @@ import { FEATURE_HINTS } from "../shared/help-content.js";
 import type { WatchlistCreator, CreatorInsight, RisingCreator, WatchlistIntelIdea, IdeaCategory, BenchmarkComparison, ChannelSnapshot, CreatorVideo, DashboardView, VideoBreakdown } from "../shared/types.js";
 import { ResearchPanel } from "./ResearchPanel.js";
 import { cn } from "../utils/cn.js";
+import { useRegisterPanel } from "./context/PanelContext.js";
+import { useQuest } from "./context/QuestContext.js";
 import { EmptyState } from "./ui/EmptyState.js";
 import { ViewHelp } from "./ui/ViewHelp.js";
 import { VIEW_HELP } from "../shared/help-content.js";
@@ -1573,12 +1575,14 @@ type VideosTabProps = { creators: EnrichedCreator[] };
 
 const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
   const queryClient = useQueryClient();
+  const { trackAction } = useQuest();
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d" | "all">("all");
   const [minOutlier, setMinOutlier] = useState<number>(0);
   const [sortBy, setSortBy] = useState<"outlierScore" | "views" | "publishedAt">("outlierScore");
   const [searchHandle, setSearchHandle] = useState("");
   const [expandedVideo, setExpandedVideo] = useState<number | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<CreatorVideo | null>(null);
+  useRegisterPanel(!!selectedVideo);
   const [analyzeUrlOpen, setAnalyzeUrlOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [urlInput, setUrlInput] = useState("");
@@ -1617,6 +1621,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["creator-videos"] });
+      trackAction("scan_creator");
     },
   });
 
@@ -1838,7 +1843,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                   outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
                   durationSeconds={video.durationSeconds ?? undefined}
                   createdAt={video.createdAt}
-                  onClick={() => setSelectedVideo(video)}
+                  onClick={() => { setSelectedVideo(video); trackAction("open_video_intel"); }}
                 />
               ))}
             </div>
@@ -1863,9 +1868,9 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
             className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setSelectedVideo(null)}
           />
-          <div className="fixed inset-0 md:inset-y-0 md:right-0 md:left-auto md:w-[560px] bg-white z-50 flex flex-col shadow-xl overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h2 className="text-sm font-bold text-slate-900 line-clamp-1">
+          <div className="fixed inset-0 md:inset-y-0 md:right-0 md:left-auto md:w-[560px] bg-surface-elevated z-50 flex flex-col shadow-xl overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-themed">
+              <h2 className="text-sm font-bold text-themed line-clamp-1">
                 {selectedVideo.videoTitle || `@${selectedVideo.creatorHandle}`}
               </h2>
               <div className="flex items-center gap-2">
@@ -1874,7 +1879,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                     href={selectedVideo.videoUrl}
                     target="_blank"
                     rel="noopener"
-                    className="p-2 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                    className="p-2 rounded-lg text-themed-muted hover:text-blue-500 hover:bg-surface-hover transition-colors"
                     title="Open on platform"
                   >
                     <ExternalLink size={16} />
@@ -1882,7 +1887,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                 )}
                 <button
                   onClick={() => setSelectedVideo(null)}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                  className="p-2 rounded-lg hover:bg-surface-hover text-themed-muted"
                 >
                   <X size={18} />
                 </button>

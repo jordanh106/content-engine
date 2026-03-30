@@ -17,6 +17,7 @@ import { PersonaPanel } from "./PersonaPanel.js";
 import { CommandPalette } from "./CommandPalette.js";
 import { OnboardingProvider, useOnboarding } from "./OnboardingProvider.js";
 import { CreatorProvider } from "./context/CreatorContext.js";
+import { PanelProvider } from "./context/PanelContext.js";
 import { WelcomeModal } from "./ui/WelcomeModal.js";
 import { GuidedTour } from "./ui/GuidedTour.js";
 import { OnboardingChecklist } from "./ui/OnboardingChecklist.js";
@@ -28,6 +29,9 @@ import { IntelligenceView } from "./IntelligenceView.js";
 import { ScriptWizard } from "./ScriptWizard.js";
 import { ViewTransition } from "./ui/animations.js";
 import { QuickCaptureFAB } from "./ui/QuickCaptureFAB.js";
+import { QuestProvider, useQuest } from "./context/QuestContext.js";
+import { CoachToast } from "./ui/CoachToast.js";
+import { LevelUpCelebration } from "./ui/LevelUpCelebration.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -36,12 +40,19 @@ const AppInner: React.FC = () => {
   const [guideOpen, setGuideOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<{ level: number; name: string } | null>(null);
   const onboarding = useOnboarding();
+  const { coachToast, dismissToast, trackAction } = useQuest();
 
   // Register navigation function with onboarding context
   useEffect(() => {
     onboarding.setOnNavigate(setView);
   }, [onboarding.setOnNavigate]);
+
+  // Track view visits for quest progress
+  useEffect(() => {
+    trackAction("view_visit", view);
+  }, [view]);
 
   // Track view visits for checklist auto-completion
   useEffect(() => {
@@ -96,6 +107,7 @@ const AppInner: React.FC = () => {
 
   const handleSelectVideo = (code: string) => {
     setSelectedVideoCode(code);
+    trackAction("open_video_detail");
   };
 
   const handleCloseDetail = () => {
@@ -159,8 +171,8 @@ const AppInner: React.FC = () => {
       {/* Creator Personas panel */}
       {personasOpen && <PersonaPanel onClose={() => setPersonasOpen(false)} />}
 
-      {/* Quick Capture FAB */}
-      <QuickCaptureFAB />
+      {/* Quick Capture FAB — hidden when overlay panels are open */}
+      <QuickCaptureFAB isHidden={!!selectedVideoCode || vaultOpen || guideOpen || personasOpen} />
 
       {/* Field Manual */}
       <FieldManual
@@ -180,6 +192,24 @@ const AppInner: React.FC = () => {
         onSelectVideo={handleSelectVideo}
       />
 
+      {/* Coach Toast — quest step feedback */}
+      {coachToast && (
+        <CoachToast
+          toast={coachToast}
+          onDismiss={dismissToast}
+          onLevelUp={(level, name) => setLevelUpData({ level, name })}
+        />
+      )}
+
+      {/* Level Up Celebration */}
+      {levelUpData && (
+        <LevelUpCelebration
+          newLevel={levelUpData.level}
+          newLevelName={levelUpData.name}
+          onDismiss={() => setLevelUpData(null)}
+        />
+      )}
+
       <WelcomeModal />
       <GuidedTour />
       <OnboardingChecklist />
@@ -189,8 +219,12 @@ const AppInner: React.FC = () => {
 
 export const App: React.FC = () => (
   <CreatorProvider>
-    <OnboardingProvider>
-      <AppInner />
-    </OnboardingProvider>
+    <PanelProvider>
+      <QuestProvider>
+        <OnboardingProvider>
+          <AppInner />
+        </OnboardingProvider>
+      </QuestProvider>
+    </PanelProvider>
   </CreatorProvider>
 );

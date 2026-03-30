@@ -53,6 +53,7 @@ import { createIdeaLabRouter } from "./routes/idea-lab.js";
 import { createPersonasRouter } from "./routes/personas.js";
 import { createCarouselsRouter } from "./routes/carousels.js";
 import { createDiscoverRouter } from "./routes/discover.js";
+import { createGrowthRouter } from "./routes/growth.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -130,6 +131,7 @@ app.use("/api/idea-lab", createIdeaLabRouter(contentLibraryPath));
 app.use("/api/personas", createPersonasRouter());
 app.use("/api/carousels", createCarouselsRouter(contentLibraryPath, carouselImagesDir));
 app.use("/api/discover", createDiscoverRouter(contentLibraryPath, viralInsightsDir, thumbnailsDir));
+app.use("/api/growth", createGrowthRouter());
 app.use("/rendered", express.static(renderOutputDir));
 
 // File watcher - invalidate caches when source files change

@@ -66,6 +66,7 @@ Creators outside chiropractic whose content strategies, audience overlap, or for
 | @birthinginstincts | Instagram | Unknown | Midwife-adjacent prenatal wellness account with strong community among natural-birth and home-birth moms in the South. High audience overlap with Collective Family's prenatal patient base. Potential referral relationship and content collaboration target. | Unknown | Unknown | - |
 | @atlantanaturalmom | Instagram | Unknown | Local Atlanta-area natural parenting micro-influencer. Monitors what resonates with Collective Family's exact geographic and demographic target. Low follower count but hyper-local relevance — engagement here signals what North Atlanta moms are responding to right now. | Unknown | Unknown | - |
 | @dr.beauhightower | YouTube | Unknown | 1.6M YouTube subscribers built primarily on long-form walkthrough and patient transformation videos. Study his YouTube long-form structure — intros, chapter breaks, and CTA placement — as a model for Collective Family's youtube_long content as the channel scales. | Unknown | Unknown | - |
+| @drkristie_chiropractor | Instagram | Unknown | Growing Atlanta presence with lifestyle integration |  |  | - |
 
 ## How to Use
 

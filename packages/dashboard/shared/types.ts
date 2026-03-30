@@ -1058,6 +1058,7 @@ export type VideoBreakdown = {
   replicationPlan: string | null;
   brollTypes: string | null;
   oneSentenceConcept: string | null;
+  summary: string | null;
 };
 
 // Parsed deep DNA structures
@@ -1611,4 +1612,107 @@ export type CreatorPersona = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+// ============================================
+// Creator Growth System
+// ============================================
+
+export const CREATOR_LEVELS = [
+  { level: 1, name: "Observer", xpRequired: 0, color: "slate", description: "Learning what makes content work" },
+  { level: 2, name: "Writer", xpRequired: 100, color: "sky", description: "Crafting hooks and scripts" },
+  { level: 3, name: "Producer", xpRequired: 300, color: "amber", description: "Recording and assembling content" },
+  { level: 4, name: "Publisher", xpRequired: 600, color: "emerald", description: "Publishing and measuring impact" },
+  { level: 5, name: "Strategist", xpRequired: 1000, color: "violet", description: "Data-driven content strategy" },
+] as const;
+
+export type CreatorLevelName = (typeof CREATOR_LEVELS)[number]["name"];
+
+export type CreatorProgress = {
+  id: number;
+  level: number;
+  levelName: string;
+  xp: number;
+  questsCompleted: string[];
+  activeQuestId: string | null;
+  milestonesReached: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuestStep = {
+  id: string;
+  title: string;
+  description: string;
+  coachMessage: string;
+  xp: number;
+  checkType: "view_visit" | "action" | "count";
+  checkTarget: string;
+  checkCount?: number;
+};
+
+export type Quest = {
+  id: string;
+  levelRequired: number;
+  title: string;
+  description: string;
+  steps: QuestStep[];
+  completionMessage: string;
+  totalXp: number;
+};
+
+export type QuestEvent = {
+  id: number;
+  questId: string;
+  eventType: "started" | "completed" | "skipped";
+  xpAwarded: number;
+  coachMessage: string | null;
+  createdAt: string;
+};
+
+export type CreatorGrowthResponse = {
+  progress: CreatorProgress;
+  currentLevel: (typeof CREATOR_LEVELS)[number];
+  nextLevel: (typeof CREATOR_LEVELS)[number] | null;
+  xpToNextLevel: number;
+  xpProgress: number; // 0-100 percentage within current level
+  activeQuest: Quest | null;
+  availableQuests: Quest[];
+  recentEvents: QuestEvent[];
+};
+
+// ============================================
+// Script Intelligence (Kallaway Frameworks)
+// ============================================
+
+export type ContentTier = "short" | "mid" | "long";
+
+export type ScriptSegmentType = "HOOK" | "BODY" | "REHOOK" | "OUTRO" | "UNKNOWN";
+
+export type LineVerdict = "keep" | "cut" | "simplify";
+
+export type LineAudit = {
+  lineNumber: number;
+  text: string;
+  segment: ScriptSegmentType;
+  verdict: LineVerdict;
+  reason: string;
+};
+
+export type ScriptScores = {
+  storyFlow: number;      // 0-33
+  comprehension: number;  // 0-33
+  speedToValue: number;   // 0-33
+  total: number;          // 0-100
+};
+
+export type ScriptAnalysis = {
+  scores: ScriptScores;
+  lineAudit: LineAudit[];
+  segments: {
+    type: ScriptSegmentType;
+    startLine: number;
+    endLine: number;
+  }[];
+  summary: string;
 };

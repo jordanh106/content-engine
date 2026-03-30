@@ -276,6 +276,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
   const [copiedCaption, setCopiedCaption] = useState<string | null>(null);
   const captionScrollRef = useRef<HTMLDivElement>(null);
   const captionInputRef = useRef<HTMLTextAreaElement>(null);
+  const panelContentRef = useRef<HTMLDivElement>(null);
+
+  // Scroll panel to top + lock body scroll on open
+  useEffect(() => {
+    panelContentRef.current?.scrollTo(0, 0);
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   // Virality score
   const [viralityScore, setViralityScore] = useState<{ total: number; hook: number; flow: number; platformFit: number; suggestions: string[] } | null>(null);
@@ -704,7 +712,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={panelContentRef} className="flex-1 overflow-y-auto">
           {activeTab === "context" && (
             <div className="p-4 md:p-6 space-y-6">
               {/* Concept Framework */}

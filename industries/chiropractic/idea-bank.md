@@ -40,6 +40,7 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | Is Your Teen Athlete's Body Ready for Their Sport? | B | 'If your teen athlete is constantly tight, getting recurring injuries, or never fully recovering between games — this is the video you share with their coach.' — Sports-forward education piece on spinal alignment, nerve function, and performance, tied to spring sports season. | medium | Viral Scout | 2026-03-19 |
 | 5 Things We Wish Everyone Knew Before Their First Chiropractic Visit | C | 'Most people wait years too long to get adjusted. Here are 5 things we wish every new patient already knew.' — Myth-busting listicle format that clears up 'you have to go forever,' 'it's just for back pain,' and 'it's dangerous' — building trust with skeptical cold audiences. | medium | Viral Scout | 2026-03-19 |
 | What Happens to a Senior's Spine If They Stop Moving | A | 'The biggest mistake aging adults make isn't exercising too much — it's stopping movement altogether. Here's what that does to your spine.' — Education-forward content with empathetic framing for the senior audience, connecting chiropractic care to long-term mobility and quality of life. | medium | Viral Scout | 2026-03-19 |
+| 5 Tech Neck Exercises for Office Workers | F (Quick Tip) | Suffering from tech neck? These 5 exercises will save your spine | High | n8n Content Intelligence | 2026-03-27 |
 
 ---
 
@@ -70,6 +71,7 @@ Patterns or gaps spotted from creator analysis. Adapt to our voice, never copy.
 | Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-19 |
 | Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-19 |
 | Here Is What the Original Chainsaw Actually Looked Like in Use | C (Demo) | This is what doctors were doing with a chainsaw before it ever touched a single tree. | High | Idea Lab | 2026-03-19 |
+| Pregnancy Workout Fixes | F (Quick Tip) | Modified these 3 exercises for my pregnant patients | High | n8n Watchlist Intelligence | 2026-03-28 |
 
 ---
 
@@ -93,6 +95,9 @@ Always relevant, not time-sensitive. Good for filling calendar gaps.
 | Why Kids Heal Faster Than Adults (And How to Keep It That Way) | A (Explainer) | Kids bounce back from almost anything. Here is the one thing that slows that down without parents ever knowing. | Medium | AI Idea Generator | 2026-03-18 |
 | Is Your Child Complaining of Growing Pains? It Might Be Something Else. | D (Myth Buster) | Doctors call it growing pains. But growing does not actually cause pain. So what is really going on? | High | AI Idea Generator | 2026-03-18 |
 | How to Check Your Child's Posture at Home in 60 Seconds | C (Demo) | You do not need an X-ray to know if your kid's posture is off. Here is a simple 3-point check any parent can do right now. | Medium | AI Idea Generator | 2026-03-18 |
+| Debunking Popular Back Pain Myths | D (Myth Buster) | Everything you've been told about back pain is wrong | Medium | n8n Content Intelligence | 2026-03-27 |
+| Morning Routine for Back Health | B (Checklist) | Do these 3 things every morning to prevent back pain | Medium | n8n Content Intelligence | 2026-03-27 |
+| Why That 'Pop' Sound Happens | A (Explainer) | The science behind that satisfying crack sound | Low | n8n Content Intelligence | 2026-03-27 |
 
 
 ---
@@ -112,6 +117,7 @@ Ideas from patient questions, DMs, comments, or in-office conversations.
 | WFH Posture Guide | E (Walkthrough) | Desk Setup Makeover | High | n8n Content Intelligence | 2026-03-16 |
 | Teen Athlete Care | A (Explainer) | Why Young Athletes Need Care | High | n8n Content Intelligence | 2026-03-16 |
 | Senior Balance Tips | F (Quick Tip) | 3-Second Balance Test | Medium | n8n Content Intelligence | 2026-03-16 |
+| Senior-Safe Stretching Guide | E (Walkthrough) | Gentle stretches perfect for ages 65+ | High | n8n Content Intelligence | 2026-03-27 |
 
 ---
 
@@ -123,6 +129,7 @@ Behind-the-scenes, humor, personal brand content, experimental formats.
 |-------|-----------------|------------|----------|-------|------------|
 | The AI Reveal: Before vs After | F (Quick Tip) or A (Explainer) | "Can you tell which shots are AI?" | High | Show finished Enhanced video, then toggle AI layers off to reveal raw footage. Builds trust, showcases production quality. Before/after reveals are inherently engaging. | 2026-03-10 |
 | Marathon Runner's Success Story | G (Patient Story) | From injury to personal best | Low | n8n Content Intelligence | 2026-03-10 |
+| Patient Success Story: Chronic Migraines | G (Patient Story) | She had migraines for 10 years until this happened | Medium | n8n Content Intelligence | 2026-03-27 |
 
 ---
 

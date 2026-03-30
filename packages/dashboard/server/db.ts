@@ -413,6 +413,9 @@ for (const col of dnaColumns) {
   try { sqlite.exec(`ALTER TABLE video_breakdowns ADD COLUMN ${col} TEXT`); } catch { /* exists */ }
 }
 
+// Migration: Add summary column to video_breakdowns
+try { sqlite.exec(`ALTER TABLE video_breakdowns ADD COLUMN summary TEXT`); } catch { /* exists */ }
+
 // Migration: Add production_style column to video_status
 try {
   sqlite.exec(`ALTER TABLE video_status ADD COLUMN production_style TEXT`);
@@ -652,3 +655,34 @@ addColumnIfMissing("generated_carousels", "canva_design_url", "TEXT");
 addColumnIfMissing("carousel_slides", "heading", "TEXT");
 addColumnIfMissing("carousel_slides", "body_text", "TEXT");
 addColumnIfMissing("carousel_slides", "visual_suggestion", "TEXT");
+
+// ============================================
+// Creator Growth System
+// ============================================
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS creator_progress (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  level INTEGER NOT NULL DEFAULT 1,
+  level_name TEXT NOT NULL DEFAULT 'Observer',
+  xp INTEGER NOT NULL DEFAULT 0,
+  quests_completed TEXT DEFAULT '[]',
+  active_quest_id TEXT,
+  milestones_reached TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS quest_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quest_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  xp_awarded INTEGER DEFAULT 0,
+  coach_message TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Ensure exactly one creator_progress row exists (singleton)
+const progressCount = sqlite.prepare("SELECT COUNT(*) as count FROM creator_progress").get() as { count: number };
+if (progressCount.count === 0) {
+  sqlite.prepare("INSERT INTO creator_progress (level, level_name, xp) VALUES (1, 'Observer', 0)").run();
+}

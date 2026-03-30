@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
   Zap,
@@ -12,13 +12,20 @@ import {
   Check,
   Sparkles,
   ArrowRight,
+  Lightbulb,
+  Bookmark,
+  PenTool,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
 import { MetricBadge } from "./MetricBadge.js";
 import type { CreatorVideo, VideoBreakdown } from "../../shared/types.js";
+import { useQuest } from "../context/QuestContext.js";
 
-type Tab = "content" | "hook" | "transcript" | "visual" | "adapt";
+type Tab = "summary" | "content" | "hook" | "transcript" | "visual" | "adapt";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: "summary", label: "Summary", icon: <Sparkles size={14} /> },
   { key: "content", label: "Content", icon: <FileText size={14} /> },
   { key: "hook", label: "Hook Analysis", icon: <Zap size={14} /> },
   { key: "transcript", label: "Transcript", icon: <AlignLeft size={14} /> },
@@ -37,16 +44,72 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
   onCreateScript,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<Tab>("content");
+  const queryClient = useQueryClient();
+  const { trackAction } = useQuest();
+  const [activeTab, setActiveTab] = useState<Tab>("summary");
   const [copied, setCopied] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
-  // Fetch the video breakdown (uses existing analyze-url endpoint data)
+  // Fetch the video breakdown
   const { data: breakdownData, isLoading } = useQuery<{ breakdown: VideoBreakdown | null }>({
     queryKey: ["video-breakdown", video.id],
     queryFn: () => fetch(`/api/creator-videos/${video.id}/breakdown`).then((r) => r.json()),
   });
 
   const breakdown = breakdownData?.breakdown;
+
+  // AI Summary generation
+  const summaryMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/creator-videos/${video.id}/summarize`, { method: "POST" });
+      if (!r.ok) throw new Error("Failed to generate summary");
+      return r.json() as Promise<{ summary: string }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["video-breakdown", video.id] });
+    },
+  });
+
+  // Quick action: Save hook to vault
+  const saveHookMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/vault/hooks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pattern: breakdown?.hookFormat || "custom",
+          example: breakdown?.oneSentenceConcept || video.videoTitle,
+          source: `${video.creatorHandle} on ${video.platform}`,
+          sourceUrl: video.videoUrl || undefined,
+        }),
+      });
+      if (!r.ok) throw new Error("Failed to save hook");
+      return r.json();
+    },
+    onSuccess: () => { showFeedback("Hook saved to Vault"); trackAction("save_hook_vault"); },
+  });
+
+  // Quick action: Shortlist as idea
+  const shortlistMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/inbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `${breakdown?.topic || video.videoTitle} (inspired by ${video.creatorHandle})`,
+          sourceUrl: video.videoUrl || undefined,
+        }),
+      });
+      if (!r.ok) throw new Error("Failed to shortlist");
+      return r.json();
+    },
+    onSuccess: () => showFeedback("Added to Inspiration Inbox"),
+  });
+
+  const showFeedback = (msg: string) => {
+    setActionFeedback(msg);
+    setTimeout(() => setActionFeedback(null), 2000);
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -68,10 +131,28 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-themed line-clamp-2">{video.videoTitle}</h3>
           <p className="text-[11px] text-themed-tertiary mt-1">{video.creatorHandle} on {video.platform}</p>
-          <div className="flex gap-1.5 mt-2">
-            <MetricBadge type="views" value={video.views || 0} />
-            <MetricBadge type="engagement" value={video.likes || 0} />
-            <MetricBadge type="saves" value={video.saves || 0} />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {typeof video.views === "number" && video.views > 0 && (
+              <MetricBadge type="views" value={video.views} />
+            )}
+            {typeof video.likes === "number" && video.likes > 0 && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-500/20 text-pink-400">
+                {video.likes >= 1000 ? `${(video.likes / 1000).toFixed(1)}K` : video.likes} likes
+              </span>
+            )}
+            {typeof video.saves === "number" && video.saves > 0 && (
+              <MetricBadge type="saves" value={video.saves} />
+            )}
+            {video.outlierScoreX100 != null && video.outlierScoreX100 > 0 && (
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                video.outlierScoreX100 >= 500 ? "bg-emerald-500/20 text-emerald-400" :
+                video.outlierScoreX100 >= 200 ? "bg-amber-500/20 text-amber-400" :
+                "bg-slate-500/20 text-slate-400"
+              }`}>
+                <TrendingUp size={10} />
+                {(video.outlierScoreX100 / 100).toFixed(1)}x
+              </span>
+            )}
           </div>
         </div>
         {video.videoUrl && video.videoUrl !== "unknown" && (
@@ -122,6 +203,65 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
           </div>
         ) : (
           <>
+            {activeTab === "summary" && (
+              <div className="space-y-4">
+                {/* AI Summary */}
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Summary</h4>
+                  {breakdown?.summary ? (
+                    <p className="text-sm text-themed-secondary leading-relaxed">{breakdown.summary}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-themed-tertiary italic">No summary generated yet.</p>
+                      <button
+                        onClick={() => summaryMutation.mutate()}
+                        disabled={summaryMutation.isPending}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {summaryMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        {summaryMutation.isPending ? "Generating..." : "Generate Summary"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Key insights at a glance */}
+                {breakdown?.hookFormat && (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 text-[11px] font-bold">
+                      <Zap size={10} /> {breakdown.hookFormat}
+                    </span>
+                    {breakdown.visualFormat && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-400 text-[11px] font-bold">
+                        <Palette size={10} /> {breakdown.visualFormat}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Core concept quote */}
+                {breakdown?.oneSentenceConcept && (
+                  <blockquote className="border-l-2 border-blue-500 pl-3 text-sm text-themed italic leading-relaxed">
+                    "{breakdown.oneSentenceConcept}"
+                  </blockquote>
+                )}
+
+                {/* Quick topic/angle if available */}
+                {breakdown?.topic && (
+                  <div className="bg-surface-hover rounded-xl p-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Topic</h4>
+                    <p className="text-sm text-themed-secondary">{breakdown.topic}</p>
+                    {breakdown.angle && (
+                      <>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1 mt-3">Angle</h4>
+                        <p className="text-sm text-themed-secondary">{breakdown.angle}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "content" && (
               <div className="space-y-4">
                 {breakdown.topic && (
@@ -163,12 +303,44 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
                     </blockquote>
                   </div>
                 )}
-                {breakdown.storyStructure && (
-                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Story Structure</h4>
-                    <p className="text-sm text-themed-secondary">{breakdown.storyStructure}</p>
-                  </div>
-                )}
+                {breakdown.storyStructure && (() => {
+                  const ACTS: { key: string; label: string; color: string }[] = [
+                    { key: "hook", label: "Hook", color: "border-rose-300 bg-rose-50 dark:bg-rose-500/10 dark:border-rose-500/30" },
+                    { key: "conflict", label: "Conflict", color: "border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30" },
+                    { key: "build", label: "Build", color: "border-sky-300 bg-sky-50 dark:bg-sky-500/10 dark:border-sky-500/30" },
+                    { key: "resolution", label: "Resolution", color: "border-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/30" },
+                    { key: "cta", label: "CTA", color: "border-violet-300 bg-violet-50 dark:bg-violet-500/10 dark:border-violet-500/30" },
+                  ];
+                  let parsed: Record<string, { description?: string; timestamp?: string }> = {};
+                  try { parsed = JSON.parse(breakdown.storyStructure); } catch { return null; }
+                  const acts = ACTS.filter((a) => parsed[a.key]);
+                  if (acts.length === 0) return null;
+                  return (
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-2">Story Structure</h4>
+                      <div className="space-y-1.5">
+                        {acts.map((act) => {
+                          const data = parsed[act.key];
+                          return (
+                            <div key={act.key} className={`border rounded-xl px-3 py-2 ${act.color}`}>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-themed-secondary">{act.label}</span>
+                                {data?.timestamp && (
+                                  <span className="text-[9px] font-mono text-themed-muted flex items-center gap-0.5">
+                                    <Clock size={8} /> {data.timestamp}
+                                  </span>
+                                )}
+                              </div>
+                              {data?.description && (
+                                <p className="text-[11px] text-themed-secondary mt-1 leading-relaxed">{data.description}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -229,6 +401,57 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
           </>
         )}
       </div>
+
+      {/* Quick Actions Bar (Sandcastles-style) */}
+      {breakdown && (
+        <div className="px-4 py-3 border-t border-themed">
+          {actionFeedback && (
+            <p className="text-[11px] font-bold text-emerald-400 mb-2 flex items-center gap-1">
+              <Check size={12} /> {actionFeedback}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {onCreateScript && breakdown.oneSentenceConcept && (
+              <button
+                onClick={() => onCreateScript(breakdown.oneSentenceConcept || "", breakdown.topic || "")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-[11px] font-bold hover:bg-teal-700 transition-colors"
+              >
+                <PenTool size={12} /> Create Script
+              </button>
+            )}
+            <button
+              onClick={() => saveHookMutation.mutate()}
+              disabled={saveHookMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-hover text-themed-secondary text-[11px] font-bold hover:bg-amber-500/15 hover:text-amber-400 transition-colors disabled:opacity-50"
+            >
+              <Bookmark size={12} /> Save Hook
+            </button>
+            <button
+              onClick={() => shortlistMutation.mutate()}
+              disabled={shortlistMutation.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-hover text-themed-secondary text-[11px] font-bold hover:bg-violet-500/15 hover:text-violet-400 transition-colors disabled:opacity-50"
+            >
+              <Lightbulb size={12} /> Shortlist Idea
+            </button>
+            <button
+              onClick={() => {
+                const text = [
+                  breakdown.topic && `Topic: ${breakdown.topic}`,
+                  breakdown.angle && `Angle: ${breakdown.angle}`,
+                  breakdown.hookFormat && `Hook: ${breakdown.hookFormat}`,
+                  breakdown.oneSentenceConcept && `Concept: ${breakdown.oneSentenceConcept}`,
+                  breakdown.storyStyle && `Structure: ${breakdown.storyStyle}`,
+                ].filter(Boolean).join("\n");
+                copyToClipboard(text);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-hover text-themed-secondary text-[11px] font-bold hover:bg-blue-500/15 hover:text-blue-400 transition-colors"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? "Copied" : "Copy Analysis"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

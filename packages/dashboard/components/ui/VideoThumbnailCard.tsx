@@ -295,12 +295,31 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
             </>
           )}
 
-          {/* Placeholder when no thumbnail */}
+          {/* Placeholder when no thumbnail — platform-branded */}
           {!hasThumbnail && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-              <Play size={isSm ? 20 : 32} className="text-themed-muted mb-1" />
-              <span className="text-themed-tertiary font-medium text-center px-4 leading-tight text-[10px]">
-                {title.slice(0, 50)}
+            <div className={`absolute inset-0 flex flex-col items-center justify-center ${
+              platform === "TikTok" ? "bg-gradient-to-br from-slate-800 to-slate-900" :
+              platform === "Instagram" ? "bg-gradient-to-br from-purple-900 to-pink-900" :
+              platform === "YouTube" ? "bg-gradient-to-br from-red-900 to-slate-900" :
+              "bg-gradient-to-br from-slate-700 to-slate-800"
+            }`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                platform === "TikTok" ? "bg-white/10" :
+                platform === "Instagram" ? "bg-white/10" :
+                platform === "YouTube" ? "bg-white/10" :
+                "bg-white/10"
+              }`}>
+                <Play size={isSm ? 16 : 20} className="text-white/70" />
+              </div>
+              <span className="text-white/60 font-medium text-center px-4 leading-tight text-[10px] line-clamp-2">
+                {title.slice(0, 60)}
+              </span>
+              <span className={`mt-2 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
+                platform === "TikTok" ? "bg-white/10 text-white/50" :
+                platform === "Instagram" ? "bg-white/10 text-white/50" :
+                "bg-white/10 text-white/50"
+              }`}>
+                {platform}
               </span>
             </div>
           )}

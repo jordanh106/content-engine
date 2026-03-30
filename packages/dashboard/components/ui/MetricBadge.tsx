@@ -26,6 +26,7 @@ type MetricBadgeProps = {
 
 export const MetricBadge: React.FC<MetricBadgeProps> = ({ type, value, className = "" }) => {
   const config = METRIC_CONFIG[type];
+  if (typeof value !== "number" || isNaN(value)) return null;
   if (value <= 0 && type !== "engagement") return null;
 
   return (

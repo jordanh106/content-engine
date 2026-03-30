@@ -9,20 +9,15 @@ import {
   CalendarCheck,
   CircleCheck,
   ArrowRight,
-  Radar,
   ChevronRight,
-  TrendingUp,
   Trophy,
   Eye,
-  Heart,
-  Clock,
-  Zap,
   Signal,
   Copy,
   Plus,
   Check,
-  Layers,
   Flame,
+  Activity,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -33,11 +28,9 @@ import type {
   CreatorVideo,
 } from "../shared/types.js";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
-import { ScrollReveal, CountUp, RotatingText } from "./ui/animations.js";
-import { ProgressRing } from "./ui/ProgressRing.js";
-import { ViewHelp } from "./ui/ViewHelp.js";
-import { FeatureHint } from "./ui/FeatureHint.js";
-import { VIEW_HELP, FEATURE_HINTS } from "../shared/help-content.js";
+import { ScrollReveal, CountUp } from "./ui/animations.js";
+import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
+import { QuestChain } from "./ui/QuestChain.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
@@ -80,6 +73,29 @@ const STATUS_NAV: Record<ProductionStatus, DashboardView> = {
   PUBLISHED: "METRICS",
 };
 
+function getGreeting(): { text: string; date: string } {
+  const now = new Date();
+  const hour = now.getHours();
+  const date = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const text = hour >= 5 && hour < 12
+    ? "Good morning, Jordan"
+    : hour >= 12 && hour < 17
+    ? "Good afternoon, Jordan"
+    : "Good evening, Jordan";
+  return { text, date };
+}
+
+function getBottleneckAdvice(status: ProductionStatus, count: number): string {
+  switch (status) {
+    case "SCRIPTED": return count >= 5 ? " \u2014 pick 5 for a recording session" : "";
+    case "RECORDING": return " \u2014 finish recordings to advance";
+    case "GENERATING": return " \u2014 renders in progress";
+    case "ASSEMBLED": return " \u2014 schedule to keep your cadence";
+    case "SCHEDULED": return " \u2014 ready to publish";
+    default: return "";
+  }
+}
+
 function determineWhatsNext(
   pipeline: PipelineResponse | undefined,
   opportunities: OpportunitiesResponse | undefined,
@@ -121,7 +137,7 @@ function determineWhatsNext(
 
     return {
       headline: `It's been ${daysSinceLastPublish} days since your last post`,
-      description: `No stress — everyone falls off the rhythm. ${recoveryNote}`,
+      description: `No stress \u2014 everyone falls off the rhythm. ${recoveryNote}`,
       cta: recoveryCta,
       target: recoveryTarget,
       gradient: "from-rose-50 to-orange-50",
@@ -133,7 +149,6 @@ function determineWhatsNext(
   const recording = pipeline.summary.RECORDING ?? 0;
   const assembled = pipeline.summary.ASSEMBLED ?? 0;
   const scheduled = pipeline.summary.SCHEDULED ?? 0;
-  const ideas = pipeline.summary.SCRIPTED ?? 0; // Ideas that have scripts
 
   // Priority 1: Stale research data
   if (hasStaleData) {
@@ -266,218 +281,6 @@ function determineWhatsNext(
   };
 }
 
-// ============================
-// Production Timeline
-// ============================
-
-const FORMAT_COLORS_MAP: Record<string, string> = {
-  A: "bg-teal-500", B: "bg-emerald-500", C: "bg-sky-500",
-  D: "bg-rose-500", E: "bg-violet-500", F: "bg-orange-500", G: "bg-pink-500",
-};
-
-type TimelineVideo = {
-  code: string;
-  title: string;
-  format: string;
-  audienceLabel: string;
-  currentStatus: string;
-  stageIndex: number;
-  totalStages: number;
-  projectedDaysRemaining: number;
-  projectedComplete: string;
-};
-
-// Render Queue Status
-type RenderQueueData = {
-  queued: number;
-  running: number;
-  completed: number;
-  failed: number;
-  jobs: Array<{ id: string; videoCode: string; compositionId: string; status: string; createdAt: string; error: string | null }>;
-};
-
-type AutomationWorkflow = {
-  id: string;
-  label: string;
-  schedule: string;
-  active: boolean;
-  lastRun: string | null;
-  lastStatus: string;
-  lastFinished: string | null;
-  recentExecutions: Array<{ id: string; status: string; startedAt: string; stoppedAt: string }>;
-  error?: string;
-};
-
-type AutomationData = {
-  configured: boolean;
-  workflows: AutomationWorkflow[];
-  message?: string;
-};
-
-const AutomationStatus: React.FC = () => {
-  const [expanded, setExpanded] = useState(false);
-  const { data } = useQuery<AutomationData>({
-    queryKey: ["automation-status"],
-    queryFn: () => fetch("/api/automation/status").then((r) => r.json()),
-    refetchInterval: 60000,
-  });
-
-  if (!data?.configured || data.workflows.length === 0) return null;
-
-  const allOk = data.workflows.every((w) => w.lastStatus === "success");
-  const anyError = data.workflows.some((w) => w.lastStatus === "error");
-
-  function timeAgo(dateStr: string | null): string {
-    if (!dateStr) return "never";
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const hours = Math.floor(diff / 3600000);
-    if (hours < 1) return "< 1h ago";
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
-
-  return (
-    <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
-      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
-        <div className="flex items-center gap-2">
-          <Clock size={14} className="text-teal-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Automations</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {allOk && <span className="text-[10px] font-bold text-emerald-600">All healthy</span>}
-          {anyError && <span className="text-[10px] font-bold text-rose-600">Error detected</span>}
-          <ChevronRight size={12} className={`text-themed-muted transition-transform ${expanded ? "rotate-90" : ""}`} />
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="mt-3 space-y-2">
-          {data.workflows.map((wf) => (
-            <div key={wf.id} className={`flex items-center gap-3 p-3 rounded-lg ${wf.lastStatus === "error" ? "bg-rose-50" : wf.active ? "bg-emerald-50" : "bg-surface-hover"}`}>
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${wf.lastStatus === "error" ? "bg-rose-500" : wf.active ? "bg-emerald-500" : "bg-slate-400"}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-themed-secondary truncate">{wf.label}</p>
-                <p className="text-[10px] text-themed-tertiary">{wf.schedule} {wf.active ? "" : "(inactive)"}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className={`text-[10px] font-bold ${wf.lastStatus === "success" ? "text-emerald-600" : wf.lastStatus === "error" ? "text-rose-600" : "text-themed-tertiary"}`}>
-                  {wf.lastStatus}
-                </p>
-                <p className="text-[10px] text-themed-muted">{timeAgo(wf.lastRun)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
-
-const RenderQueueStatus: React.FC = () => {
-  const [expanded, setExpanded] = useState(false);
-  const { data } = useQuery<RenderQueueData>({
-    queryKey: ["render-queue"],
-    queryFn: () => fetch("/api/renders/queue").then((r) => r.json()),
-    refetchInterval: 10000,
-  });
-
-  if (!data || (data.queued === 0 && data.running === 0 && data.completed === 0 && data.failed === 0)) return null;
-
-  const activeJobs = data.jobs.filter((j) => j.status === "running" || j.status === "queued");
-  const recentJobs = data.jobs.filter((j) => j.status === "completed" || j.status === "failed").slice(0, 5);
-
-  return (
-    <section className="bg-surface-elevated border border-themed rounded-2xl p-5">
-      <button onClick={() => setExpanded(!expanded)} className="flex items-center justify-between w-full text-left">
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-violet-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Render Queue</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {data.running > 0 && <span className="text-[10px] font-bold text-amber-600">{data.running} running</span>}
-          {data.queued > 0 && <span className="text-[10px] font-bold text-themed-tertiary">{data.queued} queued</span>}
-          <span className="text-[10px] text-emerald-600">{data.completed} done</span>
-          {data.failed > 0 && <span className="text-[10px] text-rose-500">{data.failed} failed</span>}
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="mt-3 space-y-2">
-          {activeJobs.map((j) => (
-            <div key={j.id} className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-xs font-medium text-themed-secondary">{j.videoCode}</span>
-              <span className="text-[10px] text-themed-tertiary">{j.compositionId}</span>
-              <span className="ml-auto text-[10px] font-bold text-amber-600 uppercase">{j.status}</span>
-            </div>
-          ))}
-          {recentJobs.map((j) => (
-            <div key={j.id} className={`flex items-center gap-2 p-2 rounded-lg ${j.status === "completed" ? "bg-emerald-50" : "bg-rose-50"}`}>
-              <div className={`w-2 h-2 rounded-full ${j.status === "completed" ? "bg-emerald-500" : "bg-rose-500"}`} />
-              <span className="text-xs font-medium text-themed-secondary">{j.videoCode}</span>
-              <span className="text-[10px] text-themed-tertiary">{j.compositionId}</span>
-              <span className={`ml-auto text-[10px] font-bold uppercase ${j.status === "completed" ? "text-emerald-600" : "text-rose-600"}`}>{j.status}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
-
-const ProductionTimeline: React.FC<{ onSelectVideo: (code: string) => void }> = ({ onSelectVideo }) => {
-  const [expanded, setExpanded] = useState(false);
-  const { data } = useQuery<{ timeline: TimelineVideo[] }>({
-    queryKey: ["production-timeline"],
-    queryFn: () => fetch("/api/analytics/production-timeline").then((r) => r.json()),
-  });
-
-  if (!data || data.timeline.length === 0) return null;
-
-  return (
-    <section>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5 hover:text-themed-secondary transition-colors"
-      >
-        <Clock size={12} />
-        Production Timeline ({data.timeline.length})
-        <ChevronRight size={12} className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
-      </button>
-
-      {expanded && (
-        <div className="bg-surface-elevated border border-themed rounded-2xl p-4 space-y-2">
-          {data.timeline.slice(0, 8).map((v) => (
-            <button
-              key={v.code}
-              onClick={() => onSelectVideo(v.code)}
-              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surface-hover transition-colors text-left"
-            >
-              <div className={`w-2 h-8 rounded-full ${FORMAT_COLORS_MAP[v.format] || "bg-slate-300"}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">{v.code}: {v.title}</p>
-                <p className="text-[10px] text-themed-muted">{v.currentStatus} - {v.audienceLabel}</p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-teal-500"
-                    style={{ width: `${(v.stageIndex / (v.totalStages - 1)) * 100}%` }}
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-themed-tertiary w-8 text-right">
-                  {v.projectedDaysRemaining}d
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
-
 export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
   onNavigate,
@@ -505,12 +308,6 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     },
   });
 
-  type HealthDim = { score: number; max: number; detail: string };
-  const { data: healthData } = useQuery<{ score: number; dimensions: Record<string, HealthDim> }>({
-    queryKey: ["health-score"],
-    queryFn: () => fetch("/api/analytics/health-score").then((r) => r.json()),
-  });
-
   const { data: lastPublishData } = useQuery<{ daysSinceLastPublish: number | null; lastPublishDate: string | null }>({
     queryKey: ["last-publish"],
     queryFn: () => fetch("/api/analytics/last-publish").then((r) => r.json()),
@@ -523,24 +320,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     staleTime: 1000 * 60 * 30,
   });
 
-  const { data: carouselData } = useQuery<{ total: number; completed: number }>({
-    queryKey: ["carousel-count"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/carousels");
-        if (!res.ok) return { total: 0, completed: 0 };
-        const carousels = await res.json() as Array<{ status: string }>;
-        return { total: carousels.length, completed: carousels.filter((c) => c.status === "completed").length };
-      } catch {
-        return { total: 0, completed: 0 };
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: outlierVideos } = useQuery<{ videos: CreatorVideo[]; total: number }>({
     queryKey: ["outlier-videos-home"],
-    queryFn: () => fetch("/api/creator-videos?sort=outlierScore&minOutlierScore=200").then((r) => r.json()),
+    queryFn: () => fetch("/api/creator-videos?sort=outlierScore&limit=12").then((r) => r.json()),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -576,6 +358,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   }
 
   const whatsNext = determineWhatsNext(pipeline, opportunities, lastPublishData?.daysSinceLastPublish ?? null);
+  const greeting = getGreeting();
 
   // Pipeline stages for stepper
   const stages: { status: ProductionStatus; label: string }[] = [
@@ -599,14 +382,21 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     }
   }
 
+  // In-progress count (everything between SCRIPTED and PUBLISHED)
+  const inProgress = (pipeline?.summary.RECORDING ?? 0) + (pipeline?.summary.GENERATING ?? 0) +
+    (pipeline?.summary.ASSEMBLED ?? 0) + (pipeline?.summary.SCHEDULED ?? 0);
+
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-      {/* What's Next Hero Card */}
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+      {/* Greeting + What's Next Hero Card */}
       <ScrollReveal delay={0}>
       <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
-          What's Next
-        </h2>
+        <div className="flex items-baseline justify-between mb-3 px-1">
+          <h2 className="text-base font-serif font-bold text-themed">
+            {greeting.text}
+          </h2>
+          <span className="text-[10px] text-themed-muted hidden md:block">{greeting.date}</span>
+        </div>
         <div className={`bg-gradient-to-r ${whatsNext.gradient} border ${whatsNext.borderColor} rounded-2xl p-6`}>
           <h3 className="text-lg font-serif font-bold text-themed mb-2">
             {whatsNext.headline}
@@ -625,76 +415,120 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       </section>
       </ScrollReveal>
 
-      {/* Pipeline Stepper */}
-      <ScrollReveal delay={80}>
-      <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
-          Content Pipeline
-        </h2>
-        <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
-          <div className="flex items-center justify-between overflow-x-auto gap-1">
-            {stages.map((stage, i) => {
-              const count = pipeline?.summary[stage.status] ?? 0;
-              const colors = STATUS_COLORS[stage.status];
-              const isBottleneck = stage.status === bottleneckStatus && maxCount > 0;
-
-              return (
-                <React.Fragment key={stage.status}>
-                  <button
-                    onClick={() => onNavigate(STATUS_NAV[stage.status])}
-                    className="flex flex-col items-center gap-1.5 min-w-[60px] group"
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-full ${colors.bg} ${colors.text} flex items-center justify-center transition-transform group-hover:scale-110 ${
-                        isBottleneck ? `ring-2 ${colors.ring} ring-offset-2` : ""
-                      }`}
-                    >
-                      {count > 0 ? (
-                        <span className="text-sm font-bold">{count}</span>
-                      ) : (
-                        STATUS_ICONS[stage.status]
-                      )}
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-themed-tertiary group-hover:text-themed-secondary transition-colors">
-                      {stage.label}
-                    </span>
-                  </button>
-                  {i < stages.length - 1 && (
-                    <ChevronRight size={14} className="text-slate-300 shrink-0 mt-[-18px]" />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-          {bottleneckStatus && maxCount > 0 && (
-            <p className="text-xs text-themed-tertiary mt-3 text-center">
-              <span className="font-semibold text-themed-secondary">{maxCount} video{maxCount > 1 ? "s" : ""}</span> in {bottleneckStatus.toLowerCase()} stage
-            </p>
-          )}
-        </div>
-      </section>
+      {/* Creator Growth: Level + Active Quest */}
+      <ScrollReveal delay={60}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        <CreatorLevelBadge variant="home" />
+        <QuestChain onNavigate={onNavigate} />
+      </div>
       </ScrollReveal>
 
-      {/* Quick Stats */}
-      <ScrollReveal delay={160}>
-      <section>
-        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">
-          Quick Stats
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+      {/* Bento Row: Pipeline + Smart Stats */}
+      <ScrollReveal delay={120}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+        {/* Pipeline Stepper — 2/3 width */}
+        <div className="md:col-span-2 bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
+          {/* Progress micro-bar */}
+          {(() => {
+            const total = Object.values(pipeline?.summary ?? {}).reduce((a, b) => a + b, 0);
+            const published = pipeline?.summary.PUBLISHED ?? 0;
+            const pct = total > 0 ? Math.round((published / total) * 100) : 0;
+            return (
+              <div className="h-1 bg-surface-hover">
+                <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+              </div>
+            );
+          })()}
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Pipeline</p>
+              <span className="text-[10px] font-bold text-themed-tertiary">
+                {Object.entries(pipeline?.summary ?? {}).reduce((acc, [k, v]) => k !== "PUBLISHED" ? acc + (v as number) : acc, 0)} in flight
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-1 py-1">
+              {stages.map((stage, i) => {
+                const count = pipeline?.summary[stage.status] ?? 0;
+                const colors = STATUS_COLORS[stage.status];
+                const isBottleneck = stage.status === bottleneckStatus && maxCount > 0;
+
+                return (
+                  <React.Fragment key={stage.status}>
+                    <button
+                      onClick={() => onNavigate(STATUS_NAV[stage.status])}
+                      className="flex flex-col items-center gap-1.5 min-w-[52px] group"
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full ${colors.bg} ${colors.text} flex items-center justify-center transition-transform group-hover:scale-110 ${
+                          isBottleneck ? `ring-2 ${colors.ring} ring-offset-2` : ""
+                        }`}
+                      >
+                        {count > 0 ? (
+                          <span className="text-sm font-bold">{count}</span>
+                        ) : (
+                          STATUS_ICONS[stage.status]
+                        )}
+                      </div>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-themed-tertiary group-hover:text-themed-secondary transition-colors">
+                        {stage.label}
+                      </span>
+                    </button>
+                    {i < stages.length - 1 && (
+                      <ChevronRight size={12} className="text-slate-300 shrink-0 mt-[-16px]" />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            {/* Actionable bottleneck guidance */}
+            {bottleneckStatus && maxCount > 0 && (
+              <button
+                onClick={() => onNavigate(STATUS_NAV[bottleneckStatus])}
+                className="mt-3 w-full flex items-center justify-between px-3 py-2 bg-surface-hover rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group text-left"
+              >
+                <span className="text-xs text-themed-secondary">
+                  <span className="font-semibold">{maxCount}</span> in {bottleneckStatus.toLowerCase()}
+                  {getBottleneckAdvice(bottleneckStatus, maxCount)}
+                </span>
+                <ArrowRight size={13} className="text-themed-muted group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Smart Stats — 1/3 width, clickable cards */}
+        <div className="space-y-3">
+          {/* In Progress */}
+          <button
+            onClick={() => onNavigate("PIPELINE")}
+            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-sky-300 transition-colors group"
+          >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <CalendarCheck size={14} />
+              <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Activity size={14} />
               </div>
             </div>
-            <p className="text-2xl font-bold text-themed"><CountUp to={pipeline?.summary.PUBLISHED ?? 0} /></p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Published</p>
-          </div>
+            <p className="text-2xl font-bold text-themed"><CountUp to={inProgress} /></p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">In Progress</p>
+            {inProgress > 0 && (
+              <p className="text-[10px] text-themed-tertiary mt-1">
+                {[
+                  pipeline?.summary.RECORDING && `${pipeline.summary.RECORDING} recording`,
+                  pipeline?.summary.GENERATING && `${pipeline.summary.GENERATING} generating`,
+                  pipeline?.summary.ASSEMBLED && `${pipeline.summary.ASSEMBLED} assembled`,
+                  pipeline?.summary.SCHEDULED && `${pipeline.summary.SCHEDULED} scheduled`,
+                ].filter(Boolean).join(", ")}
+              </p>
+            )}
+          </button>
 
-          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+          {/* Total Views */}
+          <button
+            onClick={() => onNavigate("INTELLIGENCE")}
+            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-emerald-300 transition-colors group"
+          >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Eye size={14} />
               </div>
             </div>
@@ -702,21 +536,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               {metricsData?.totalViews ? (metricsData.totalViews >= 1000 ? `${(metricsData.totalViews / 1000).toFixed(1)}K` : metricsData.totalViews) : "---"}
             </p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Total Views</p>
-          </div>
+          </button>
 
-          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
+          {/* Top Performer */}
+          <button
+            onClick={() => onNavigate("INTELLIGENCE")}
+            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-amber-300 transition-colors group"
+          >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
-                <Layers size={14} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-themed"><CountUp to={carouselData?.completed ?? 0} /></p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Carousels</p>
-          </div>
-
-          <div className="bg-surface-elevated border border-themed rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Trophy size={14} />
               </div>
             </div>
@@ -727,86 +555,18 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </>
             ) : (
               <>
-                <p className="text-sm text-themed-muted italic">No data yet</p>
+                <p className="text-xs text-themed-tertiary">Publish to start tracking</p>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Top Performer</p>
               </>
             )}
-          </div>
+          </button>
         </div>
-      </section>
+      </div>
       </ScrollReveal>
 
-      {/* Content Mix */}
-      {pipeline && (() => {
-        const FORMAT_TIER: Record<string, { tier: string; label: string; color: string; seconds: string }> = {
-          F: { tier: "micro",  label: "Micro",  color: "bg-orange-400", seconds: "<15s" },
-          D: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "15-30s" },
-          G: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "15-30s" },
-          A: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "30-45s" },
-          B: { tier: "short",  label: "Short",  color: "bg-teal-400",   seconds: "30-45s" },
-          C: { tier: "medium", label: "Medium", color: "bg-sky-400",    seconds: "30-60s" },
-          E: { tier: "medium", label: "Medium", color: "bg-sky-400",    seconds: "45-60s" },
-        };
-
-        const allVideos = Object.values(pipeline.stages).flat();
-        const tierCounts: Record<string, number> = { micro: 0, short: 0, medium: 0, long: 0 };
-        for (const v of allVideos) {
-          const tier = FORMAT_TIER[v.format]?.tier ?? "long";
-          tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
-        }
-        const total = allVideos.length;
-        if (total === 0) return null;
-
-        const TIERS = [
-          { key: "micro",  label: "Micro",  desc: "<15s",   color: "bg-orange-400" },
-          { key: "short",  label: "Short",  desc: "15-45s", color: "bg-teal-400" },
-          { key: "medium", label: "Medium", desc: "45-90s", color: "bg-sky-400" },
-          { key: "long",   label: "Long",   desc: "90s+",   color: "bg-violet-400" },
-        ].filter((t) => tierCounts[t.key] > 0);
-
-        return (
-          <section>
-            <FeatureHint id="content-mix" content={FEATURE_HINTS["content-mix"].content} side="bottom">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1">Content Mix</h2>
-            </FeatureHint>
-            <div className="bg-surface-elevated border border-themed rounded-2xl p-4 space-y-3">
-              {/* Stacked bar */}
-              <div className="flex rounded-full overflow-hidden h-3 gap-0.5">
-                {TIERS.map((t) => {
-                  const pct = Math.round((tierCounts[t.key] / total) * 100);
-                  return (
-                    <div
-                      key={t.key}
-                      className={`${t.color} h-full transition-all`}
-                      style={{ width: `${pct}%` }}
-                      title={`${t.label}: ${tierCounts[t.key]} videos (${pct}%)`}
-                    />
-                  );
-                })}
-              </div>
-              {/* Legend */}
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {TIERS.map((t) => {
-                  const pct = Math.round((tierCounts[t.key] / total) * 100);
-                  return (
-                    <div key={t.key} className="flex items-center gap-1.5">
-                      <div className={`w-2.5 h-2.5 rounded-sm ${t.color}`} />
-                      <span className="text-[10px] font-bold text-themed-secondary">{t.label}</span>
-                      <span className="text-[10px] text-themed-muted">{t.desc}</span>
-                      <span className="text-[10px] font-bold text-themed-secondary">{pct}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] text-themed-muted">Kallaway: ~90 min total content = superfan. Short-form at 20s avg needs 270 videos. Long-form at 60 min needs only 1.5.</p>
-            </div>
-          </section>
-        );
-      })()}
-
-      {/* Blowing Up Right Now - Outlier Videos */}
-      <ScrollReveal delay={80}>
+      {/* Blowing Up Right Now — Outlier Videos */}
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
+        <ScrollReveal delay={160}>
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted flex items-center gap-1.5">
@@ -820,32 +580,31 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               See All →
             </button>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x scrollbar-hide">
+          <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 snap-x scrollbar-hide">
             {outlierVideos!.videos.slice(0, 10).map((video) => (
-              <VideoThumbnailCard
-                key={video.id}
-                thumbnailUrl={video.thumbnailUrl}
-                videoUrl={video.videoUrl}
-                title={video.videoTitle || `@${video.creatorHandle}`}
-                subtitle={video.creatorHandle}
-                platform={video.platform}
-                views={video.views ?? undefined}
-                outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
-                durationSeconds={video.durationSeconds ?? undefined}
-                createdAt={video.createdAt}
-                size="sm"
-                onClick={() => {
-                  if (video.videoUrl && video.videoUrl !== "unknown") window.open(video.videoUrl, "_blank", "noopener");
-                }}
-              />
+              <div key={video.id} className="w-44 md:w-48 flex-shrink-0 snap-start">
+                <VideoThumbnailCard
+                  thumbnailUrl={video.thumbnailUrl}
+                  videoUrl={video.videoUrl}
+                  title={video.videoTitle || `@${video.creatorHandle}`}
+                  subtitle={video.creatorHandle}
+                  platform={video.platform}
+                  views={video.views ?? undefined}
+                  outlierScore={video.outlierScoreX100 ? video.outlierScoreX100 / 100 : undefined}
+                  durationSeconds={video.durationSeconds ?? undefined}
+                  createdAt={video.createdAt}
+                  onClick={() => {
+                    if (video.videoUrl && video.videoUrl !== "unknown") window.open(video.videoUrl, "_blank", "noopener");
+                  }}
+                />
+              </div>
             ))}
           </div>
         </section>
+        </ScrollReveal>
       )}
-      </ScrollReveal>
 
       {/* Trend Pulse */}
-      <ScrollReveal delay={120}>
       {pulseData?.digest && (() => {
         const digest = pulseData.digest;
         const topics = digest.trendingTopics.slice(0, 4);
@@ -855,6 +614,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           ? new Date(digest.date).toLocaleDateString("en-US", { month: "long", day: "numeric" })
           : "";
         return (
+          <ScrollReveal delay={240}>
           <section>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
               <Signal size={12} className="text-teal-500" />
@@ -874,7 +634,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 </button>
               </div>
 
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-white/5">
                 {/* Trending Topics */}
                 {topics.length > 0 && (
                   <div className="px-4 py-3">
@@ -883,11 +643,11 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                       {topics.map((t, i) => (
                         <div key={i} className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-slate-800">{t.topic}</span>
+                            <span className="text-sm font-medium text-themed">{t.topic}</span>
                             {t.platforms.length > 0 && (
                               <div className="flex gap-1 mt-0.5 flex-wrap">
                                 {t.platforms.map((p) => (
-                                  <span key={p} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 uppercase tracking-wide">
+                                  <span key={p} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 uppercase tracking-wide dark:bg-teal-500/10">
                                     {p}
                                   </span>
                                 ))}
@@ -897,7 +657,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                           <button
                             onClick={() => addIdeaMutation.mutate(t.topic)}
                             disabled={addIdeaMutation.isPending || addedTopics.has(t.topic)}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100"
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
                           >
                             {addedTopics.has(t.topic) ? <Check size={10} /> : <Plus size={10} />}
                             {addedTopics.has(t.topic) ? "Added" : "Idea"}
@@ -918,7 +678,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-themed-secondary italic line-clamp-1">"{h.text}"</p>
                             <div className="flex gap-1 mt-0.5">
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 uppercase">{h.type}</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 uppercase dark:bg-violet-500/10">{h.type}</span>
                               <span className="text-[9px] text-themed-muted">{h.platform}</span>
                             </div>
                           </div>
@@ -928,7 +688,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                               setCopiedHook(h.text);
                               setTimeout(() => setCopiedHook(null), 2000);
                             }}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-surface-hover text-themed-tertiary hover:bg-slate-100 transition-colors"
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-surface-hover text-themed-tertiary hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                           >
                             {copiedHook === h.text ? <Check size={10} /> : <Copy size={10} />}
                             {copiedHook === h.text ? "Copied" : "Copy"}
@@ -947,7 +707,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                       {gaps.map((g, i) => (
                         <div key={i} className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-slate-800">{g.area}</span>
+                            <span className="text-sm font-medium text-themed">{g.area}</span>
                             {g.description && (
                               <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{g.description}</p>
                             )}
@@ -955,7 +715,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                           <button
                             onClick={() => addIdeaMutation.mutate(g.area)}
                             disabled={addIdeaMutation.isPending || addedTopics.has(g.area)}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100"
+                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
                           >
                             {addedTopics.has(g.area) ? <Check size={10} /> : <Plus size={10} />}
                             {addedTopics.has(g.area) ? "Added" : "Idea"}
@@ -968,134 +728,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </div>
             </div>
           </section>
+          </ScrollReveal>
         );
       })()}
-      </ScrollReveal>
-
-      {/* Superfan Pipeline (Kallaway 90-Minute Rule) */}
-      <ScrollReveal delay={80}>
-      {(() => {
-        const published = pipeline?.summary.PUBLISHED ?? 0;
-        const TARGET = 270;
-        const pct = Math.min(Math.round((published / TARGET) * 100), 100);
-        const estMinutes = Math.round(published * 25 / 60); // ~25s avg short-form video
-        return (
-          <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
-              <Zap size={12} className="text-violet-500" />
-              Superfan Pipeline
-            </h2>
-            <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
-              <div className="flex items-center gap-5">
-                <ProgressRing
-                  value={pct}
-                  size={90}
-                  strokeWidth={7}
-                  color="#8b5cf6"
-                  label={`${pct}%`}
-                  sublabel="complete"
-                />
-                <div className="flex-1 space-y-1.5">
-                  <p className="text-sm font-bold text-themed">{published} / {TARGET} videos</p>
-                  <p className="text-[10px] text-themed-muted">~{estMinutes} min of content published</p>
-                  <p className="text-[10px] text-themed-muted">Goal: 90 min (superfan territory)</p>
-                </div>
-              </div>
-              {published === 0 ? (
-                <button
-                  onClick={() => onNavigate("PIPELINE")}
-                  className="mt-3 w-full flex items-center justify-between px-3 py-2 bg-violet-50 border border-violet-200 rounded-xl hover:bg-violet-100 transition-colors group text-left"
-                >
-                  <span className="text-xs font-semibold text-violet-700">Publish your first video to start your superfan journey</span>
-                  <ArrowRight size={13} className="text-violet-500 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2" />
-                </button>
-              ) : (
-                <p className="text-[10px] text-themed-muted mt-1">
-                  270 short-form videos ≈ 90 min of watched content. That's when casual viewers become superfans.
-                </p>
-              )}
-            </div>
-          </section>
-        );
-      })()}
-      </ScrollReveal>
-
-      {/* Content Health Score */}
-      <ScrollReveal delay={80}>
-      {healthData && (
-        <section>
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
-            <Heart size={12} className="text-rose-500" />
-            Content Health
-          </h2>
-          <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
-            <div className="flex items-center gap-5 mb-4">
-              <ProgressRing
-                value={healthData.score}
-                size={80}
-                strokeWidth={7}
-                color={healthData.score >= 75 ? "#10b981" : healthData.score >= 50 ? "#f59e0b" : "#ef4444"}
-                label={String(healthData.score)}
-                sublabel="/100"
-              />
-              <div>
-                <p className="text-sm font-bold text-themed">
-                  {healthData.score >= 75 ? "Healthy" : healthData.score >= 50 ? "Needs Attention" : "Critical"}
-                </p>
-                <p className="text-[10px] text-themed-muted mt-0.5">Based on content freshness, coverage, and velocity</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {Object.entries(healthData.dimensions).map(([key, dim]) => (
-                <div key={key}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-themed-secondary capitalize">{key}</span>
-                    <span className="text-[10px] text-themed-muted">{dim.detail}</span>
-                  </div>
-                  <div className="w-full bg-surface-hover rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${dim.score >= dim.max * 0.75 ? "bg-emerald-500" : dim.score >= dim.max * 0.5 ? "bg-amber-500" : "bg-rose-500"}`}
-                      style={{ width: `${(dim.score / dim.max) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-      </ScrollReveal>
-
-      {/* Production Timeline */}
-      <ScrollReveal delay={80}>
-        <ProductionTimeline onSelectVideo={onSelectVideo} />
-      </ScrollReveal>
-
-      {/* Render Queue Status */}
-      <ScrollReveal delay={80}>
-        <RenderQueueStatus />
-      </ScrollReveal>
-
-      {/* Automation Status */}
-      <ScrollReveal delay={80}>
-        <AutomationStatus />
-      </ScrollReveal>
-
-      {/* Keyboard shortcut hint */}
-      <ViewHelp {...VIEW_HELP.HOME} />
-      <div className="hidden md:flex justify-center pt-2">
-        <p className="text-xs text-themed-muted">
-          Press{" "}
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-themed rounded">
-            {navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl"}+K
-          </kbd>{" "}
-          for command palette.{" "}
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-themed rounded">
-            1-9
-          </kbd>{" "}
-          for quick nav.
-        </p>
-      </div>
     </div>
   );
 };
