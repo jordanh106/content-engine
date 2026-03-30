@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
     phase: "produce",
     items: [
       { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={18} /> },
+      { view: "CAROUSEL_LAB", label: "Carousel Lab", icon: <LayoutGrid size={18} /> },
       { view: "SESSION", label: "Session", icon: <Timer size={18} /> },
     ],
   },
