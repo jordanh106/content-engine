@@ -18,6 +18,10 @@ import {
   Check,
   Flame,
   Activity,
+  LayoutGrid,
+  TrendingUp,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -280,6 +284,87 @@ function determineWhatsNext(
     borderColor: "border-teal-200",
   };
 }
+
+// ─── Trending Carousels Widget ───────────────────────────────────────────────
+
+function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) => void }) {
+  const { data, isLoading } = useQuery<{
+    trends: Array<{
+      topic: string; hookLine: string; archetype: string; audience: string;
+      platform: string; aspectRatio: string; proof: string; engagementSignal: string;
+    }>;
+  }>({
+    queryKey: ["carousel-trending-home"],
+    queryFn: async () => {
+      const res = await fetch("/api/carousels/trending");
+      if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: false,
+  });
+
+  const trends = data?.trends;
+  if (!trends?.length && !isLoading) return null;
+
+  return (
+    <ScrollReveal delay={180}>
+      <section>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted flex items-center gap-1.5">
+            <LayoutGrid size={12} className="text-violet-500" />
+            Trending Carousels
+          </h2>
+          <button
+            onClick={() => onNavigate("CAROUSEL_LAB")}
+            className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors"
+          >
+            Open Carousel Lab →
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center gap-2 px-1 py-4 text-themed-muted">
+            <Loader2 size={14} className="animate-spin" />
+            <span className="text-xs">Scanning trends...</span>
+          </div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x scrollbar-hide">
+            {trends!.slice(0, 6).map((trend, i) => (
+              <button
+                key={i}
+                onClick={() => onNavigate("CAROUSEL_LAB")}
+                className="w-56 flex-shrink-0 snap-start text-left p-4 rounded-2xl border border-themed bg-surface-elevated hover:border-violet-400 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-500" : "text-violet-400"} />
+                  <span className={`text-[9px] font-black uppercase tracking-wider ${
+                    trend.engagementSignal === "high" ? "text-amber-600" : "text-violet-500"
+                  }`}>
+                    {trend.engagementSignal === "high" ? "Hot" : "Rising"}
+                  </span>
+                  <span className="text-[9px] text-themed-muted capitalize ml-auto">{trend.platform}</span>
+                </div>
+                <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-violet-700 transition-colors">
+                  {trend.topic}
+                </p>
+                <p className="text-[11px] text-themed-muted mt-1.5 line-clamp-1">{trend.proof}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                    {trend.archetype}
+                  </span>
+                  <TrendingUp size={10} className="text-emerald-500 ml-auto" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+    </ScrollReveal>
+  );
+}
+
+// ─── Dashboard Home ──────────────────────────────────────────────────────────
 
 export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
@@ -603,6 +688,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </section>
         </ScrollReveal>
       )}
+
+      {/* Trending Carousels */}
+      <TrendingCarousels onNavigate={onNavigate} />
 
       {/* Trend Pulse */}
       {pulseData?.digest && (() => {
