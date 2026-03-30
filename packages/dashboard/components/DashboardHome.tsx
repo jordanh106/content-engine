@@ -22,7 +22,6 @@ import {
   TrendingUp,
   Zap,
   Loader2,
-  Eye,
   Shuffle,
 } from "lucide-react";
 import type {
