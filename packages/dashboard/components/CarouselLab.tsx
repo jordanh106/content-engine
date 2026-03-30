@@ -787,6 +787,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
     trends: Array<{
       topic: string; hookLine: string; archetype: string; audience: string;
       platform: string; aspectRatio: string; proof: string; engagementSignal: string;
+      creatorHandle?: string; postUrl?: string; thumbnailUrl?: string;
     }>;
   }>({
     queryKey: ["carousel-trending"],
@@ -914,35 +915,61 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
               </div>
               {trendingLoading && <p className="text-[11px] text-themed-muted animate-pulse">Searching trends...</p>}
               {trendingData?.trends?.map((trend, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    const platOpt = PLATFORM_OPTIONS.find(
-                      (p) => p.platform === trend.platform && p.aspectRatio === trend.aspectRatio
-                    ) ?? PLATFORM_OPTIONS[0];
-                    setPlatform(platOpt);
-                    setArchetype((trend.archetype || "teacher") as ArchetypeId);
-                    setAudience(trend.audience || "");
-                    setTopic(trend.topic);
-                    setHookLine(trend.hookLine || "");
-                    setMode("fresh");
-                    setActiveCarouselId(null);
-                    setShowTrends(false);
-                  }}
-                  className="w-full text-left p-3 rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 transition-all group"
-                >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <TrendingUp size={10} className="text-amber-500" />
-                    <span className={cn("text-[9px] font-black uppercase tracking-wider",
-                      trend.engagementSignal === "high" ? "text-emerald-600" : "text-amber-600"
-                    )}>
-                      {trend.engagementSignal === "high" ? "Hot" : "Rising"}
-                    </span>
-                    <span className="text-[9px] text-themed-muted capitalize">{trend.platform}</span>
-                  </div>
-                  <p className="text-xs font-bold text-themed leading-snug line-clamp-2">{trend.topic}</p>
-                  <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{trend.proof}</p>
-                </button>
+                <div key={i} className="w-full rounded-xl border border-amber-200 bg-amber-50 hover:border-amber-400 transition-all group overflow-hidden">
+                  {/* Thumbnail row */}
+                  {trend.thumbnailUrl && (
+                    <div className="relative w-full h-20 bg-slate-900 overflow-hidden">
+                      <img
+                        src={trend.thumbnailUrl}
+                        alt={trend.topic}
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      {trend.postUrl && (
+                        <a
+                          href={trend.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute bottom-1.5 right-1.5 text-[9px] font-bold text-white/80 hover:text-white bg-black/30 rounded-full px-2 py-0.5"
+                        >
+                          View
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      const platOpt = PLATFORM_OPTIONS.find(
+                        (p) => p.platform === trend.platform && p.aspectRatio === trend.aspectRatio
+                      ) ?? PLATFORM_OPTIONS[0];
+                      setPlatform(platOpt);
+                      setArchetype((trend.archetype || "teacher") as ArchetypeId);
+                      setAudience(trend.audience || "");
+                      setTopic(trend.topic);
+                      setHookLine(trend.hookLine || "");
+                      setMode("fresh");
+                      setActiveCarouselId(null);
+                      setShowTrends(false);
+                    }}
+                    className="w-full text-left p-3"
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <TrendingUp size={10} className="text-amber-500" />
+                      <span className={cn("text-[9px] font-black uppercase tracking-wider",
+                        trend.engagementSignal === "high" ? "text-emerald-600" : "text-amber-600"
+                      )}>
+                        {trend.engagementSignal === "high" ? "Hot" : "Rising"}
+                      </span>
+                      <span className="text-[9px] text-themed-muted capitalize">{trend.platform}</span>
+                    </div>
+                    <p className="text-xs font-bold text-themed leading-snug line-clamp-2">{trend.topic}</p>
+                    {trend.creatorHandle && (
+                      <p className="text-[9px] text-themed-muted mt-0.5">@{trend.creatorHandle}</p>
+                    )}
+                    <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{trend.proof}</p>
+                  </button>
+                </div>
               ))}
               {!trendingLoading && !trendingData?.trends?.length && (
                 <p className="text-[11px] text-themed-muted">Click refresh to scan for trending topics.</p>

@@ -1377,6 +1377,8 @@ Return ONLY JSON.`;
           postType?: string;
           collectCount?: number;
           playCount?: number;
+          postUrl?: string;
+          thumbnailUrl?: string;
         }>;
       };
       if (!posts?.length) { res.status(400).json({ error: "posts array required" }); return; }
@@ -1423,7 +1425,7 @@ Return ONLY JSON.`;
       if (rawData) {
         // Analyze REAL social data from Xpoz seed
         const { posts } = JSON.parse(rawData.data) as {
-          posts: Array<{ platform: string; username: string; caption: string; likeCount: number; commentCount: number; collectCount?: number; playCount?: number }>;
+          posts: Array<{ platform: string; username: string; caption: string; likeCount: number; commentCount: number; collectCount?: number; playCount?: number; postUrl?: string; thumbnailUrl?: string }>;
         };
 
         // Sort by engagement and pick top performers
@@ -1432,10 +1434,16 @@ Return ONLY JSON.`;
           .sort((a, b) => b.engagement - a.engagement)
           .slice(0, 15);
 
+        // Build a lookup of source posts for enrichment after analysis
+        const postLookup = new Map<string, { postUrl?: string; thumbnailUrl?: string; username: string; platform: string }>();
+        for (const p of sorted) {
+          postLookup.set(p.username.toLowerCase(), { postUrl: p.postUrl, thumbnailUrl: p.thumbnailUrl, username: p.username, platform: p.platform });
+        }
+
         const analysisPrompt = `Analyze these REAL social media posts from Instagram and TikTok (sorted by engagement) and extract 6 carousel-worthy trending topics for a chiropractic practice.
 
 REAL POSTS DATA:
-${sorted.map((p, i) => `${i + 1}. [${p.platform}] @${p.username} (${p.likeCount} likes, ${p.commentCount} comments${p.collectCount ? `, ${p.collectCount} saves` : ""}${p.playCount ? `, ${p.playCount} plays` : ""})
+${sorted.map((p, i) => `${i + 1}. [${p.platform}] @${p.username} (${p.likeCount} likes, ${p.commentCount} comments${p.collectCount ? `, ${p.collectCount} saves` : ""}${p.playCount ? `, ${p.playCount} plays` : ""})${p.postUrl ? ` URL: ${p.postUrl}` : ""}
 "${p.caption.slice(0, 200)}"`).join("\n\n")}
 
 For each topic you identify from this REAL data, return:
@@ -1449,7 +1457,10 @@ For each topic you identify from this REAL data, return:
       "platform": "instagram|tiktok|linkedin",
       "aspectRatio": "4:5|1:1|9:16",
       "proof": "Based on real post by @username with X likes (cite actual data above)",
-      "engagementSignal": "high|medium"
+      "engagementSignal": "high|medium",
+      "creatorHandle": "the @username of the source post (without @)",
+      "postUrl": "the URL of the source post if available, or null",
+      "thumbnailUrl": null
     }
   ]
 }
@@ -1457,18 +1468,41 @@ For each topic you identify from this REAL data, return:
 RULES:
 - Extract REAL topics from the actual posts above, not imagined ones
 - "proof" MUST reference the real post data (username, engagement numbers)
+- "creatorHandle" MUST be the exact username from the post data above
+- "postUrl" MUST be the exact URL from the post data if provided, null otherwise
 - Mark as "high" if the source post had 1000+ likes or 100+ comments
 - Adapt topics for chiropractic/wellness niche if needed
 - Return ONLY the JSON object.`;
 
         const msg = await anthropic.messages.create({
           model: "claude-sonnet-4-6",
-          max_tokens: 1200,
+          max_tokens: 1500,
           messages: [{ role: "user", content: analysisPrompt }],
         });
         const raw = (msg.content[0] as { text: string }).text.trim();
         const parsed = JSON.parse(extractJson(raw));
         trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
+
+        // Enrich trends with thumbnails from seeded data (AI might not return them)
+        if (trendsData?.trends) {
+          const { resolveThumbnailUrl } = await import("../lib/thumbnail-resolver.js");
+          for (const trend of trendsData.trends as Array<Record<string, unknown>>) {
+            const handle = String(trend.creatorHandle || "").toLowerCase();
+            const source = postLookup.get(handle);
+            if (source) {
+              if (!trend.postUrl && source.postUrl) trend.postUrl = source.postUrl;
+              if (!trend.thumbnailUrl && source.thumbnailUrl) trend.thumbnailUrl = source.thumbnailUrl;
+            }
+            // Try oEmbed thumbnail resolution if we have a post URL but no thumbnail
+            if (trend.postUrl && !trend.thumbnailUrl) {
+              try {
+                const resolved = await resolveThumbnailUrl(String(trend.postUrl), String(trend.platform || "instagram"));
+                if (resolved) trend.thumbnailUrl = resolved;
+              } catch { /* ignore resolution failures */ }
+            }
+          }
+        }
+
         if (trendsData) (trendsData as Record<string, unknown>).source = "xpoz_real_data";
       }
 
@@ -1499,12 +1533,15 @@ Return ONLY a JSON object:
       "platform": "instagram|tiktok|linkedin",
       "aspectRatio": "4:5|1:1|9:16",
       "proof": "why this is trending with real source data",
-      "engagementSignal": "high|medium"
+      "engagementSignal": "high|medium",
+      "creatorHandle": "username of the source creator (without @)",
+      "postUrl": "direct URL to the source post if you can find it, or null",
+      "thumbnailUrl": null
     }
   ]
 }
 
-CRITICAL: Base trends on REAL posts you find via web search, not imagined content. Cite actual creators/posts in the "proof" field.`,
+CRITICAL: Base trends on REAL posts you find via web search, not imagined content. Cite actual creators/posts in the "proof" field. Include the post URL when you find one.`,
           }],
         });
 

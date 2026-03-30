@@ -293,6 +293,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
     trends: Array<{
       topic: string; hookLine: string; archetype: string; audience: string;
       platform: string; aspectRatio: string; proof: string; engagementSignal: string;
+      creatorHandle?: string; postUrl?: string; thumbnailUrl?: string;
     }>;
     source?: string;
   }>({
@@ -359,31 +360,74 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x scrollbar-hide">
             {trends!.slice(0, 6).map((trend, i) => (
-              <button
+              <div
                 key={i}
-                onClick={() => onNavigate("CAROUSEL_LAB")}
-                className="w-56 flex-shrink-0 snap-start text-left p-4 rounded-2xl border border-themed bg-surface-elevated hover:border-violet-400 hover:shadow-md transition-all group"
+                className="w-56 flex-shrink-0 snap-start rounded-2xl border border-themed bg-surface-elevated hover:border-violet-400 hover:shadow-md transition-all group overflow-hidden"
               >
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-500" : "text-violet-400"} />
-                  <span className={`text-[9px] font-black uppercase tracking-wider ${
-                    trend.engagementSignal === "high" ? "text-amber-600" : "text-violet-500"
-                  }`}>
-                    {trend.engagementSignal === "high" ? "Hot" : "Rising"}
-                  </span>
-                  <span className="text-[9px] text-themed-muted capitalize ml-auto">{trend.platform}</span>
-                </div>
-                <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-violet-700 transition-colors">
-                  {trend.topic}
-                </p>
-                <p className="text-[11px] text-themed-muted mt-1.5 line-clamp-1">{trend.proof}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
-                    {trend.archetype}
-                  </span>
-                  <TrendingUp size={10} className="text-emerald-500 ml-auto" />
-                </div>
-              </button>
+                {/* Thumbnail */}
+                {trend.thumbnailUrl ? (
+                  <div className="relative w-full h-28 bg-slate-900 overflow-hidden">
+                    <img
+                      src={trend.thumbnailUrl}
+                      alt={trend.topic}
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                      <Zap size={9} className={trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"} />
+                      <span className={`text-[9px] font-black uppercase tracking-wider ${
+                        trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"
+                      }`}>
+                        {trend.engagementSignal === "high" ? "Hot" : "Rising"}
+                      </span>
+                    </div>
+                    <span className="absolute bottom-2 right-2 text-[9px] text-white/70 capitalize">{trend.platform}</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-16 bg-gradient-to-br from-violet-500/10 to-violet-600/5 flex items-center justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-500" : "text-violet-400"} />
+                      <span className={`text-[9px] font-black uppercase tracking-wider ${
+                        trend.engagementSignal === "high" ? "text-amber-600" : "text-violet-500"
+                      }`}>
+                        {trend.engagementSignal === "high" ? "Hot" : "Rising"}
+                      </span>
+                      <span className="text-[9px] text-themed-muted capitalize ml-2">{trend.platform}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content */}
+                <button
+                  onClick={() => onNavigate("CAROUSEL_LAB")}
+                  className="w-full text-left p-3 space-y-1.5"
+                >
+                  <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-violet-700 transition-colors">
+                    {trend.topic}
+                  </p>
+                  {trend.creatorHandle && (
+                    <p className="text-[10px] text-themed-muted">@{trend.creatorHandle}</p>
+                  )}
+                  <p className="text-[11px] text-themed-muted line-clamp-1">{trend.proof}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                      {trend.archetype}
+                    </span>
+                    {trend.postUrl && (
+                      <a
+                        href={trend.postUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[9px] font-bold text-teal-600 hover:text-teal-700 ml-auto flex items-center gap-0.5"
+                      >
+                        View Original <ArrowRight size={8} />
+                      </a>
+                    )}
+                  </div>
+                </button>
+              </div>
             ))}
           </div>
         )}
