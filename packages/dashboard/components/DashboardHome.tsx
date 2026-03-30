@@ -385,15 +385,20 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
                     <span className="absolute bottom-2 right-2 text-[9px] text-white/70 capitalize">{trend.platform}</span>
                   </div>
                 ) : (
-                  <div className="w-full h-16 bg-gradient-to-br from-violet-500/10 to-violet-600/5 flex items-center justify-center">
-                    <div className="flex items-center gap-1.5">
-                      <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-500" : "text-violet-400"} />
+                  <div className={`w-full h-28 flex flex-col items-center justify-center gap-1.5 ${
+                    trend.platform === "tiktok" ? "bg-gradient-to-br from-slate-900 to-slate-800"
+                    : trend.platform === "linkedin" ? "bg-gradient-to-br from-blue-900 to-blue-800"
+                    : "bg-gradient-to-br from-fuchsia-900 via-purple-900 to-orange-900"
+                  }`}>
+                    <span className="text-white/90 text-lg font-black">@{trend.creatorHandle || "creator"}</span>
+                    <div className="flex items-center gap-2">
+                      <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"} />
                       <span className={`text-[9px] font-black uppercase tracking-wider ${
-                        trend.engagementSignal === "high" ? "text-amber-600" : "text-violet-500"
+                        trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"
                       }`}>
                         {trend.engagementSignal === "high" ? "Hot" : "Rising"}
                       </span>
-                      <span className="text-[9px] text-themed-muted capitalize ml-2">{trend.platform}</span>
+                      <span className="text-[9px] text-white/60 capitalize">{trend.platform}</span>
                     </div>
                   </div>
                 )}

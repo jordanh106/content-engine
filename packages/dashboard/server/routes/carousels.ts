@@ -1326,8 +1326,9 @@ Return ONLY JSON.`;
       const n8nUrl = process.env.N8N_URL || "https://n8n.srv1290877.hstgr.cloud";
       const n8nApiKey = process.env.N8N_API_KEY;
 
-      // Invalidate cache so next GET re-fetches
+      // Invalidate both trending cache AND raw seed data so next GET does a full fresh scan
       sqlite.prepare("DELETE FROM research_reports WHERE type = 'carousel_trending'").run();
+      sqlite.prepare("DELETE FROM research_reports WHERE type = 'carousel_trending_raw'").run();
 
       // Try triggering n8n webhook
       const webhookUrl = `${n8nUrl}/webhook/carousel-trends`;
@@ -1379,14 +1380,23 @@ Return ONLY JSON.`;
           playCount?: number;
           postUrl?: string;
           thumbnailUrl?: string;
+          imageUrl?: string; // Xpoz field name alias
+          codeUrl?: string;  // Xpoz field name alias for postUrl
         }>;
       };
       if (!posts?.length) { res.status(400).json({ error: "posts array required" }); return; }
 
+      // Normalize Xpoz field names: codeUrl → postUrl, imageUrl → thumbnailUrl
+      const normalized = posts.map((p) => ({
+        ...p,
+        postUrl: p.postUrl || p.codeUrl || undefined,
+        thumbnailUrl: p.thumbnailUrl || p.imageUrl || undefined,
+      }));
+
       // Store raw posts for the analysis step
       sqlite.prepare(
         "INSERT INTO research_reports (type, data) VALUES (?, ?)"
-      ).run("carousel_trending_raw", JSON.stringify({ posts, seededAt: new Date().toISOString() }));
+      ).run("carousel_trending_raw", JSON.stringify({ posts: normalized, seededAt: new Date().toISOString() }));
 
       // Invalidate any existing trend cache so next GET re-analyzes
       sqlite.prepare(
@@ -1483,23 +1493,74 @@ RULES:
         const parsed = JSON.parse(extractJson(raw));
         trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
 
-        // Enrich trends with thumbnails from seeded data (AI might not return them)
+        // Enrich trends with post URLs and thumbnails
         if (trendsData?.trends) {
-          const { resolveThumbnailUrl } = await import("../lib/thumbnail-resolver.js");
-          for (const trend of trendsData.trends as Array<Record<string, unknown>>) {
+          const trendThumbDir = path.join(carouselImagesDir, "trending-thumbnails");
+          if (!fs.existsSync(trendThumbDir)) fs.mkdirSync(trendThumbDir, { recursive: true });
+
+          for (const [idx, trend] of (trendsData.trends as Array<Record<string, unknown>>).entries()) {
             const handle = String(trend.creatorHandle || "").toLowerCase();
             const source = postLookup.get(handle);
-            if (source) {
-              if (!trend.postUrl && source.postUrl) trend.postUrl = source.postUrl;
-              if (!trend.thumbnailUrl && source.thumbnailUrl) trend.thumbnailUrl = source.thumbnailUrl;
-            }
-            // Try oEmbed thumbnail resolution if we have a post URL but no thumbnail
-            if (trend.postUrl && !trend.thumbnailUrl) {
+
+            // Fill in postUrl from seeded data if AI didn't return it
+            if (!trend.postUrl && source?.postUrl) trend.postUrl = source.postUrl;
+
+            // Try to download thumbnail from seeded CDN URL (works for TikTok, may fail for IG)
+            const thumbUrl = source?.thumbnailUrl as string | undefined;
+            if (thumbUrl) {
               try {
-                const resolved = await resolveThumbnailUrl(String(trend.postUrl), String(trend.platform || "instagram"));
-                if (resolved) trend.thumbnailUrl = resolved;
-              } catch { /* ignore resolution failures */ }
+                const filename = `trend-${idx}.jpg`;
+                const filepath = path.join(trendThumbDir, filename);
+                const resp = await fetch(thumbUrl, {
+                  signal: AbortSignal.timeout(10000),
+                  headers: {
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Referer": "https://www.instagram.com/",
+                  },
+                });
+                if (resp.ok) {
+                  const buffer = Buffer.from(await resp.arrayBuffer());
+                  if (buffer.length > 500) {
+                    fs.writeFileSync(filepath, buffer);
+                    trend.thumbnailUrl = `/carousel-images/trending-thumbnails/${filename}`;
+                    continue;
+                  }
+                }
+              } catch { /* download failed */ }
             }
+
+            // Fallback for TikTok: try oEmbed
+            if (trend.postUrl && String(trend.platform).includes("tiktok")) {
+              try {
+                const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(String(trend.postUrl))}`;
+                const oRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(10000) });
+                if (oRes.ok) {
+                  const oData = await oRes.json() as { thumbnail_url?: string };
+                  if (oData.thumbnail_url) {
+                    const filename = `trend-${idx}.jpg`;
+                    const filepath = path.join(trendThumbDir, filename);
+                    const imgRes = await fetch(oData.thumbnail_url, { signal: AbortSignal.timeout(10000) });
+                    if (imgRes.ok) {
+                      const buffer = Buffer.from(await imgRes.arrayBuffer());
+                      if (buffer.length > 500) {
+                        fs.writeFileSync(filepath, buffer);
+                        trend.thumbnailUrl = `/carousel-images/trending-thumbnails/${filename}`;
+                        continue;
+                      }
+                    }
+                  }
+                }
+              } catch { /* oEmbed failed */ }
+            }
+
+            // Pass engagement data to frontend for rich placeholder rendering
+            if (source) {
+              trend.sourceEngagement = {
+                likes: (sorted.find(p => p.username.toLowerCase() === handle) as Record<string, unknown> | undefined)?.likeCount || 0,
+                comments: (sorted.find(p => p.username.toLowerCase() === handle) as Record<string, unknown> | undefined)?.commentCount || 0,
+              };
+            }
+            if (!trend.thumbnailUrl) trend.thumbnailUrl = null;
           }
         }
 
