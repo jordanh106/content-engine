@@ -1320,6 +1320,41 @@ Return ONLY JSON.`;
   // FEATURE 5: Trend Pulse — Live trending carousel topics from niche
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // POST /api/carousels/trending/seed — Ingest real social data (called by CLI/automation with Xpoz data)
+  router.post("/trending/seed", (req, res) => {
+    try {
+      const { posts } = req.body as {
+        posts: Array<{
+          platform: string;
+          username: string;
+          caption: string;
+          likeCount: number;
+          commentCount: number;
+          createdAt: string;
+          postType?: string;
+          collectCount?: number;
+          playCount?: number;
+        }>;
+      };
+      if (!posts?.length) { res.status(400).json({ error: "posts array required" }); return; }
+
+      // Store raw posts for the analysis step
+      sqlite.prepare(
+        "INSERT INTO research_reports (type, data) VALUES (?, ?)"
+      ).run("carousel_trending_raw", JSON.stringify({ posts, seededAt: new Date().toISOString() }));
+
+      // Invalidate any existing trend cache so next GET re-analyzes
+      sqlite.prepare(
+        "DELETE FROM research_reports WHERE type = 'carousel_trending'"
+      ).run();
+
+      res.json({ ok: true, postsIngested: posts.length });
+    } catch (err) {
+      console.error("[carousels] trending seed error:", err);
+      res.status(500).json({ error: "Failed to seed trending data" });
+    }
+  });
+
   router.get("/trending", async (_req, res) => {
     try {
       // Check cache first (6 hour TTL)
@@ -1332,71 +1367,130 @@ Return ONLY JSON.`;
         return;
       }
 
-      // Use Perplexity or Claude to find trending carousel topics
       const { default: Anthropic } = await import("@anthropic-ai/sdk");
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-      const prompt = `You are a social media trend analyst for a chiropractic practice. Find 6 trending carousel-worthy topics RIGHT NOW.
+      // Step 1: Check if we have seeded real social data to analyze
+      const rawData = sqlite.prepare(
+        "SELECT data FROM research_reports WHERE type = 'carousel_trending_raw' ORDER BY created_at DESC LIMIT 1"
+      ).get() as { data: string } | undefined;
 
-Search for what's trending on Instagram and TikTok in: health, wellness, chiropractic, posture, back pain, neck pain, pregnancy wellness, kids health, exercise recovery, desk ergonomics.
+      let trendsData: { trends: unknown[] } | null = null;
 
-For each trend, provide:
+      if (rawData) {
+        // Analyze REAL social data from Xpoz seed
+        const { posts } = JSON.parse(rawData.data) as {
+          posts: Array<{ platform: string; username: string; caption: string; likeCount: number; commentCount: number; collectCount?: number; playCount?: number }>;
+        };
+
+        // Sort by engagement and pick top performers
+        const sorted = [...posts]
+          .map((p) => ({ ...p, engagement: (p.likeCount || 0) + (p.commentCount || 0) * 3 + (p.collectCount || 0) * 5 }))
+          .sort((a, b) => b.engagement - a.engagement)
+          .slice(0, 15);
+
+        const analysisPrompt = `Analyze these REAL social media posts from Instagram and TikTok (sorted by engagement) and extract 6 carousel-worthy trending topics for a chiropractic practice.
+
+REAL POSTS DATA:
+${sorted.map((p, i) => `${i + 1}. [${p.platform}] @${p.username} (${p.likeCount} likes, ${p.commentCount} comments${p.collectCount ? `, ${p.collectCount} saves` : ""}${p.playCount ? `, ${p.playCount} plays` : ""})
+"${p.caption.slice(0, 200)}"`).join("\n\n")}
+
+For each topic you identify from this REAL data, return:
 {
   "trends": [
     {
-      "topic": "specific carousel topic (e.g. 'neck hump from phone use')",
+      "topic": "specific carousel topic derived from what's actually performing",
       "hookLine": "scroll-stopping hook for this topic",
       "archetype": "teacher|contrarian|fortuneteller|experimenter|magician|investigator",
       "audience": "best audience segment",
       "platform": "instagram|tiktok|linkedin",
       "aspectRatio": "4:5|1:1|9:16",
-      "proof": "why this is trending (mention source/data)",
+      "proof": "Based on real post by @username with X likes (cite actual data above)",
       "engagementSignal": "high|medium"
     }
   ]
 }
 
-Focus on topics with PROVEN engagement signals. Prioritize topics that got high saves/shares.
-Return ONLY the JSON object.`;
+RULES:
+- Extract REAL topics from the actual posts above, not imagined ones
+- "proof" MUST reference the real post data (username, engagement numbers)
+- Mark as "high" if the source post had 1000+ likes or 100+ comments
+- Adapt topics for chiropractic/wellness niche if needed
+- Return ONLY the JSON object.`;
 
-      const perplexityKey = process.env.PERPLEXITY_API_KEY;
-      let trendsData: { trends: unknown[] } | null = null;
-
-      if (perplexityKey) {
-        try {
-          const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${perplexityKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "sonar",
-              messages: [{ role: "user", content: prompt }],
-            }),
-          });
-          if (perplexityRes.ok) {
-            const data = await perplexityRes.json() as { choices: Array<{ message: { content: string } }> };
-            const raw = data.choices[0]?.message?.content?.trim() ?? "";
-            trendsData = JSON.parse(extractJson(raw));
-          }
-        } catch {
-          // Fall back to Claude
-        }
-      }
-
-      if (!trendsData) {
         const msg = await anthropic.messages.create({
           model: "claude-sonnet-4-6",
           max_tokens: 1200,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content: analysisPrompt }],
         });
         const raw = (msg.content[0] as { text: string }).text.trim();
         const parsed = JSON.parse(extractJson(raw));
-        // Normalize: AI might return array directly or {trends: [...]}
         trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
+        if (trendsData) (trendsData as Record<string, unknown>).source = "xpoz_real_data";
       }
 
-      // Normalize perplexity response too
-      if (trendsData && Array.isArray(trendsData)) {
-        trendsData = { trends: trendsData as unknown[] };
+      // Step 2: If no seeded data, use Claude web search to find real trends
+      if (!trendsData) {
+        const msg = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1500,
+          tools: [{
+            type: "web_search_20250305",
+            name: "web_search",
+            max_uses: 5,
+          }],
+          messages: [{
+            role: "user",
+            content: `Search Instagram and TikTok for the most popular chiropractic, posture, back pain, and wellness posts from the last 2 weeks. Find posts with high engagement (likes, saves, shares).
+
+Then extract 6 carousel-worthy trending topics for a chiropractic practice based on what you find.
+
+Return ONLY a JSON object:
+{
+  "trends": [
+    {
+      "topic": "specific topic from real trending content",
+      "hookLine": "scroll-stopping hook",
+      "archetype": "teacher|contrarian|fortuneteller|experimenter|magician|investigator",
+      "audience": "best audience segment",
+      "platform": "instagram|tiktok|linkedin",
+      "aspectRatio": "4:5|1:1|9:16",
+      "proof": "why this is trending with real source data",
+      "engagementSignal": "high|medium"
+    }
+  ]
+}
+
+CRITICAL: Base trends on REAL posts you find via web search, not imagined content. Cite actual creators/posts in the "proof" field.`,
+          }],
+        });
+
+        let responseText = "";
+        for (const block of msg.content) {
+          if (block.type === "text") responseText += block.text;
+        }
+
+        try {
+          const parsed = JSON.parse(extractJson(responseText.trim()));
+          trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
+          if (trendsData) (trendsData as Record<string, unknown>).source = "web_search";
+        } catch {
+          // Final fallback: basic Claude generation
+          trendsData = null;
+        }
+      }
+
+      // Step 3: Fallback if web search also failed
+      if (!trendsData) {
+        const fallbackMsg = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1200,
+          messages: [{ role: "user", content: `Generate 6 trending carousel topics for a chiropractic practice based on current social media wellness trends. Return JSON: {"trends": [{"topic": "...", "hookLine": "...", "archetype": "teacher|contrarian|fortuneteller|experimenter|magician|investigator", "audience": "...", "platform": "instagram|tiktok|linkedin", "aspectRatio": "4:5|1:1|9:16", "proof": "...", "engagementSignal": "high|medium"}]}. Return ONLY the JSON.` }],
+        });
+        const raw = (fallbackMsg.content[0] as { text: string }).text.trim();
+        const parsed = JSON.parse(extractJson(raw));
+        trendsData = Array.isArray(parsed) ? { trends: parsed } : parsed;
+        if (trendsData) (trendsData as Record<string, unknown>).source = "ai_generated";
       }
 
       // Cache the result
