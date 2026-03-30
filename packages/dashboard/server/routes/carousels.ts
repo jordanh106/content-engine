@@ -1320,6 +1320,49 @@ Return ONLY JSON.`;
   // FEATURE 5: Trend Pulse — Live trending carousel topics from niche
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // POST /api/carousels/trending/refresh — Trigger n8n Carousel Trend Scanner workflow, then ingest results
+  router.post("/trending/refresh", async (req, res) => {
+    try {
+      const n8nUrl = process.env.N8N_URL || "https://n8n.srv1290877.hstgr.cloud";
+      const n8nApiKey = process.env.N8N_API_KEY;
+
+      // Invalidate cache so next GET re-fetches
+      sqlite.prepare("DELETE FROM research_reports WHERE type = 'carousel_trending'").run();
+
+      // Try triggering n8n webhook
+      const webhookUrl = `${n8nUrl}/webhook/carousel-trends`;
+      let n8nResult: Record<string, unknown> | null = null;
+      try {
+        const n8nRes = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ trigger: "dashboard_refresh", timestamp: new Date().toISOString() }),
+          signal: AbortSignal.timeout(120000),
+        });
+        if (n8nRes.ok) {
+          n8nResult = await n8nRes.json() as Record<string, unknown>;
+          // If n8n returned trend data directly, cache it
+          if (n8nResult && (n8nResult.trends || Array.isArray(n8nResult))) {
+            const trendsData = Array.isArray(n8nResult) ? { trends: n8nResult, source: "n8n_carousel_trend_scanner" } : n8nResult;
+            sqlite.prepare(
+              "INSERT INTO research_reports (type, data) VALUES (?, ?)"
+            ).run("carousel_trending", JSON.stringify(trendsData));
+            res.json({ ok: true, source: "n8n_workflow", trendCount: (trendsData as { trends?: unknown[] }).trends?.length || 0 });
+            return;
+          }
+        }
+      } catch {
+        // n8n not available, fall through to direct refresh
+      }
+
+      // Fallback: trigger direct refresh by clearing cache (next GET will regenerate)
+      res.json({ ok: true, source: "cache_cleared", message: "Cache cleared. Next trending request will fetch fresh data." });
+    } catch (err) {
+      console.error("[carousels] trending refresh error:", err);
+      res.status(500).json({ error: "Failed to refresh trends" });
+    }
+  });
+
   // POST /api/carousels/trending/seed — Ingest real social data (called by CLI/automation with Xpoz data)
   router.post("/trending/seed", (req, res) => {
     try {

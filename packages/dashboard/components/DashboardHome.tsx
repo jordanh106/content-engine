@@ -288,11 +288,13 @@ function determineWhatsNext(
 // ─── Trending Carousels Widget ───────────────────────────────────────────────
 
 function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) => void }) {
-  const { data, isLoading } = useQuery<{
+  const [refreshing, setRefreshing] = useState(false);
+  const { data, isLoading, refetch } = useQuery<{
     trends: Array<{
       topic: string; hookLine: string; archetype: string; audience: string;
       platform: string; aspectRatio: string; proof: string; engagementSignal: string;
     }>;
+    source?: string;
   }>({
     queryKey: ["carousel-trending-home"],
     queryFn: async () => {
@@ -304,7 +306,18 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
     retry: false,
   });
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetch("/api/carousels/trending/refresh", { method: "POST" });
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const trends = data?.trends;
+  const source = data?.source;
   if (!trends?.length && !isLoading) return null;
 
   return (
@@ -315,12 +328,27 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
             <LayoutGrid size={12} className="text-violet-500" />
             Trending Carousels
           </h2>
-          <button
-            onClick={() => onNavigate("CAROUSEL_LAB")}
-            className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors"
-          >
-            Open Carousel Lab →
-          </button>
+          <div className="flex items-center gap-3">
+            {source && (
+              <span className="text-[9px] text-themed-muted">
+                {source === "xpoz_real_data" || source === "n8n_carousel_trend_scanner" ? "Live data" : source === "web_search" ? "Web search" : "AI generated"}
+              </span>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-[10px] font-bold text-themed-muted hover:text-violet-600 transition-colors disabled:opacity-40 flex items-center gap-1"
+            >
+              <TrendingUp size={10} className={refreshing ? "animate-spin" : ""} />
+              {refreshing ? "Scanning..." : "Refresh"}
+            </button>
+            <button
+              onClick={() => onNavigate("CAROUSEL_LAB")}
+              className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors"
+            >
+              Carousel Lab →
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
