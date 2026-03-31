@@ -781,7 +781,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           {metricsData?.topPerformer ? (
             <div className="flex h-full">
               {/* Thumbnail / Visual — click to view post, or upload if no thumbnail */}
-              <div className="w-32 md:w-40 shrink-0 relative overflow-hidden">
+              <div className="w-36 md:w-44 shrink-0 relative overflow-hidden rounded-l-2xl aspect-[9/16] max-h-[220px]">
                 {metricsData.topPerformer.thumbnailUrl ? (
                   <a
                     href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"}
