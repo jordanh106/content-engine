@@ -760,35 +760,21 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         <div className="col-span-2 bg-surface-elevated border border-themed rounded-2xl overflow-hidden hover:border-amber-300 transition-all group">
           {metricsData?.topPerformer ? (
             <div className="flex h-full">
-              {/* Thumbnail / Visual */}
-              <a
-                href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-32 md:w-40 shrink-0 relative overflow-hidden cursor-pointer block"
-              >
+              {/* Thumbnail / Visual — click to view post, or upload if no thumbnail */}
+              <div className="w-32 md:w-40 shrink-0 relative overflow-hidden">
                 {metricsData.topPerformer.thumbnailUrl ? (
-                  <>
+                  <a
+                    href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full h-full"
+                  >
                     <img
                       src={metricsData.topPerformer.thumbnailUrl}
                       alt={metricsData.topPerformer.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/10" />
-                  </>
-                ) : (
-                  <div className={`w-full h-full flex flex-col items-center justify-center ${
-                    ({ A: "bg-gradient-to-br from-teal-600 to-teal-800", B: "bg-gradient-to-br from-emerald-600 to-emerald-800",
-                       C: "bg-gradient-to-br from-sky-600 to-sky-800", D: "bg-gradient-to-br from-rose-600 to-rose-800",
-                       E: "bg-gradient-to-br from-violet-600 to-violet-800", F: "bg-gradient-to-br from-orange-600 to-orange-800",
-                       G: "bg-gradient-to-br from-pink-600 to-pink-800" } as Record<string, string>
-                    )[metricsData.topPerformer!.format] || "bg-gradient-to-br from-amber-600 to-amber-800"
-                  }`}>
-                    <span className="text-4xl font-black text-white/90">{metricsData.topPerformer.format}</span>
-                    {metricsData.topPerformer.formatName && (
-                      <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider mt-1">{metricsData.topPerformer.formatName}</span>
-                    )}
-                    {/* Outlier badge on thumbnail */}
                     {metricsData.topPerformer.outlierScore > 1 && (
                       <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
                         metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
@@ -798,9 +784,39 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                         {metricsData.topPerformer.outlierScore}x
                       </span>
                     )}
-                  </div>
+                  </a>
+                ) : (
+                  <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 transition-all">
+                    <Trophy size={28} className="text-white/80 mb-1" />
+                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Add Thumbnail</span>
+                    <span className="text-[8px] text-white/50 mt-0.5">Click to upload</span>
+                    {metricsData.topPerformer.outlierScore > 1 && (
+                      <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
+                        metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
+                        : metricsData.topPerformer.outlierScore >= 1.5 ? "bg-amber-500 text-white"
+                        : "bg-white/80 text-slate-800"
+                      }`}>
+                        {metricsData.topPerformer.outlierScore}x
+                      </span>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !metricsData?.topPerformer) return;
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        await fetch("/api/metrics/video-thumbnail", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ videoCode: metricsData.topPerformer!.code, imageBase64: reader.result }),
+                        });
+                        // Refresh data to show the new thumbnail
+                        window.location.reload();
+                      };
+                      reader.readAsDataURL(file);
+                    }} />
+                  </label>
                 )}
-              </a>
+              </div>
 
               {/* Content */}
               <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">

@@ -619,6 +619,42 @@ export function createMetricsRouter(contentLibraryPath: string) {
     }
   });
 
+  // POST /api/metrics/video-thumbnail - Upload a thumbnail for a video code
+  router.post("/video-thumbnail", async (req, res) => {
+    try {
+      const { videoCode, imageBase64 } = req.body as { videoCode: string; imageBase64: string };
+      if (!videoCode || !imageBase64) { res.status(400).json({ error: "videoCode and imageBase64 required" }); return; }
+
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(cleanBase64, "base64");
+
+      const thumbDir = path.join(import.meta.dirname, "..", "data", "thumbnails");
+      if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
+
+      const filename = `${videoCode.replace(/[^a-zA-Z0-9_-]/g, "_")}.jpg`;
+      const filepath = path.join(thumbDir, filename);
+      fs.writeFileSync(filepath, buffer);
+
+      const servingPath = `/thumbnails/${filename}`;
+
+      // Update video_post_urls table
+      sqlite.prepare(`
+        UPDATE video_post_urls SET thumbnail_path = ? WHERE video_code = ?
+      `).run(servingPath, videoCode);
+
+      // If no row existed, create one
+      const existing = sqlite.prepare("SELECT id FROM video_post_urls WHERE video_code = ?").get(videoCode);
+      if (!existing) {
+        sqlite.prepare("INSERT INTO video_post_urls (video_code, platform, post_url, thumbnail_path) VALUES (?, 'instagram_reels', '', ?)").run(videoCode, servingPath);
+      }
+
+      res.json({ ok: true, thumbnailPath: servingPath });
+    } catch (err) {
+      console.error("[metrics] video-thumbnail upload error:", err);
+      res.status(500).json({ error: "Failed to upload thumbnail" });
+    }
+  });
+
   // GET /api/metrics/summary - Rich dashboard home stats (Command Center data)
   router.get("/summary", (_req, res) => {
     try {
