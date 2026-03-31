@@ -619,26 +619,148 @@ export function createMetricsRouter(contentLibraryPath: string) {
     }
   });
 
-  // GET /api/metrics/summary - Quick stats for dashboard home
+  // GET /api/metrics/summary - Rich dashboard home stats (Command Center data)
   router.get("/summary", (_req, res) => {
-    const rows = db
-      .select({
-        videoCode: performanceMetrics.videoCode,
-        totalViews: sql<number>`SUM(${performanceMetrics.views})`,
-      })
-      .from(performanceMetrics)
-      .groupBy(performanceMetrics.videoCode)
-      .all();
+    try {
+      // ── Aggregate totals across all videos
+      const totals = sqlite.prepare(`
+        SELECT
+          SUM(views) as totalViews,
+          SUM(likes) as totalLikes,
+          SUM(saves) as totalSaves,
+          SUM(shares) as totalShares,
+          SUM(comments) as totalComments,
+          COUNT(DISTINCT video_code) as totalTracked
+        FROM performance_metrics
+      `).get() as { totalViews: number; totalLikes: number; totalSaves: number; totalShares: number; totalComments: number; totalTracked: number };
 
-    const totalViews = rows.reduce((s, r) => s + (r.totalViews ?? 0), 0);
-    let topPerformer: { code: string; title: string; views: number } | null = null;
-    for (const r of rows) {
-      if (!topPerformer || (r.totalViews ?? 0) > topPerformer.views) {
-        topPerformer = { code: r.videoCode, title: r.videoCode, views: r.totalViews ?? 0 };
+      const tv = totals.totalViews || 0;
+      const totalEngagement = (totals.totalLikes || 0) + (totals.totalSaves || 0) + (totals.totalShares || 0) + (totals.totalComments || 0);
+      const engagementRate = tv > 0 ? Math.round((totalEngagement / tv) * 10000) / 100 : 0;
+      const saveRate = tv > 0 ? Math.round(((totals.totalSaves || 0) / tv) * 10000) / 100 : 0;
+
+      // ── Published count
+      const publishedCount = sqlite.prepare(
+        "SELECT COUNT(*) as c FROM video_status WHERE current_status = 'PUBLISHED'"
+      ).get() as { c: number };
+
+      // ── Views trend (last 7 recorded dates)
+      const trendRows = sqlite.prepare(`
+        SELECT recorded_at as date, SUM(views) as dayViews
+        FROM performance_metrics
+        GROUP BY recorded_at
+        ORDER BY recorded_at DESC
+        LIMIT 14
+      `).all() as Array<{ date: string; dayViews: number }>;
+
+      const viewsTrend = trendRows.slice(0, 7).reverse().map((r) => r.dayViews || 0);
+      const thisWeek = trendRows.slice(0, 7).reduce((s, r) => s + (r.dayViews || 0), 0);
+      const lastWeek = trendRows.slice(7, 14).reduce((s, r) => s + (r.dayViews || 0), 0);
+      const weekOverWeekDelta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0;
+
+      // ── Top performer (fully enriched)
+      const perfRows = sqlite.prepare(`
+        SELECT
+          video_code,
+          SUM(views) as totalViews,
+          SUM(likes) as totalLikes,
+          SUM(saves) as totalSaves,
+          SUM(shares) as totalShares,
+          SUM(comments) as totalComments
+        FROM performance_metrics
+        GROUP BY video_code
+        ORDER BY SUM(views) DESC
+        LIMIT 1
+      `).get() as { video_code: string; totalViews: number; totalLikes: number; totalSaves: number; totalShares: number; totalComments: number } | undefined;
+
+      let topPerformer: Record<string, unknown> | null = null;
+      if (perfRows) {
+        const videos = parseContentLibrary(contentLibraryPath);
+        const video = videos.find((v) => v.code === perfRows.video_code);
+
+        // Compute median for outlier score
+        const allViews = sqlite.prepare(
+          "SELECT SUM(views) as v FROM performance_metrics GROUP BY video_code"
+        ).all() as Array<{ v: number }>;
+        const sorted = allViews.map((r) => r.v).sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        const medianViews = sorted.length % 2 === 0
+          ? (sorted[mid - 1] + sorted[mid]) / 2
+          : sorted[mid] || 1;
+
+        const pViews = perfRows.totalViews || 1;
+        const pEngagement = (perfRows.totalLikes || 0) + (perfRows.totalSaves || 0) + (perfRows.totalShares || 0) + (perfRows.totalComments || 0);
+
+        // YouTube thumbnail lookup
+        const ytLink = sqlite.prepare(
+          "SELECT youtube_video_id FROM youtube_video_links WHERE video_code = ? LIMIT 1"
+        ).get(perfRows.video_code) as { youtube_video_id: string } | undefined;
+
+        topPerformer = {
+          code: perfRows.video_code,
+          title: video?.title ?? perfRows.video_code,
+          format: video?.format ?? perfRows.video_code.charAt(0),
+          formatName: video?.formatName ?? null,
+          audience: video?.audienceLabel ?? null,
+          views: perfRows.totalViews,
+          likes: perfRows.totalLikes || 0,
+          saves: perfRows.totalSaves || 0,
+          shares: perfRows.totalShares || 0,
+          comments: perfRows.totalComments || 0,
+          engagementRate: Math.round((pEngagement / pViews) * 10000) / 100,
+          saveRate: Math.round(((perfRows.totalSaves || 0) / pViews) * 10000) / 100,
+          outlierScore: Math.round((perfRows.totalViews / medianViews) * 10) / 10,
+          thumbnailUrl: ytLink ? `https://img.youtube.com/vi/${ytLink.youtube_video_id}/hqdefault.jpg` : null,
+          videoUrl: ytLink ? `https://youtube.com/shorts/${ytLink.youtube_video_id}` : null,
+        };
       }
-    }
 
-    res.json({ totalViews, thisWeek: 0, topPerformer });
+      // ── Best performing format
+      const formatRows = sqlite.prepare(`
+        SELECT
+          UPPER(SUBSTR(video_code, 1, 1)) as format,
+          COUNT(DISTINCT video_code) as videoCount,
+          AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as avgSaveRate
+        FROM performance_metrics
+        WHERE views > 0
+        GROUP BY UPPER(SUBSTR(video_code, 1, 1))
+        HAVING videoCount >= 1
+        ORDER BY avgSaveRate DESC
+        LIMIT 1
+      `).get() as { format: string; videoCount: number; avgSaveRate: number } | undefined;
+
+      const bestFormat = formatRows
+        ? { format: formatRows.format, avgSaveRate: Math.round(formatRows.avgSaveRate * 10000) / 100, videoCount: formatRows.videoCount }
+        : null;
+
+      // ── Production velocity (avg days to publish)
+      const velocityRow = sqlite.prepare(`
+        SELECT AVG(julianday(sh2.changed_at) - julianday(sh1.changed_at)) as avgDays
+        FROM status_history sh1
+        JOIN status_history sh2 ON sh1.video_code = sh2.video_code
+        WHERE sh1.to_status = 'SCRIPTED' AND sh2.to_status = 'PUBLISHED'
+      `).get() as { avgDays: number | null } | undefined;
+
+      res.json({
+        totalViews: tv,
+        totalLikes: totals.totalLikes || 0,
+        totalSaves: totals.totalSaves || 0,
+        totalShares: totals.totalShares || 0,
+        engagementRate,
+        saveRate,
+        viewsTrend,
+        thisWeek,
+        weekOverWeekDelta,
+        topPerformer,
+        bestFormat,
+        avgDaysToPublish: velocityRow?.avgDays ? Math.round(velocityRow.avgDays * 10) / 10 : null,
+        totalPublished: publishedCount?.c || 0,
+        totalTracked: totals.totalTracked || 0,
+      });
+    } catch (err) {
+      console.error("[metrics] summary error:", err);
+      res.status(500).json({ error: "Failed to compute summary" });
+    }
   });
 
   // GET /api/metrics/attribution - Get social attribution counts by month

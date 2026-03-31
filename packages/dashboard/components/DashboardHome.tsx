@@ -34,6 +34,8 @@ import type {
 } from "../shared/types.js";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
 import { ScrollReveal, CountUp } from "./ui/animations.js";
+import { Sparkline } from "./ui/Sparkline.js";
+import { MetricBadge } from "./ui/MetricBadge.js";
 import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
 import { QuestChain } from "./ui/QuestChain.js";
 
@@ -466,15 +468,28 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     queryFn: () => fetch("/api/opportunities").then((r) => r.json()),
   });
 
-  const { data: metricsData } = useQuery<{ totalViews: number; thisWeek: number; topPerformer: { code: string; title: string; views: number } | null }>({
+  const { data: metricsData } = useQuery<{
+    totalViews: number; totalLikes: number; totalSaves: number; totalShares: number;
+    engagementRate: number; saveRate: number;
+    viewsTrend: number[]; thisWeek: number; weekOverWeekDelta: number;
+    topPerformer: {
+      code: string; title: string; format: string; formatName: string | null; audience: string | null;
+      views: number; likes: number; saves: number; shares: number; comments: number;
+      engagementRate: number; saveRate: number; outlierScore: number;
+      thumbnailUrl: string | null; videoUrl: string | null;
+    } | null;
+    bestFormat: { format: string; avgSaveRate: number; videoCount: number } | null;
+    avgDaysToPublish: number | null;
+    totalPublished: number; totalTracked: number;
+  }>({
     queryKey: ["home-stats"],
     queryFn: async () => {
       try {
         const res = await fetch("/api/metrics/summary");
-        if (!res.ok) return { totalViews: 0, thisWeek: 0, topPerformer: null };
+        if (!res.ok) return null;
         return res.json();
       } catch {
-        return { totalViews: 0, thisWeek: 0, topPerformer: null };
+        return null;
       }
     },
   });
@@ -594,48 +609,61 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       </div>
       </ScrollReveal>
 
-      {/* Bento Row: Pipeline + Smart Stats */}
+      {/* Command Center: Pipeline + Performance + Top Performer */}
       <ScrollReveal delay={120}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        {/* Pipeline Stepper — 2/3 width */}
-        <div className="md:col-span-2 bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
-          {/* Progress micro-bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {/* ── Pipeline Card (full width) ────────────────────────────────── */}
+        <div className="col-span-2 md:col-span-4 bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
+          {/* Segmented progress bar — each stage proportional + color-coded */}
           {(() => {
-            const total = Object.values(pipeline?.summary ?? {}).reduce((a, b) => a + b, 0);
-            const published = pipeline?.summary.PUBLISHED ?? 0;
-            const pct = total > 0 ? Math.round((published / total) * 100) : 0;
+            const s = pipeline?.summary as Record<string, number> | undefined;
+            const total = s ? Object.values(s).reduce((a: number, b: number) => a + b, 0) : 0;
+            const barStages = [
+              { key: "SCRIPTED", count: s?.SCRIPTED ?? 0, color: "bg-slate-400" },
+              { key: "RECORDING", count: s?.RECORDING ?? 0, color: "bg-amber-500" },
+              { key: "GENERATING", count: s?.GENERATING ?? 0, color: "bg-teal-500" },
+              { key: "ASSEMBLED", count: s?.ASSEMBLED ?? 0, color: "bg-sky-500" },
+              { key: "SCHEDULED", count: s?.SCHEDULED ?? 0, color: "bg-violet-500" },
+              { key: "PUBLISHED", count: s?.PUBLISHED ?? 0, color: "bg-emerald-500" },
+            ];
             return (
-              <div className="h-1 bg-surface-hover">
-                <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+              <div className="h-2 flex bg-surface-hover">
+                {barStages.map((bs) => bs.count > 0 && total > 0 ? (
+                  <div key={bs.key} className={`${bs.color} transition-all duration-700`} style={{ width: `${(bs.count / total) * 100}%` }} />
+                ) : null)}
               </div>
             );
           })()}
-          <div className="p-5">
+          <div className="p-4 md:p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Pipeline</p>
-              <span className="text-[10px] font-bold text-themed-tertiary">
-                {Object.entries(pipeline?.summary ?? {}).reduce((acc, [k, v]) => k !== "PUBLISHED" ? acc + (v as number) : acc, 0)} in flight
-              </span>
+              <div className="flex items-center gap-3">
+                {metricsData?.avgDaysToPublish && (
+                  <span className="text-[10px] text-themed-tertiary">
+                    Avg {metricsData.avgDaysToPublish} days to publish
+                  </span>
+                )}
+                <span className="text-[10px] font-bold text-themed-tertiary">
+                  {Object.entries(pipeline?.summary ?? {}).reduce((acc, [k, v]) => k !== "PUBLISHED" ? acc + (v as number) : acc, 0)} in flight
+                </span>
+              </div>
             </div>
             <div className="flex items-center justify-between gap-1 py-1">
               {stages.map((stage, i) => {
                 const count = pipeline?.summary[stage.status] ?? 0;
                 const colors = STATUS_COLORS[stage.status];
                 const isBottleneck = stage.status === bottleneckStatus && maxCount > 0;
-
                 return (
                   <React.Fragment key={stage.status}>
                     <button
                       onClick={() => onNavigate(STATUS_NAV[stage.status])}
                       className="flex flex-col items-center gap-1.5 min-w-[52px] group"
                     >
-                      <div
-                        className={`w-10 h-10 rounded-full ${colors.bg} ${colors.text} flex items-center justify-center transition-transform group-hover:scale-110 ${
-                          isBottleneck ? `ring-2 ${colors.ring} ring-offset-2` : ""
-                        }`}
-                      >
+                      <div className={`${isBottleneck ? "w-12 h-12" : "w-10 h-10"} rounded-full ${colors.bg} ${colors.text} flex items-center justify-center transition-all group-hover:scale-110 ${
+                        isBottleneck ? `ring-2 ${colors.ring} ring-offset-2 animate-pulse` : ""
+                      }`}>
                         {count > 0 ? (
-                          <span className="text-sm font-bold">{count}</span>
+                          <span className={`${isBottleneck ? "text-base" : "text-sm"} font-bold`}>{count}</span>
                         ) : (
                           STATUS_ICONS[stage.status]
                         )}
@@ -651,11 +679,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 );
               })}
             </div>
-            {/* Actionable bottleneck guidance */}
             {bottleneckStatus && maxCount > 0 && (
               <button
                 onClick={() => onNavigate(STATUS_NAV[bottleneckStatus])}
-                className="mt-3 w-full flex items-center justify-between px-3 py-2 bg-surface-hover rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group text-left"
+                className="mt-3 w-full flex items-center justify-between px-3 py-2.5 bg-surface-hover rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group text-left"
               >
                 <span className="text-xs text-themed-secondary">
                   <span className="font-semibold">{maxCount}</span> in {bottleneckStatus.toLowerCase()}
@@ -667,70 +694,158 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </div>
 
-        {/* Smart Stats — 1/3 width, clickable cards */}
-        <div className="space-y-3">
-          {/* In Progress */}
-          <button
-            onClick={() => onNavigate("PIPELINE")}
-            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-sky-300 transition-colors group"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Activity size={14} />
+        {/* ── Performance Snapshot (left half) ──────────────────────────── */}
+        <button
+          onClick={() => onNavigate("METRICS")}
+          className="col-span-2 bg-surface-elevated border border-themed rounded-2xl p-4 md:p-5 hover:border-emerald-300 transition-all group text-left"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-500/20 dark:to-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Eye size={16} />
+                </div>
+                <div>
+                  <p className="text-2xl md:text-3xl font-serif font-bold text-themed tabular-nums">
+                    {metricsData?.totalViews ? <CountUp to={metricsData.totalViews} /> : "---"}
+                  </p>
+                </div>
               </div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Total Views</p>
             </div>
-            <p className="text-2xl font-bold text-themed"><CountUp to={inProgress} /></p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">In Progress</p>
-            {inProgress > 0 && (
-              <p className="text-[10px] text-themed-tertiary mt-1">
-                {[
-                  pipeline?.summary.RECORDING && `${pipeline.summary.RECORDING} recording`,
-                  pipeline?.summary.GENERATING && `${pipeline.summary.GENERATING} generating`,
-                  pipeline?.summary.ASSEMBLED && `${pipeline.summary.ASSEMBLED} assembled`,
-                  pipeline?.summary.SCHEDULED && `${pipeline.summary.SCHEDULED} scheduled`,
-                ].filter(Boolean).join(", ")}
-              </p>
-            )}
-          </button>
 
-          {/* Total Views */}
-          <button
-            onClick={() => onNavigate("INTELLIGENCE")}
-            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-emerald-300 transition-colors group"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Eye size={14} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-themed">
-              {metricsData?.totalViews ? (metricsData.totalViews >= 1000 ? `${(metricsData.totalViews / 1000).toFixed(1)}K` : metricsData.totalViews) : "---"}
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Total Views</p>
-          </button>
-
-          {/* Top Performer */}
-          <button
-            onClick={() => onNavigate("INTELLIGENCE")}
-            className="w-full text-left bg-surface-elevated border border-themed rounded-2xl p-4 hover:border-amber-300 transition-colors group"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Trophy size={14} />
-              </div>
-            </div>
-            {metricsData?.topPerformer ? (
-              <>
-                <p className="text-sm font-bold text-themed line-clamp-1">{metricsData.topPerformer.code}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Top Performer</p>
-              </>
-            ) : (
-              <>
-                <p className="text-xs text-themed-tertiary">Publish to start tracking</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-themed-muted mt-0.5">Top Performer</p>
-              </>
+            {/* Week-over-week delta */}
+            {metricsData && metricsData.weekOverWeekDelta !== 0 && (
+              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                metricsData.weekOverWeekDelta > 0
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                  : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
+              }`}>
+                {metricsData.weekOverWeekDelta > 0 ? "+" : ""}{metricsData.weekOverWeekDelta}% vs last week
+              </span>
             )}
-          </button>
+          </div>
+
+          {/* Sparkline */}
+          {metricsData?.viewsTrend && metricsData.viewsTrend.length >= 2 && (
+            <div className="mb-3">
+              <Sparkline
+                data={metricsData.viewsTrend}
+                width={280}
+                height={32}
+                color="rgb(16, 185, 129)"
+                fillOpacity={0.1}
+              />
+            </div>
+          )}
+
+          {/* Metric badges row */}
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <MetricBadge type="views" value={metricsData?.totalLikes || 0} />
+            <MetricBadge type="saves" value={metricsData?.totalSaves || 0} />
+            <MetricBadge type="shares" value={metricsData?.totalShares || 0} />
+            <MetricBadge type="engagement" value={metricsData?.engagementRate || 0} />
+          </div>
+
+          {/* Intelligence line */}
+          <div className="flex items-center gap-3 text-[10px] text-themed-tertiary">
+            {metricsData?.bestFormat && (
+              <span>Best format: <span className="font-bold text-themed-secondary">{metricsData.bestFormat.format}</span> ({metricsData.bestFormat.avgSaveRate}% save rate)</span>
+            )}
+            <span>{metricsData?.totalTracked || 0} videos tracked</span>
+          </div>
+        </button>
+
+        {/* ── Top Performer Spotlight (right half) ──────────────────────── */}
+        <div className="col-span-2 bg-surface-elevated border border-themed rounded-2xl overflow-hidden hover:border-amber-300 transition-all group">
+          {metricsData?.topPerformer ? (
+            <div className="flex h-full">
+              {/* Thumbnail / Visual */}
+              <div className="w-32 md:w-40 shrink-0 relative overflow-hidden">
+                {metricsData.topPerformer.thumbnailUrl ? (
+                  <>
+                    <img
+                      src={metricsData.topPerformer.thumbnailUrl}
+                      alt={metricsData.topPerformer.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/10" />
+                  </>
+                ) : (
+                  <div className={`w-full h-full flex flex-col items-center justify-center ${
+                    ({ A: "bg-gradient-to-br from-teal-600 to-teal-800", B: "bg-gradient-to-br from-emerald-600 to-emerald-800",
+                       C: "bg-gradient-to-br from-sky-600 to-sky-800", D: "bg-gradient-to-br from-rose-600 to-rose-800",
+                       E: "bg-gradient-to-br from-violet-600 to-violet-800", F: "bg-gradient-to-br from-orange-600 to-orange-800",
+                       G: "bg-gradient-to-br from-pink-600 to-pink-800" } as Record<string, string>
+                    )[metricsData.topPerformer!.format] || "bg-gradient-to-br from-amber-600 to-amber-800"
+                  }`}>
+                    <span className="text-4xl font-black text-white/90">{metricsData.topPerformer.format}</span>
+                    {metricsData.topPerformer.formatName && (
+                      <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider mt-1">{metricsData.topPerformer.formatName}</span>
+                    )}
+                    {/* Outlier badge on thumbnail */}
+                    {metricsData.topPerformer.outlierScore > 1 && (
+                      <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
+                        metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
+                        : metricsData.topPerformer.outlierScore >= 1.5 ? "bg-amber-500 text-white"
+                        : "bg-white/80 text-slate-800"
+                      }`}>
+                        {metricsData.topPerformer.outlierScore}x
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy size={14} className="text-amber-500" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Top Performer</span>
+                  </div>
+                  <p className="text-base md:text-lg font-serif font-bold text-themed leading-snug line-clamp-2 mb-1">
+                    {metricsData.topPerformer.title}
+                  </p>
+                  {metricsData.topPerformer.audience && (
+                    <p className="text-[10px] text-themed-muted mb-3">{metricsData.topPerformer.audience}</p>
+                  )}
+                </div>
+
+                {/* Metrics row */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <MetricBadge type="views" value={metricsData.topPerformer.views} />
+                    <MetricBadge type="views" value={metricsData.topPerformer.likes} />
+                    <MetricBadge type="saves" value={metricsData.topPerformer.saves} />
+                    <MetricBadge type="engagement" value={metricsData.topPerformer.engagementRate} />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onSelectVideo(metricsData!.topPerformer!.code)}
+                      className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
+                    >
+                      <Eye size={10} /> View Details
+                    </button>
+                    <button
+                      onClick={() => onNavigate("SCRIPT_WIZARD")}
+                      className="text-[10px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                    >
+                      <Sparkles size={10} /> Create Similar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => onNavigate("METRICS")} className="w-full p-6 text-center">
+              <Trophy size={24} className="text-amber-300 mx-auto mb-2" />
+              <p className="text-sm font-bold text-themed-secondary">No performance data yet</p>
+              <p className="text-xs text-themed-muted mt-1">Start tracking metrics to see your top performer here</p>
+            </button>
+          )}
         </div>
       </div>
       </ScrollReveal>
