@@ -31,6 +31,7 @@ import type {
   OpportunitiesResponse,
   IntelDigest,
   CreatorVideo,
+  CarouselRemixSeed,
 } from "../shared/types.js";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
 import { ScrollReveal, CountUp } from "./ui/animations.js";
@@ -290,7 +291,7 @@ function determineWhatsNext(
 
 // ─── Trending Carousels Widget ───────────────────────────────────────────────
 
-function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) => void }) {
+function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, payload?: CarouselRemixSeed) => void }) {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, refetch } = useQuery<{
     trends: Array<{
@@ -408,7 +409,15 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
 
                 {/* Content */}
                 <button
-                  onClick={() => onNavigate("CAROUSEL_LAB")}
+                  onClick={() => onNavigate("CAROUSEL_LAB", {
+                    topic: trend.topic,
+                    hookLine: trend.hookLine,
+                    archetype: trend.archetype,
+                    audience: trend.audience,
+                    platform: trend.platform,
+                    aspectRatio: trend.aspectRatio,
+                    sourceUrl: trend.postUrl,
+                  })}
                   className="w-full text-left p-3 space-y-1.5"
                 >
                   <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-violet-700 transition-colors">
@@ -436,7 +445,18 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView) =
                       </a>
                     )}
                     <span
-                      onClick={(e) => { e.stopPropagation(); onNavigate("CAROUSEL_LAB"); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate("CAROUSEL_LAB", {
+                          topic: trend.topic,
+                          hookLine: trend.hookLine,
+                          archetype: trend.archetype,
+                          audience: trend.audience,
+                          platform: trend.platform,
+                          aspectRatio: trend.aspectRatio,
+                          sourceUrl: trend.postUrl,
+                        });
+                      }}
                       className="text-[9px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-0.5 ml-auto cursor-pointer"
                     >
                       <Shuffle size={8} /> Remix
@@ -786,10 +806,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                     )}
                   </a>
                 ) : (
-                  <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 transition-all">
-                    <Trophy size={28} className="text-white/80 mb-1" />
-                    <span className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Add Thumbnail</span>
-                    <span className="text-[8px] text-white/50 mt-0.5">Click to upload</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500 to-orange-600 relative">
                     {metricsData.topPerformer.outlierScore > 1 && (
                       <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
                         metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
@@ -799,22 +816,48 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                         {metricsData.topPerformer.outlierScore}x
                       </span>
                     )}
-                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !metricsData?.topPerformer) return;
-                      const reader = new FileReader();
-                      reader.onload = async () => {
-                        await fetch("/api/metrics/video-thumbnail", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ videoCode: metricsData.topPerformer!.code, imageBase64: reader.result }),
-                        });
-                        // Refresh data to show the new thumbnail
-                        window.location.reload();
-                      };
-                      reader.readAsDataURL(file);
-                    }} />
-                  </label>
+                    {(metricsData.topPerformer as Record<string, unknown>).videoUrl ? (
+                      <button
+                        onClick={async (e) => {
+                          const tp = metricsData!.topPerformer!;
+                          const videoUrl = (tp as Record<string, unknown>).videoUrl as string;
+                          const btn = e.currentTarget;
+                          btn.textContent = "Fetching...";
+                          btn.disabled = true;
+                          try {
+                            const res = await fetch("/api/metrics/video-thumbnail-from-url", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ videoCode: tp.code, url: videoUrl }),
+                            });
+                            if (res.ok) window.location.reload();
+                            else btn.textContent = "Failed";
+                          } catch { btn.textContent = "Failed"; }
+                        }}
+                        className="text-[10px] font-bold text-white bg-white/20 hover:bg-white/30 rounded-lg px-3 py-2 transition-colors mb-2"
+                      >
+                        Fetch Thumbnail
+                      </button>
+                    ) : null}
+                    <label className="cursor-pointer text-center">
+                      <Trophy size={18} className="text-white/60 mx-auto mb-0.5" />
+                      <span className="text-[8px] text-white/50 block">or upload image</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !metricsData?.topPerformer) return;
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          await fetch("/api/metrics/video-thumbnail", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ videoCode: metricsData.topPerformer!.code, imageBase64: reader.result }),
+                          });
+                          window.location.reload();
+                        };
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                  </div>
                 )}
               </div>
 

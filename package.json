@@ -17,5 +17,8 @@
     "test:skills": "cd skills/last30days && python3 -m pytest tests/ -v"
   },
   "author": "Jordan Harper",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
 }

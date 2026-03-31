@@ -628,7 +628,7 @@ export function createMetricsRouter(contentLibraryPath: string) {
       const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(cleanBase64, "base64");
 
-      const thumbDir = path.join(import.meta.dirname, "..", "data", "thumbnails");
+      const thumbDir = path.join(import.meta.dirname, "..", "..", "data", "thumbnails");
       if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
 
       const filename = `${videoCode.replace(/[^a-zA-Z0-9_-]/g, "_")}.jpg`;
@@ -652,6 +652,72 @@ export function createMetricsRouter(contentLibraryPath: string) {
     } catch (err) {
       console.error("[metrics] video-thumbnail upload error:", err);
       res.status(500).json({ error: "Failed to upload thumbnail" });
+    }
+  });
+
+  // POST /api/metrics/video-thumbnail-from-url - Scrape thumbnail from Instagram URL via Playwright
+  router.post("/video-thumbnail-from-url", async (req, res) => {
+    try {
+      const { videoCode, url } = req.body as { videoCode: string; url: string };
+      if (!videoCode || !url) { res.status(400).json({ error: "videoCode and url required" }); return; }
+
+      const thumbDir = path.join(import.meta.dirname, "..", "..", "data", "thumbnails");
+      if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
+      const filename = `${videoCode.replace(/[^a-zA-Z0-9_-]/g, "_")}.jpg`;
+      const filepath = path.join(thumbDir, filename);
+
+      // Use Playwright to screenshot the Instagram post
+      const { chromium } = await import("playwright");
+      const browser = await chromium.launch({ headless: true });
+      const page = await browser.newPage({
+        viewport: { width: 430, height: 932 },
+        userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      });
+
+      try {
+        // Navigate to the post (mobile view loads faster, less login nag)
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+        await page.waitForTimeout(2000);
+
+        // Try to find the main post image/video poster
+        let element = await page.$("article img[src*='cdninstagram'], article video, img[src*='cdninstagram']");
+
+        if (element) {
+          // Screenshot just the media element
+          await element.screenshot({ path: filepath, type: "jpeg", quality: 90 });
+        } else {
+          // Fallback: screenshot the top portion of the page
+          await page.screenshot({
+            path: filepath,
+            type: "jpeg",
+            quality: 90,
+            clip: { x: 0, y: 0, width: 430, height: 430 },
+          });
+        }
+      } finally {
+        await browser.close();
+      }
+
+      // Verify file was created and has content
+      if (!fs.existsSync(filepath) || fs.statSync(filepath).size < 500) {
+        res.status(500).json({ error: "Failed to capture thumbnail" });
+        return;
+      }
+
+      const servingPath = `/thumbnails/${filename}`;
+
+      // Update database
+      const existing = sqlite.prepare("SELECT id FROM video_post_urls WHERE video_code = ?").get(videoCode);
+      if (existing) {
+        sqlite.prepare("UPDATE video_post_urls SET thumbnail_path = ?, post_url = COALESCE(NULLIF(post_url, ''), ?) WHERE video_code = ?").run(servingPath, url, videoCode);
+      } else {
+        sqlite.prepare("INSERT INTO video_post_urls (video_code, platform, post_url, thumbnail_path) VALUES (?, 'instagram_reels', ?, ?)").run(videoCode, url, servingPath);
+      }
+
+      res.json({ ok: true, thumbnailPath: servingPath });
+    } catch (err) {
+      console.error("[metrics] video-thumbnail-from-url error:", err);
+      res.status(500).json({ error: "Failed to scrape thumbnail" });
     }
   });
 
