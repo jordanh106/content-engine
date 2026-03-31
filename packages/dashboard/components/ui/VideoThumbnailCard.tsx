@@ -56,6 +56,14 @@ function getEmbedUrl(videoUrl: string | null, platform: string): string | null {
     if (match) return `https://www.tiktok.com/player/v1/${match[1]}?autoplay=1&mute=1`;
   }
 
+  // Instagram Reels embed
+  if (platform === "Instagram" || platform === "instagram") {
+    const reelMatch = videoUrl.match(/\/reel\/([A-Za-z0-9_-]+)/);
+    const postMatch = videoUrl.match(/\/p\/([A-Za-z0-9_-]+)/);
+    const shortcode = reelMatch?.[1] || postMatch?.[1];
+    if (shortcode) return `https://www.instagram.com/p/${shortcode}/embed/`;
+  }
+
   return null;
 }
 
@@ -343,13 +351,18 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
             </>
           )}
 
-          {/* "Watch on Instagram" fallback */}
-          {showPreview && !embedUrl && platform === "Instagram" && (
-            <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50">
+          {/* "Watch on Instagram" fallback for posts without embed */}
+          {showPreview && !embedUrl && (platform === "Instagram" || platform === "instagram") && (
+            <a
+              href={videoUrl ?? "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50"
+            >
               <span className="text-white text-[11px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 rounded-full">
                 Watch on Instagram
               </span>
-            </div>
+            </a>
           )}
 
           {/* Duration badge (bottom-right) */}
