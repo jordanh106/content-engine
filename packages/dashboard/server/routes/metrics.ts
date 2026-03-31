@@ -675,8 +675,24 @@ export function createMetricsRouter(contentLibraryPath: string) {
 
       let topPerformer: Record<string, unknown> | null = null;
       if (perfRows) {
+        // Try content library first, then video_titles table
         const videos = parseContentLibrary(contentLibraryPath);
-        const video = videos.find((v) => v.code === perfRows.video_code);
+        let video = videos.find((v) => v.code === perfRows.video_code);
+        let videoTitle = video?.title ?? perfRows.video_code;
+        let videoFormat = video?.format ?? null;
+        let videoFormatName = video?.formatName ?? null;
+        let videoAudience = video?.audienceLabel ?? null;
+
+        // Fallback: check video_titles table for real Instagram post titles
+        if (!video) {
+          const titleRow = sqlite.prepare("SELECT title, caption FROM video_titles WHERE video_code = ?").get(perfRows.video_code) as { title: string; caption: string } | undefined;
+          if (titleRow) {
+            videoTitle = titleRow.title;
+          }
+        }
+
+        // Get post URL and thumbnail
+        const postUrlRow = sqlite.prepare("SELECT post_url, thumbnail_path FROM video_post_urls WHERE video_code = ?").get(perfRows.video_code) as { post_url: string; thumbnail_path: string | null } | undefined;
 
         // Compute median for outlier score
         const allViews = sqlite.prepare(
@@ -696,12 +712,25 @@ export function createMetricsRouter(contentLibraryPath: string) {
           "SELECT youtube_video_id FROM youtube_video_links WHERE video_code = ? LIMIT 1"
         ).get(perfRows.video_code) as { youtube_video_id: string } | undefined;
 
+        // Determine thumbnail: YouTube > cached local > null
+        let thumbnailUrl: string | null = null;
+        let videoUrl: string | null = null;
+
+        if (ytLink) {
+          thumbnailUrl = `https://img.youtube.com/vi/${ytLink.youtube_video_id}/hqdefault.jpg`;
+          videoUrl = `https://youtube.com/shorts/${ytLink.youtube_video_id}`;
+        }
+        if (postUrlRow) {
+          videoUrl = videoUrl || postUrlRow.post_url;
+          if (postUrlRow.thumbnail_path) thumbnailUrl = postUrlRow.thumbnail_path;
+        }
+
         topPerformer = {
           code: perfRows.video_code,
-          title: video?.title ?? perfRows.video_code,
-          format: video?.format ?? perfRows.video_code.charAt(0),
-          formatName: video?.formatName ?? null,
-          audience: video?.audienceLabel ?? null,
+          title: videoTitle,
+          format: videoFormat ?? null,
+          formatName: videoFormatName ?? null,
+          audience: videoAudience ?? null,
           views: perfRows.totalViews,
           likes: perfRows.totalLikes || 0,
           saves: perfRows.totalSaves || 0,
@@ -710,8 +739,9 @@ export function createMetricsRouter(contentLibraryPath: string) {
           engagementRate: Math.round((pEngagement / pViews) * 10000) / 100,
           saveRate: Math.round(((perfRows.totalSaves || 0) / pViews) * 10000) / 100,
           outlierScore: Math.round((perfRows.totalViews / medianViews) * 10) / 10,
-          thumbnailUrl: ytLink ? `https://img.youtube.com/vi/${ytLink.youtube_video_id}/hqdefault.jpg` : null,
-          videoUrl: ytLink ? `https://youtube.com/shorts/${ytLink.youtube_video_id}` : null,
+          thumbnailUrl,
+          videoUrl,
+          platform: "instagram_reels",
         };
       }
 

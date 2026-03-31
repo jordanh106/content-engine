@@ -761,7 +761,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           {metricsData?.topPerformer ? (
             <div className="flex h-full">
               {/* Thumbnail / Visual */}
-              <div className="w-32 md:w-40 shrink-0 relative overflow-hidden">
+              <a
+                href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-32 md:w-40 shrink-0 relative overflow-hidden cursor-pointer block"
+              >
                 {metricsData.topPerformer.thumbnailUrl ? (
                   <>
                     <img
@@ -795,7 +800,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                     )}
                   </div>
                 )}
-              </div>
+              </a>
 
               {/* Content */}
               <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
@@ -823,12 +828,23 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onSelectVideo(metricsData!.topPerformer!.code)}
-                      className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
-                    >
-                      <Eye size={10} /> View Details
-                    </button>
+                    {(metricsData.topPerformer as Record<string, unknown>).videoUrl ? (
+                      <a
+                        href={String((metricsData.topPerformer as Record<string, unknown>).videoUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
+                      >
+                        <Eye size={10} /> View on Instagram
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => onSelectVideo(metricsData!.topPerformer!.code)}
+                        className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
+                      >
+                        <Eye size={10} /> View Details
+                      </button>
+                    )}
                     <button
                       onClick={() => onNavigate("SCRIPT_WIZARD")}
                       className="text-[10px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
