@@ -6,11 +6,11 @@ import os from "os";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
-import { db } from "../db.js";
-import { creatorVideos, videoBreakdowns, channelSnapshots, vaultHooks } from "../../shared/schema.js";
+import { db, sqlite } from "../db.js";
+import { creatorVideos, videoBreakdowns, channelSnapshots, vaultHooks, blowingUpCreators } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { downloadVideo, isYtDlpAvailable, cleanupDownload } from "../lib/video-downloader.js";
-import { ensureThumbnail } from "../lib/thumbnail-resolver.js";
+import { ensureThumbnail, cacheThumbnail } from "../lib/thumbnail-resolver.js";
 
 if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
 
@@ -1278,6 +1278,268 @@ Rules:
       console.error("[creator-videos] recalculate-scores error:", err);
       res.status(500).json({ error: "Failed to recalculate scores" });
     }
+  });
+
+  // POST /api/creator-videos/bulk-thumbnails - Update thumbnails from Xpoz CDN URLs
+  router.post("/bulk-thumbnails", async (req, res) => {
+    try {
+      const { updates } = req.body as { updates: Array<{ id: number; imageUrl: string }> };
+      if (!updates?.length) {
+        res.status(400).json({ error: "Missing updates array" });
+        return;
+      }
+
+      let success = 0;
+      let failed = 0;
+
+      for (const { id, imageUrl } of updates) {
+        if (!imageUrl || !id) { failed++; continue; }
+        try {
+          const localPath = thumbnailsDir
+            ? await cacheThumbnail(imageUrl, id, thumbnailsDir)
+            : null;
+          if (localPath) {
+            db.update(creatorVideos).set({ thumbnailUrl: localPath }).where(eq(creatorVideos.id, id)).run();
+            success++;
+          } else {
+            // Store external URL directly as fallback
+            db.update(creatorVideos).set({ thumbnailUrl: imageUrl }).where(eq(creatorVideos.id, id)).run();
+            success++;
+          }
+        } catch {
+          failed++;
+        }
+      }
+
+      res.json({ success, failed, total: updates.length });
+    } catch (err) {
+      console.error("[creator-videos] bulk-thumbnails error:", err);
+      res.status(500).json({ error: "Failed to update thumbnails" });
+    }
+  });
+
+  // POST /api/creator-videos/bulk-ingest - Upsert videos from external sources (n8n, Xpoz)
+  router.post("/bulk-ingest", async (req, res) => {
+    try {
+      const { videos } = req.body as {
+        videos: Array<{
+          creatorHandle: string;
+          platform: string;
+          videoUrl: string;
+          videoTitle?: string;
+          thumbnailUrl?: string;
+          views?: number;
+          likes?: number;
+          comments?: number;
+          shares?: number;
+          saves?: number;
+          publishedAt?: string;
+          durationSeconds?: number;
+        }>;
+      };
+
+      if (!videos?.length) {
+        res.status(400).json({ error: "Missing videos array" });
+        return;
+      }
+
+      let inserted = 0;
+      let updated = 0;
+      let skipped = 0;
+
+      for (const v of videos) {
+        if (!v.videoUrl || !v.creatorHandle || !v.platform) { skipped++; continue; }
+
+        // Check for existing video by URL
+        const existing = db.select().from(creatorVideos)
+          .where(eq(creatorVideos.videoUrl, v.videoUrl))
+          .limit(1).all();
+
+        // Calculate outlier score
+        const avgViews = getAvgViews(v.creatorHandle);
+        const outlierScoreX100 = avgViews && v.views
+          ? Math.round((v.views / avgViews) * 100)
+          : null;
+
+        if (existing.length > 0) {
+          // Update metrics on existing video
+          db.update(creatorVideos)
+            .set({
+              views: v.views ?? existing[0].views,
+              likes: v.likes ?? existing[0].likes,
+              comments: v.comments ?? existing[0].comments,
+              shares: v.shares ?? existing[0].shares,
+              saves: v.saves ?? existing[0].saves,
+              outlierScoreX100: outlierScoreX100 ?? existing[0].outlierScoreX100,
+            })
+            .where(eq(creatorVideos.id, existing[0].id))
+            .run();
+          updated++;
+        } else {
+          // Insert new video
+          const result = db.insert(creatorVideos)
+            .values({
+              creatorHandle: v.creatorHandle,
+              platform: v.platform,
+              videoUrl: v.videoUrl,
+              videoTitle: v.videoTitle || null,
+              thumbnailUrl: v.thumbnailUrl || null,
+              publishedAt: v.publishedAt || null,
+              durationSeconds: v.durationSeconds || null,
+              views: v.views || 0,
+              likes: v.likes || 0,
+              comments: v.comments || 0,
+              shares: v.shares || 0,
+              saves: v.saves || 0,
+              outlierScoreX100: outlierScoreX100,
+              status: "inbox",
+              recordedAt: new Date().toISOString(),
+            })
+            .returning()
+            .all();
+
+          // Cache thumbnail if provided
+          if (result[0] && v.thumbnailUrl && thumbnailsDir) {
+            cacheThumbnail(v.thumbnailUrl, result[0].id, thumbnailsDir).then((localPath) => {
+              if (localPath) {
+                db.update(creatorVideos).set({ thumbnailUrl: localPath }).where(eq(creatorVideos.id, result[0].id)).run();
+              }
+            }).catch(() => {});
+          } else if (result[0] && thumbnailsDir) {
+            ensureThumbnail({ id: result[0].id, videoUrl: v.videoUrl, thumbnailUrl: null, platform: v.platform }, thumbnailsDir).catch(() => {});
+          }
+
+          inserted++;
+        }
+      }
+
+      // Update channel snapshots for creators that had new data
+      const handles = [...new Set(videos.map((v) => v.creatorHandle))];
+      for (const handle of handles) {
+        const vids = db.select({ views: creatorVideos.views })
+          .from(creatorVideos)
+          .where(eq(creatorVideos.creatorHandle, handle))
+          .all();
+        if (vids.length >= 2) {
+          const avg = Math.round(vids.reduce((s, v) => s + (v.views || 0), 0) / vids.length);
+          const platform = videos.find((v) => v.creatorHandle === handle)?.platform || "unknown";
+          db.insert(channelSnapshots).values({
+            handle,
+            platform,
+            avgViews: avg,
+            recordedAt: new Date().toISOString(),
+          }).run();
+        }
+      }
+
+      res.json({ inserted, updated, skipped, total: videos.length });
+    } catch (err) {
+      console.error("[creator-videos] bulk-ingest error:", err);
+      res.status(500).json({ error: "Failed to bulk ingest videos" });
+    }
+  });
+
+  // ── Blowing Up: Creator Discovery ─────────────────────────────────────────
+
+  // GET /api/creator-videos/blowing-up/discover - Suggest creators from watchlist + existing data
+  router.get("/blowing-up/discover", (req, res) => {
+    try {
+      const q = ((req.query.q as string) || "").toLowerCase();
+      const tracked = db.select().from(blowingUpCreators).all();
+      const trackedHandles = new Set(tracked.map((t) => t.handle.toLowerCase()));
+
+      const suggestions: Array<{ handle: string; platform: string; source: string; videoCount?: number; avgViews?: number }> = [];
+
+      // Source 1: Unique creators from existing creator_videos not yet tracked
+      const existingCreators = sqlite.prepare(`
+        SELECT creator_handle as handle, platform, COUNT(*) as videoCount, COALESCE(AVG(views), 0) as avgViews
+        FROM creator_videos
+        GROUP BY creator_handle, platform
+        ORDER BY avgViews DESC
+      `).all() as Array<{ handle: string; platform: string; videoCount: number; avgViews: number }>;
+
+      for (const c of existingCreators) {
+        if (trackedHandles.has(c.handle.toLowerCase())) continue;
+        if (q && !c.handle.toLowerCase().includes(q)) continue;
+        suggestions.push({ handle: c.handle, platform: c.platform, source: "existing", videoCount: c.videoCount, avgViews: Math.round(c.avgViews) });
+      }
+
+      // Source 2: Watchlist creators not yet tracked
+      try {
+        const watchlistPath = path.resolve(import.meta.dirname, "..", "..", "..", "..", "industries", "chiropractic", "watchlist.md");
+        if (fs.existsSync(watchlistPath)) {
+          const content = fs.readFileSync(watchlistPath, "utf-8");
+          const handleRegex = /@[\w.]+/g;
+          const platformRegex = /Instagram|TikTok|YouTube/gi;
+          const lines = content.split("\n").filter((l) => l.includes("@"));
+          for (const line of lines) {
+            const handleMatch = line.match(handleRegex);
+            const platformMatch = line.match(platformRegex);
+            if (handleMatch) {
+              const handle = handleMatch[0];
+              const platform = platformMatch?.[0] || "Instagram";
+              if (trackedHandles.has(handle.toLowerCase())) continue;
+              if (suggestions.some((s) => s.handle.toLowerCase() === handle.toLowerCase())) continue;
+              if (q && !handle.toLowerCase().includes(q) && !line.toLowerCase().includes(q)) continue;
+              suggestions.push({ handle, platform, source: "watchlist" });
+            }
+          }
+        }
+      } catch { /* watchlist parse error */ }
+
+      res.json({ suggestions });
+    } catch (err) {
+      console.error("[creator-videos] blowing-up discover error:", err);
+      res.status(500).json({ error: "Failed to discover creators" });
+    }
+  });
+
+  // ── Blowing Up: Tracked Creators CRUD ─────────────────────────────────────
+
+  // GET /api/creator-videos/blowing-up/creators - List tracked creators
+  router.get("/blowing-up/creators", (_req, res) => {
+    const rows = db.select().from(blowingUpCreators).all();
+    res.json(rows);
+  });
+
+  // POST /api/creator-videos/blowing-up/creators - Add a creator to track
+  router.post("/blowing-up/creators", (req, res) => {
+    try {
+      const { handle, platform } = req.body as { handle: string; platform: string };
+      if (!handle || !platform) {
+        res.status(400).json({ error: "Missing handle or platform" });
+        return;
+      }
+      const normalized = handle.startsWith("@") ? handle : `@${handle}`;
+      const result = db.insert(blowingUpCreators)
+        .values({ handle: normalized, platform })
+        .returning()
+        .all();
+      res.json(result[0]);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes("UNIQUE")) {
+        res.status(409).json({ error: "Creator already tracked" });
+        return;
+      }
+      console.error("[creator-videos] add blowing-up creator error:", err);
+      res.status(500).json({ error: "Failed to add creator" });
+    }
+  });
+
+  // DELETE /api/creator-videos/blowing-up/creators/:id - Remove a tracked creator
+  router.delete("/blowing-up/creators/:id", (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    db.delete(blowingUpCreators).where(eq(blowingUpCreators.id, id)).run();
+    res.json({ deleted: true });
+  });
+
+  // PATCH /api/creator-videos/blowing-up/creators/:id - Toggle active/paused
+  router.patch("/blowing-up/creators/:id", (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    const { active } = req.body as { active: boolean };
+    db.update(blowingUpCreators).set({ active }).where(eq(blowingUpCreators.id, id)).run();
+    const updated = db.select().from(blowingUpCreators).where(eq(blowingUpCreators.id, id)).limit(1).all();
+    res.json(updated[0] ?? { id, active });
   });
 
   return router;

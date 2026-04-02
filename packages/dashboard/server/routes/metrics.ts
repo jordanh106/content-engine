@@ -814,7 +814,7 @@ export function createMetricsRouter(contentLibraryPath: string) {
           "SELECT youtube_video_id FROM youtube_video_links WHERE video_code = ? LIMIT 1"
         ).get(perfRows.video_code) as { youtube_video_id: string } | undefined;
 
-        // Determine thumbnail: YouTube > cached local > null
+        // Determine thumbnail: YouTube > cached local > creator_videos > null
         let thumbnailUrl: string | null = null;
         let videoUrl: string | null = null;
 
@@ -825,6 +825,20 @@ export function createMetricsRouter(contentLibraryPath: string) {
         if (postUrlRow) {
           videoUrl = videoUrl || postUrlRow.post_url;
           if (postUrlRow.thumbnail_path) thumbnailUrl = postUrlRow.thumbnail_path;
+        }
+        // Fallback: check creator_videos for a cached thumbnail matching this video's URL
+        if (!thumbnailUrl && videoUrl) {
+          const cvThumb = sqlite.prepare(
+            "SELECT thumbnail_url FROM creator_videos WHERE video_url = ? AND thumbnail_url IS NOT NULL AND thumbnail_url != '' LIMIT 1"
+          ).get(videoUrl) as { thumbnail_url: string } | undefined;
+          if (cvThumb) thumbnailUrl = cvThumb.thumbnail_url;
+        }
+        // Last resort: check creator_videos matching the video title
+        if (!thumbnailUrl && videoTitle) {
+          const cvThumb = sqlite.prepare(
+            "SELECT thumbnail_url FROM creator_videos WHERE video_title LIKE ? AND thumbnail_url IS NOT NULL AND thumbnail_url != '' LIMIT 1"
+          ).get(`%${videoTitle.slice(0, 30)}%`) as { thumbnail_url: string } | undefined;
+          if (cvThumb) thumbnailUrl = cvThumb.thumbnail_url;
         }
 
         topPerformer = {

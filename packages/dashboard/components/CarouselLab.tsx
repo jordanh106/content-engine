@@ -500,9 +500,11 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
 
 type CarouselLabProps = {
   onNavigate?: (view: DashboardView) => void;
+  initialRemix?: import("../shared/types.js").CarouselRemixSeed | null;
+  onConsumeRemix?: () => void;
 };
 
-export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
+export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRemix }: CarouselLabProps) {
   const queryClient = useQueryClient();
   const { trackEvent } = useOnboarding();
 
@@ -598,6 +600,22 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
   });
 
   const activeCarousel = carousels.find((c) => c.id === activeCarouselId) ?? null;
+
+  // ── Consume initialRemix seed from Home page Remix button
+  useEffect(() => {
+    if (!initialRemix) return;
+    setMode("fresh");
+    setTopic(initialRemix.topic);
+    setHookLine(initialRemix.hookLine || "");
+    if (initialRemix.archetype) setArchetype(initialRemix.archetype as ArchetypeId);
+    if (initialRemix.audience) setAudience(initialRemix.audience);
+    const matchedPlatform = PLATFORM_OPTIONS.find(
+      (p) => p.platform === initialRemix.platform && p.aspectRatio === initialRemix.aspectRatio,
+    ) ?? PLATFORM_OPTIONS.find((p) => p.platform === initialRemix.platform) ?? PLATFORM_OPTIONS[0];
+    setPlatform(matchedPlatform);
+    setActiveCarouselId(null);
+    onConsumeRemix?.();
+  }, [initialRemix]);
 
   // ── Platform-derived helpers
   const platformKey = platform.platform === "instagram"
@@ -1506,10 +1524,7 @@ export function CarouselLab({ onNavigate: _onNavigate }: CarouselLabProps) {
                   {/* Generate button */}
                   <button
                     onClick={() => generateMutation.mutate()}
-                    disabled={
-                      isGenerating ||
-                      !topic.trim() && !hookLine.trim()
-                    }
+                    disabled={isGenerating || !topic.trim()}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isGenerating ? (

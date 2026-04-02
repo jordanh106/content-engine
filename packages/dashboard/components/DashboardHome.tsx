@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   FileText,
@@ -23,6 +23,10 @@ import {
   Zap,
   Loader2,
   Shuffle,
+  RefreshCw,
+  Settings,
+  X,
+  UserPlus,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -39,6 +43,7 @@ import { Sparkline } from "./ui/Sparkline.js";
 import { MetricBadge } from "./ui/MetricBadge.js";
 import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
 import { QuestChain } from "./ui/QuestChain.js";
+import { GoalRing } from "./ui/GoalRing.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
@@ -289,6 +294,214 @@ function determineWhatsNext(
   };
 }
 
+// ─── Blowing Up: Tracked Creators Manager ────────────────────────────────────
+
+type TrackedCreator = { id: number; handle: string; platform: string; active: boolean };
+
+type DiscoverSuggestion = { handle: string; platform: string; source: string; videoCount?: number; avgViews?: number };
+
+function PlatformBadge({ platform }: { platform: string }) {
+  return (
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+      platform === "TikTok" ? "bg-black text-white" :
+      platform === "Instagram" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
+      "bg-red-500 text-white"
+    }`}>{platform}</span>
+  );
+}
+
+function TrackedCreatorsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [newHandle, setNewHandle] = useState("");
+  const [newPlatform, setNewPlatform] = useState("Instagram");
+  const [showTracked, setShowTracked] = useState(false);
+
+  const { data: creators = [] } = useQuery<TrackedCreator[]>({
+    queryKey: ["blowing-up-creators"],
+    queryFn: () => fetch("/api/creator-videos/blowing-up/creators").then((r) => r.json()),
+    enabled: open,
+  });
+
+  const { data: discover } = useQuery<{ suggestions: DiscoverSuggestion[] }>({
+    queryKey: ["blowing-up-discover"],
+    queryFn: () => fetch("/api/creator-videos/blowing-up/discover").then((r) => r.json()),
+    enabled: open,
+  });
+  const suggestions = discover?.suggestions ?? [];
+
+  const addMutation = useMutation({
+    mutationFn: async (params: { handle: string; platform: string }) => {
+      const res = await fetch("/api/creator-videos/blowing-up/creators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blowing-up-creators"] });
+      queryClient.invalidateQueries({ queryKey: ["blowing-up-discover"] });
+      setNewHandle("");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => fetch(`/api/creator-videos/blowing-up/creators/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blowing-up-creators"] });
+      queryClient.invalidateQueries({ queryKey: ["blowing-up-discover"] });
+    },
+  });
+
+  if (!open) return null;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4 animate-in fade-in duration-200 mb-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Manage Tracked Creators</h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+      </div>
+
+      {/* Suggestions Section */}
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600">Suggested Creators</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.slice(0, 8).map((s) => (
+              <button
+                key={`${s.handle}-${s.platform}`}
+                onClick={() => addMutation.mutate({ handle: s.handle, platform: s.platform })}
+                disabled={addMutation.isPending}
+                className="flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 bg-teal-50 border border-teal-200 rounded-full text-xs font-semibold text-teal-700 hover:bg-teal-100 hover:border-teal-300 transition-colors disabled:opacity-40"
+              >
+                <Plus size={10} />
+                {s.handle}
+                <PlatformBadge platform={s.platform} />
+                {s.source === "existing" && s.videoCount ? (
+                  <span className="text-[9px] text-teal-500">{s.videoCount} vids</span>
+                ) : s.source === "watchlist" ? (
+                  <span className="text-[9px] text-teal-500">watchlist</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add manually */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={newHandle}
+          onChange={(e) => setNewHandle(e.target.value)}
+          placeholder="@handle"
+          className="flex-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
+          onKeyDown={(e) => { if (e.key === "Enter" && newHandle.trim()) addMutation.mutate({ handle: newHandle, platform: newPlatform }); }}
+        />
+        <select
+          value={newPlatform}
+          onChange={(e) => setNewPlatform(e.target.value)}
+          className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-2"
+        >
+          <option>Instagram</option>
+          <option>TikTok</option>
+          <option>YouTube</option>
+        </select>
+        <button
+          onClick={() => addMutation.mutate({ handle: newHandle, platform: newPlatform })}
+          disabled={!newHandle.trim() || addMutation.isPending}
+          className="flex items-center gap-1 px-3 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg hover:bg-teal-700 disabled:opacity-40 transition-colors"
+        >
+          <UserPlus size={12} /> Add
+        </button>
+      </div>
+      {addMutation.isError && (
+        <p className="text-xs text-red-500">{(addMutation.error as Error).message}</p>
+      )}
+
+      {/* Current tracked list (collapsible) */}
+      <div>
+        <button
+          onClick={() => setShowTracked((v) => !v)}
+          className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-600 flex items-center gap-1"
+        >
+          {showTracked ? "Hide" : "Show"} tracked ({creators.length})
+          <ChevronRight size={10} className={`transition-transform ${showTracked ? "rotate-90" : ""}`} />
+        </button>
+        {showTracked && (
+          <div className="space-y-1 mt-2">
+            {creators.map((c) => (
+              <div key={c.id} className="flex items-center justify-between px-3 py-1.5 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-600">{c.handle}</span>
+                  <PlatformBadge platform={c.platform} />
+                </div>
+                <button
+                  onClick={() => deleteMutation.mutate(c.id)}
+                  className="text-slate-300 hover:text-red-500 transition-colors p-0.5"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Blowing Up Refresh Button ───────────────────────────────────────────────
+
+function BlowingUpRefresh({ onDone }: { onDone: () => void }) {
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleRefresh = async () => {
+    setScanning(true);
+    setResult(null);
+    try {
+      // Fix bad Instagram thumbnails first
+      await fetch("/api/discover/fix-instagram-thumbnails", { method: "POST" });
+      // Then trigger the n8n Blowing Up Scanner workflow via webhook
+      try {
+        const n8nBase = "https://n8n.srv1290877.hstgr.cloud";
+        await fetch(`${n8nBase}/webhook/blowing-up-scan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: "dashboard-manual" }),
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch {
+        // n8n webhook may not be reachable from client -- that's ok, thumbnail fix still ran
+      }
+      setResult("Done");
+      onDone();
+    } catch {
+      setResult("Error");
+    } finally {
+      setScanning(false);
+      setTimeout(() => setResult(null), 3000);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleRefresh}
+      disabled={scanning}
+      className="text-[10px] font-bold text-themed-muted hover:text-teal-600 disabled:opacity-50 transition-colors flex items-center gap-1"
+      title="Refresh thumbnails and scan for new trending videos"
+    >
+      <RefreshCw size={10} className={scanning ? "animate-spin" : ""} />
+      {scanning ? "Scanning..." : result || "Refresh"}
+    </button>
+  );
+}
+
 // ─── Trending Carousels Widget ───────────────────────────────────────────────
 
 function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, payload?: CarouselRemixSeed) => void }) {
@@ -478,6 +691,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
   onNavigate,
 }) => {
+  const queryClient = useQueryClient();
   const { data: pipeline, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
     queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
@@ -534,6 +748,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
   const [copiedHook, setCopiedHook] = useState<string | null>(null);
   const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
+  const [showTrackedCreators, setShowTrackedCreators] = useState(false);
 
   const addIdeaMutation = useMutation({
     mutationFn: async (topic: string) => {
@@ -592,355 +807,195 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const inProgress = (pipeline?.summary.RECORDING ?? 0) + (pipeline?.summary.GENERATING ?? 0) +
     (pipeline?.summary.ASSEMBLED ?? 0) + (pipeline?.summary.SCHEDULED ?? 0);
 
+  const [progressExpanded, setProgressExpanded] = useState(false);
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
-      {/* Greeting + What's Next Hero Card */}
-      <ScrollReveal delay={0}>
+
+      {/* ═══ Section 1: Performance Command Strip ═══════════════════════════ */}
       <section>
-        <div className="flex items-baseline justify-between mb-3 px-1">
-          <h2 className="text-base font-serif font-bold text-themed">
-            {greeting.text}
-          </h2>
+        <div className="flex items-baseline justify-between mb-4 px-1">
+          <h2 className="text-base font-serif font-bold text-themed">{greeting.text}</h2>
           <span className="text-[10px] text-themed-muted hidden md:block">{greeting.date}</span>
         </div>
-        <div className={`bg-gradient-to-r ${whatsNext.gradient} border ${whatsNext.borderColor} rounded-2xl p-6`}>
-          <h3 className="text-lg font-serif font-bold text-themed mb-2">
-            {whatsNext.headline}
-          </h3>
-          <p className="text-sm text-themed-secondary mb-4 max-w-xl">
-            {whatsNext.description}
-          </p>
-          <button
-            onClick={() => onNavigate(whatsNext.target)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-full text-sm font-bold hover:bg-teal-700 transition-colors shadow-sm"
-          >
-            {whatsNext.cta}
-            <ArrowRight size={16} />
-          </button>
+
+        {/* KPI Cards Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {/* Views */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Views</p>
+            <p className="text-2xl font-serif font-bold text-slate-800">
+              {metricsData?.totalViews ? <CountUp to={metricsData.totalViews} /> : "---"}
+            </p>
+            {metricsData?.viewsTrend && (
+              <Sparkline data={metricsData.viewsTrend} width={120} height={24} color="#0d9488" fillOpacity={0.15} className="mt-1" />
+            )}
+          </div>
+
+          {/* Week-over-Week */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">vs Last Week</p>
+            {metricsData?.weekOverWeekDelta !== undefined ? (
+              <p className={`text-2xl font-bold ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {metricsData.weekOverWeekDelta >= 0 ? "+" : ""}{metricsData.weekOverWeekDelta}%
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-slate-300">---</p>
+            )}
+          </div>
+
+          {/* Engagement Rate */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Engagement</p>
+            <p className="text-2xl font-serif font-bold text-slate-800">
+              {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "---"}
+            </p>
+          </div>
+
+          {/* Monthly Goal */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Monthly Goal</p>
+            {(() => {
+              const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
+              const current = metricsData?.thisWeek || metricsData?.totalViews || 0;
+              const pct = goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0;
+              const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+              return (
+                <>
+                  <div className="flex items-end gap-1.5">
+                    <span className="text-2xl font-bold text-slate-800">{pct}%</span>
+                  </div>
+                  <div className="mt-1.5">
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-[9px] text-slate-400 mt-1">{formatNum(current)} / {formatNum(goal)}</p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: "Record Tonight", icon: <Mic size={13} />, view: "SESSION" as const },
+            { label: "Schedule Post", icon: <CalendarCheck size={13} />, view: "CALENDAR" as const },
+            { label: "Generate Carousel", icon: <LayoutGrid size={13} />, view: "CAROUSEL_LAB" as const },
+            { label: "View Pipeline", icon: <Activity size={13} />, view: "PIPELINE" as const },
+          ].map((a) => (
+            <button
+              key={a.view}
+              onClick={() => onNavigate(a.view)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors"
+            >
+              {a.icon} {a.label}
+            </button>
+          ))}
         </div>
       </section>
-      </ScrollReveal>
 
-      {/* Creator Growth: Level + Active Quest */}
-      <ScrollReveal delay={60}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        <CreatorLevelBadge variant="home" />
-        <QuestChain onNavigate={onNavigate} />
-      </div>
-      </ScrollReveal>
-
-      {/* Command Center: Pipeline + Performance + Top Performer */}
-      <ScrollReveal delay={120}>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {/* ── Pipeline Card (full width) ────────────────────────────────── */}
-        <div className="col-span-2 md:col-span-4 bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
-          {/* Segmented progress bar — each stage proportional + color-coded */}
-          {(() => {
-            const s = pipeline?.summary as Record<string, number> | undefined;
-            const total = s ? Object.values(s).reduce((a: number, b: number) => a + b, 0) : 0;
-            const barStages = [
-              { key: "SCRIPTED", count: s?.SCRIPTED ?? 0, color: "bg-slate-400" },
-              { key: "RECORDING", count: s?.RECORDING ?? 0, color: "bg-amber-500" },
-              { key: "GENERATING", count: s?.GENERATING ?? 0, color: "bg-teal-500" },
-              { key: "ASSEMBLED", count: s?.ASSEMBLED ?? 0, color: "bg-sky-500" },
-              { key: "SCHEDULED", count: s?.SCHEDULED ?? 0, color: "bg-violet-500" },
-              { key: "PUBLISHED", count: s?.PUBLISHED ?? 0, color: "bg-emerald-500" },
-            ];
-            return (
-              <div className="h-2 flex bg-surface-hover">
-                {barStages.map((bs) => bs.count > 0 && total > 0 ? (
-                  <div key={bs.key} className={`${bs.color} transition-all duration-700`} style={{ width: `${(bs.count / total) * 100}%` }} />
-                ) : null)}
-              </div>
-            );
-          })()}
-          <div className="p-4 md:p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Pipeline</p>
-              <div className="flex items-center gap-3">
-                {metricsData?.avgDaysToPublish && (
-                  <span className="text-[10px] text-themed-tertiary">
-                    Avg {metricsData.avgDaysToPublish} days to publish
-                  </span>
-                )}
-                <span className="text-[10px] font-bold text-themed-tertiary">
-                  {Object.entries(pipeline?.summary ?? {}).reduce((acc, [k, v]) => k !== "PUBLISHED" ? acc + (v as number) : acc, 0)} in flight
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-1 py-1">
-              {stages.map((stage, i) => {
-                const count = pipeline?.summary[stage.status] ?? 0;
-                const colors = STATUS_COLORS[stage.status];
-                const isBottleneck = stage.status === bottleneckStatus && maxCount > 0;
-                return (
-                  <React.Fragment key={stage.status}>
-                    <button
-                      onClick={() => onNavigate(STATUS_NAV[stage.status])}
-                      className="flex flex-col items-center gap-1.5 min-w-[52px] group"
-                    >
-                      <div className={`${isBottleneck ? "w-12 h-12" : "w-10 h-10"} rounded-full ${colors.bg} ${colors.text} flex items-center justify-center transition-all group-hover:scale-110 ${
-                        isBottleneck ? `ring-2 ${colors.ring} ring-offset-2 animate-pulse` : ""
-                      }`}>
-                        {count > 0 ? (
-                          <span className={`${isBottleneck ? "text-base" : "text-sm"} font-bold`}>{count}</span>
-                        ) : (
-                          STATUS_ICONS[stage.status]
-                        )}
-                      </div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-themed-tertiary group-hover:text-themed-secondary transition-colors">
-                        {stage.label}
-                      </span>
-                    </button>
-                    {i < stages.length - 1 && (
-                      <ChevronRight size={12} className="text-slate-300 shrink-0 mt-[-16px]" />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-            {bottleneckStatus && maxCount > 0 && (
-              <button
-                onClick={() => onNavigate(STATUS_NAV[bottleneckStatus])}
-                className="mt-3 w-full flex items-center justify-between px-3 py-2.5 bg-surface-hover rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group text-left"
-              >
-                <span className="text-xs text-themed-secondary">
-                  <span className="font-semibold">{maxCount}</span> in {bottleneckStatus.toLowerCase()}
-                  {getBottleneckAdvice(bottleneckStatus, maxCount)}
-                </span>
-                <ArrowRight size={13} className="text-themed-muted group-hover:translate-x-0.5 transition-transform shrink-0" />
-              </button>
-            )}
+      {/* ═══ Section 2: Pipeline + Top Performer (side by side) ════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ── Pipeline (compact) ─────────────────────────────────────────── */}
+        <button onClick={() => onNavigate("PIPELINE")} className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 text-left hover:border-teal-300 transition-colors">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Pipeline</p>
+            <span className="text-[10px] font-bold text-slate-500">{inProgress + (pipeline?.summary.SCRIPTED ?? 0)} in flight</span>
           </div>
-        </div>
-
-        {/* ── Performance Snapshot (left half) ──────────────────────────── */}
-        <button
-          onClick={() => onNavigate("METRICS")}
-          className="col-span-2 bg-surface-elevated border border-themed rounded-2xl p-4 md:p-5 hover:border-emerald-300 transition-all group text-left"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-500/20 dark:to-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Eye size={16} />
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-serif font-bold text-themed tabular-nums">
-                    {metricsData?.totalViews ? <CountUp to={metricsData.totalViews} /> : "---"}
-                  </p>
-                </div>
-              </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Total Views</p>
-            </div>
-
-            {/* Week-over-week delta */}
-            {metricsData && metricsData.weekOverWeekDelta !== 0 && (
-              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                metricsData.weekOverWeekDelta > 0
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                  : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400"
-              }`}>
-                {metricsData.weekOverWeekDelta > 0 ? "+" : ""}{metricsData.weekOverWeekDelta}% vs last week
-              </span>
-            )}
+          {/* Inline stage dots */}
+          <div className="flex items-center gap-2 mb-3">
+            {stages.map((stage, i) => {
+              const count = pipeline?.summary[stage.status] ?? 0;
+              return (
+                <React.Fragment key={stage.status}>
+                  <div className="flex items-center gap-1">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                      count > 0 ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-400"
+                    }`}>
+                      {count}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-wide text-slate-400 hidden md:block">{stage.label.slice(0, 4)}</span>
+                  </div>
+                  {i < stages.length - 1 && <ChevronRight size={10} className="text-slate-300 shrink-0" />}
+                </React.Fragment>
+              );
+            })}
           </div>
-
-          {/* Sparkline */}
-          {metricsData?.viewsTrend && metricsData.viewsTrend.length >= 2 && (
-            <div className="mb-3">
-              <Sparkline
-                data={metricsData.viewsTrend}
-                width={280}
-                height={32}
-                color="rgb(16, 185, 129)"
-                fillOpacity={0.1}
-              />
-            </div>
+          {bottleneckStatus && maxCount > 0 && (
+            <p className="text-xs text-slate-500">
+              <span className="font-semibold">{maxCount}</span> in {bottleneckStatus.toLowerCase()}{getBottleneckAdvice(bottleneckStatus, maxCount)}
+              <ArrowRight size={11} className="inline ml-1" />
+            </p>
           )}
-
-          {/* Metric badges row */}
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <MetricBadge type="views" value={metricsData?.totalLikes || 0} />
-            <MetricBadge type="saves" value={metricsData?.totalSaves || 0} />
-            <MetricBadge type="shares" value={metricsData?.totalShares || 0} />
-            <MetricBadge type="engagement" value={metricsData?.engagementRate || 0} />
-          </div>
-
-          {/* Intelligence line */}
-          <div className="flex items-center gap-3 text-[10px] text-themed-tertiary">
-            {metricsData?.bestFormat && (
-              <span>Best format: <span className="font-bold text-themed-secondary">{metricsData.bestFormat.format}</span> ({metricsData.bestFormat.avgSaveRate}% save rate)</span>
-            )}
-            <span>{metricsData?.totalTracked || 0} videos tracked</span>
-          </div>
         </button>
 
-        {/* ── Top Performer Spotlight (right half) ──────────────────────── */}
-        <div className="col-span-2 bg-surface-elevated border border-themed rounded-2xl overflow-hidden hover:border-amber-300 transition-all group">
+        {/* ── Top Performer ──────────────────────────────────────────────── */}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-amber-300 transition-colors">
           {metricsData?.topPerformer ? (
             <div className="flex h-full">
-              {/* Thumbnail / Visual — click to view post, or upload if no thumbnail */}
-              <div className="w-36 md:w-44 shrink-0 relative overflow-hidden rounded-l-2xl aspect-[9/16] max-h-[220px]">
+              <div className="w-28 md:w-36 shrink-0 relative overflow-hidden">
                 {metricsData.topPerformer.thumbnailUrl ? (
-                  <a
-                    href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full h-full"
-                  >
-                    <img
-                      src={metricsData.topPerformer.thumbnailUrl}
-                      alt={metricsData.topPerformer.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/10" />
+                  <a href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                    <img src={metricsData.topPerformer.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.style.background = "linear-gradient(135deg, #f59e0b, #ea580c)"; }} />
                     {metricsData.topPerformer.outlierScore > 1 && (
-                      <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
-                        metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
-                        : metricsData.topPerformer.outlierScore >= 1.5 ? "bg-amber-500 text-white"
-                        : "bg-white/80 text-slate-800"
-                      }`}>
-                        {metricsData.topPerformer.outlierScore}x
-                      </span>
+                      <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white">{metricsData.topPerformer.outlierScore}x</span>
                     )}
                   </a>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500 to-orange-600 relative">
-                    {metricsData.topPerformer.outlierScore > 1 && (
-                      <span className={`absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded ${
-                        metricsData.topPerformer.outlierScore >= 3 ? "bg-emerald-500 text-white"
-                        : metricsData.topPerformer.outlierScore >= 1.5 ? "bg-amber-500 text-white"
-                        : "bg-white/80 text-slate-800"
-                      }`}>
-                        {metricsData.topPerformer.outlierScore}x
-                      </span>
-                    )}
-                    {(metricsData.topPerformer as Record<string, unknown>).videoUrl ? (
-                      <button
-                        onClick={async (e) => {
-                          const tp = metricsData!.topPerformer!;
-                          const videoUrl = (tp as Record<string, unknown>).videoUrl as string;
-                          const btn = e.currentTarget;
-                          btn.textContent = "Fetching...";
-                          btn.disabled = true;
-                          try {
-                            const res = await fetch("/api/metrics/video-thumbnail-from-url", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ videoCode: tp.code, url: videoUrl }),
-                            });
-                            if (res.ok) window.location.reload();
-                            else btn.textContent = "Failed";
-                          } catch { btn.textContent = "Failed"; }
-                        }}
-                        className="text-[10px] font-bold text-white bg-white/20 hover:bg-white/30 rounded-lg px-3 py-2 transition-colors mb-2"
-                      >
-                        Fetch Thumbnail
-                      </button>
-                    ) : null}
-                    <label className="cursor-pointer text-center">
-                      <Trophy size={18} className="text-white/60 mx-auto mb-0.5" />
-                      <span className="text-[8px] text-white/50 block">or upload image</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || !metricsData?.topPerformer) return;
-                        const reader = new FileReader();
-                        reader.onload = async () => {
-                          await fetch("/api/metrics/video-thumbnail", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ videoCode: metricsData.topPerformer!.code, imageBase64: reader.result }),
-                          });
-                          window.location.reload();
-                        };
-                        reader.readAsDataURL(file);
-                      }} />
-                    </label>
+                  <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center min-h-[120px]">
+                    <Trophy size={24} className="text-white/60" />
                   </div>
                 )}
               </div>
-
-              {/* Content */}
-              <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
+              <div className="flex-1 p-4 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy size={14} className="text-amber-500" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Top Performer</span>
-                  </div>
-                  <p className="text-base md:text-lg font-serif font-bold text-themed leading-snug line-clamp-2 mb-1">
-                    {metricsData.topPerformer.title}
-                  </p>
-                  {metricsData.topPerformer.audience && (
-                    <p className="text-[10px] text-themed-muted mb-3">{metricsData.topPerformer.audience}</p>
-                  )}
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-amber-600 mb-1">Top Performer</p>
+                  <p className="text-sm font-serif font-bold text-slate-800 leading-snug line-clamp-2">{metricsData.topPerformer.title}</p>
                 </div>
-
-                {/* Metrics row */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <MetricBadge type="views" value={metricsData.topPerformer.views} />
-                    <MetricBadge type="views" value={metricsData.topPerformer.likes} />
-                    <MetricBadge type="saves" value={metricsData.topPerformer.saves} />
-                    <MetricBadge type="engagement" value={metricsData.topPerformer.engagementRate} />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    {(metricsData.topPerformer as Record<string, unknown>).videoUrl ? (
-                      <a
-                        href={String((metricsData.topPerformer as Record<string, unknown>).videoUrl)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
-                      >
-                        <Eye size={10} /> View on Instagram
-                      </a>
-                    ) : (
-                      <button
-                        onClick={() => onSelectVideo(metricsData!.topPerformer!.code)}
-                        className="text-[10px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-1"
-                      >
-                        <Eye size={10} /> View Details
-                      </button>
-                    )}
-                    <button
-                      onClick={() => onNavigate("SCRIPT_WIZARD")}
-                      className="text-[10px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
-                    >
-                      <Sparkles size={10} /> Create Similar
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                  <MetricBadge type="views" value={metricsData.topPerformer.views} />
+                  <MetricBadge type="saves" value={metricsData.topPerformer.saves} />
+                  <MetricBadge type="engagement" value={metricsData.topPerformer.engagementRate} />
                 </div>
               </div>
             </div>
           ) : (
             <button onClick={() => onNavigate("METRICS")} className="w-full p-6 text-center">
-              <Trophy size={24} className="text-amber-300 mx-auto mb-2" />
-              <p className="text-sm font-bold text-themed-secondary">No performance data yet</p>
-              <p className="text-xs text-themed-muted mt-1">Start tracking metrics to see your top performer here</p>
+              <Trophy size={20} className="text-amber-300 mx-auto mb-1" />
+              <p className="text-xs font-bold text-slate-500">No performance data yet</p>
             </button>
           )}
         </div>
       </div>
-      </ScrollReveal>
 
-      {/* Blowing Up Right Now — Outlier Videos */}
+      {/* ═══ Section 3: Discover (consolidated) ════════════════════════════ */}
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
-        <ScrollReveal delay={160}>
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted flex items-center gap-1.5">
-              <Flame size={12} className="text-orange-500" />
-              Blowing Up Right Now
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5">
+              <Flame size={12} className="text-teal-500" />
+              Discover
             </h2>
-            <button
-              onClick={() => onNavigate("DISCOVER_FEED")}
-              className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors"
-            >
-              See All →
-            </button>
+            <div className="flex items-center gap-3">
+              <BlowingUpRefresh onDone={() => queryClient.invalidateQueries({ queryKey: ["outlier-videos-home"] })} />
+              <button
+                onClick={() => setShowTrackedCreators((v) => !v)}
+                className="text-[10px] font-bold text-themed-muted hover:text-teal-600 transition-colors"
+                title="Manage tracked creators"
+              >
+                <Settings size={12} />
+              </button>
+              <button
+                onClick={() => onNavigate("DISCOVER_FEED")}
+                className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors"
+              >
+                See All →
+              </button>
+            </div>
           </div>
+          <TrackedCreatorsPanel open={showTrackedCreators} onClose={() => setShowTrackedCreators(false)} />
           <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 snap-x scrollbar-hide">
             {outlierVideos!.videos.slice(0, 10).map((video) => (
               <div key={video.id} className="w-44 md:w-48 flex-shrink-0 snap-start">
@@ -961,140 +1016,61 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </div>
             ))}
           </div>
+          {/* Trend chips (compressed from Trend Pulse) */}
+          {pulseData?.digest && pulseData.digest.trendingTopics.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap px-1">
+              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Trending</span>
+              {pulseData.digest.trendingTopics.slice(0, 6).map((t, i) => (
+                <button
+                  key={i}
+                  onClick={() => onNavigate("SCRIPT_WIZARD")}
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+                >
+                  {t.topic}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
-        </ScrollReveal>
       )}
 
-      {/* Trending Carousels */}
-      <TrendingCarousels onNavigate={onNavigate} />
+      {/* ═══ Section 4: Opportunities (compact) ════════════════════════════ */}
+      {opportunities && (opportunities.opportunities?.length ?? 0) > 0 && (
+        <button
+          onClick={() => onNavigate("OPPORTUNITIES")}
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-2xl hover:border-teal-300 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-teal-500" />
+            <span className="text-sm font-semibold text-slate-700">
+              {opportunities.opportunities?.length ?? 0} content opportunities found
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-teal-600">Explore <ArrowRight size={11} className="inline" /></span>
+        </button>
+      )}
 
-      {/* Trend Pulse */}
-      {pulseData?.digest && (() => {
-        const digest = pulseData.digest;
-        const topics = digest.trendingTopics.slice(0, 4);
-        const hooks = digest.hookPatterns.slice(0, 2);
-        const gaps = digest.contentGaps.slice(0, 2);
-        const dateLabel = digest.date
-          ? new Date(digest.date).toLocaleDateString("en-US", { month: "long", day: "numeric" })
-          : "";
-        return (
-          <ScrollReveal delay={240}>
-          <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-3 px-1 flex items-center gap-1.5">
-              <Signal size={12} className="text-teal-500" />
-              Trend Pulse
-            </h2>
-            <div className="bg-surface-elevated border border-themed rounded-2xl overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-themed-subtle bg-surface-hover">
-                <span className="text-[10px] text-themed-muted">
-                  {dateLabel ? `From ${dateLabel} digest` : "Latest digest"} · n8n auto-updated
-                </span>
-                <button
-                  onClick={() => onNavigate("IDEAS")}
-                  className="text-[10px] font-bold text-teal-600 hover:text-teal-700 transition-colors"
-                >
-                  View All Ideas →
-                </button>
-              </div>
+      {/* ═══ Section 5: Progress (collapsed gamification) ══════════════════ */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setProgressExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Your Progress</span>
+            <span className="text-xs font-semibold text-slate-600">Observer · Level 1 · 30/100 XP</span>
+          </div>
+          <ChevronRight size={14} className={`text-slate-400 transition-transform ${progressExpanded ? "rotate-90" : ""}`} />
+        </button>
+        {progressExpanded && (
+          <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+            <CreatorLevelBadge variant="home" />
+            <QuestChain onNavigate={onNavigate} />
+          </div>
+        )}
+      </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-white/5">
-                {/* Trending Topics */}
-                {topics.length > 0 && (
-                  <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Trending Now</p>
-                    <div className="space-y-2">
-                      {topics.map((t, i) => (
-                        <div key={i} className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-themed">{t.topic}</span>
-                            {t.platforms.length > 0 && (
-                              <div className="flex gap-1 mt-0.5 flex-wrap">
-                                {t.platforms.map((p) => (
-                                  <span key={p} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 uppercase tracking-wide dark:bg-teal-500/10">
-                                    {p}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => addIdeaMutation.mutate(t.topic)}
-                            disabled={addIdeaMutation.isPending || addedTopics.has(t.topic)}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
-                          >
-                            {addedTopics.has(t.topic) ? <Check size={10} /> : <Plus size={10} />}
-                            {addedTopics.has(t.topic) ? "Added" : "Idea"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Hook Patterns */}
-                {hooks.length > 0 && (
-                  <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Hook Patterns Spotted</p>
-                    <div className="space-y-2">
-                      {hooks.map((h, i) => (
-                        <div key={i} className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-themed-secondary italic line-clamp-1">"{h.text}"</p>
-                            <div className="flex gap-1 mt-0.5">
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 uppercase dark:bg-violet-500/10">{h.type}</span>
-                              <span className="text-[9px] text-themed-muted">{h.platform}</span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(h.text);
-                              setCopiedHook(h.text);
-                              setTimeout(() => setCopiedHook(null), 2000);
-                            }}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-surface-hover text-themed-tertiary hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
-                          >
-                            {copiedHook === h.text ? <Check size={10} /> : <Copy size={10} />}
-                            {copiedHook === h.text ? "Copied" : "Copy"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Content Gaps */}
-                {gaps.length > 0 && (
-                  <div className="px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted mb-2">Content Gaps</p>
-                    <div className="space-y-2">
-                      {gaps.map((g, i) => (
-                        <div key={i} className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium text-themed">{g.area}</span>
-                            {g.description && (
-                              <p className="text-[10px] text-themed-muted mt-0.5 line-clamp-1">{g.description}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => addIdeaMutation.mutate(g.area)}
-                            disabled={addIdeaMutation.isPending || addedTopics.has(g.area)}
-                            className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold transition-colors disabled:opacity-50 bg-teal-50 text-teal-600 hover:bg-teal-100 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
-                          >
-                            {addedTopics.has(g.area) ? <Check size={10} /> : <Plus size={10} />}
-                            {addedTopics.has(g.area) ? "Added" : "Idea"}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-          </ScrollReveal>
-        );
-      })()}
+      {/* Trend Pulse compressed into Discover chips; Trending Carousels moved to Carousel Lab */}
     </div>
   );
 };

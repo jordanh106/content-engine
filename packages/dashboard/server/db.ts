@@ -657,6 +657,9 @@ addColumnIfMissing("generated_carousels", "remix_source_type", "TEXT"); // "url"
 addColumnIfMissing("generated_carousels", "source_carousel_id", "INTEGER"); // for cross-platform multiplied carousels
 addColumnIfMissing("carousel_slides", "heading", "TEXT");
 addColumnIfMissing("carousel_slides", "body_text", "TEXT");
+addColumnIfMissing("generated_carousels", "carousel_style", "TEXT DEFAULT 'flat'");
+addColumnIfMissing("generated_carousels", "output_format", "TEXT DEFAULT 'static'");
+addColumnIfMissing("generated_carousels", "video_path", "TEXT");
 
 // Carousel Watch: tracked accounts for competitor carousel monitoring
 sqlite.exec(`
@@ -713,6 +716,30 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS quest_events (
   coach_message TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 )`);
+
+// Blowing Up: tracked creators for daily scanning
+sqlite.exec(`CREATE TABLE IF NOT EXISTS blowing_up_creators (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  handle TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(handle, platform)
+)`);
+
+// Seed default tracked creators if table is empty
+{
+  const count = sqlite.prepare("SELECT COUNT(*) as c FROM blowing_up_creators").get() as { c: number };
+  if (count.c === 0) {
+    const seed = sqlite.prepare("INSERT OR IGNORE INTO blowing_up_creators (handle, platform) VALUES (?, ?)");
+    seed.run("@mommasc.hiro", "TikTok");
+    seed.run("@dr.kimbra.runyan", "Instagram");
+    seed.run("@sheridan.rossi", "Instagram");
+    seed.run("@collectivechiro", "Instagram");
+    seed.run("@backpainacademy", "Instagram");
+    seed.run("@nomusclepain_academy", "Instagram");
+  }
+}
 
 // Ensure exactly one creator_progress row exists (singleton)
 const progressCount = sqlite.prepare("SELECT COUNT(*) as count FROM creator_progress").get() as { count: number };

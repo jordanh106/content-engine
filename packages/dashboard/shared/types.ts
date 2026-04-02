@@ -1519,6 +1519,12 @@ export type CarouselAspectRatio = (typeof CAROUSEL_ASPECT_RATIOS)[number];
 export const CAROUSEL_STATUSES = ["generating", "completed", "failed"] as const;
 export type CarouselStatus = (typeof CAROUSEL_STATUSES)[number];
 
+export const CAROUSEL_STYLES = ["flat", "remotion3d", "blender3d"] as const;
+export type CarouselStyle = (typeof CAROUSEL_STYLES)[number];
+
+export const CAROUSEL_OUTPUT_FORMATS = ["static", "video"] as const;
+export type CarouselOutputFormat = (typeof CAROUSEL_OUTPUT_FORMATS)[number];
+
 export type CarouselSlide = {
   id: number;
   carouselId: number;
@@ -1555,6 +1561,9 @@ export type GeneratedCarousel = {
   remixSourceUrl: string | null;
   remixSourceType: string | null;
   sourceCarouselId: number | null;
+  carouselStyle: CarouselStyle;
+  outputFormat: CarouselOutputFormat;
+  videoPath: string | null;
   createdAt: string;
   completedAt: string | null;
   slides?: CarouselSlide[];
@@ -1615,6 +1624,8 @@ export type CarouselGenerateRequest = {
   hookLine: string;
   talkingPoints: string[];
   ctaText: string;
+  carouselStyle?: CarouselStyle;
+  outputFormat?: CarouselOutputFormat;
 };
 
 export type CarouselPlatformConfig = {
@@ -1632,6 +1643,16 @@ export const CAROUSEL_PLATFORM_CONFIGS: CarouselPlatformConfig[] = [
   { platform: "tiktok", aspectRatio: "9:16", width: 1080, height: 1920, label: "TikTok" },
   { platform: "youtube_thumbnail", aspectRatio: "16:9", width: 1280, height: 720, label: "YouTube Thumbnail" },
 ];
+
+export type CarouselRemixSeed = {
+  topic: string;
+  hookLine: string;
+  archetype: string;
+  audience: string;
+  platform: string;
+  aspectRatio: string;
+  sourceUrl?: string;
+};
 
 export type CarouselMetricsScore = {
   compositeScore: number;

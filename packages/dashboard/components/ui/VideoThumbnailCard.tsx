@@ -56,7 +56,15 @@ function getEmbedUrl(videoUrl: string | null, platform: string): string | null {
     if (match) return `https://www.tiktok.com/player/v1/${match[1]}?autoplay=1&mute=1`;
   }
 
-  // Instagram: no clean player embed available — hover opens in new tab instead
+  // Instagram Reels: use the /embed/ path (works for public reels without login)
+  if (platform === "Instagram" || platform === "instagram") {
+    // Extract shortcode from /reel/CODE/ or /p/CODE/ URLs
+    const reelMatch = videoUrl.match(/\/(reel|p)\/([A-Za-z0-9_-]+)/);
+    if (reelMatch) {
+      return `https://www.instagram.com/${reelMatch[1]}/${reelMatch[2]}/embed/`;
+    }
+  }
+
   return null;
 }
 

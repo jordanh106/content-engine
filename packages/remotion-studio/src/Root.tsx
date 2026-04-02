@@ -19,6 +19,7 @@ import { ShotCallToAction } from "./compositions/shots/ShotCallToAction";
 import { ShotChartCard } from "./compositions/shots/ShotChartCard";
 import { ShotQuoteCard } from "./compositions/shots/ShotQuoteCard";
 import { ShotKineticText } from "./compositions/shots/ShotKineticText";
+import { CarouselSlide3D } from "./compositions/CarouselSlide3D";
 import { ExplainerSchema } from "./schemas/explainer";
 import { ChecklistSchema } from "./schemas/checklist";
 import { DemoSchema } from "./schemas/demo";
@@ -26,6 +27,8 @@ import { MythBusterSchema } from "./schemas/myth-buster";
 import { WalkthroughSchema } from "./schemas/walkthrough";
 import { QuickTipSchema } from "./schemas/quick-tip";
 import { PatientStorySchema } from "./schemas/patient-story";
+import { CarouselSlide3DSchema, carouselSlide3DDefaults } from "./schemas/carousel-3d";
+import type { CarouselSlide3DProps } from "./schemas/carousel-3d";
 import {
   ShotTitleCardSchema,
   ShotStatCardSchema,
@@ -531,6 +534,20 @@ export const RemotionRoot: React.FC = () => {
           schema={ShotKineticTextSchema}
           defaultProps={shotKineticTextDefaults}
           calculateMetadata={calcShotMetadata<ShotKineticTextProps>()}
+          durationInFrames={4 * FPS}
+          fps={FPS}
+          width={WIDTH}
+          height={HEIGHT}
+        />
+      </Folder>
+
+      <Folder name="Carousel-3D">
+        <Composition
+          id="CarouselSlide3D"
+          component={CarouselSlide3D}
+          schema={CarouselSlide3DSchema}
+          defaultProps={carouselSlide3DDefaults}
+          calculateMetadata={calcShotMetadata<CarouselSlide3DProps>()}
           durationInFrames={4 * FPS}
           fps={FPS}
           width={WIDTH}

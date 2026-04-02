@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Image, Plus, Trash2, Loader2 } from "lucide-react";
+import { Image, Plus, Trash2, Loader2, Box, Film } from "lucide-react";
 import { CarouselPreview } from "./ui/CarouselPreview.js";
 import type {
   GeneratedCarousel,
   CarouselPlatform,
   CarouselAspectRatio,
+  CarouselStyle,
+  CarouselOutputFormat,
   CAROUSEL_PLATFORM_CONFIGS,
 } from "../shared/types.js";
 
@@ -25,6 +27,8 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
   const queryClient = useQueryClient();
   const [showGenerator, setShowGenerator] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<(typeof PLATFORM_OPTIONS)[number] | null>(null);
+  const [carouselStyle, setCarouselStyle] = useState<CarouselStyle>("flat");
+  const [outputFormat, setOutputFormat] = useState<CarouselOutputFormat>("static");
 
   // Fetch carousels for this video
   const { data: carousels = [], isLoading } = useQuery<GeneratedCarousel[]>({
@@ -38,11 +42,11 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
 
   // Generate carousel from script
   const generateMutation = useMutation({
-    mutationFn: async (opt: { platform: CarouselPlatform; aspectRatio: CarouselAspectRatio }) => {
+    mutationFn: async (opt: { platform: CarouselPlatform; aspectRatio: CarouselAspectRatio; carouselStyle: CarouselStyle; outputFormat: CarouselOutputFormat }) => {
       const res = await fetch(`/api/carousels/${code}/from-script`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform: opt.platform, aspectRatio: opt.aspectRatio }),
+        body: JSON.stringify({ platform: opt.platform, aspectRatio: opt.aspectRatio, carouselStyle: opt.carouselStyle, outputFormat: opt.outputFormat }),
       });
       if (!res.ok) throw new Error("Failed to generate carousel");
       return res.json();
@@ -127,28 +131,88 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
             ))}
           </div>
           {selectedPlatform && (
-            <button
-              onClick={() =>
-                generateMutation.mutate({
-                  platform: selectedPlatform.platform,
-                  aspectRatio: selectedPlatform.aspectRatio,
-                })
-              }
-              disabled={generateMutation.isPending}
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 min-h-[44px]"
-            >
-              {generateMutation.isPending ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Image size={14} />
-                  Generate {selectedPlatform.label}
-                </>
+            <>
+              {/* Style selector */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Visual Style
+                </p>
+                <div className="flex gap-2">
+                  {([
+                    { value: "flat" as const, label: "Flat", desc: "AI-generated slides" },
+                    { value: "remotion3d" as const, label: "3D", desc: "Three.js rendered" },
+                    { value: "blender3d" as const, label: "Blender", desc: "Ray-traced 3D" },
+                  ]).map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => setCarouselStyle(s.value)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                        carouselStyle === s.value
+                          ? "bg-teal-50 border-teal-300 text-teal-700"
+                          : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {s.value === "remotion3d" && <Box size={14} />}
+                      <span>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Output format selector (only for 3D styles) */}
+              {(carouselStyle === "remotion3d" || carouselStyle === "blender3d") && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Output Format
+                  </p>
+                  <div className="flex gap-2">
+                    {([
+                      { value: "static" as const, label: "Static Slides", desc: "PNG images" },
+                      { value: "video" as const, label: "Video Carousel", desc: "Animated MP4" },
+                    ]).map((f) => (
+                      <button
+                        key={f.value}
+                        onClick={() => setOutputFormat(f.value)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
+                          outputFormat === f.value
+                            ? "bg-teal-50 border-teal-300 text-teal-700"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {f.value === "video" && <Film size={14} />}
+                        <span>{f.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
+
+              <button
+                onClick={() =>
+                  generateMutation.mutate({
+                    platform: selectedPlatform.platform,
+                    aspectRatio: selectedPlatform.aspectRatio,
+                    carouselStyle,
+                    outputFormat: (carouselStyle === "remotion3d" || carouselStyle === "blender3d") ? outputFormat : "static",
+                  })
+                }
+                disabled={generateMutation.isPending}
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 min-h-[44px]"
+              >
+                {generateMutation.isPending ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    {carouselStyle !== "flat" ? <Box size={14} /> : <Image size={14} />}
+                    Generate {carouselStyle === "remotion3d" ? "3D " : carouselStyle === "blender3d" ? "Blender " : ""}{selectedPlatform.label}
+                    {outputFormat === "video" && carouselStyle !== "flat" ? " Video" : ""}
+                  </>
+                )}
+              </button>
+            </>
           )}
         </div>
       )}
@@ -172,11 +236,53 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
           </h4>
           {items.map((carousel) => (
             <div key={carousel.id} className="relative">
-              <CarouselPreview
-                slides={carousel.slides || []}
-                platform={carousel.platform}
-                status={carousel.status}
-              />
+              {/* Style badge */}
+              {carousel.carouselStyle === "remotion3d" && (
+                <div className="absolute top-3 left-4 z-10">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-violet-100 text-violet-700 text-[9px] font-black uppercase tracking-wider">
+                    <Box size={10} />
+                    3D
+                  </span>
+                </div>
+              )}
+              {carousel.carouselStyle === "blender3d" && (
+                <div className="absolute top-3 left-4 z-10">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-wider">
+                    <Box size={10} />
+                    BLENDER
+                  </span>
+                </div>
+              )}
+              {/* Video player for video carousels */}
+              {carousel.outputFormat === "video" && carousel.videoPath ? (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        {carousel.platform === "youtube_thumbnail" ? "YouTube Thumbnail" : carousel.platform.charAt(0).toUpperCase() + carousel.platform.slice(1)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[9px] font-bold">
+                        <Film size={10} />
+                        VIDEO
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <video
+                      src={carousel.videoPath}
+                      controls
+                      className="w-full rounded-xl"
+                      style={{ maxHeight: 400 }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <CarouselPreview
+                  slides={carousel.slides || []}
+                  platform={carousel.platform}
+                  status={carousel.status}
+                />
+              )}
               <button
                 onClick={() => {
                   if (confirm("Delete this carousel?")) {

@@ -3,7 +3,7 @@ import { desc, eq, gte, lte, and, sql, like, inArray } from "drizzle-orm";
 import { db } from "../db.js";
 import { creatorVideos } from "../../shared/schema.js";
 import { parseViralInsights } from "../parsers/viral-insights.js";
-import { ensureThumbnail, resolveThumbnailUrl, cacheThumbnail, backfillAllThumbnails } from "../lib/thumbnail-resolver.js";
+import { ensureThumbnail, resolveThumbnailUrl, cacheThumbnail, backfillAllThumbnails, purgeSmallInstagramThumbnails } from "../lib/thumbnail-resolver.js";
 import type { CreatorVideo, TrendingTopic } from "../../shared/types.js";
 
 export function createDiscoverRouter(
@@ -267,6 +267,18 @@ export function createDiscoverRouter(
     } catch (error) {
       console.error("[discover] Error backfilling thumbnails:", error);
       res.status(500).json({ error: "Failed to backfill thumbnails" });
+    }
+  });
+
+  // POST /api/discover/fix-instagram-thumbnails - Purge bad Instagram thumbnails and re-resolve
+  router.post("/fix-instagram-thumbnails", async (_req, res) => {
+    try {
+      const purged = purgeSmallInstagramThumbnails(thumbnailsDir);
+      const stats = await backfillAllThumbnails(thumbnailsDir);
+      res.json({ purged, backfill: stats });
+    } catch (error) {
+      console.error("[discover] Error fixing Instagram thumbnails:", error);
+      res.status(500).json({ error: "Failed to fix Instagram thumbnails" });
     }
   });
 

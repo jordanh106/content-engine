@@ -12,6 +12,8 @@ import type {
   CarouselGenerateRequest,
   GeneratedCarousel,
   CarouselSlide,
+  CarouselStyle,
+  CarouselOutputFormat,
 } from "../../shared/types.js";
 
 // Resolve paths for autoresearch editable assets
@@ -80,6 +82,9 @@ export function createCarouselsRouter(contentLibraryPath: string, carouselImages
       remixSourceUrl: (row as Record<string, unknown>).remixSourceUrl as string | null ?? null,
       remixSourceType: (row as Record<string, unknown>).remixSourceType as string | null ?? null,
       sourceCarouselId: (row as Record<string, unknown>).sourceCarouselId as number | null ?? null,
+      carouselStyle: ((row as Record<string, unknown>).carouselStyle as string | null ?? "flat") as GeneratedCarousel["carouselStyle"],
+      outputFormat: ((row as Record<string, unknown>).outputFormat as string | null ?? "static") as GeneratedCarousel["outputFormat"],
+      videoPath: (row as Record<string, unknown>).videoPath as string | null ?? null,
       createdAt: row.createdAt ?? "",
       completedAt: row.completedAt,
       slides: slides?.map((s) => ({
@@ -324,6 +329,280 @@ ${brandNote}`;
     console.log(`[carousels] Carousel ${carouselId} generation complete: ${successCount}/${slides.length} images generated, status=${status}`);
   }
 
+  // ── Remotion 3D slide rendering
+  const remotionRoot = path.resolve(import.meta.dirname, "..", "..", "..", "remotion-studio");
+
+  async function renderRemotion3DSlides(carouselId: number, slides: SlideData[]) {
+    const imgDir = path.join(carouselImagesDir, String(carouselId));
+    if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+
+    let successCount = 0;
+    const accentObjects = ["torus", "sphere", "octahedron", "icosahedron"];
+
+    for (const slide of slides) {
+      const props = JSON.stringify({
+        heading: slide.heading,
+        bodyText: slide.bodyText || "",
+        slideType: slide.slideType === "rehook" ? "content" : slide.slideType,
+        slideIndex: slide.slideIndex,
+        totalSlides: slides.length,
+        accentObject: accentObjects[slide.slideIndex % accentObjects.length],
+        durationInSeconds: 4,
+        theme: {
+          primaryColor: "#0d9488",
+          accentColor: "#faf5ef",
+          darkBackground: "#1a1a2e",
+          lightBackground: "#faf5ef",
+          textColor: "#ffffff",
+          headingFont: "Georgia",
+          bodyFont: "Nunito Sans",
+          primaryGradientEnd: "#065f46",
+          accentGradientEnd: "#e7ddd0",
+          glowColor: "#0d9488",
+          surfaceColor: "rgba(255, 255, 255, 0.06)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          noiseOpacity: 0.03,
+          glassBlur: 20,
+          glassOpacity: 0.08,
+        },
+      });
+
+      const outputPath = path.join(imgDir, slide.filename);
+
+      try {
+        console.log(`[carousels] Rendering Remotion 3D slide ${slide.slideIndex} for carousel ${carouselId}...`);
+        execSync(
+          `npx remotion still src/index.ts CarouselSlide3D --gl=angle --frame=60 --props='${props.replace(/'/g, "'\\''")}' --output="${outputPath}"`,
+          { cwd: remotionRoot, timeout: 60000, stdio: "pipe" },
+        );
+
+        sqlite.prepare(`
+          INSERT INTO carousel_slides (carousel_id, slide_index, slide_type, image_path, filename, heading, body_text, visual_suggestion)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          carouselId, slide.slideIndex, slide.slideType,
+          `/carousel-images/${carouselId}/${slide.filename}`, slide.filename,
+          slide.heading, slide.bodyText, "Remotion 3D rendered",
+        );
+        successCount++;
+      } catch (err) {
+        console.error(`[carousels] Remotion 3D render failed for slide ${slide.slideIndex}:`, err);
+        sqlite.prepare(`
+          INSERT INTO carousel_slides (carousel_id, slide_index, slide_type, image_path, filename, heading, body_text, visual_suggestion)
+          VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
+        `).run(
+          carouselId, slide.slideIndex, slide.slideType,
+          slide.filename, slide.heading, slide.bodyText, "Remotion 3D render failed",
+        );
+      }
+    }
+
+    const status = successCount > 0 ? "completed" : "failed";
+    sqlite.prepare(
+      "UPDATE generated_carousels SET status = ?, completed_at = datetime('now') WHERE id = ?"
+    ).run(status, carouselId);
+
+    console.log(`[carousels] Remotion 3D carousel ${carouselId} complete: ${successCount}/${slides.length} slides rendered`);
+  }
+
+  // ── Blender 3D slide rendering (photorealistic ray-traced backgrounds + FFmpeg text overlay)
+  const blenderScriptsDir = path.resolve(import.meta.dirname, "..", "..", "..", "..", "blender", "scripts");
+
+  async function renderBlender3DSlides(carouselId: number, slides: SlideData[]) {
+    const imgDir = path.join(carouselImagesDir, String(carouselId));
+    if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+
+    let successCount = 0;
+    const accentObjects = ["torus", "sphere", "octahedron", "icosahedron"];
+
+    for (const slide of slides) {
+      const accent = accentObjects[slide.slideIndex % accentObjects.length];
+      const slideType = slide.slideType === "rehook" ? "content" : slide.slideType;
+      const bgPath = path.join(imgDir, `bg-${slide.slideIndex}.png`);
+      const outputPath = path.join(imgDir, slide.filename);
+
+      try {
+        // Step 1: Render 3D background with Blender
+        console.log(`[carousels] Blender rendering bg for slide ${slide.slideIndex}...`);
+        const renderScript = path.join(blenderScriptsDir, "render_bg.py");
+        execSync(
+          `blender --background --python "${renderScript}" -- --accent-object ${accent} --slide-type ${slideType} --output "${bgPath}" --samples 48`,
+          { timeout: 180000, stdio: "pipe" },
+        );
+
+        // Step 2: Composite text via ImageMagick
+        console.log(`[carousels] ImageMagick compositing text for slide ${slide.slideIndex}...`);
+        const heading = slide.heading.replace(/"/g, '\\"');
+        const body = slide.bodyText.replace(/"/g, '\\"');
+        const counter = `${slide.slideIndex + 1} / ${slides.length}`;
+        const isCover = slideType === "cover";
+        const isCta = slideType === "cta";
+
+        const headingSize = isCover ? 52 : isCta ? 46 : 42;
+        const georgiaFont = "/System/Library/Fonts/Supplemental/Georgia.ttf";
+        const helveticaFont = "/System/Library/Fonts/Helvetica.ttc";
+
+        const magickArgs: string[] = [
+          `"${bgPath}"`,
+          // Dark gradient overlay for text readability
+          `-fill "rgba(0,0,0,0.5)" -draw "rectangle 0,864 1080,1920"`,
+          // Accent line
+          `-fill "#14b8a6" -draw "rectangle 60,1596 140,1600"`,
+          // Heading
+          `-font "${georgiaFont}" -fill white -pointsize ${headingSize} -gravity SouthWest -annotate +60+280 "${heading}"`,
+        ];
+
+        // Body text
+        if (body) {
+          magickArgs.push(`-font "${helveticaFont}" -fill "#d4d4d8" -pointsize 22 -gravity SouthWest -annotate +60+180 "${body}"`);
+        }
+
+        // Counter
+        magickArgs.push(`-font "${helveticaFont}" -fill "#6b7280" -pointsize 14 -gravity NorthEast -annotate +60+80 "${counter}"`);
+
+        // Badge
+        if (isCover) {
+          magickArgs.push(`-font "${helveticaFont}" -fill "#0d9488" -pointsize 13 -gravity NorthWest -annotate +60+80 "SWIPE >"`);
+        } else if (isCta) {
+          magickArgs.push(`-font "${helveticaFont}" -fill "#f59e0b" -pointsize 13 -gravity NorthWest -annotate +60+80 "TAKE ACTION"`);
+        }
+
+        // Brand mark
+        magickArgs.push(`-font "${helveticaFont}" -fill "#4b5563" -pointsize 10 -gravity SouthWest -annotate +60+60 "COLLECTIVE FAMILY CHIROPRACTIC"`);
+
+        magickArgs.push(`"${outputPath}"`);
+
+        execSync(`magick ${magickArgs.join(" ")}`, { timeout: 30000, stdio: "pipe" });
+
+        // Insert slide record
+        sqlite.prepare(`
+          INSERT INTO carousel_slides (carousel_id, slide_index, slide_type, image_path, filename, heading, body_text, visual_suggestion)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          carouselId, slide.slideIndex, slide.slideType,
+          `/carousel-images/${carouselId}/${slide.filename}`, slide.filename,
+          slide.heading, slide.bodyText, "Blender 3D + FFmpeg text",
+        );
+        successCount++;
+
+        // Clean up bg file
+        try { fs.unlinkSync(bgPath); } catch { /* ignore */ }
+      } catch (err) {
+        console.error(`[carousels] Blender render failed for slide ${slide.slideIndex}:`, err);
+        sqlite.prepare(`
+          INSERT INTO carousel_slides (carousel_id, slide_index, slide_type, image_path, filename, heading, body_text, visual_suggestion)
+          VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
+        `).run(
+          carouselId, slide.slideIndex, slide.slideType,
+          slide.filename, slide.heading, slide.bodyText, "Blender render failed",
+        );
+      }
+    }
+
+    const status = successCount > 0 ? "completed" : "failed";
+    sqlite.prepare(
+      "UPDATE generated_carousels SET status = ?, completed_at = datetime('now') WHERE id = ?"
+    ).run(status, carouselId);
+    console.log(`[carousels] Blender carousel ${carouselId} complete: ${successCount}/${slides.length} slides rendered`);
+  }
+
+  // ── Video carousel: render animated slides + FFmpeg concat
+  async function renderVideoCarousel(carouselId: number, slides: SlideData[]) {
+    const imgDir = path.join(carouselImagesDir, String(carouselId));
+    if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+
+    const clipPaths: string[] = [];
+    const accentObjects = ["torus", "sphere", "octahedron", "icosahedron"];
+
+    for (const slide of slides) {
+      const props = JSON.stringify({
+        heading: slide.heading,
+        bodyText: slide.bodyText || "",
+        slideType: slide.slideType === "rehook" ? "content" : slide.slideType,
+        slideIndex: slide.slideIndex,
+        totalSlides: slides.length,
+        accentObject: accentObjects[slide.slideIndex % accentObjects.length],
+        durationInSeconds: 4,
+        theme: {
+          primaryColor: "#0d9488",
+          accentColor: "#faf5ef",
+          darkBackground: "#1a1a2e",
+          lightBackground: "#faf5ef",
+          textColor: "#ffffff",
+          headingFont: "Georgia",
+          bodyFont: "Nunito Sans",
+          primaryGradientEnd: "#065f46",
+          accentGradientEnd: "#e7ddd0",
+          glowColor: "#0d9488",
+          surfaceColor: "rgba(255, 255, 255, 0.06)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          noiseOpacity: 0.03,
+          glassBlur: 20,
+          glassOpacity: 0.08,
+        },
+      });
+
+      const clipPath = path.join(imgDir, `clip-${slide.slideIndex}.mp4`);
+
+      try {
+        console.log(`[carousels] Rendering video clip for slide ${slide.slideIndex}...`);
+        execSync(
+          `npx remotion render src/index.ts CarouselSlide3D --gl=angle --props='${props.replace(/'/g, "'\\''")}' --output="${clipPath}"`,
+          { cwd: remotionRoot, timeout: 120000, stdio: "pipe" },
+        );
+        clipPaths.push(clipPath);
+
+        // Also render a still thumbnail for the slide record
+        const stillPath = path.join(imgDir, slide.filename);
+        execSync(
+          `npx remotion still src/index.ts CarouselSlide3D --gl=angle --frame=60 --props='${props.replace(/'/g, "'\\''")}' --output="${stillPath}"`,
+          { cwd: remotionRoot, timeout: 60000, stdio: "pipe" },
+        );
+
+        sqlite.prepare(`
+          INSERT INTO carousel_slides (carousel_id, slide_index, slide_type, image_path, filename, heading, body_text, visual_suggestion)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          carouselId, slide.slideIndex, slide.slideType,
+          `/carousel-images/${carouselId}/${slide.filename}`, slide.filename,
+          slide.heading, slide.bodyText, "Remotion 3D video rendered",
+        );
+      } catch (err) {
+        console.error(`[carousels] Video render failed for slide ${slide.slideIndex}:`, err);
+      }
+    }
+
+    // Concatenate clips with FFmpeg crossfade
+    if (clipPaths.length > 0) {
+      const concatFile = path.join(imgDir, "concat.txt");
+      fs.writeFileSync(concatFile, clipPaths.map((p) => `file '${p}'`).join("\n"));
+      const videoPath = path.join(imgDir, "carousel.mp4");
+
+      try {
+        execSync(
+          `ffmpeg -y -f concat -safe 0 -i "${concatFile}" -c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p "${videoPath}"`,
+          { timeout: 120000, stdio: "pipe" },
+        );
+        sqlite.prepare(
+          "UPDATE generated_carousels SET status = 'completed', completed_at = datetime('now'), video_path = ? WHERE id = ?"
+        ).run(`/carousel-images/${carouselId}/carousel.mp4`, carouselId);
+        console.log(`[carousels] Video carousel ${carouselId} assembled: ${videoPath}`);
+      } catch (err) {
+        console.error(`[carousels] FFmpeg concat failed:`, err);
+        sqlite.prepare(
+          "UPDATE generated_carousels SET status = 'completed', completed_at = datetime('now') WHERE id = ?"
+        ).run(carouselId);
+      }
+
+      // Clean up concat file
+      try { fs.unlinkSync(concatFile); } catch { /* ignore */ }
+    } else {
+      sqlite.prepare(
+        "UPDATE generated_carousels SET status = 'failed', completed_at = datetime('now') WHERE id = ?"
+      ).run(carouselId);
+    }
+  }
+
   // POST /api/carousels/generate - Create carousel and generate slides
   router.post("/generate", async (req, res) => {
     try {
@@ -331,6 +610,8 @@ ${brandNote}`;
       const { platform, aspectRatio, hookLine, talkingPoints, ctaText, videoCode, ideaTopic } = body;
       const hookArchetype = body.hookArchetype || null;
       const audience = body.audience || null;
+      const carouselStyle = body.carouselStyle || "flat";
+      const outputFormat = body.outputFormat || "static";
 
       if (!platform || !aspectRatio || !hookLine || !talkingPoints?.length) {
         res.status(400).json({ error: "Missing required fields: platform, aspectRatio, hookLine, talkingPoints" });
@@ -346,8 +627,8 @@ ${brandNote}`;
 
       // Insert carousel record
       const result = sqlite.prepare(`
-        INSERT INTO generated_carousels (video_code, idea_topic, platform, aspect_ratio, slide_count, hook_line, talking_points, cta_text, status, generation_source, template_version, strategy_version, hook_archetype, audience)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'generating', 'manual', ?, ?, ?, ?)
+        INSERT INTO generated_carousels (video_code, idea_topic, platform, aspect_ratio, slide_count, hook_line, talking_points, cta_text, status, generation_source, template_version, strategy_version, hook_archetype, audience, carousel_style, output_format)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'generating', 'manual', ?, ?, ?, ?, ?, ?)
       `).run(
         videoCode || null,
         ideaTopic || null,
@@ -361,6 +642,8 @@ ${brandNote}`;
         strategyVersion,
         hookArchetype,
         audience,
+        carouselStyle,
+        outputFormat,
       );
 
       const carouselId = Number(result.lastInsertRowid);
@@ -372,8 +655,16 @@ ${brandNote}`;
       // Build slide data
       const slides = buildSlideData(hookLine, ideaTopic || videoCode || "carousel", talkingPoints, ctaText || null, platform, aspectRatio);
 
-      // Start AI image generation in background (don't block the response)
-      generateCarouselImages(carouselId, slides, aspectRatio).catch((err) => {
+      // Route to the appropriate renderer based on style and format
+      const renderFn = outputFormat === "video"
+        ? () => renderVideoCarousel(carouselId, slides)
+        : carouselStyle === "blender3d"
+          ? () => renderBlender3DSlides(carouselId, slides)
+          : carouselStyle === "remotion3d"
+            ? () => renderRemotion3DSlides(carouselId, slides)
+            : () => generateCarouselImages(carouselId, slides, aspectRatio);
+
+      renderFn().catch((err) => {
         console.error("[carousels] Background generation failed:", err);
         sqlite.prepare("UPDATE generated_carousels SET status = 'failed' WHERE id = ?").run(carouselId);
       });
@@ -397,7 +688,14 @@ ${brandNote}`;
   router.post("/:videoCode/from-script", async (req, res) => {
     try {
       const { videoCode } = req.params;
-      const { platform, aspectRatio } = req.body as { platform: CarouselPlatform; aspectRatio: CarouselAspectRatio };
+      const { platform, aspectRatio, carouselStyle: style, outputFormat: format } = req.body as {
+        platform: CarouselPlatform;
+        aspectRatio: CarouselAspectRatio;
+        carouselStyle?: CarouselStyle;
+        outputFormat?: CarouselOutputFormat;
+      };
+      const carouselStyle = style || "flat";
+      const outputFormat = format || "static";
 
       if (!platform || !aspectRatio) {
         res.status(400).json({ error: "Missing required fields: platform, aspectRatio" });
@@ -438,19 +736,25 @@ ${brandNote}`;
       const strategyVersion = getGitVersion(strategyPath);
 
       const result = sqlite.prepare(`
-        INSERT INTO generated_carousels (video_code, platform, aspect_ratio, slide_count, hook_line, talking_points, cta_text, status, generation_source, template_version, strategy_version)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'generating', 'manual', ?, ?)
-      `).run(videoCode, platform, aspectRatio, slideCount, hookLine, JSON.stringify(talkingPoints), ctaText, templateVersion, strategyVersion);
+        INSERT INTO generated_carousels (video_code, platform, aspect_ratio, slide_count, hook_line, talking_points, cta_text, status, generation_source, template_version, strategy_version, carousel_style, output_format)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'generating', 'manual', ?, ?, ?, ?)
+      `).run(videoCode, platform, aspectRatio, slideCount, hookLine, JSON.stringify(talkingPoints), ctaText, templateVersion, strategyVersion, carouselStyle, outputFormat);
 
       const carouselId = Number(result.lastInsertRowid);
 
       const imgDir = path.join(carouselImagesDir, String(carouselId));
       if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
 
-      // Build slide data and generate AI images in background
+      // Build slide data and route to the appropriate renderer
       const slides = buildSlideData(hookLine, video.title, talkingPoints, ctaText, platform, aspectRatio);
 
-      generateCarouselImages(carouselId, slides, aspectRatio).catch((err) => {
+      const renderFn = outputFormat === "video"
+        ? () => renderVideoCarousel(carouselId, slides)
+        : carouselStyle === "remotion3d"
+          ? () => renderRemotion3DSlides(carouselId, slides)
+          : () => generateCarouselImages(carouselId, slides, aspectRatio);
+
+      renderFn().catch((err) => {
         console.error("[carousels] from-script generation failed:", err);
         sqlite.prepare("UPDATE generated_carousels SET status = 'failed' WHERE id = ?").run(carouselId);
       });

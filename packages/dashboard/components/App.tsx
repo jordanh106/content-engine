@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import type { DashboardView } from "../shared/types.js";
+import type { DashboardView, CarouselRemixSeed } from "../shared/types.js";
 import { Layout } from "./Layout.js";
 import { DashboardHome } from "./DashboardHome.js";
 import { PipelineBoard } from "./PipelineBoard.js";
@@ -36,6 +36,7 @@ import { LevelUpCelebration } from "./ui/LevelUpCelebration.js";
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
+  const [carouselSeed, setCarouselSeed] = useState<CarouselRemixSeed | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
@@ -100,9 +101,12 @@ const AppInner: React.FC = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [commandPaletteOpen]);
 
-  const handleNavigate = useCallback((target: DashboardView) => {
+  const handleNavigate = useCallback((target: DashboardView, payload?: CarouselRemixSeed) => {
     setView(target);
     setCommandPaletteOpen(false);
+    if (target === "CAROUSEL_LAB" && payload) {
+      setCarouselSeed(payload);
+    }
   }, []);
 
   const handleSelectVideo = (code: string) => {
@@ -151,7 +155,7 @@ const AppInner: React.FC = () => {
           {view === "CAPTIONS" && <CaptionStudio onNavigate={handleNavigate} />}
           {view === "METRICS" && <MetricsView onNavigate={handleNavigate} />}
           {view === "STRATEGY" && <PerformanceReviewView onNavigate={handleNavigate} />}
-          {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} />}
+          {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} initialRemix={carouselSeed} onConsumeRemix={() => setCarouselSeed(null)} />}
           {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
           {view === "INTELLIGENCE" && <IntelligenceView onNavigate={handleNavigate} />}
           {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => handleNavigate("HOME")} inline />}

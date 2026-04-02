@@ -66,21 +66,11 @@ export async function resolveThumbnailUrl(
     }
   }
 
-  // Instagram - oEmbed (works for public reels/posts without auth token)
+  // Instagram - fetch-based resolution is unreliable (returns login-wall images).
+  // Use POST /api/creator-videos/bulk-thumbnails with Xpoz CDN URLs instead.
   if (p.includes("instagram") || videoUrl.includes("instagram.com")) {
-    try {
-      const oembedUrl = `https://www.instagram.com/oembed/?url=${encodeURIComponent(videoUrl)}`;
-      const resp = await fetch(oembedUrl, {
-        signal: AbortSignal.timeout(10000),
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; ContentEngine/1.0)" },
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.thumbnail_url) return data.thumbnail_url as string;
-      }
-    } catch {
-      // Instagram oEmbed may fail for private accounts
-    }
+    console.log(`[thumbnail] Skipping Instagram fetch for ${videoUrl} — use bulk-thumbnails endpoint with Xpoz imageUrl`);
+    return null;
   }
 
   return null;
@@ -110,7 +100,14 @@ export async function cacheThumbnail(
     if (!resp.ok) return null;
 
     const buffer = Buffer.from(await resp.arrayBuffer());
-    if (buffer.length < 100) return null; // Skip empty/error responses
+    if (buffer.length < 1000) return null; // Skip empty/error responses (real thumbnails are >1KB)
+
+    // Reject Instagram login-wall / placeholder images by checking for known small sizes
+    // Instagram's "login to view" placeholder is typically ~10-15KB, real thumbnails are 50KB+
+    // Also reject if content-type suggests HTML (login redirect)
+    const contentType = resp.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) return null;
+
     fs.writeFileSync(filepath, buffer);
     return `/thumbnails/${filename}`;
   } catch {
@@ -157,6 +154,32 @@ export async function ensureThumbnail(
   }
 
   return null;
+}
+
+/**
+ * Purge likely-bad cached thumbnails for Instagram videos.
+ * Instagram oEmbed sometimes returns login-wall images that get cached.
+ * This clears thumbnails under a size threshold so they get re-resolved.
+ */
+export function purgeSmallInstagramThumbnails(thumbnailsDir: string): number {
+  const rows = sqlite.prepare(
+    "SELECT id, thumbnail_url as thumbnailUrl FROM creator_videos WHERE platform LIKE '%instagram%' AND thumbnail_url LIKE '/thumbnails/%'"
+  ).all() as { id: number; thumbnailUrl: string }[];
+
+  let purged = 0;
+  for (const row of rows) {
+    const filepath = path.join(thumbnailsDir, path.basename(row.thumbnailUrl));
+    if (fs.existsSync(filepath)) {
+      const stat = fs.statSync(filepath);
+      // Login-wall placeholder images are typically 25-37KB; real thumbnails are 50KB+
+      if (stat.size < 40000) {
+        fs.unlinkSync(filepath);
+        sqlite.prepare("UPDATE creator_videos SET thumbnail_url = NULL WHERE id = ?").run(row.id);
+        purged++;
+      }
+    }
+  }
+  return purged;
 }
 
 /**

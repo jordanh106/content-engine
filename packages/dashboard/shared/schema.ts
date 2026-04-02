@@ -444,6 +444,9 @@ export const generatedCarousels = sqliteTable("generated_carousels", {
   audience: text("audience"),            // target audience segment
   canvaDesignId: text("canva_design_id"),
   canvaDesignUrl: text("canva_design_url"),
+  carouselStyle: text("carousel_style").default("flat"), // "flat" | "remotion3d" | "blender3d"
+  outputFormat: text("output_format").default("static"), // "static" | "video"
+  videoPath: text("video_path"), // path to assembled MP4 when outputFormat is "video"
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   completedAt: text("completed_at"),
 });
@@ -470,6 +473,14 @@ export const questEvents = sqliteTable("quest_events", {
   eventType: text("event_type").notNull(), // "started" | "completed" | "skipped"
   xpAwarded: integer("xp_awarded").default(0),
   coachMessage: text("coach_message"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const blowingUpCreators = sqliteTable("blowing_up_creators", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  handle: text("handle").notNull(),
+  platform: text("platform").notNull(),
+  active: integer("active", { mode: "boolean" }).default(true),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
