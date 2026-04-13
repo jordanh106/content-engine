@@ -36,6 +36,7 @@ import type {
   IntelDigest,
   CreatorVideo,
   CarouselRemixSeed,
+  ScriptWizardSeed,
 } from "../shared/types.js";
 import { VideoThumbnailCard } from "./ui/VideoThumbnailCard.js";
 import { ScrollReveal, CountUp } from "./ui/animations.js";
@@ -47,7 +48,7 @@ import { GoalRing } from "./ui/GoalRing.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
-  onNavigate: (view: DashboardView) => void;
+  onNavigate: (view: DashboardView, payload?: CarouselRemixSeed | ScriptWizardSeed) => void;
 };
 
 type WhatsNextAction = {
@@ -362,14 +363,14 @@ function TrackedCreatorsPanel({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4 animate-in fade-in duration-200 mb-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Manage Tracked Creators</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Manage Tracked Creators</h3>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
       </div>
 
       {/* Suggestions Section */}
       {suggestions.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600">Suggested Creators</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-600">Suggested Creators</p>
           <div className="flex flex-wrap gap-2">
             {suggestions.slice(0, 8).map((s) => (
               <button
@@ -427,7 +428,7 @@ function TrackedCreatorsPanel({ open, onClose }: { open: boolean; onClose: () =>
       <div>
         <button
           onClick={() => setShowTracked((v) => !v)}
-          className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-600 flex items-center gap-1"
+          className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-600 flex items-center gap-1"
         >
           {showTracked ? "Hide" : "Show"} tracked ({creators.length})
           <ChevronRight size={10} className={`transition-transform ${showTracked ? "rotate-90" : ""}`} />
@@ -467,25 +468,33 @@ function BlowingUpRefresh({ onDone }: { onDone: () => void }) {
     try {
       // Fix bad Instagram thumbnails first
       await fetch("/api/discover/fix-instagram-thumbnails", { method: "POST" });
-      // Then trigger the n8n Blowing Up Scanner workflow via webhook
-      try {
-        const n8nBase = "https://n8n.srv1290877.hstgr.cloud";
-        await fetch(`${n8nBase}/webhook/blowing-up-scan`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ source: "dashboard-manual" }),
-          signal: AbortSignal.timeout(10000),
-        });
-      } catch {
-        // n8n webhook may not be reachable from client -- that's ok, thumbnail fix still ran
+
+      // Trigger n8n scan + ingest via server-side proxy (avoids CORS)
+      const scanRes = await fetch("/api/creator-videos/blowing-up/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (scanRes.ok) {
+        const data = await scanRes.json();
+        if (data.inserted > 0) {
+          setResult(`+${data.inserted} new`);
+        } else if (data.updated > 0) {
+          setResult(`${data.updated} updated`);
+        } else {
+          setResult("No new videos");
+        }
+      } else {
+        const err = await scanRes.json().catch(() => ({ error: "Scan failed" }));
+        setResult(err.error || "Scan failed");
       }
-      setResult("Done");
+
       onDone();
     } catch {
       setResult("Error");
     } finally {
       setScanning(false);
-      setTimeout(() => setResult(null), 3000);
+      setTimeout(() => setResult(null), 5000);
     }
   };
 
@@ -542,7 +551,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
     <ScrollReveal delay={180}>
       <section>
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted flex items-center gap-1.5">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-themed-muted flex items-center gap-1.5">
             <LayoutGrid size={12} className="text-violet-500" />
             Trending Carousels
           </h2>
@@ -749,6 +758,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const [copiedHook, setCopiedHook] = useState<string | null>(null);
   const [addedTopics, setAddedTopics] = useState<Set<string>>(new Set());
   const [showTrackedCreators, setShowTrackedCreators] = useState(false);
+  const [progressExpanded, setProgressExpanded] = useState(false);
 
   const addIdeaMutation = useMutation({
     mutationFn: async (topic: string) => {
@@ -807,10 +817,8 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   const inProgress = (pipeline?.summary.RECORDING ?? 0) + (pipeline?.summary.GENERATING ?? 0) +
     (pipeline?.summary.ASSEMBLED ?? 0) + (pipeline?.summary.SCHEDULED ?? 0);
 
-  const [progressExpanded, setProgressExpanded] = useState(false);
-
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
 
       {/* ═══ Section 1: Performance Command Strip ═══════════════════════════ */}
       <section>
@@ -820,75 +828,79 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
 
         {/* KPI Cards Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          {/* Views */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Views</p>
-            <p className="text-2xl font-serif font-bold text-slate-800">
-              {metricsData?.totalViews ? <CountUp to={metricsData.totalViews} /> : "---"}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          {/* Views (hero card — spans 2 cols on desktop) */}
+          <div className="md:col-span-2 bg-gradient-to-br from-teal-50/60 to-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Total Views</p>
+            <p className="text-4xl md:text-5xl font-bold text-slate-900 tabular-nums">
+              {metricsData?.totalViews ? metricsData.totalViews.toLocaleString() : "---"}
             </p>
             {metricsData?.viewsTrend && (
-              <Sparkline data={metricsData.viewsTrend} width={120} height={24} color="#0d9488" fillOpacity={0.15} className="mt-1" />
+              <Sparkline data={metricsData.viewsTrend} width={200} height={32} color="#0d9488" fillOpacity={0.15} className="mt-2" />
             )}
           </div>
 
           {/* Week-over-Week */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">vs Last Week</p>
+          <div className={`shadow-sm hover:shadow-md transition-shadow rounded-2xl p-5 flex flex-col justify-between ${
+            metricsData?.weekOverWeekDelta !== undefined && metricsData.weekOverWeekDelta >= 0
+              ? "bg-gradient-to-br from-emerald-50 to-white"
+              : metricsData?.weekOverWeekDelta !== undefined && metricsData.weekOverWeekDelta < 0
+                ? "bg-gradient-to-br from-rose-50 to-white"
+                : "bg-white"
+          }`}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">vs Last Week</p>
             {metricsData?.weekOverWeekDelta !== undefined ? (
-              <p className={`text-2xl font-bold ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-3xl font-bold tabular-nums ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {metricsData.weekOverWeekDelta >= 0 ? "+" : ""}{metricsData.weekOverWeekDelta}%
               </p>
             ) : (
-              <p className="text-2xl font-bold text-slate-300">---</p>
+              <p className="text-3xl font-bold text-slate-300 tabular-nums">---</p>
             )}
           </div>
 
-          {/* Engagement Rate */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Engagement</p>
-            <p className="text-2xl font-serif font-bold text-slate-800">
-              {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "---"}
-            </p>
-          </div>
-
-          {/* Monthly Goal */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">Monthly Goal</p>
-            {(() => {
-              const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
-              const current = metricsData?.thisWeek || metricsData?.totalViews || 0;
-              const pct = goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0;
-              const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
-              return (
-                <>
-                  <div className="flex items-end gap-1.5">
-                    <span className="text-2xl font-bold text-slate-800">{pct}%</span>
-                  </div>
-                  <div className="mt-1.5">
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
+          {/* Engagement + Goal stacked */}
+          <div className="flex flex-col gap-3">
+            <div className="bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Engagement</p>
+              <p className="text-2xl font-bold text-slate-900 tabular-nums">
+                {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "---"}
+              </p>
+            </div>
+            <div className="bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Monthly Goal</p>
+              {(() => {
+                const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
+                const current = metricsData?.thisWeek || metricsData?.totalViews || 0;
+                const pct = goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0;
+                const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+                return (
+                  <>
+                    <span className="text-lg font-bold text-slate-900 tabular-nums">{pct}%</span>
+                    <div className="mt-1">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-[9px] text-slate-400 mt-0.5">{formatNum(current)} / {formatNum(goal)}</p>
                     </div>
-                    <p className="text-[9px] text-slate-400 mt-1">{formatNum(current)} / {formatNum(goal)}</p>
-                  </div>
-                </>
-              );
-            })()}
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {[
-            { label: "Record Tonight", icon: <Mic size={13} />, view: "SESSION" as const },
-            { label: "Schedule Post", icon: <CalendarCheck size={13} />, view: "CALENDAR" as const },
-            { label: "Generate Carousel", icon: <LayoutGrid size={13} />, view: "CAROUSEL_LAB" as const },
-            { label: "View Pipeline", icon: <Activity size={13} />, view: "PIPELINE" as const },
+            { label: "Record Tonight", icon: <Mic size={14} />, view: "SESSION" as const },
+            { label: "Schedule Post", icon: <CalendarCheck size={14} />, view: "CALENDAR" as const },
+            { label: "Generate Carousel", icon: <LayoutGrid size={14} />, view: "CAROUSEL_LAB" as const },
+            { label: "View Pipeline", icon: <Activity size={14} />, view: "PIPELINE" as const },
           ].map((a) => (
             <button
               key={a.view}
               onClick={() => onNavigate(a.view)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white shadow-sm rounded-xl text-[11px] font-semibold text-slate-600 hover:shadow-md hover:text-teal-700 active:scale-[0.98] transition-all duration-200"
             >
               {a.icon} {a.label}
             </button>
@@ -896,87 +908,225 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
       </section>
 
-      {/* ═══ Section 2: Pipeline + Top Performer (side by side) ════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* ── Pipeline (compact) ─────────────────────────────────────────── */}
-        <button onClick={() => onNavigate("PIPELINE")} className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 text-left hover:border-teal-300 transition-colors">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Pipeline</p>
-            <span className="text-[10px] font-bold text-slate-500">{inProgress + (pipeline?.summary.SCRIPTED ?? 0)} in flight</span>
-          </div>
-          {/* Inline stage dots */}
-          <div className="flex items-center gap-2 mb-3">
-            {stages.map((stage, i) => {
-              const count = pipeline?.summary[stage.status] ?? 0;
-              return (
-                <React.Fragment key={stage.status}>
-                  <div className="flex items-center gap-1">
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                      count > 0 ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-400"
-                    }`}>
-                      {count}
-                    </span>
-                    <span className="text-[8px] uppercase tracking-wide text-slate-400 hidden md:block">{stage.label.slice(0, 4)}</span>
-                  </div>
-                  {i < stages.length - 1 && <ChevronRight size={10} className="text-slate-300 shrink-0" />}
-                </React.Fragment>
-              );
-            })}
-          </div>
-          {bottleneckStatus && maxCount > 0 && (
-            <p className="text-xs text-slate-500">
-              <span className="font-semibold">{maxCount}</span> in {bottleneckStatus.toLowerCase()}{getBottleneckAdvice(bottleneckStatus, maxCount)}
-              <ArrowRight size={11} className="inline ml-1" />
-            </p>
-          )}
-        </button>
+      {/* ═══ Section 2: Top Performer (full-width showcase) ═════════════════ */}
+      {metricsData?.topPerformer ? (() => {
+        const tp = metricsData.topPerformer;
+        const videoUrl = (tp as Record<string, unknown>).videoUrl as string | null;
+        const formatLabel = tp.format ? `Format ${tp.format}` : null;
 
-        {/* ── Top Performer ──────────────────────────────────────────────── */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-amber-300 transition-colors">
-          {metricsData?.topPerformer ? (
-            <div className="flex h-full">
-              <div className="w-28 md:w-36 shrink-0 relative overflow-hidden">
-                {metricsData.topPerformer.thumbnailUrl ? (
-                  <a href={(metricsData.topPerformer as Record<string, unknown>).videoUrl ? String((metricsData.topPerformer as Record<string, unknown>).videoUrl) : "#"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                    <img src={metricsData.topPerformer.thumbnailUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.style.background = "linear-gradient(135deg, #f59e0b, #ea580c)"; }} />
-                    {metricsData.topPerformer.outlierScore > 1 && (
-                      <span className="absolute top-2 right-2 text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white">{metricsData.topPerformer.outlierScore}x</span>
-                    )}
+        // Build a meaningful "why it worked" narrative from the data
+        const avgViews = metricsData.totalViews && metricsData.totalTracked
+          ? Math.round(metricsData.totalViews / Math.max(metricsData.totalTracked, 1))
+          : 0;
+        const avgEngagement = metricsData.engagementRate || 0;
+
+        const insights: string[] = [];
+        // Compare this video's metrics against your averages
+        if (tp.outlierScore >= 2) {
+          insights.push(`This video earned ${tp.outlierScore}x more views than your typical content`);
+        } else if (tp.outlierScore >= 1.5) {
+          insights.push(`Outperformed your average by ${Math.round((tp.outlierScore - 1) * 100)}%`);
+        }
+        if (tp.saveRate > 0.5) {
+          insights.push(`${tp.saveRate}% save rate means people want to come back to this`);
+        }
+        if (tp.engagementRate > avgEngagement * 1.5 && avgEngagement > 0) {
+          insights.push(`Engagement was ${Math.round((tp.engagementRate / avgEngagement - 1) * 100)}% above your average`);
+        }
+        if (tp.saves > 5 && tp.views > 0) {
+          const savesToViews = ((tp.saves / tp.views) * 100).toFixed(1);
+          if (parseFloat(savesToViews) > 0.3) {
+            insights.push(`High save-to-view ratio (${savesToViews}%) signals strong rewatch value`);
+          }
+        }
+        if (tp.audience) insights.push(`Resonated with the ${tp.audience} audience`);
+        if (formatLabel) insights.push(`${formatLabel} continues to perform well for your channel`);
+
+        // Fallback if we couldn't derive meaningful insights
+        if (insights.length === 0) {
+          insights.push("Strong overall performance across all engagement metrics");
+        }
+
+        return (
+          <div className="bg-white shadow-sm hover:shadow-md rounded-2xl overflow-hidden transition-all duration-200">
+            <div className="flex flex-col md:flex-row">
+              {/* Thumbnail */}
+              <div className="w-full md:w-64 lg:w-72 shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950">
+                {tp.thumbnailUrl ? (
+                  <a href={videoUrl || "#"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                    <img
+                      src={tp.thumbnailUrl} alt=""
+                      className="w-full h-full object-cover aspect-video md:aspect-[3/4] min-h-[200px] md:min-h-0"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
                   </a>
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center min-h-[120px]">
-                    <Trophy size={24} className="text-white/60" />
+                  <a href={videoUrl || "#"} target="_blank" rel="noopener noreferrer"
+                    className="w-full h-full flex flex-col items-center justify-center min-h-[200px] md:min-h-0 gap-2 text-center px-6">
+                    <Trophy size={28} className="text-amber-400/60" />
+                    <p className="text-[11px] text-white/40 font-medium leading-snug">{tp.title}</p>
+                  </a>
+                )}
+                {/* Platform badge */}
+                <span className="absolute bottom-3 left-3 text-[9px] font-bold px-2 py-1 rounded-md bg-black/50 text-white/80 backdrop-blur-sm uppercase tracking-wider">
+                  Instagram Reel
+                </span>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 p-5 md:p-6 lg:p-7">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={15} className="text-amber-500" />
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600">Your Top Performer</p>
+                  </div>
+                  {formatLabel && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{formatLabel}</span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-lg md:text-xl font-serif font-bold text-slate-900 leading-snug mb-4">
+                  {tp.title}
+                </h3>
+
+                {/* Outlier score — the hero stat */}
+                <div className="flex items-baseline gap-2 mb-4">
+                  <span className="text-3xl md:text-4xl font-bold text-amber-600 tabular-nums">{tp.outlierScore}x</span>
+                  <span className="text-sm text-slate-500">your average views</span>
+                </div>
+
+                {/* Metrics grid with context */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div>
+                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.views.toLocaleString()}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Views</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.likes.toLocaleString()}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Likes</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.saves}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Saves</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-teal-700 tabular-nums">{tp.engagementRate}%</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Engagement</p>
+                  </div>
+                </div>
+
+                {/* Why it worked insights */}
+                {insights.length > 0 && (
+                  <div className="mb-5 px-4 py-3 bg-amber-50/70 border border-amber-100 rounded-xl space-y-1.5">
+                    <p className="text-[11px] font-semibold text-amber-700 flex items-center gap-1.5">
+                      <Sparkles size={12} /> Why this worked
+                    </p>
+                    {insights.slice(0, 3).map((insight, i) => (
+                      <p key={i} className="text-[11px] text-amber-800/80 leading-relaxed pl-5">
+                        {insight}
+                      </p>
+                    ))}
                   </div>
                 )}
-              </div>
-              <div className="flex-1 p-4 flex flex-col justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-amber-600 mb-1">Top Performer</p>
-                  <p className="text-sm font-serif font-bold text-slate-800 leading-snug line-clamp-2">{metricsData.topPerformer.title}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap mt-2">
-                  <MetricBadge type="views" value={metricsData.topPerformer.views} />
-                  <MetricBadge type="saves" value={metricsData.topPerformer.saves} />
-                  <MetricBadge type="engagement" value={metricsData.topPerformer.engagementRate} />
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button
+                    onClick={() => {
+                      // Extract the core topic from the title (strip filler words for better hook generation)
+                      const coreTopic = tp.title;
+                      const seed: import("../shared/types.js").ScriptWizardSeed = {
+                        topic: coreTopic,
+                        format: tp.format || undefined,
+                        audience: tp.audience || undefined,
+                        videoCode: tp.code,
+                        sourceTitle: tp.title,
+                        outlierScore: tp.outlierScore,
+                        replicateContext: {
+                          sourceTitle: tp.title,
+                          outlierScore: tp.outlierScore,
+                          views: tp.views,
+                          saves: tp.saves,
+                          engagementRate: tp.engagementRate,
+                          saveRate: tp.saveRate,
+                          format: tp.format || undefined,
+                          audience: tp.audience || undefined,
+                          insights,
+                        },
+                      };
+                      onNavigate("SCRIPT_WIZARD", seed);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white text-[11px] font-semibold rounded-lg hover:bg-teal-700 active:scale-[0.98] transition-all"
+                  >
+                    <Sparkles size={13} /> Study & Replicate
+                  </button>
+                  {videoUrl && (
+                    <a
+                      href={videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-teal-600 transition-colors"
+                    >
+                      <Eye size={12} /> View Original <ArrowRight size={10} />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
-          ) : (
-            <button onClick={() => onNavigate("METRICS")} className="w-full p-6 text-center">
-              <Trophy size={20} className="text-amber-300 mx-auto mb-1" />
-              <p className="text-xs font-bold text-slate-500">No performance data yet</p>
-            </button>
-          )}
+          </div>
+        );
+      })() : (
+        <div className="bg-white shadow-sm rounded-2xl p-8 text-center">
+          <Trophy size={24} className="text-amber-300 mx-auto mb-2" />
+          <p className="text-sm font-semibold text-slate-500">No performance data yet</p>
+          <p className="text-xs text-slate-400 mt-1">Start tracking metrics to see your top performer here</p>
         </div>
-      </div>
+      )}
+
+      {/* ═══ Pipeline (compact full-width bar) ═══════════════════════════════ */}
+      <button onClick={() => onNavigate("PIPELINE")} className="w-full bg-white shadow-sm hover:shadow-md rounded-2xl px-5 py-4 text-left transition-all duration-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</p>
+            <div className="flex items-center gap-1.5">
+              {stages.map((stage, i) => {
+                const count = pipeline?.summary[stage.status] ?? 0;
+                return (
+                  <React.Fragment key={stage.status}>
+                    <div className="flex items-center gap-1">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+                        count > 0 ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-400"
+                      }`}>
+                        {count}
+                      </span>
+                      <span className="text-[9px] font-medium text-slate-400 hidden md:block">{stage.label}</span>
+                    </div>
+                    {i < stages.length - 1 && <ChevronRight size={10} className="text-slate-300 shrink-0" />}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{inProgress + (pipeline?.summary.SCRIPTED ?? 0)} in flight</span>
+            {bottleneckStatus && maxCount > 0 && (
+              <span className="text-[10px] text-slate-400 hidden md:block">
+                {maxCount} in {bottleneckStatus.toLowerCase()} <ArrowRight size={10} className="inline" />
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
 
       {/* ═══ Section 3: Discover (consolidated) ════════════════════════════ */}
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-1.5">
-              <Flame size={12} className="text-teal-500" />
-              Discover
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <TrendingUp size={12} className="text-teal-500" />
+              Trending Now
             </h2>
             <div className="flex items-center gap-3">
               <BlowingUpRefresh onDone={() => queryClient.invalidateQueries({ queryKey: ["outlier-videos-home"] })} />
@@ -1019,7 +1169,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           {/* Trend chips (compressed from Trend Pulse) */}
           {pulseData?.digest && pulseData.digest.trendingTopics.length > 0 && (
             <div className="mt-3 flex items-center gap-2 flex-wrap px-1">
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Trending</span>
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Trending</span>
               {pulseData.digest.trendingTopics.slice(0, 6).map((t, i) => (
                 <button
                   key={i}
@@ -1038,7 +1188,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       {opportunities && (opportunities.opportunities?.length ?? 0) > 0 && (
         <button
           onClick={() => onNavigate("OPPORTUNITIES")}
-          className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-2xl hover:border-teal-300 transition-colors text-left"
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-white shadow-sm hover:shadow-md rounded-2xl transition-all duration-200 text-left"
         >
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-teal-500" />
@@ -1051,13 +1201,13 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       )}
 
       {/* ═══ Section 5: Progress (collapsed gamification) ══════════════════ */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      <div className="bg-white shadow-sm rounded-2xl overflow-hidden">
         <button
           onClick={() => setProgressExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Your Progress</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Your Progress</span>
             <span className="text-xs font-semibold text-slate-600">Observer · Level 1 · 30/100 XP</span>
           </div>
           <ChevronRight size={14} className={`text-slate-400 transition-transform ${progressExpanded ? "rotate-90" : ""}`} />

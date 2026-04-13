@@ -17,6 +17,7 @@ import {
 import { VideoGrid } from "./ui/VideoGrid.js";
 import { BulkActionBar } from "./ui/BulkActionBar.js";
 import { VideoBottomSheet } from "./ui/VideoBottomSheet.js";
+import { VideoIntelligencePanel } from "./ui/VideoIntelligencePanel.js";
 import type { CardAction } from "./ui/VideoThumbnailCard.js";
 import { ScrollReveal } from "./ui/animations.js";
 import { FilterSidebar, DEFAULT_FILTERS } from "./ui/FilterSidebar.js";
@@ -64,6 +65,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
   const [selectionMode, setSelectionMode] = useState(false);
   const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
   const [bottomSheetVideo, setBottomSheetVideo] = useState<CreatorVideo | null>(null);
+  const [detailVideo, setDetailVideo] = useState<CreatorVideo | null>(null);
   const [showUrlModal, setShowUrlModal] = useState(false);
 
   // Fetch unique channel handles for filter dropdown
@@ -189,9 +191,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
       setBottomSheetVideo(video);
       return;
     }
-    if (video.videoUrl && video.videoUrl !== "unknown") {
-      window.open(video.videoUrl, "_blank", "noopener");
-    }
+    setDetailVideo(video);
   };
 
   const handleVideoAction = (video: CreatorVideo, action: CardAction) => {
@@ -476,6 +476,23 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
           onAction={(action) => handleVideoAction(bottomSheetVideo, action)}
           onClose={() => setBottomSheetVideo(null)}
         />
+      )}
+
+      {/* Desktop video intelligence panel */}
+      {detailVideo && !isMobile && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDetailVideo(null)} />
+          <div className="relative ml-auto w-full max-w-xl bg-surface-elevated border-l border-themed shadow-2xl overflow-auto animate-slide-in-right">
+            <VideoIntelligencePanel
+              video={detailVideo}
+              onCreateScript={(hook, topic) => {
+                setDetailVideo(null);
+                onNavigate("SCRIPT_WIZARD");
+              }}
+              onClose={() => setDetailVideo(null)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

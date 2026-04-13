@@ -465,3 +465,14 @@ Composite score formula: `save_rate*0.4 + share_rate*0.3 + engagement*0.2 + ctr*
 - Types live in `shared/types.ts` within each package
 - Schema changes go in `shared/schema.ts`
 - Prefer editing existing files over creating new ones
+
+## Design Context
+
+Full design context for the Impeccable skill suite lives in `.impeccable.md` at the project root. Read it before any UI/design work. Key points:
+
+- **Aesthetic**: Warm, Editorial, Refined. Think Apple Music meets Stripe Dashboard.
+- **Theme priority**: Light mode primary, dark mode secondary.
+- **Anti-patterns**: No generic Bootstrap/Material energy, no gamification, no dense enterprise SaaS.
+- **Principles**: Editorial over industrial, warmth through restraint, precision in details, motion with purpose, content-forward hierarchy.
+- **Typography**: Georgia serif headings, Nunito Sans body.
+- **Palette**: Teal-600 primary (`#0d9488`), slate neutrals, warm coral accents. Format colors A-G mapped to teal/emerald/sky/rose/violet/orange/pink.

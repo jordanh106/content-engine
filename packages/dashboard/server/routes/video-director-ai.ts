@@ -4,6 +4,9 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { invalidateProductionPlanCache } from "../parsers/production-plans.js";
+import { db } from "../db.js";
+import { creatorVideos } from "../../shared/schema.js";
+import { desc, sql } from "drizzle-orm";
 
 // ─── Content Tier System (Kallaway Rehook Architecture) ─────────────────────
 type ContentTier = "short" | "mid" | "long";
@@ -135,14 +138,99 @@ export function createVideoDirectorAiRouter(contentLibraryPath: string) {
     return { brand, hookPatterns };
   };
 
-  // POST /hooks - Generate AI hook variations for a topic
-  router.post("/hooks", async (req, res) => {
+  // POST /research - Generate structured topic research before hooks
+  router.post("/research", async (req, res) => {
     if (!client) return res.status(503).json({ error: "AI unavailable" });
-    const { topic, count = 6 } = req.body as { topic: string; count?: number };
+    const { topic } = req.body as { topic: string };
     if (!topic) return res.status(400).json({ error: "Topic is required" });
 
     try {
       const { brand, hookPatterns } = loadBrandContext();
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
+        system: `You are a content research analyst for a chiropractic practice creating short-form video content. You research topics deeply to provide the creator with everything they need before writing hooks and scripts.
+
+BRAND VOICE:
+${brand}
+
+Your job is to provide research that makes the resulting video more specific, credible, and engaging. Focus on information the creator can USE in the script, not general background.
+
+RULES:
+- No emdashes. Use commas, periods, or restructure.
+- Be specific. Real numbers, real conditions, real scenarios.
+- Write for a creator who needs to sound like an expert on camera.
+- Every fact should be something that would make a viewer stop scrolling or save the video.`,
+        messages: [{
+          role: "user",
+          content: `Research this video topic deeply: "${topic}"
+
+Generate structured research in these exact categories. Return ONLY valid JSON:
+
+{
+  "summary": "2-3 sentence executive summary of the topic and why it matters to viewers right now",
+  "engagementStrategies": [
+    "Strategy 1: specific advice on how to hook viewers on this topic",
+    "Strategy 2: ...",
+    "Strategy 3: ..."
+  ],
+  "keyFacts": [
+    "Surprising or useful fact that would make someone save this video",
+    "Another fact...",
+    "Another fact...",
+    "Another fact..."
+  ],
+  "contentAngles": [
+    {"angle": "Common misconception or question", "why": "Why this angle works for engagement"},
+    {"angle": "...", "why": "..."},
+    {"angle": "...", "why": "..."}
+  ],
+  "audiencePainPoints": [
+    "Specific pain point or frustration the viewer has about this topic",
+    "Another pain point...",
+    "Another pain point..."
+  ],
+  "trendingContext": "1-2 sentences on why this topic is relevant right now (seasonal, viral trend, common search query, etc.)"
+}`,
+        }],
+      });
+
+      const text = response.content.find((b) => b.type === "text")?.text || "";
+      // Strip markdown code fences if present
+      const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "");
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        return res.json(data);
+      }
+      console.error("[video-director-ai] Research: could not parse JSON from:", text.slice(0, 200));
+      res.status(500).json({ error: "Failed to parse research" });
+    } catch (err) {
+      console.error("[video-director-ai] Research generation error:", err);
+      res.status(500).json({ error: "Research generation failed" });
+    }
+  });
+
+  // POST /hooks - Generate AI hook variations for a topic
+  router.post("/hooks", async (req, res) => {
+    if (!client) return res.status(503).json({ error: "AI unavailable" });
+    const { topic, count = 6, researchContext } = req.body as { topic: string; count?: number; researchContext?: Record<string, unknown> };
+    if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+    try {
+      const { brand, hookPatterns } = loadBrandContext();
+
+      // Build research context block if available
+      let researchBlock = "";
+      if (researchContext) {
+        const parts: string[] = [];
+        if (researchContext.summary) parts.push(`Summary: ${researchContext.summary}`);
+        if (Array.isArray(researchContext.keyFacts)) parts.push(`Key Facts:\n${(researchContext.keyFacts as string[]).map(f => `- ${f}`).join("\n")}`);
+        if (Array.isArray(researchContext.audiencePainPoints)) parts.push(`Audience Pain Points:\n${(researchContext.audiencePainPoints as string[]).map(p => `- ${p}`).join("\n")}`);
+        if (researchContext.trendingContext) parts.push(`Trending Context: ${researchContext.trendingContext}`);
+        researchBlock = `\n\nRESEARCH CONTEXT (use this to write more specific, data-backed hooks):\n${parts.join("\n\n")}`;
+      }
+
       const response = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
@@ -153,12 +241,14 @@ ${brand}
 
 HOOK PATTERNS LIBRARY (proven formats):
 ${hookPatterns}
+${researchBlock}
 
 RULES:
 - No emdashes. Use commas, periods, or restructure.
 - Each hook must be a single sentence, spoken directly to camera.
 - Vary the hook types: pattern interrupt, contrarian, question, story, statistic, teacher.
 - Be specific to the topic, not generic. Reference real symptoms, situations, or emotions.
+- If research context is provided, USE the specific facts, pain points, and angles to write hooks grounded in real data.
 - Write hooks that would work for TikTok and Instagram Reels.`,
         messages: [{
           role: "user",
@@ -177,7 +267,45 @@ Return ONLY valid JSON: {"hooks": [{"text": "...", "type": "...", "prediction": 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const data = JSON.parse(jsonMatch[0]);
-        return res.json({ hooks: data.hooks || [] });
+        const hooks = data.hooks || [];
+
+        // Enrich hooks with inspiration from Discover Feed videos
+        try {
+          const topicWords = topic.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 5);
+          if (topicWords.length > 0) {
+            const topVideos = db
+              .select({
+                id: creatorVideos.id,
+                creatorHandle: creatorVideos.creatorHandle,
+                videoTitle: creatorVideos.videoTitle,
+                thumbnailUrl: creatorVideos.thumbnailUrl,
+                views: creatorVideos.views,
+                platform: creatorVideos.platform,
+              })
+              .from(creatorVideos)
+              .where(sql`LOWER(${creatorVideos.videoTitle}) LIKE ${"%" + topicWords[0] + "%"}`)
+              .orderBy(desc(creatorVideos.views))
+              .limit(6)
+              .all();
+
+            // Distribute top videos across hooks as inspiration
+            for (let i = 0; i < hooks.length && i < topVideos.length; i++) {
+              const v = topVideos[i];
+              hooks[i].inspiration = `${v.creatorHandle} on ${v.platform}`;
+              hooks[i].inspirationMeta = {
+                creatorHandle: v.creatorHandle,
+                videoTitle: v.videoTitle,
+                thumbnailUrl: v.thumbnailUrl,
+                views: v.views,
+                platform: v.platform,
+              };
+            }
+          }
+        } catch (e) {
+          // Attribution is best-effort, don't fail the whole request
+        }
+
+        return res.json({ hooks });
       }
       res.status(500).json({ error: "Failed to parse hooks" });
     } catch (err) {

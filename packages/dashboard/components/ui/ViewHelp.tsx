@@ -28,7 +28,7 @@ export const ViewHelp: React.FC<ViewHelpData & { onOpenGuide?: () => void }> = (
       {/* Floating help button */}
       <button
         onClick={() => setOpen(true)}
-        className={`fixed bottom-24 md:bottom-6 ${buttonRight} z-30 w-10 h-10 rounded-full bg-slate-900 text-white shadow-lg flex items-center justify-center hover:bg-slate-800 transition-all`}
+        className={`fixed bottom-24 md:bottom-20 ${buttonRight} z-30 w-10 h-10 rounded-full bg-slate-900 text-white shadow-lg flex items-center justify-center hover:bg-slate-800 transition-all`}
         aria-label="View help"
       >
         <HelpCircle size={18} />

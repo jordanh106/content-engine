@@ -1644,6 +1644,26 @@ export const CAROUSEL_PLATFORM_CONFIGS: CarouselPlatformConfig[] = [
   { platform: "youtube_thumbnail", aspectRatio: "16:9", width: 1280, height: 720, label: "YouTube Thumbnail" },
 ];
 
+export type ScriptWizardSeed = {
+  topic: string;
+  format?: string;
+  audience?: string;
+  videoCode?: string;
+  sourceTitle?: string;
+  outlierScore?: number;
+  replicateContext?: {
+    sourceTitle: string;
+    outlierScore: number;
+    views: number;
+    saves: number;
+    engagementRate: number;
+    saveRate: number;
+    format?: string;
+    audience?: string;
+    insights: string[];
+  };
+};
+
 export type CarouselRemixSeed = {
   topic: string;
   hookLine: string;

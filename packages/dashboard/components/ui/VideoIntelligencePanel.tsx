@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
@@ -57,6 +57,17 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
   });
 
   const breakdown = breakdownData?.breakdown;
+  const autoGenerateTriggered = useRef(false);
+
+  // Auto-generate breakdown if none exists (one-time trigger per panel open)
+  useEffect(() => {
+    if (!isLoading && breakdownData && !breakdown && !autoGenerateTriggered.current) {
+      autoGenerateTriggered.current = true;
+      fetch(`/api/creator-videos/${video.id}/breakdown`, { method: "POST" })
+        .then((r) => { if (r.ok) queryClient.invalidateQueries({ queryKey: ["video-breakdown", video.id] }); })
+        .catch(() => {});
+    }
+  }, [isLoading, breakdownData, breakdown, video.id, queryClient]);
 
   // AI Summary generation
   const summaryMutation = useMutation({

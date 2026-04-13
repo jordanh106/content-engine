@@ -1318,121 +1318,128 @@ Rules:
     }
   });
 
+  // ── Bulk Ingest Helper ─────────────────────────────────────────────────────
+
+  type IngestVideo = {
+    creatorHandle: string;
+    platform: string;
+    videoUrl: string;
+    videoTitle?: string;
+    thumbnailUrl?: string;
+    views?: number;
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    saves?: number;
+    publishedAt?: string;
+    durationSeconds?: number;
+  };
+
+  async function bulkIngestVideos(videos: IngestVideo[]): Promise<{ inserted: number; updated: number; skipped: number; total: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const v of videos) {
+      if (!v.videoUrl || !v.creatorHandle || !v.platform) { skipped++; continue; }
+
+      // Check for existing video by URL
+      const existing = db.select().from(creatorVideos)
+        .where(eq(creatorVideos.videoUrl, v.videoUrl))
+        .limit(1).all();
+
+      // Calculate outlier score
+      const avgViews = getAvgViews(v.creatorHandle);
+      const outlierScoreX100 = avgViews && v.views
+        ? Math.round((v.views / avgViews) * 100)
+        : null;
+
+      if (existing.length > 0) {
+        // Update metrics on existing video
+        db.update(creatorVideos)
+          .set({
+            views: v.views ?? existing[0].views,
+            likes: v.likes ?? existing[0].likes,
+            comments: v.comments ?? existing[0].comments,
+            shares: v.shares ?? existing[0].shares,
+            saves: v.saves ?? existing[0].saves,
+            outlierScoreX100: outlierScoreX100 ?? existing[0].outlierScoreX100,
+          })
+          .where(eq(creatorVideos.id, existing[0].id))
+          .run();
+        updated++;
+      } else {
+        // Insert new video
+        const result = db.insert(creatorVideos)
+          .values({
+            creatorHandle: v.creatorHandle,
+            platform: v.platform,
+            videoUrl: v.videoUrl,
+            videoTitle: v.videoTitle || null,
+            thumbnailUrl: v.thumbnailUrl || null,
+            publishedAt: v.publishedAt || null,
+            durationSeconds: v.durationSeconds || null,
+            views: v.views || 0,
+            likes: v.likes || 0,
+            comments: v.comments || 0,
+            shares: v.shares || 0,
+            saves: v.saves || 0,
+            outlierScoreX100: outlierScoreX100,
+            status: "inbox",
+            recordedAt: new Date().toISOString(),
+          })
+          .returning()
+          .all();
+
+        // Cache thumbnail if provided
+        if (result[0] && v.thumbnailUrl && thumbnailsDir) {
+          cacheThumbnail(v.thumbnailUrl, result[0].id, thumbnailsDir).then((localPath) => {
+            if (localPath) {
+              db.update(creatorVideos).set({ thumbnailUrl: localPath }).where(eq(creatorVideos.id, result[0].id)).run();
+            }
+          }).catch(() => {});
+        } else if (result[0] && thumbnailsDir) {
+          ensureThumbnail({ id: result[0].id, videoUrl: v.videoUrl, thumbnailUrl: null, platform: v.platform }, thumbnailsDir).catch(() => {});
+        }
+
+        inserted++;
+      }
+    }
+
+    // Update channel snapshots for creators that had new data
+    const handles = [...new Set(videos.map((v) => v.creatorHandle))];
+    for (const handle of handles) {
+      const vids = db.select({ views: creatorVideos.views })
+        .from(creatorVideos)
+        .where(eq(creatorVideos.creatorHandle, handle))
+        .all();
+      if (vids.length >= 2) {
+        const avg = Math.round(vids.reduce((s, v) => s + (v.views || 0), 0) / vids.length);
+        const platform = videos.find((v) => v.creatorHandle === handle)?.platform || "unknown";
+        db.insert(channelSnapshots).values({
+          handle,
+          platform,
+          avgViews: avg,
+          recordedAt: new Date().toISOString(),
+        }).run();
+      }
+    }
+
+    return { inserted, updated, skipped, total: videos.length };
+  }
+
   // POST /api/creator-videos/bulk-ingest - Upsert videos from external sources (n8n, Xpoz)
   router.post("/bulk-ingest", async (req, res) => {
     try {
-      const { videos } = req.body as {
-        videos: Array<{
-          creatorHandle: string;
-          platform: string;
-          videoUrl: string;
-          videoTitle?: string;
-          thumbnailUrl?: string;
-          views?: number;
-          likes?: number;
-          comments?: number;
-          shares?: number;
-          saves?: number;
-          publishedAt?: string;
-          durationSeconds?: number;
-        }>;
-      };
+      const { videos } = req.body as { videos: IngestVideo[] };
 
       if (!videos?.length) {
         res.status(400).json({ error: "Missing videos array" });
         return;
       }
 
-      let inserted = 0;
-      let updated = 0;
-      let skipped = 0;
-
-      for (const v of videos) {
-        if (!v.videoUrl || !v.creatorHandle || !v.platform) { skipped++; continue; }
-
-        // Check for existing video by URL
-        const existing = db.select().from(creatorVideos)
-          .where(eq(creatorVideos.videoUrl, v.videoUrl))
-          .limit(1).all();
-
-        // Calculate outlier score
-        const avgViews = getAvgViews(v.creatorHandle);
-        const outlierScoreX100 = avgViews && v.views
-          ? Math.round((v.views / avgViews) * 100)
-          : null;
-
-        if (existing.length > 0) {
-          // Update metrics on existing video
-          db.update(creatorVideos)
-            .set({
-              views: v.views ?? existing[0].views,
-              likes: v.likes ?? existing[0].likes,
-              comments: v.comments ?? existing[0].comments,
-              shares: v.shares ?? existing[0].shares,
-              saves: v.saves ?? existing[0].saves,
-              outlierScoreX100: outlierScoreX100 ?? existing[0].outlierScoreX100,
-            })
-            .where(eq(creatorVideos.id, existing[0].id))
-            .run();
-          updated++;
-        } else {
-          // Insert new video
-          const result = db.insert(creatorVideos)
-            .values({
-              creatorHandle: v.creatorHandle,
-              platform: v.platform,
-              videoUrl: v.videoUrl,
-              videoTitle: v.videoTitle || null,
-              thumbnailUrl: v.thumbnailUrl || null,
-              publishedAt: v.publishedAt || null,
-              durationSeconds: v.durationSeconds || null,
-              views: v.views || 0,
-              likes: v.likes || 0,
-              comments: v.comments || 0,
-              shares: v.shares || 0,
-              saves: v.saves || 0,
-              outlierScoreX100: outlierScoreX100,
-              status: "inbox",
-              recordedAt: new Date().toISOString(),
-            })
-            .returning()
-            .all();
-
-          // Cache thumbnail if provided
-          if (result[0] && v.thumbnailUrl && thumbnailsDir) {
-            cacheThumbnail(v.thumbnailUrl, result[0].id, thumbnailsDir).then((localPath) => {
-              if (localPath) {
-                db.update(creatorVideos).set({ thumbnailUrl: localPath }).where(eq(creatorVideos.id, result[0].id)).run();
-              }
-            }).catch(() => {});
-          } else if (result[0] && thumbnailsDir) {
-            ensureThumbnail({ id: result[0].id, videoUrl: v.videoUrl, thumbnailUrl: null, platform: v.platform }, thumbnailsDir).catch(() => {});
-          }
-
-          inserted++;
-        }
-      }
-
-      // Update channel snapshots for creators that had new data
-      const handles = [...new Set(videos.map((v) => v.creatorHandle))];
-      for (const handle of handles) {
-        const vids = db.select({ views: creatorVideos.views })
-          .from(creatorVideos)
-          .where(eq(creatorVideos.creatorHandle, handle))
-          .all();
-        if (vids.length >= 2) {
-          const avg = Math.round(vids.reduce((s, v) => s + (v.views || 0), 0) / vids.length);
-          const platform = videos.find((v) => v.creatorHandle === handle)?.platform || "unknown";
-          db.insert(channelSnapshots).values({
-            handle,
-            platform,
-            avgViews: avg,
-            recordedAt: new Date().toISOString(),
-          }).run();
-        }
-      }
-
-      res.json({ inserted, updated, skipped, total: videos.length });
+      const result = await bulkIngestVideos(videos);
+      res.json(result);
     } catch (err) {
       console.error("[creator-videos] bulk-ingest error:", err);
       res.status(500).json({ error: "Failed to bulk ingest videos" });
@@ -1540,6 +1547,44 @@ Rules:
     db.update(blowingUpCreators).set({ active }).where(eq(blowingUpCreators.id, id)).run();
     const updated = db.select().from(blowingUpCreators).where(eq(blowingUpCreators.id, id)).limit(1).all();
     res.json(updated[0] ?? { id, active });
+  });
+
+  // POST /api/creator-videos/blowing-up/scan - Trigger n8n scanner and ingest results (server-side proxy)
+  router.post("/blowing-up/scan", async (_req, res) => {
+    const n8nUrl = process.env.N8N_URL || "https://n8n.srv1290877.hstgr.cloud";
+    try {
+      console.log("[creator-videos] Triggering n8n Blowing Up Scanner...");
+      const scanRes = await fetch(`${n8nUrl}/webhook/blowing-up-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "dashboard-manual" }),
+        signal: AbortSignal.timeout(600000), // 10 min -- scanning 10 creators with AI tool calls takes time
+      });
+
+      if (!scanRes.ok) {
+        const text = await scanRes.text().catch(() => "");
+        console.error("[creator-videos] n8n scan failed:", scanRes.status, text);
+        res.status(502).json({ error: `n8n returned ${scanRes.status}`, details: text });
+        return;
+      }
+
+      const scanData = await scanRes.json() as { videos?: IngestVideo[] };
+      const videos = scanData.videos || [];
+      console.log(`[creator-videos] n8n returned ${videos.length} videos`);
+
+      if (videos.length === 0) {
+        res.json({ inserted: 0, updated: 0, skipped: 0, total: 0 });
+        return;
+      }
+
+      const result = await bulkIngestVideos(videos);
+      console.log(`[creator-videos] Ingested: +${result.inserted} new, ${result.updated} updated, ${result.skipped} skipped`);
+      res.json(result);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("[creator-videos] blowing-up scan error:", message);
+      res.status(502).json({ error: "Failed to reach n8n scanner", details: message });
+    }
   });
 
   return router;

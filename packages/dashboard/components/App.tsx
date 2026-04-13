@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import type { DashboardView, CarouselRemixSeed } from "../shared/types.js";
+import type { DashboardView, CarouselRemixSeed, ScriptWizardSeed } from "../shared/types.js";
 import { Layout } from "./Layout.js";
 import { DashboardHome } from "./DashboardHome.js";
 import { PipelineBoard } from "./PipelineBoard.js";
@@ -37,6 +37,7 @@ const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
   const [selectedVideoCode, setSelectedVideoCode] = useState<string | null>(null);
   const [carouselSeed, setCarouselSeed] = useState<CarouselRemixSeed | null>(null);
+  const [scriptSeed, setScriptSeed] = useState<ScriptWizardSeed | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
@@ -101,11 +102,14 @@ const AppInner: React.FC = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [commandPaletteOpen]);
 
-  const handleNavigate = useCallback((target: DashboardView, payload?: CarouselRemixSeed) => {
+  const handleNavigate = useCallback((target: DashboardView, payload?: CarouselRemixSeed | ScriptWizardSeed) => {
     setView(target);
     setCommandPaletteOpen(false);
-    if (target === "CAROUSEL_LAB" && payload) {
-      setCarouselSeed(payload);
+    if (target === "CAROUSEL_LAB" && payload && "hookLine" in payload) {
+      setCarouselSeed(payload as CarouselRemixSeed);
+    }
+    if (target === "SCRIPT_WIZARD" && payload && "topic" in payload && !("hookLine" in payload)) {
+      setScriptSeed(payload as ScriptWizardSeed);
     }
   }, []);
 
@@ -158,7 +162,7 @@ const AppInner: React.FC = () => {
           {view === "CAROUSEL_LAB" && <CarouselLab onNavigate={handleNavigate} initialRemix={carouselSeed} onConsumeRemix={() => setCarouselSeed(null)} />}
           {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
           {view === "INTELLIGENCE" && <IntelligenceView onNavigate={handleNavigate} />}
-          {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => handleNavigate("HOME")} inline />}
+          {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => { handleNavigate("HOME"); setScriptSeed(null); }} inline initialTopic={scriptSeed?.topic} replicateContext={scriptSeed?.replicateContext ?? null} />}
         </ViewTransition>
 
         {selectedVideoCode && (

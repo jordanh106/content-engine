@@ -34,7 +34,7 @@ export const OnboardingChecklist: React.FC = () => {
       {!expanded && (
         <button
           onClick={() => setExpanded(true)}
-          className="fixed bottom-24 md:bottom-6 right-4 z-[35] w-10 h-10 flex items-center justify-center"
+          className="fixed bottom-24 md:bottom-20 right-4 z-[35] w-10 h-10 flex items-center justify-center"
           aria-label={`Onboarding progress: ${completedCount} of ${totalCount}`}
         >
           <svg width="40" height="40" className="absolute">
@@ -74,12 +74,12 @@ export const OnboardingChecklist: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 md:bottom-6 right-4 z-[35] w-[280px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden"
+            className="fixed bottom-24 md:bottom-20 right-4 z-[35] w-[280px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 pb-3 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Getting Started</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Getting Started</p>
                 <p className="text-xs text-slate-500 mt-0.5">{completedCount} of {totalCount} complete</p>
               </div>
               <button
