@@ -1191,6 +1191,258 @@ Rules:
     }
   });
 
+  // ============================================
+  // Performance Feedback Loop Endpoints
+  // (Must be before /:code catch-all route)
+  // ============================================
+
+  // GET /api/metrics/own-outliers - Detect your own content performing 2x+ above baseline
+  router.get("/own-outliers", (_req, res) => {
+    try {
+      const allVideoViews = sqlite.prepare(`
+        SELECT video_code, SUM(views) as total_views, SUM(saves) as total_saves,
+          SUM(likes) as total_likes, SUM(shares) as total_shares, SUM(comments) as total_comments,
+          MAX(hook_pattern_used) as hook_pattern, MAX(format_id) as format_id
+        FROM performance_metrics
+        WHERE views > 0
+        GROUP BY video_code
+        ORDER BY total_views ASC
+      `).all() as Array<{
+        video_code: string; total_views: number; total_saves: number;
+        total_likes: number; total_shares: number; total_comments: number;
+        hook_pattern: string | null; format_id: string | null;
+      }>;
+
+      if (allVideoViews.length === 0) {
+        res.json({ outliers: [], baseline: { medianViews: 0, avgViews: 0, videoCount: 0 } });
+        return;
+      }
+
+      const viewsList = allVideoViews.map((r) => r.total_views);
+      const mid = Math.floor(viewsList.length / 2);
+      const medianViews = viewsList.length % 2 === 0
+        ? Math.round((viewsList[mid - 1] + viewsList[mid]) / 2)
+        : viewsList[mid];
+      const avgViews = Math.round(viewsList.reduce((s, v) => s + v, 0) / viewsList.length);
+
+      const threshold = medianViews * 2;
+      const outlierVideos = allVideoViews
+        .filter((r) => r.total_views >= threshold)
+        .sort((a, b) => b.total_views - a.total_views);
+
+      const videos = parseContentLibrary(contentLibraryPath);
+      const outliers = outlierVideos.map((r) => {
+        const video = videos.find((v) => v.code === r.video_code);
+        const totalEngagement = r.total_likes + r.total_saves + r.total_shares + r.total_comments;
+        const engagementRate = r.total_views > 0 ? totalEngagement / r.total_views : 0;
+        const saveRate = r.total_views > 0 ? r.total_saves / r.total_views : 0;
+        const outlierScore = medianViews > 0 ? Math.round((r.total_views / medianViews) * 100) / 100 : 0;
+        const formatId = r.format_id || (r.video_code[0]?.match(/[A-G]/) ? r.video_code[0] : null);
+
+        return {
+          videoCode: r.video_code,
+          title: video?.title ?? r.video_code,
+          format: formatId,
+          formatName: video?.formatName ?? null,
+          audience: video?.audienceLabel ?? null,
+          hookPattern: r.hook_pattern,
+          views: r.total_views,
+          saves: r.total_saves,
+          likes: r.total_likes,
+          shares: r.total_shares,
+          comments: r.total_comments,
+          outlierScore,
+          engagementRate: Math.round(engagementRate * 10000) / 100,
+          saveRate: Math.round(saveRate * 10000) / 100,
+        };
+      });
+
+      res.json({ outliers, baseline: { medianViews, avgViews, videoCount: allVideoViews.length } });
+    } catch (error) {
+      console.error("[metrics] Error computing own outliers:", error);
+      res.status(500).json({ error: "Failed to compute outliers" });
+    }
+  });
+
+  // GET /api/metrics/format-platform-heatmap - Performance matrix: format x platform x metric
+  router.get("/format-platform-heatmap", (_req, res) => {
+    try {
+      const metric = (_req.query.metric as string) || "saveRate";
+
+      const rows = sqlite.prepare(`
+        SELECT
+          UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))) as format_id,
+          platform,
+          COUNT(DISTINCT video_code) as video_count,
+          AVG(views) as avg_views,
+          AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as avg_save_rate,
+          AVG(CAST((likes + saves + shares + comments) AS FLOAT) / NULLIF(views, 0)) as avg_engagement_rate,
+          AVG(CAST(shares AS FLOAT) / NULLIF(views, 0)) as avg_share_rate
+        FROM performance_metrics
+        WHERE views > 0
+          AND UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))) IN ('A','B','C','D','E','F','G')
+        GROUP BY format_id, platform
+      `).all() as Array<{
+        format_id: string; platform: string; video_count: number;
+        avg_views: number; avg_save_rate: number; avg_engagement_rate: number; avg_share_rate: number;
+      }>;
+
+      const formats = ["A", "B", "C", "D", "E", "F", "G"];
+      const platforms = [...new Set(rows.map((r) => r.platform))].sort();
+      const matrix: Record<string, Record<string, { value: number; videoCount: number }>> = {};
+
+      for (const fmt of formats) {
+        matrix[fmt] = {};
+        for (const plat of platforms) {
+          const row = rows.find((r) => r.format_id === fmt && r.platform === plat);
+          let value = 0;
+          if (row) {
+            if (metric === "saveRate") value = row.avg_save_rate ?? 0;
+            else if (metric === "engagementRate") value = row.avg_engagement_rate ?? 0;
+            else if (metric === "shareRate") value = row.avg_share_rate ?? 0;
+            else if (metric === "avgViews") value = row.avg_views ?? 0;
+          }
+          matrix[fmt][plat] = { value, videoCount: row?.video_count ?? 0 };
+        }
+      }
+
+      const flatCells = rows.map((r) => {
+        let value = 0;
+        if (metric === "saveRate") value = r.avg_save_rate ?? 0;
+        else if (metric === "engagementRate") value = r.avg_engagement_rate ?? 0;
+        else if (metric === "shareRate") value = r.avg_share_rate ?? 0;
+        else if (metric === "avgViews") value = r.avg_views ?? 0;
+        return { format: r.format_id, platform: r.platform, value, videoCount: r.video_count };
+      }).sort((a, b) => b.value - a.value);
+
+      res.json({ matrix, platforms, formats, metric, topCombinations: flatCells.slice(0, 5) });
+    } catch (error) {
+      console.error("[metrics] Error computing heatmap:", error);
+      res.status(500).json({ error: "Failed to compute heatmap" });
+    }
+  });
+
+  // GET /api/metrics/auto-insights - AI-free performance digest with actionable findings
+  router.get("/auto-insights", (_req, res) => {
+    try {
+      const insights: Array<{ type: string; severity: "info" | "warning" | "success"; title: string; detail: string; data?: Record<string, unknown> }> = [];
+
+      const videoPerf = sqlite.prepare(`
+        SELECT video_code, SUM(views) as v, SUM(saves) as s, SUM(likes) as l,
+          MAX(hook_pattern_used) as hook, MAX(format_id) as fmt
+        FROM performance_metrics WHERE views > 0
+        GROUP BY video_code ORDER BY v DESC
+      `).all() as Array<{ video_code: string; v: number; s: number; l: number; hook: string | null; fmt: string | null }>;
+
+      if (videoPerf.length === 0) {
+        res.json({ insights: [{ type: "empty", severity: "info" as const, title: "No performance data yet", detail: "Publish videos and log metrics to see insights." }], generatedAt: new Date().toISOString() });
+        return;
+      }
+
+      const viewsList2 = videoPerf.map((r) => r.v).sort((a, b) => a - b);
+      const mid2 = Math.floor(viewsList2.length / 2);
+      const median = viewsList2.length % 2 === 0 ? (viewsList2[mid2 - 1] + viewsList2[mid2]) / 2 : viewsList2[mid2];
+      const top = videoPerf[0];
+      const videos = parseContentLibrary(contentLibraryPath);
+      const topVideo = videos.find((v) => v.code === top.video_code);
+
+      if (top.v >= median * 3) {
+        insights.push({
+          type: "top_performer", severity: "success",
+          title: `"${topVideo?.title ?? top.video_code}" is a breakout hit`,
+          detail: `${Math.round(top.v / median)}x your median views. ${top.hook ? `Hook pattern: ${top.hook}.` : ""} ${top.fmt ? `Format: ${top.fmt}.` : ""} Consider making more like this.`,
+          data: { videoCode: top.video_code, views: top.v, outlierMultiple: Math.round(top.v / median) },
+        });
+      }
+
+      const formatPerf = sqlite.prepare(`
+        SELECT UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))) as fmt,
+          COUNT(DISTINCT video_code) as cnt,
+          AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as sr
+        FROM performance_metrics WHERE views > 0
+          AND UPPER(COALESCE(format_id, SUBSTR(video_code, 1, 1))) IN ('A','B','C','D','E','F','G')
+        GROUP BY fmt HAVING cnt >= 2 ORDER BY sr DESC
+      `).all() as Array<{ fmt: string; cnt: number; sr: number }>;
+
+      if (formatPerf.length >= 2) {
+        const best = formatPerf[0];
+        const worst = formatPerf[formatPerf.length - 1];
+        const fmtNames: Record<string, string> = { A: "Explainer", B: "Checklist", C: "Demo", D: "Myth Buster", E: "Walkthrough", F: "Quick Tip", G: "Patient Story" };
+        insights.push({
+          type: "format_ranking", severity: "info",
+          title: `${fmtNames[best.fmt] || best.fmt} has your highest save rate`,
+          detail: `${(best.sr * 100).toFixed(1)}% save rate across ${best.cnt} videos. ${fmtNames[worst.fmt] || worst.fmt} is lowest at ${(worst.sr * 100).toFixed(1)}%.`,
+          data: { bestFormat: best.fmt, bestSaveRate: best.sr, worstFormat: worst.fmt, worstSaveRate: worst.sr },
+        });
+      }
+
+      const hookPerf = sqlite.prepare(`
+        SELECT LOWER(hook_pattern_used) as hook,
+          COUNT(DISTINCT video_code) as cnt,
+          AVG(CAST(saves AS FLOAT) / NULLIF(views, 0)) as sr
+        FROM performance_metrics
+        WHERE hook_pattern_used IS NOT NULL AND views > 0
+        GROUP BY hook HAVING cnt >= 2 ORDER BY sr DESC
+      `).all() as Array<{ hook: string; cnt: number; sr: number }>;
+
+      if (hookPerf.length >= 2) {
+        const bestHook = hookPerf[0];
+        insights.push({
+          type: "hook_ranking", severity: "success",
+          title: `"${bestHook.hook}" hooks drive the most saves`,
+          detail: `${(bestHook.sr * 100).toFixed(1)}% save rate across ${bestHook.cnt} videos.`,
+          data: { hookPattern: bestHook.hook, saveRate: bestHook.sr, videoCount: bestHook.cnt },
+        });
+      }
+
+      const bottom20Pct = Math.ceil(videoPerf.length * 0.2);
+      const underperformers = videoPerf.slice(-bottom20Pct);
+      if (underperformers.length >= 2) {
+        const underFormats = underperformers.map((r) => r.fmt || r.video_code[0]).filter(Boolean);
+        const formatCounts: Record<string, number> = {};
+        underFormats.forEach((f) => { formatCounts[f] = (formatCounts[f] || 0) + 1; });
+        const mostUnderFormat = Object.entries(formatCounts).sort((a, b) => b[1] - a[1])[0];
+        if (mostUnderFormat && mostUnderFormat[1] >= 2) {
+          const fmtNames: Record<string, string> = { A: "Explainer", B: "Checklist", C: "Demo", D: "Myth Buster", E: "Walkthrough", F: "Quick Tip", G: "Patient Story" };
+          insights.push({
+            type: "underperforming_format", severity: "warning",
+            title: `${fmtNames[mostUnderFormat[0]] || mostUnderFormat[0]} shows up in your bottom performers`,
+            detail: `${mostUnderFormat[1]} of your bottom ${bottom20Pct} videos use this format.`,
+            data: { format: mostUnderFormat[0], count: mostUnderFormat[1] },
+          });
+        }
+      }
+
+      const weekRows = sqlite.prepare(`
+        SELECT
+          CASE WHEN recorded_at >= date('now', '-7 days') THEN 'this' ELSE 'last' END as period,
+          SUM(views) as views, SUM(saves) as saves
+        FROM performance_metrics
+        WHERE recorded_at >= date('now', '-14 days')
+        GROUP BY period
+      `).all() as Array<{ period: string; views: number; saves: number }>;
+
+      const thisWeekData = weekRows.find((r) => r.period === "this");
+      const lastWeekData = weekRows.find((r) => r.period === "last");
+      if (thisWeekData && lastWeekData && lastWeekData.views > 0) {
+        const viewsDelta = Math.round(((thisWeekData.views - lastWeekData.views) / lastWeekData.views) * 100);
+        if (Math.abs(viewsDelta) >= 20) {
+          insights.push({
+            type: "weekly_trend", severity: viewsDelta > 0 ? "success" : "warning",
+            title: `Views ${viewsDelta > 0 ? "up" : "down"} ${Math.abs(viewsDelta)}% week-over-week`,
+            detail: `This week: ${thisWeekData.views.toLocaleString()} views. Last week: ${lastWeekData.views.toLocaleString()} views.`,
+            data: { thisWeek: thisWeekData.views, lastWeek: lastWeekData.views, delta: viewsDelta },
+          });
+        }
+      }
+
+      res.json({ insights, generatedAt: new Date().toISOString(), videoCount: videoPerf.length });
+    } catch (error) {
+      console.error("[metrics] Error computing auto-insights:", error);
+      res.status(500).json({ error: "Failed to compute insights" });
+    }
+  });
+
   // GET /api/metrics/:code - Get metrics for a specific video
   // IMPORTANT: Must be after all named routes to avoid catching /trends, /bulk, etc.
   router.get("/:code", (req, res) => {

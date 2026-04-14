@@ -1088,6 +1088,11 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       )}
 
       {/* ================================================================ */}
+      {/* FORMAT x PLATFORM HEATMAP                                        */}
+      {/* ================================================================ */}
+      <FormatPlatformHeatmap />
+
+      {/* ================================================================ */}
       {/* BUSINESS OUTCOMES ATTRIBUTION                                    */}
       {/* ================================================================ */}
 
@@ -1795,5 +1800,154 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
       <ViewHelp {...VIEW_HELP.METRICS} />
     </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Format x Platform Heatmap — shows which format+platform combos work best
+// ═══════════════════════════════════════════════════════════════════════════
+type HeatmapData = {
+  matrix: Record<string, Record<string, { value: number; videoCount: number }>>;
+  platforms: string[];
+  formats: string[];
+  metric: string;
+  topCombinations: Array<{ format: string; platform: string; value: number; videoCount: number }>;
+};
+
+const FORMAT_NAMES_FULL: Record<string, string> = { A: "Explainer", B: "Checklist", C: "Demo", D: "Myth Buster", E: "Walkthrough", F: "Quick Tip", G: "Patient Story" };
+
+const FormatPlatformHeatmap: React.FC = () => {
+  const [metric, setMetric] = useState<string>("saveRate");
+  const { data } = useQuery<HeatmapData>({
+    queryKey: ["format-platform-heatmap", metric],
+    queryFn: () => fetch(`/api/metrics/format-platform-heatmap?metric=${metric}`).then((r) => r.json()),
+    staleTime: 5 * 60_000,
+  });
+
+  if (!data?.platforms?.length) return null;
+
+  // Find max value for color scaling
+  const allValues = Object.values(data.matrix).flatMap((row) =>
+    Object.values(row).map((cell) => cell.value)
+  );
+  const maxVal = Math.max(...allValues, 0.001);
+
+  const metricLabel = metric === "saveRate" ? "Save Rate" : metric === "engagementRate" ? "Engagement" : metric === "shareRate" ? "Share Rate" : "Avg Views";
+  const formatValue = (v: number) => {
+    if (metric === "avgViews") return v >= 1000 ? `${(v / 1000).toFixed(1)}K` : Math.round(v).toString();
+    return `${(v * 100).toFixed(1)}%`;
+  };
+
+  return (
+    <section className="border border-themed rounded-2xl p-5 bg-surface-elevated">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <LayoutGrid size={14} className="text-teal-600" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
+            Format x Platform Performance
+          </p>
+        </div>
+        <div className="flex gap-1">
+          {[
+            { key: "saveRate", label: "Save Rate" },
+            { key: "engagementRate", label: "Engagement" },
+            { key: "avgViews", label: "Views" },
+          ].map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMetric(m.key)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
+                metric === m.key
+                  ? "bg-teal-600 text-white"
+                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Heatmap Grid */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-[10px] font-semibold text-slate-400 text-left pb-2 pr-2 w-24">Format</th>
+              {data.platforms.map((p) => (
+                <th key={p} className="text-[10px] font-semibold text-slate-400 text-center pb-2 px-1 capitalize">
+                  {p.replace("_", " ")}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.formats.map((fmt) => {
+              const row = data.matrix[fmt];
+              if (!row) return null;
+              // Skip formats with no data at all
+              const hasData = Object.values(row).some((cell) => cell.videoCount > 0);
+              if (!hasData) return null;
+              return (
+                <tr key={fmt}>
+                  <td className="py-1 pr-2">
+                    <span className="text-[11px] font-semibold text-slate-700">{fmt}</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">{FORMAT_NAMES_FULL[fmt]}</span>
+                  </td>
+                  {data.platforms.map((plat) => {
+                    const cell = row[plat];
+                    if (!cell) return <td key={plat} className="py-1 px-1"><div className="w-full h-10 rounded-lg bg-slate-50" /></td>;
+                    const intensity = cell.videoCount > 0 ? Math.max(0.08, cell.value / maxVal) : 0;
+                    return (
+                      <td key={plat} className="py-1 px-1">
+                        <div
+                          className="w-full h-10 rounded-lg flex flex-col items-center justify-center transition-all duration-200 hover:scale-105 cursor-default"
+                          style={{
+                            backgroundColor: cell.videoCount > 0
+                              ? `rgba(13, 148, 136, ${intensity * 0.7})`
+                              : "#f8fafc",
+                          }}
+                          title={`${FORMAT_NAMES_FULL[fmt]} on ${plat}: ${formatValue(cell.value)} (${cell.videoCount} videos)`}
+                        >
+                          {cell.videoCount > 0 ? (
+                            <>
+                              <span className={`text-[12px] font-bold ${intensity > 0.5 ? "text-white" : "text-teal-800"}`}>
+                                {formatValue(cell.value)}
+                              </span>
+                              <span className={`text-[9px] ${intensity > 0.5 ? "text-white/70" : "text-slate-400"}`}>
+                                {cell.videoCount}v
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-slate-300">--</span>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Top Combinations */}
+      {data.topCombinations.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-themed">
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top Combinations by {metricLabel}</p>
+          <div className="flex flex-wrap gap-2">
+            {data.topCombinations.filter((c) => c.videoCount > 0).slice(0, 3).map((combo, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-full text-[11px] font-semibold text-teal-700">
+                <span className="font-bold">{combo.format}</span>
+                <span className="text-teal-400">on</span>
+                <span className="capitalize">{combo.platform.replace("_", " ")}</span>
+                <span className="text-teal-500 ml-1">{formatValue(combo.value)}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
   );
 };

@@ -1120,6 +1120,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
       </button>
 
+      {/* ═══ Performance Insights (auto-generated feedback loop) ════════════ */}
+      <PerformanceInsightsCard onNavigate={onNavigate} />
+
       {/* ═══ Section 3: Discover (consolidated) ════════════════════════════ */}
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
         <section>
@@ -1222,5 +1225,65 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* Trend Pulse compressed into Discover chips; Trending Carousels moved to Carousel Lab */}
     </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Performance Insights Card — auto-generated feedback loop
+// ═══════════════════════════════════════════════════════════════════════════
+type Insight = { type: string; severity: "info" | "warning" | "success"; title: string; detail: string; data?: Record<string, unknown> };
+
+const PerformanceInsightsCard: React.FC<{ onNavigate: (view: DashboardView) => void }> = ({ onNavigate }) => {
+  const { data } = useQuery<{ insights: Insight[]; generatedAt: string; videoCount: number }>({
+    queryKey: ["auto-insights"],
+    queryFn: () => fetch("/api/metrics/auto-insights").then((r) => r.json()),
+    staleTime: 5 * 60_000,
+  });
+
+  if (!data?.insights?.length) return null;
+
+  const severityStyles: Record<string, { bg: string; icon: string; border: string }> = {
+    success: { bg: "bg-emerald-50", icon: "text-emerald-600", border: "border-emerald-200" },
+    warning: { bg: "bg-amber-50", icon: "text-amber-600", border: "border-amber-200" },
+    info: { bg: "bg-sky-50", icon: "text-sky-600", border: "border-sky-200" },
+  };
+
+  const severityIcons: Record<string, React.ReactNode> = {
+    success: <TrendingUp size={14} />,
+    warning: <Activity size={14} />,
+    info: <Zap size={14} />,
+  };
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <Activity size={12} className="text-teal-500" />
+          Performance Insights
+        </h2>
+        <button
+          onClick={() => onNavigate("STRATEGY")}
+          className="text-[10px] font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+        >
+          Full Analysis <ArrowRight size={10} />
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        {data.insights.slice(0, 4).map((insight, i) => {
+          const style = severityStyles[insight.severity] || severityStyles.info;
+          return (
+            <div key={i} className={`${style.bg} border ${style.border} rounded-xl px-4 py-3 transition-all duration-200 hover:shadow-sm`}>
+              <div className="flex items-start gap-2.5">
+                <span className={`${style.icon} mt-0.5 shrink-0`}>{severityIcons[insight.severity]}</span>
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-slate-800 leading-snug">{insight.title}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{insight.detail}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 };
