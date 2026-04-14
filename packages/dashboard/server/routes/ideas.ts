@@ -5,7 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseIdeaBank, invalidateIdeaCache } from "../parsers/idea-bank.js";
 import { parseResearchSuggestions } from "../parsers/research-digest.js";
 import { parseContentLibrary, invalidateCache as invalidateContentCache } from "../parsers/content-library.js";
-import { db } from "../db.js";
+import { db, sqlite } from "../db.js";
 import { eq, desc } from "drizzle-orm";
 import { videoStatus, statusHistory, scriptVersions, vaultHooks, vaultStyles } from "../../shared/schema.js";
 import type { IdeaCategory, FormatId } from "../../shared/types.js";
@@ -311,21 +311,35 @@ export function createIdeasRouter(contentLibraryPath: string) {
         return;
       }
 
-      // Ingest new ideas
-      const added = appendIdeasToFile(ideaBankPath, newIdeas);
-      invalidateIdeaCache();
-
-      // Save digest
+      // Ingest new ideas + save digest atomically
+      let added = 0;
       let digestSaved = false;
-      if (markdown && date) {
-        const insightsDir = path.join(industryDir, "viral-insights");
-        fs.mkdirSync(insightsDir, { recursive: true });
-        const digestPath = path.join(insightsDir, `intel-${date}.md`);
-        if (!fs.existsSync(digestPath)) {
-          fs.writeFileSync(digestPath, markdown);
-          digestSaved = true;
+
+      const runSync = sqlite.transaction(() => {
+        added = appendIdeasToFile(ideaBankPath, newIdeas);
+
+        // Save digest
+        if (markdown && date) {
+          // Validate date format to prevent path traversal
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            throw new Error("Invalid date format");
+          }
+          const insightsDir = path.join(industryDir, "viral-insights");
+          fs.mkdirSync(insightsDir, { recursive: true });
+          const digestPath = path.join(insightsDir, `intel-${date}.md`);
+          // Verify resolved path stays within allowed directory
+          if (!path.resolve(digestPath).startsWith(path.resolve(insightsDir))) {
+            throw new Error("Invalid digest path");
+          }
+          if (!fs.existsSync(digestPath)) {
+            fs.writeFileSync(digestPath, markdown);
+            digestSaved = true;
+          }
         }
-      }
+      });
+
+      runSync();
+      invalidateIdeaCache();
 
       res.status(201).json({ synced: added, digestSaved, executionId });
     } catch (error) {
@@ -338,6 +352,11 @@ export function createIdeasRouter(contentLibraryPath: string) {
   // GET /api/ideas/digest/:date - serve digest markdown for a given date
   router.get("/digest/:date", (_req, res) => {
     const { date } = _req.params;
+    // Validate date format to prevent path traversal
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.status(400).json({ error: "Invalid date format (expected YYYY-MM-DD)" });
+      return;
+    }
     const insightsDir = path.join(industryDir, "viral-insights");
     const digestPath = path.join(insightsDir, `intel-${date}.md`);
     if (!fs.existsSync(digestPath)) {
@@ -664,33 +683,45 @@ DURATION: [estimated seconds]`,
         insertIdx++;
       }
 
-      // Insert before the next section header (or at end)
-      lines.splice(insertIdx, 0, entry);
-      fs.writeFileSync(contentLibraryPath, lines.join("\n"));
+      // Wrap file + DB writes in a transaction so they succeed or fail together
+      const runTransaction = sqlite.transaction(() => {
+        // Insert before the next section header (or at end)
+        lines.splice(insertIdx, 0, entry);
+        fs.writeFileSync(contentLibraryPath, lines.join("\n"));
+
+        // Create status record in SQLite
+        const now = new Date().toISOString();
+        db.insert(videoStatus)
+          .values({
+            videoCode: newCode,
+            currentStatus: "SCRIPTED",
+            statusUpdatedAt: now,
+            notes: source ? `Created from: ${source}` : "Created from idea bank",
+          })
+          .run();
+
+        db.insert(statusHistory)
+          .values({
+            videoCode: newCode,
+            fromStatus: null,
+            toStatus: "SCRIPTED",
+            notes: `Started production: ${topic}`,
+          })
+          .run();
+
+        // Archive the idea if it exists
+        archiveIdeaInFile(ideaBankPath, topic);
+      });
+
+      try {
+        runTransaction();
+      } catch (txErr) {
+        // If file was written but DB failed, restore the original file content
+        fs.writeFileSync(contentLibraryPath, content);
+        throw txErr;
+      }
+
       invalidateContentCache();
-
-      // Create status record in SQLite
-      const now = new Date().toISOString();
-      db.insert(videoStatus)
-        .values({
-          videoCode: newCode,
-          currentStatus: "SCRIPTED",
-          statusUpdatedAt: now,
-          notes: source ? `Created from: ${source}` : "Created from idea bank",
-        })
-        .run();
-
-      db.insert(statusHistory)
-        .values({
-          videoCode: newCode,
-          fromStatus: null,
-          toStatus: "SCRIPTED",
-          notes: `Started production: ${topic}`,
-        })
-        .run();
-
-      // Archive the idea if it exists
-      archiveIdeaInFile(ideaBankPath, topic);
       invalidateIdeaCache();
 
       res.status(201).json({ videoCode: newCode, topic, format: formatLetter, success: true });

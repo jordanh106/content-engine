@@ -32,6 +32,7 @@ import { QuickCaptureFAB } from "./ui/QuickCaptureFAB.js";
 import { QuestProvider, useQuest } from "./context/QuestContext.js";
 import { CoachToast } from "./ui/CoachToast.js";
 import { LevelUpCelebration } from "./ui/LevelUpCelebration.js";
+import { ErrorBoundary } from "./ui/ErrorBoundary.js";
 
 const AppInner: React.FC = () => {
   const [view, setView] = useState<DashboardView>("HOME");
@@ -141,6 +142,7 @@ const AppInner: React.FC = () => {
   return (
     <>
       <Layout currentView={view} onNavigate={handleNavigate} onOpenVault={handleOpenVault} onOpenGuide={handleOpenGuide} onOpenPersonas={() => setPersonasOpen(true)}>
+        <ErrorBoundary fallbackMessage="This view encountered an error">
         <ViewTransition viewKey={view}>
           {view === "LIBRARY" && (
             <ContentLibrary onSelectVideo={handleSelectVideo} />
@@ -164,12 +166,15 @@ const AppInner: React.FC = () => {
           {view === "INTELLIGENCE" && <IntelligenceView onNavigate={handleNavigate} />}
           {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => { handleNavigate("HOME"); setScriptSeed(null); }} inline initialTopic={scriptSeed?.topic} replicateContext={scriptSeed?.replicateContext ?? null} />}
         </ViewTransition>
+        </ErrorBoundary>
 
         {selectedVideoCode && (
+          <ErrorBoundary fallbackMessage="Video detail failed to load">
           <VideoDetail
             code={selectedVideoCode}
             onClose={handleCloseDetail}
 />
+          </ErrorBoundary>
         )}
       </Layout>
 

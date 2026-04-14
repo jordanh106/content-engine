@@ -47,7 +47,7 @@ export function createCreatorVideosRouter(contentLibraryPath: string, thumbnails
     console.warn("[creator-videos] ANTHROPIC_API_KEY not set.");
   }
 
-  // Helper: get average views for a creator
+  // Helper: get average views for a creator (single-handle lookup)
   function getAvgViews(handle: string): number | null {
     // First try channel_snapshots
     const snapshot = db
@@ -70,6 +70,63 @@ export function createCreatorVideosRouter(contentLibraryPath: string, thumbnails
     if (videos.length === 0) return null;
     const total = videos.reduce((sum, v) => sum + (v.views || 0), 0);
     return Math.round(total / videos.length);
+  }
+
+  // Helper: get average likes for a creator (fallback when views unavailable)
+  function getAvgLikes(handle: string): number | null {
+    const videos = db
+      .select({ likes: creatorVideos.likes })
+      .from(creatorVideos)
+      .where(eq(creatorVideos.creatorHandle, handle))
+      .all();
+    if (videos.length === 0) return null;
+    const total = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+    return total > 0 ? Math.round(total / videos.length) : null;
+  }
+
+  // Batch helper: pre-compute avg views and likes for all creators in one query each
+  // Eliminates N+1 queries when processing multiple videos
+  function getBatchAvgViews(): Map<string, number> {
+    const avgMap = new Map<string, number>();
+
+    // First: channel snapshots (latest per handle)
+    const snapshots = sqlite.prepare(`
+      SELECT handle, avg_views FROM channel_snapshots cs1
+      WHERE avg_views IS NOT NULL
+        AND recorded_at = (SELECT MAX(recorded_at) FROM channel_snapshots cs2 WHERE cs2.handle = cs1.handle)
+    `).all() as Array<{ handle: string; avg_views: number }>;
+    for (const s of snapshots) {
+      avgMap.set(s.handle, s.avg_views);
+    }
+
+    // Fallback: compute from creator_videos for handles not in snapshots
+    const computed = sqlite.prepare(`
+      SELECT creator_handle, ROUND(AVG(views)) as avg_views
+      FROM creator_videos
+      WHERE views > 0
+      GROUP BY creator_handle
+    `).all() as Array<{ creator_handle: string; avg_views: number }>;
+    for (const c of computed) {
+      if (!avgMap.has(c.creator_handle)) {
+        avgMap.set(c.creator_handle, c.avg_views);
+      }
+    }
+
+    return avgMap;
+  }
+
+  function getBatchAvgLikes(): Map<string, number> {
+    const rows = sqlite.prepare(`
+      SELECT creator_handle, ROUND(AVG(likes)) as avg_likes
+      FROM creator_videos
+      WHERE likes > 0
+      GROUP BY creator_handle
+    `).all() as Array<{ creator_handle: string; avg_likes: number }>;
+    const avgMap = new Map<string, number>();
+    for (const r of rows) {
+      avgMap.set(r.creator_handle, r.avg_likes);
+    }
+    return avgMap;
   }
 
   // GET /api/creator-videos - List all tracked videos with filters
@@ -1340,6 +1397,10 @@ Rules:
     let updated = 0;
     let skipped = 0;
 
+    // Pre-compute averages in batch (2 queries total instead of 2*N)
+    const batchAvgViews = getBatchAvgViews();
+    const batchAvgLikes = getBatchAvgLikes();
+
     for (const v of videos) {
       if (!v.videoUrl || !v.creatorHandle || !v.platform) { skipped++; continue; }
 
@@ -1348,11 +1409,15 @@ Rules:
         .where(eq(creatorVideos.videoUrl, v.videoUrl))
         .limit(1).all();
 
-      // Calculate outlier score
-      const avgViews = getAvgViews(v.creatorHandle);
-      const outlierScoreX100 = avgViews && v.views
-        ? Math.round((v.views / avgViews) * 100)
-        : null;
+      // Calculate outlier score (use likes as proxy when views unavailable)
+      const avgViews = batchAvgViews.get(v.creatorHandle) ?? null;
+      let outlierScoreX100: number | null = null;
+      if (avgViews && v.views) {
+        outlierScoreX100 = Math.round((v.views / avgViews) * 100);
+      } else if (v.likes && v.likes > 0) {
+        const avgLikes = batchAvgLikes.get(v.creatorHandle) ?? null;
+        outlierScoreX100 = avgLikes ? Math.round((v.likes / avgLikes) * 100) : 100;
+      }
 
       if (existing.length > 0) {
         // Update metrics on existing video

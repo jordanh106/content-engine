@@ -47,8 +47,10 @@ export function createDiscoverRouter(
         }
       }
       if (search) {
+        // Escape LIKE wildcards in user input to prevent LIKE injection
+        const escapedSearch = search.replace(/[%_]/g, "\\$&");
         conditions.push(
-          sql`(${creatorVideos.videoTitle} LIKE ${"%" + search + "%"} OR ${creatorVideos.creatorHandle} LIKE ${"%" + search + "%"})`,
+          sql`(${creatorVideos.videoTitle} LIKE ${"%" + escapedSearch + "%"} ESCAPE '\\' OR ${creatorVideos.creatorHandle} LIKE ${"%" + escapedSearch + "%"} ESCAPE '\\')`,
         );
       }
       if (handle) {

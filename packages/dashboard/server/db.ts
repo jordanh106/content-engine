@@ -259,6 +259,11 @@ sqlite.exec(`
   CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
   CREATE INDEX IF NOT EXISTS idx_saved_captions_video ON saved_captions(video_code);
   CREATE INDEX IF NOT EXISTS idx_channel_snapshots_handle ON channel_snapshots(handle, platform);
+  CREATE INDEX IF NOT EXISTS idx_perf_metrics_video_recorded ON performance_metrics(video_code, recorded_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_creator_videos_handle_platform ON creator_videos(creator_handle, platform);
+  CREATE INDEX IF NOT EXISTS idx_creator_videos_status ON creator_videos(status);
+  CREATE INDEX IF NOT EXISTS idx_creator_videos_outlier ON creator_videos(outlier_score_x100 DESC);
+  CREATE INDEX IF NOT EXISTS idx_production_checklist_video ON production_checklist(video_code);
 `);
 
 // Migrations for existing databases

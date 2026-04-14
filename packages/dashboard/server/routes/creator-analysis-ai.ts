@@ -203,6 +203,12 @@ export function createCreatorAnalysisAiRouter(contentLibraryPath: string) {
     const handle = rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`;
     const cleanHandle = handle.replace("@", "").toLowerCase();
 
+    // Validate handle to prevent path traversal
+    if (!/^[a-z0-9._-]+$/.test(cleanHandle)) {
+      res.status(400).json({ error: "Invalid handle format" });
+      return;
+    }
+
     try {
       // Load creator context from watchlist
       const creators = parseWatchlist(watchlistPath);

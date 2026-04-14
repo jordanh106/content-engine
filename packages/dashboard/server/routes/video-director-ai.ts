@@ -283,7 +283,7 @@ Return ONLY valid JSON: {"hooks": [{"text": "...", "type": "...", "prediction": 
                 platform: creatorVideos.platform,
               })
               .from(creatorVideos)
-              .where(sql`LOWER(${creatorVideos.videoTitle}) LIKE ${"%" + topicWords[0] + "%"}`)
+              .where(sql`LOWER(${creatorVideos.videoTitle}) LIKE ${"%" + topicWords[0].replace(/[%_]/g, "\\$&") + "%"} ESCAPE '\\'`)
               .orderBy(desc(creatorVideos.views))
               .limit(6)
               .all();
