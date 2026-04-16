@@ -11,6 +11,9 @@ import {
   CalendarDays,
   Calendar,
   TrendingUp,
+  BarChart3,
+  Users,
+  Target,
 } from "lucide-react";
 import type { CalendarEntry, CalendarResponse, CalendarGap, FormatId, DashboardView } from "../shared/types.js";
 import { FormatBadge } from "./ui/FormatBadge.js";
@@ -330,6 +333,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* Calendar Intelligence Strip */}
+      {entries.length > 0 && <CalendarIntelligence entries={entries} platforms={platforms} gaps={gapsData?.gaps || []} />}
+
       {/* Week View */}
       {viewMode === "week" && (
         <div className="overflow-x-auto">
@@ -563,6 +569,167 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
       )}
 
       <ViewHelp {...VIEW_HELP.CALENDAR} />
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Calendar Intelligence — format mix, audience coverage, platform balance
+// ═══════════════════════════════════════════════════════════════════════════
+
+const FORMAT_LABELS: Record<string, { name: string; color: string }> = {
+  A: { name: "Explainer", color: "bg-teal-100 text-teal-700" },
+  B: { name: "Checklist", color: "bg-emerald-100 text-emerald-700" },
+  C: { name: "Demo", color: "bg-sky-100 text-sky-700" },
+  D: { name: "Myth Buster", color: "bg-rose-100 text-rose-700" },
+  E: { name: "Walkthrough", color: "bg-violet-100 text-violet-700" },
+  F: { name: "Quick Tip", color: "bg-orange-100 text-orange-700" },
+  G: { name: "Patient Story", color: "bg-pink-100 text-pink-700" },
+};
+
+const AUDIENCE_PREFIXES: Record<string, string> = {
+  P: "Prenatal",
+  B: "Babies",
+  K: "Kids",
+  S: "Athletes",
+  D: "Adults",
+  R: "Seniors",
+  G: "General",
+};
+
+const CalendarIntelligence: React.FC<{
+  entries: CalendarEntry[];
+  platforms: string[];
+  gaps: CalendarGap[];
+}> = ({ entries, platforms, gaps }) => {
+  // Format distribution
+  const formatCounts: Record<string, number> = {};
+  const audienceCounts: Record<string, number> = {};
+  const platformCounts: Record<string, number> = {};
+  let assigned = 0;
+
+  for (const entry of entries) {
+    if (entry.videoCode) {
+      assigned++;
+      const fmt = entry.videoFormat || entry.videoCode[0];
+      if (fmt && FORMAT_LABELS[fmt]) {
+        formatCounts[fmt] = (formatCounts[fmt] || 0) + 1;
+      }
+      const prefix = entry.videoCode[0]?.toUpperCase();
+      if (prefix && AUDIENCE_PREFIXES[prefix]) {
+        audienceCounts[prefix] = (audienceCounts[prefix] || 0) + 1;
+      }
+    }
+    platformCounts[entry.platform] = (platformCounts[entry.platform] || 0) + 1;
+  }
+
+  const totalScheduled = entries.length;
+  const assignmentRate = totalScheduled > 0 ? Math.round((assigned / totalScheduled) * 100) : 0;
+  const formatEntries = Object.entries(formatCounts).sort((a, b) => b[1] - a[1]);
+  const audienceEntries = Object.entries(audienceCounts).sort((a, b) => b[1] - a[1]);
+  const totalGapDeficit = gaps.reduce((s, g) => s + g.deficit, 0);
+
+  // Find missing audiences (those with 0 scheduled)
+  const scheduledAudiences = new Set(audienceEntries.map(([k]) => k));
+  const missingAudiences = Object.entries(AUDIENCE_PREFIXES)
+    .filter(([k]) => !scheduledAudiences.has(k))
+    .map(([, v]) => v);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      {/* Format Mix */}
+      <div className="bg-surface-elevated border border-themed rounded-xl p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <BarChart3 size={12} className="text-teal-500" />
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Format Mix</span>
+        </div>
+        {formatEntries.length > 0 ? (
+          <div className="space-y-1.5">
+            {formatEntries.map(([fmt, count]) => {
+              const info = FORMAT_LABELS[fmt];
+              const pct = totalScheduled > 0 ? Math.round((count / totalScheduled) * 100) : 0;
+              return (
+                <div key={fmt} className="flex items-center gap-2">
+                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", info?.color || "bg-slate-100 text-slate-600")}>
+                    {fmt}
+                  </span>
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-teal-400 rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-[10px] font-semibold text-themed-muted tabular-nums w-6 text-right">{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[11px] text-themed-muted">No videos assigned yet</p>
+        )}
+      </div>
+
+      {/* Audience Coverage */}
+      <div className="bg-surface-elevated border border-themed rounded-xl p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Users size={12} className="text-violet-500" />
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Audience Coverage</span>
+        </div>
+        {audienceEntries.length > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {audienceEntries.map(([prefix, count]) => (
+                <span key={prefix} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 bg-violet-50 text-violet-700 rounded-full">
+                  {AUDIENCE_PREFIXES[prefix]} <span className="text-violet-400">{count}</span>
+                </span>
+              ))}
+            </div>
+            {missingAudiences.length > 0 && (
+              <p className="text-[10px] text-amber-600">
+                <AlertTriangle size={10} className="inline mr-0.5" />
+                Missing: {missingAudiences.join(", ")}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-[11px] text-themed-muted">Assign videos to see audience mix</p>
+        )}
+      </div>
+
+      {/* Schedule Health */}
+      <div className="bg-surface-elevated border border-themed rounded-xl p-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Target size={12} className="text-emerald-500" />
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Schedule Health</span>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-themed-secondary">Scheduled</span>
+            <span className="text-[12px] font-bold text-themed">{totalScheduled} posts</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-themed-secondary">Videos assigned</span>
+            <span className={cn(
+              "text-[12px] font-bold",
+              assignmentRate >= 80 ? "text-emerald-600" : assignmentRate >= 50 ? "text-amber-600" : "text-rose-600",
+            )}>
+              {assignmentRate}%
+            </span>
+          </div>
+          {totalGapDeficit > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-themed-secondary">Cadence gaps</span>
+              <span className="text-[12px] font-bold text-amber-600">{totalGapDeficit} missing</span>
+            </div>
+          )}
+          {platforms.map((p) => {
+            const count = platformCounts[p] || 0;
+            return (
+              <div key={p} className="flex items-center justify-between">
+                <span className="text-[10px] text-themed-muted">{PLATFORM_LABELS[p] || p}</span>
+                <span className="text-[10px] font-semibold text-themed-secondary tabular-nums">{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
