@@ -2125,6 +2125,27 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
     },
   });
 
+  // Repurpose Everywhere — one-click orchestration
+  type RepurposeResult = { waterfall: { created: number; skipped: number; total: number }; captions: { generated: number; existing: number; total: number }; totalDerivatives: number };
+  const [repurposeResult, setRepurposeResult] = useState<RepurposeResult | null>(null);
+  const repurposeMutation = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/videos/${code}/repurpose-everywhere`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("Failed to repurpose");
+      return r.json() as Promise<RepurposeResult>;
+    },
+    onSuccess: (data) => {
+      setRepurposeResult(data);
+      queryClient.invalidateQueries({ queryKey: ["waterfall", code] });
+      queryClient.invalidateQueries({ queryKey: ["captions", code] });
+      queryClient.invalidateQueries({ queryKey: ["publish-kit", code] });
+      setTimeout(() => setRepurposeResult(null), 8000);
+    },
+  });
+
   const [autoGenResult, setAutoGenResult] = useState<{ created: number; skipped: number } | null>(null);
   const [expandedCarousels, setExpandedCarousels] = useState<Set<number>>(new Set());
   const autoGenMutation = useMutation({
@@ -2196,10 +2217,27 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
+            onClick={() => repurposeMutation.mutate()}
+            disabled={repurposeMutation.isPending || autoGenMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-bold bg-gradient-to-r from-teal-600 to-violet-600 text-white hover:from-teal-700 hover:to-violet-700 disabled:opacity-50 transition-all shadow-sm"
+            title="One click: generates 12 waterfall derivatives + captions for all 4 platforms"
+          >
+            {repurposeMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            Repurpose Everywhere
+          </button>
+          {repurposeResult && (
+            <span className="text-[10px] text-emerald-600 font-semibold animate-in fade-in">
+              +{repurposeResult.waterfall.created} derivatives · +{repurposeResult.captions.generated} captions · {repurposeResult.totalDerivatives} total
+            </span>
+          )}
+          {repurposeMutation.isError && (
+            <span className="text-[10px] text-rose-500 font-semibold">Failed to repurpose</span>
+          )}
+          <button
             onClick={() => autoGenMutation.mutate()}
-            disabled={autoGenMutation.isPending}
+            disabled={autoGenMutation.isPending || repurposeMutation.isPending}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
-            title="Matt Gray system: generates 10 derivatives (3 IG, 2 TikTok, 2 YT Shorts, 3 text)"
+            title="Matt Gray system: generates 12 derivatives (3 IG, 2 TikTok, 2 YT Shorts, 3 text, 2 carousel)"
           >
             {autoGenMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
             Auto-Generate

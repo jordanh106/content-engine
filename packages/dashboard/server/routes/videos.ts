@@ -3,7 +3,7 @@ import { eq, desc } from "drizzle-orm";
 import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import { db } from "../db.js";
-import { videoStatus, contentWaterfall, performanceMetrics, scriptVersions, vaultHooks, thumbnailConcepts } from "../../shared/schema.js";
+import { videoStatus, contentWaterfall, performanceMetrics, scriptVersions, vaultHooks, thumbnailConcepts, savedCaptions } from "../../shared/schema.js";
 import { parseContentLibrary, updateVideoScript, invalidateCache } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
@@ -976,6 +976,182 @@ Return the refined script text only. No explanation, no JSON wrapper.`,
     } catch (error) {
       console.error("[videos] POST /:code/refine-script error:", error);
       res.status(500).json({ error: "Failed to refine script" });
+    }
+  });
+
+  // ============================================
+  // Repurpose Everywhere — one-click orchestration
+  // Chains: auto-generate waterfall → generate captions for all platforms
+  // ============================================
+  router.post("/:code/repurpose-everywhere", async (req, res) => {
+    const { code } = req.params;
+    try {
+      const videos = parseContentLibrary(contentLibraryPath);
+      const video = videos.find((v) => v.code === code);
+      if (!video) {
+        res.status(404).json({ error: "Video not found" });
+        return;
+      }
+
+      const anthropic = new Anthropic();
+      const scriptExcerpt = video.script?.slice(0, 400) ?? video.title;
+      const format = video.format ?? "A";
+
+      // ── Step 1: Auto-generate waterfall items (skip existing) ──────────
+      const TEMPLATE: Array<{ tier: "short" | "text" | "carousel"; platform: string; role: string; platformVoice: string }> = [
+        { tier: "short", platform: "instagram", role: "Hook cut — first 5s hook moment (15-30s)", platformVoice: "Fast, visual, hook in frame 1" },
+        { tier: "short", platform: "instagram", role: "Value cut — core educational moment (20-30s)", platformVoice: "Educational, save-worthy, text overlays help" },
+        { tier: "short", platform: "instagram", role: "CTA cut — closing + call to action (15-20s)", platformVoice: "Warm, direct, clear next step" },
+        { tier: "short", platform: "tiktok", role: "Hook cut — punchy opener for TikTok (15-30s)", platformVoice: "Entertaining, curiosity-first, trending audio friendly" },
+        { tier: "short", platform: "tiktok", role: "Value cut — most shareable insight (20-30s)", platformVoice: "Surprising fact or counterintuitive claim works best" },
+        { tier: "short", platform: "youtube_shorts", role: "Hook cut — strong open, retention-optimised (30-45s)", platformVoice: "Slightly longer, more educational than TikTok" },
+        { tier: "short", platform: "youtube_shorts", role: "Value cut — standalone educational clip (30-60s)", platformVoice: "Can be slower-paced, subscribe CTA at end" },
+        { tier: "text", platform: "x", role: "X thread — 7-tweet breakdown of the core concept", platformVoice: "Tweet 1 is the hook, tweets 2-6 are numbered insights, tweet 7 is CTA" },
+        { tier: "text", platform: "linkedin", role: "LinkedIn post — single insight with personal angle", platformVoice: "Professional, story-led, 3-5 short paragraphs, no hashtag spam" },
+        { tier: "text", platform: "instagram", role: "IG caption — scroll-stopping caption for grid post", platformVoice: "First line is hook, body is value, end with question for comments" },
+        { tier: "carousel", platform: "instagram", role: "IG Carousel — 7-slide educational breakdown", platformVoice: "Slide 1: bold hook/cover. Slides 2-6: one insight per slide, max 15 words each. Slide 7: CTA + save prompt." },
+        { tier: "carousel", platform: "linkedin", role: "LinkedIn Carousel — 6-slide professional insight post", platformVoice: "Slide 1: bold claim. Slides 2-5: one evidence point or step per slide. Slide 6: key takeaway + follow CTA." },
+      ];
+
+      const existing = db.select().from(contentWaterfall)
+        .where(eq(contentWaterfall.sourceVideoCode, code))
+        .all();
+      const existingKeys = new Set(existing.map((e) => `${e.tier}::${e.platform}`));
+      const toCreate = TEMPLATE.filter((t) => !existingKeys.has(`${t.tier}::${t.platform}`));
+
+      let waterfallCreated = 0;
+      if (toCreate.length > 0) {
+        const descriptions = await Promise.all(
+          toCreate.map(async (t) => {
+            try {
+              const isCarousel = t.tier === "carousel";
+              const slideCount = t.platform === "instagram" ? 7 : 6;
+              const promptContent = isCarousel
+                ? `Video: "${video.title}" (chiropractic health content)\nScript excerpt: "${scriptExcerpt}"\n\nWrite a ${slideCount}-slide ${t.platform} carousel outline based on this video.\nFormat exactly as: "Slide 1: [text]. Slide 2: [text]. Slide 3: [text]..." — max 12 words per slide, no bullet points.\n${t.platformVoice}\nRespond with only the slide outline, no preamble.`
+                : `Video: "${video.title}" (Format ${format} — chiropractic health content)\nDerivative: ${t.role}\nPlatform voice: ${t.platformVoice}\nScript excerpt: "${scriptExcerpt}"\n\nWrite a single specific sentence describing exactly what to clip or write for this derivative. Be concrete — mention the moment, angle, or content approach. No preamble.`;
+              const msg = await anthropic.messages.create({
+                model: "claude-haiku-4-5-20251001",
+                max_tokens: isCarousel ? 300 : 120,
+                messages: [{ role: "user", content: promptContent }],
+              });
+              return (msg.content[0] as { text: string }).text.trim();
+            } catch {
+              return t.role;
+            }
+          })
+        );
+
+        for (let i = 0; i < toCreate.length; i++) {
+          db.insert(contentWaterfall).values({
+            sourceVideoCode: code,
+            tier: toCreate[i].tier,
+            platform: toCreate[i].platform,
+            description: descriptions[i],
+            status: "idea",
+          }).run();
+        }
+        waterfallCreated = toCreate.length;
+      }
+
+      // ── Step 2: Generate captions for all 4 video platforms ────────────
+      const captionPlatforms = ["instagram_reels", "tiktok", "youtube_shorts", "youtube_long"];
+      const captionPlatformNames: Record<string, string> = {
+        instagram_reels: "Instagram Reels",
+        tiktok: "TikTok",
+        youtube_shorts: "YouTube Shorts",
+        youtube_long: "YouTube Long",
+      };
+
+      // Check which platforms already have captions
+      const existingCaptions = db.select().from(savedCaptions)
+        .where(eq(savedCaptions.videoCode, code))
+        .all();
+      const captionedPlatforms = new Set(existingCaptions.map((c) => c.platform));
+      const missingPlatforms = captionPlatforms.filter((p) => !captionedPlatforms.has(p));
+
+      let captionsGenerated = 0;
+      if (missingPlatforms.length > 0) {
+        const brandSnippet = (() => {
+          try {
+            const brandPath = path.join(path.dirname(contentLibraryPath), "brand.md");
+            return fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 1200) : "";
+          } catch { return ""; }
+        })();
+
+        const targetNames = missingPlatforms.map((p) => captionPlatformNames[p]);
+        const captionPrompt = `You are a social media caption writer for a chiropractic practice.
+
+Video: "${video.title}" (Format ${format})
+Audience: ${video.audience || "general"}
+Script: "${scriptExcerpt}"
+${brandSnippet ? `\nBrand voice:\n${brandSnippet.slice(0, 600)}` : ""}
+
+Generate 1 caption per platform: ${targetNames.join(", ")}.
+
+Rules:
+- No emdashes anywhere
+- Instagram: Hook first line, value body, end with question CTA, 5-10 relevant hashtags
+- TikTok: Short, punchy, trending-friendly, 3-5 hashtags
+- YouTube Shorts: SEO-friendly description with keywords, clear CTA
+- YouTube Long: Full description with timestamps placeholder, subscribe CTA, 3 hashtags
+
+Return ONLY valid JSON: [{"platform": "instagram_reels", "caption": "..."}, ...]`;
+
+        try {
+          const captionMsg = await anthropic.messages.create({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 2000,
+            messages: [{ role: "user", content: captionPrompt }],
+          });
+
+          const captionText = (captionMsg.content[0] as { text: string }).text.trim();
+          // Extract JSON from response
+          let cleaned = captionText;
+          if (cleaned.startsWith("```")) {
+            cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+          }
+          if (!cleaned.startsWith("[")) {
+            const match = cleaned.match(/\[[\s\S]*\]/);
+            if (match) cleaned = match[0];
+          }
+
+          const captionArray = JSON.parse(cleaned) as Array<{ platform: string; caption: string }>;
+          for (const c of captionArray) {
+            if (c.platform && c.caption && missingPlatforms.includes(c.platform)) {
+              db.insert(savedCaptions).values({
+                videoCode: code,
+                platform: c.platform,
+                caption: c.caption,
+                variant: 1,
+                status: "draft",
+              }).run();
+              captionsGenerated++;
+            }
+          }
+        } catch (captionErr) {
+          console.error("[repurpose-everywhere] Caption generation error:", captionErr);
+          // Continue — waterfall was still created successfully
+        }
+      }
+
+      // ── Return combined results ────────────────────────────────────────
+      const allWaterfall = db.select().from(contentWaterfall)
+        .where(eq(contentWaterfall.sourceVideoCode, code))
+        .orderBy(desc(contentWaterfall.createdAt))
+        .all();
+
+      const allCaptions = db.select().from(savedCaptions)
+        .where(eq(savedCaptions.videoCode, code))
+        .all();
+
+      res.json({
+        waterfall: { created: waterfallCreated, skipped: TEMPLATE.length - toCreate.length, total: allWaterfall.length },
+        captions: { generated: captionsGenerated, existing: captionedPlatforms.size, total: allCaptions.length },
+        totalDerivatives: allWaterfall.length + allCaptions.length,
+      });
+    } catch (error) {
+      console.error("[repurpose-everywhere] Error:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to repurpose" });
     }
   });
 
