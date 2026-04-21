@@ -100,7 +100,7 @@ const ACTION_ITEMS: { action: CardAction; label: string; icon: React.ReactNode; 
   { action: "delete", label: "Delete", icon: <Trash2 size={13} />, color: "text-rose-500 hover:bg-rose-50" },
 ];
 
-export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
+export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = React.memo(({
   thumbnailUrl,
   videoUrl,
   title,
@@ -290,6 +290,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
                 src={thumbnailUrl}
                 alt=""
                 aria-hidden
+                loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50"
               />
               {/* Actual image */}
@@ -486,4 +487,4 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
       </div>
     </div>
   );
-};
+});

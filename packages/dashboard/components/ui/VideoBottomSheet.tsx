@@ -79,12 +79,14 @@ export const VideoBottomSheet: React.FC<VideoBottomSheetProps> = ({ video, onAct
           <div className="relative aspect-video bg-black/90 mx-4 rounded-2xl overflow-hidden mt-1">
             <img
               src={video.thumbnailUrl}
+              loading="lazy"
               alt=""
               aria-hidden
               className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-50"
             />
             <img
               src={video.thumbnailUrl}
+              loading="lazy"
               alt={video.videoTitle || "Video"}
               className="absolute inset-0 w-full h-full object-contain z-[1]"
             />

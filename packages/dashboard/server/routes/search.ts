@@ -4,10 +4,11 @@ import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseIdeaBank } from "../parsers/idea-bank.js";
 import { parseWatchlist } from "../parsers/watchlist.js";
 import { db } from "../db.js";
-import { vaultHooks } from "../../shared/schema.js";
+import { vaultHooks, calendarEntries, creatorVideos } from "../../shared/schema.js";
+import { like } from "drizzle-orm";
 
 type SearchResult = {
-  type: "video" | "idea" | "creator" | "hook";
+  type: "video" | "idea" | "creator" | "hook" | "calendar" | "discover";
   id: string;
   title: string;
   subtitle: string;
@@ -99,6 +100,45 @@ export function createSearchRouter(contentLibraryPath: string) {
           subtitle: `${h.category} hook${h.platform ? ` | ${h.platform}` : ""}`,
         });
       }
+    }
+
+    // Search calendar entries
+    const calEntries = db.select().from(calendarEntries).all();
+    for (const ce of calEntries) {
+      if (results.length >= limit) break;
+      const videoCode = ce.videoCode || "";
+      const label = ce.slotLabel || "";
+      const notes = ce.notes || "";
+      if (
+        videoCode.toLowerCase().includes(q) ||
+        label.toLowerCase().includes(q) ||
+        notes.toLowerCase().includes(q)
+      ) {
+        results.push({
+          type: "calendar",
+          id: String(ce.id),
+          title: videoCode || label || "Calendar slot",
+          subtitle: `${ce.date} | ${ce.platform}`,
+          meta: ce.status,
+        });
+      }
+    }
+
+    // Search discover feed (creator videos)
+    const escapedQ = q.replace(/[%_]/g, "\\$&");
+    const discoverRows = db.select().from(creatorVideos)
+      .where(like(creatorVideos.videoTitle, `%${escapedQ}%`))
+      .limit(5)
+      .all();
+    for (const dv of discoverRows) {
+      if (results.length >= limit) break;
+      results.push({
+        type: "discover",
+        id: String(dv.id),
+        title: dv.videoTitle || dv.videoUrl || "Untitled",
+        subtitle: `@${dv.creatorHandle} | ${dv.platform}`,
+        meta: dv.views ? `${dv.views.toLocaleString()} views` : undefined,
+      });
     }
 
     res.json({ results: results.slice(0, limit) });

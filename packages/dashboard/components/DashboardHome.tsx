@@ -595,6 +595,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
                   <div className="relative w-full h-28 bg-slate-900 overflow-hidden">
                     <img
                       src={trend.thumbnailUrl}
+                      loading="lazy"
                       alt={trend.topic}
                       className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -956,6 +957,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                   <a href={videoUrl || "#"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
                     <img
                       src={tp.thumbnailUrl} alt=""
+                      loading="lazy"
                       className="w-full h-full object-cover aspect-video md:aspect-[3/4] min-h-[200px] md:min-h-0"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />

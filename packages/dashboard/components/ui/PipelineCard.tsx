@@ -12,7 +12,7 @@ type PipelineCardProps = {
   advanceButton?: React.ReactNode;
 };
 
-export const PipelineCard: React.FC<PipelineCardProps> = ({
+export const PipelineCard: React.FC<PipelineCardProps> = React.memo(({
   video,
   onClick,
   isDragging,
@@ -70,4 +70,4 @@ export const PipelineCard: React.FC<PipelineCardProps> = ({
       )}
     </div>
   );
-};
+});

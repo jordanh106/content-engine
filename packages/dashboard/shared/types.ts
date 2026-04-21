@@ -13,6 +13,20 @@ export const PRODUCTION_STATUSES = [
 
 export type ProductionStatus = (typeof PRODUCTION_STATUSES)[number];
 
+// Allowed forward transitions (no skipping steps, no going backwards)
+export const VALID_TRANSITIONS: Record<ProductionStatus, ProductionStatus[]> = {
+  SCRIPTED: ["RECORDING", "GENERATING"],     // Can skip to GENERATING for full-AI
+  RECORDING: ["GENERATING"],
+  GENERATING: ["ASSEMBLED"],
+  ASSEMBLED: ["SCHEDULED"],
+  SCHEDULED: ["PUBLISHED", "ASSEMBLED"],     // Can go back to ASSEMBLED if unscheduled
+  PUBLISHED: [],                              // Terminal state
+};
+
+export function isValidTransition(from: ProductionStatus, to: ProductionStatus): boolean {
+  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
 // ============================================
 // Production Styles
 // ============================================

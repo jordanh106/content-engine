@@ -939,6 +939,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     <div className="relative w-full h-20 bg-slate-900 overflow-hidden">
                       <img
                         src={trend.thumbnailUrl}
+                        loading="lazy"
                         alt={trend.topic}
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -1802,6 +1803,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     <div className="mb-4 rounded-xl overflow-hidden border border-themed">
                       <img
                         src={slides[activeSlideIndex].imagePath!}
+                        loading="lazy"
                         alt={`Slide ${activeSlideIndex + 1}`}
                         className="w-full h-auto"
                       />

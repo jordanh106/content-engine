@@ -4,7 +4,7 @@ import { db } from "../db.js";
 import { videoStatus, statusHistory, productionChecklist } from "../../shared/schema.js";
 import { parseContentLibrary } from "../parsers/content-library.js";
 import type { ProductionStatus, ProductionStyle } from "../../shared/types.js";
-import { PRODUCTION_STATUSES } from "../../shared/types.js";
+import { PRODUCTION_STATUSES, isValidTransition } from "../../shared/types.js";
 import { getStyleFilteredGateItems } from "../../shared/production-knowledge.js";
 
 export function createPipelineRouter(contentLibraryPath: string) {
@@ -99,7 +99,12 @@ export function createPipelineRouter(contentLibraryPath: string) {
       .where(eq(videoStatus.videoCode, code))
       .get();
 
-    const previousStatus = record?.currentStatus || "SCRIPTED";
+    const previousStatus = (record?.currentStatus || "SCRIPTED") as ProductionStatus;
+
+    // Validate state transition (warn but don't block — allows manual override)
+    if (record && !isValidTransition(previousStatus, status)) {
+      console.warn(`[pipeline] Non-standard transition: ${previousStatus} → ${status} for ${code}`);
+    }
     const now = new Date().toISOString();
 
     if (record) {

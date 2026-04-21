@@ -1784,6 +1784,56 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
         </div>
       </div>
 
+      {/* Readiness Checklist */}
+      {(() => {
+        const hasCaptions = kit.coveredCount >= kit.totalPlatforms;
+        const hasSchedule = kit.calendarEntries.length > 0;
+        const hasScript = true; // If we're here, video exists with script
+        const readinessItems = [
+          { label: "Script finalized", done: hasScript },
+          { label: `Captions (${kit.coveredCount}/${kit.totalPlatforms} platforms)`, done: hasCaptions },
+          { label: "Scheduled on calendar", done: hasSchedule },
+          { label: "Virality score checked", done: !!viralityScore },
+        ];
+        const doneCount = readinessItems.filter((i) => i.done).length;
+        const pct = Math.round((doneCount / readinessItems.length) * 100);
+        return (
+          <div className="bg-surface-elevated border border-themed rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ListChecks size={14} className="text-teal-600" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Readiness</p>
+              </div>
+              <span className={cn(
+                "text-sm font-bold",
+                pct === 100 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-slate-400",
+              )}>
+                {pct}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+              <div
+                className={cn("h-full rounded-full transition-all duration-500", pct === 100 ? "bg-emerald-500" : "bg-teal-400")}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {readinessItems.map((item) => (
+                <div key={item.label} className="flex items-center gap-1.5">
+                  <div className={cn(
+                    "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
+                    item.done ? "bg-emerald-100" : "bg-slate-100",
+                  )}>
+                    {item.done ? <Check size={10} className="text-emerald-600" /> : <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
+                  </div>
+                  <span className={cn("text-[11px]", item.done ? "text-emerald-700 font-medium" : "text-slate-400")}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Virality Score */}
       <div className="bg-surface-elevated border border-themed rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
@@ -2820,6 +2870,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                       <div className="relative mb-3 group/frame">
                         <img
                           src={shot.imageUrl}
+                          loading="lazy"
                           alt={`Shot ${shot.shotNumber} frame`}
                           className="w-full max-w-[140px] rounded-xl object-cover aspect-[9/16] cursor-zoom-in hover:opacity-90 transition-opacity"
                           onClick={() => setLightboxUrl(shot.imageUrl!)}
@@ -3049,6 +3100,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <img
               src={lightboxUrl}
+              loading="lazy"
               alt="Storyboard frame"
               className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
             />

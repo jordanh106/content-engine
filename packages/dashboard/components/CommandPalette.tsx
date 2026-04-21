@@ -43,7 +43,7 @@ type CommandItem = {
 };
 
 type SearchResult = {
-  type: "video" | "idea" | "creator" | "hook";
+  type: "video" | "idea" | "creator" | "hook" | "calendar" | "discover";
   id: string;
   title: string;
   subtitle: string;
@@ -55,6 +55,8 @@ const SEARCH_ICONS: Record<string, JSX.Element> = {
   idea: <Lightbulb size={14} className="text-amber-500" />,
   creator: <User size={14} className="text-violet-500" />,
   hook: <Hash size={14} className="text-emerald-500" />,
+  calendar: <Calendar size={14} className="text-sky-500" />,
+  discover: <Compass size={14} className="text-rose-500" />,
 };
 
 const SEARCH_TYPE_LABELS: Record<string, string> = {
@@ -62,6 +64,8 @@ const SEARCH_TYPE_LABELS: Record<string, string> = {
   idea: "Idea",
   creator: "Creator",
   hook: "Hook",
+  calendar: "Calendar",
+  discover: "Discover",
 };
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -145,6 +149,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       case "hook":
         onOpenVault();
         onOpenChange(false);
+        break;
+      case "calendar":
+        nav("CALENDAR");
+        break;
+      case "discover":
+        nav("DISCOVER_FEED");
         break;
     }
   };

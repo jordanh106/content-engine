@@ -534,6 +534,7 @@ export const ScriptWizard: React.FC<ScriptWizardProps> = ({
                           {hook.inspirationMeta.thumbnailUrl && (
                             <img
                               src={hook.inspirationMeta.thumbnailUrl}
+                              loading="lazy"
                               alt=""
                               className="w-10 h-10 rounded-lg object-cover shrink-0"
                               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

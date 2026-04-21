@@ -135,6 +135,7 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
         {video.thumbnailUrl && (
           <img
             src={video.thumbnailUrl}
+            loading="lazy"
             alt={video.videoTitle || ""}
             className="w-20 h-28 object-cover rounded-xl shrink-0"
           />

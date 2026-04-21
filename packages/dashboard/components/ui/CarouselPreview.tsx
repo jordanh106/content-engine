@@ -85,6 +85,7 @@ export function CarouselPreview({ slides, platform, status }: CarouselPreviewPro
             <div className="relative group">
               <img
                 src={currentSlide.imagePath}
+                loading="lazy"
                 alt={`Slide ${currentSlide.slideIndex + 1}`}
                 className="w-full h-auto max-h-[400px] object-contain mx-auto"
               />
@@ -178,6 +179,7 @@ export function CarouselPreview({ slides, platform, status }: CarouselPreviewPro
           </button>
           <img
             src={currentSlide.imagePath}
+            loading="lazy"
             alt={`Slide ${currentSlide.slideIndex + 1}`}
             className="max-w-full max-h-full object-contain"
             onClick={(e) => e.stopPropagation()}
