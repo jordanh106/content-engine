@@ -134,6 +134,24 @@ app.use("/api/discover", createDiscoverRouter(contentLibraryPath, viralInsightsD
 app.use("/api/growth", createGrowthRouter());
 app.use("/rendered", express.static(renderOutputDir));
 
+// Health check endpoint
+import { sqlite } from "./db.js";
+const startedAt = new Date().toISOString();
+app.get("/health", (_req, res) => {
+  try {
+    const row = sqlite.prepare("SELECT COUNT(*) as c FROM video_status").get() as { c: number };
+    res.json({
+      status: "ok",
+      startedAt,
+      uptime: Math.round(process.uptime()),
+      db: { connected: true, videoCount: row.c },
+      memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    });
+  } catch (error) {
+    res.status(503).json({ status: "error", error: error instanceof Error ? error.message : "Unknown" });
+  }
+});
+
 // File watcher - invalidate caches when source files change
 const ideaBankPath = path.join(industryDir, "idea-bank.md");
 const watchlistPath = path.join(industryDir, "watchlist.md");
@@ -195,3 +213,13 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 ViteExpress.listen(app, PORT, () => {
   console.log(`Content Engine Dashboard running at http://localhost:${PORT}`);
 });
+
+// Graceful shutdown: close file watchers to prevent FD leaks on hot-reload
+function cleanup() {
+  console.log("[server] Shutting down file watchers...");
+  watcher.close();
+  researchWatcher.close();
+  process.exit(0);
+}
+process.on("SIGTERM", cleanup);
+process.on("SIGINT", cleanup);

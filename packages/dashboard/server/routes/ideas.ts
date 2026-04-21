@@ -7,7 +7,7 @@ import { parseResearchSuggestions } from "../parsers/research-digest.js";
 import { parseContentLibrary, invalidateCache as invalidateContentCache } from "../parsers/content-library.js";
 import { db, sqlite } from "../db.js";
 import { eq, desc } from "drizzle-orm";
-import { videoStatus, statusHistory, scriptVersions, vaultHooks, vaultStyles } from "../../shared/schema.js";
+import { videoStatus, statusHistory, scriptVersions, vaultHooks, vaultStyles, performanceMetrics } from "../../shared/schema.js";
 import type { IdeaCategory, FormatId } from "../../shared/types.js";
 import { FORMATS } from "../../shared/types.js";
 
@@ -579,7 +579,7 @@ DURATION: [estimated seconds]`,
 
   // POST /api/ideas/start-production - create a video entry from an idea and start production
   router.post("/start-production", (req, res) => {
-    const { topic, format, audience, hookAngle, source, generatedScript, deliveryCues } = req.body as {
+    const { topic, format, audience, hookAngle, source, generatedScript, deliveryCues, hookPattern, targetPlatform } = req.body as {
       topic?: string;
       format?: string;
       audience?: string;
@@ -587,6 +587,8 @@ DURATION: [estimated seconds]`,
       source?: string;
       generatedScript?: string;
       deliveryCues?: string[];
+      hookPattern?: string;
+      targetPlatform?: string;
     };
 
     if (!topic) {
@@ -697,6 +699,9 @@ DURATION: [estimated seconds]`,
             currentStatus: "SCRIPTED",
             statusUpdatedAt: now,
             notes: source ? `Created from: ${source}` : "Created from idea bank",
+            sourceIdeaTopic: topic,
+            hookPatternUsed: hookPattern || hookAngle || null,
+            targetPlatform: targetPlatform || null,
           })
           .run();
 
@@ -771,6 +776,81 @@ DURATION: [estimated seconds]`,
       const message = error instanceof Error ? error.message : "Failed to ingest ideas";
       console.error("[ideas-ingest] Error:", message);
       res.status(500).json({ error: message });
+    }
+  });
+
+  // ============================================
+  // Idea Lifecycle Analytics
+  // ============================================
+
+  // GET /api/ideas/category-performance - Track which idea categories produce best results
+  router.get("/category-performance", (_req, res) => {
+    try {
+      const ideas = parseIdeaBank(ideaBankPath);
+      const videos = parseContentLibrary(contentLibraryPath);
+
+      // Get all video statuses with source idea topics
+      const statuses = db.select().from(videoStatus).all();
+
+      // Build category → video performance map
+      const categoryStats: Record<string, { videos: number; published: number; totalViews: number; totalSaves: number }> = {};
+
+      for (const status of statuses) {
+        if (!status.sourceIdeaTopic) continue;
+
+        // Find the idea to get its category
+        const idea = ideas.find((i) => i.topic.toLowerCase().trim() === status.sourceIdeaTopic?.toLowerCase().trim());
+        const category = idea?.category || "unknown";
+
+        if (!categoryStats[category]) {
+          categoryStats[category] = { videos: 0, published: 0, totalViews: 0, totalSaves: 0 };
+        }
+        categoryStats[category].videos++;
+
+        if (status.currentStatus === "PUBLISHED") {
+          categoryStats[category].published++;
+
+          // Get performance metrics for this video
+          const metrics = db.select()
+            .from(performanceMetrics)
+            .where(eq(performanceMetrics.videoCode, status.videoCode))
+            .all();
+
+          for (const m of metrics) {
+            categoryStats[category].totalViews += m.views || 0;
+            categoryStats[category].totalSaves += m.saves || 0;
+          }
+        }
+      }
+
+      const results = Object.entries(categoryStats)
+        .map(([category, stats]) => ({
+          category,
+          ...stats,
+          avgViews: stats.published > 0 ? Math.round(stats.totalViews / stats.published) : 0,
+          saveRate: stats.totalViews > 0 ? Math.round((stats.totalSaves / stats.totalViews) * 10000) / 100 : 0,
+          conversionRate: stats.videos > 0 ? Math.round((stats.published / stats.videos) * 100) : 0,
+        }))
+        .sort((a, b) => b.avgViews - a.avgViews);
+
+      // Also count unlinked ideas (ideas that never became videos)
+      const linkedTopics = new Set(statuses.filter((s) => s.sourceIdeaTopic).map((s) => s.sourceIdeaTopic!.toLowerCase().trim()));
+      const unlinkedByCategory: Record<string, number> = {};
+      for (const idea of ideas) {
+        if (!linkedTopics.has(idea.topic.toLowerCase().trim())) {
+          unlinkedByCategory[idea.category] = (unlinkedByCategory[idea.category] || 0) + 1;
+        }
+      }
+
+      res.json({
+        categories: results,
+        unlinkedByCategory,
+        totalIdeas: ideas.length,
+        totalLinked: linkedTopics.size,
+      });
+    } catch (error) {
+      console.error("[ideas] Category performance error:", error);
+      res.status(500).json({ error: "Failed to compute category performance" });
     }
   });
 

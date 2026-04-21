@@ -31,7 +31,7 @@ export const WelcomeModal: React.FC = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md w-full shadow-2xl"
+          className="bg-surface-elevated border border-themed rounded-2xl p-8 max-w-md w-full shadow-2xl"
         >
           <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 mx-auto mb-5">
             <Sparkles size={24} />

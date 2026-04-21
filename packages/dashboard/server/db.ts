@@ -431,6 +431,14 @@ try {
   sqlite.exec(`ALTER TABLE video_status ADD COLUMN source_idea_topic TEXT`);
 } catch { /* column already exists */ }
 
+// Migration: Add production metadata to video_status (feedback loop)
+try {
+  sqlite.exec(`ALTER TABLE video_status ADD COLUMN hook_pattern_used TEXT`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE video_status ADD COLUMN target_platform TEXT`);
+} catch { /* column already exists */ }
+
 // Migration: Add hook_pattern_used and format_id to performance_metrics (feedback loop)
 try {
   sqlite.exec(`ALTER TABLE performance_metrics ADD COLUMN hook_pattern_used TEXT`);

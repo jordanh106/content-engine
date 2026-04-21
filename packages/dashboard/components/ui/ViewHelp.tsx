@@ -54,13 +54,13 @@ export const ViewHelp: React.FC<ViewHelpData & { onOpenGuide?: () => void }> = (
                 animate={{ y: 0, x: 0 }}
                 exit={{ y: "100%", x: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed inset-x-0 bottom-0 md:inset-y-0 md:inset-x-auto md:right-0 md:w-[380px] bg-white border-t md:border-t-0 md:border-l border-slate-200 rounded-t-2xl md:rounded-none z-50 flex flex-col max-h-[75vh] md:max-h-none"
+                className="fixed inset-x-0 bottom-0 md:inset-y-0 md:inset-x-auto md:right-0 md:w-[380px] bg-surface-elevated border-t md:border-t-0 md:border-l border-themed rounded-t-2xl md:rounded-none z-50 flex flex-col max-h-[75vh] md:max-h-none"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
+                <div className="flex items-center justify-between p-5 border-b border-themed flex-shrink-0">
                   <div>
-                    <h3 className="text-base font-serif font-bold text-slate-900">{title}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">How to use this view</p>
+                    <h3 className="text-base font-serif font-bold text-themed">{title}</h3>
+                    <p className="text-xs text-themed-muted mt-0.5">How to use this view</p>
                   </div>
                   <button
                     onClick={() => setOpen(false)}

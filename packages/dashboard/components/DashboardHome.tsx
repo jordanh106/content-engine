@@ -847,7 +847,7 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               ? "bg-gradient-to-br from-emerald-50 to-white"
               : metricsData?.weekOverWeekDelta !== undefined && metricsData.weekOverWeekDelta < 0
                 ? "bg-gradient-to-br from-rose-50 to-white"
-                : "bg-white"
+                : "bg-surface-elevated"
           }`}>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">vs Last Week</p>
             {metricsData?.weekOverWeekDelta !== undefined ? (
@@ -861,13 +861,13 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
           {/* Engagement + Goal stacked */}
           <div className="flex flex-col gap-3">
-            <div className="bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
+            <div className="bg-surface-elevated shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Engagement</p>
               <p className="text-2xl font-bold text-slate-900 tabular-nums">
                 {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "---"}
               </p>
             </div>
-            <div className="bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
+            <div className="bg-surface-elevated shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Monthly Goal</p>
               {(() => {
                 const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
@@ -1080,15 +1080,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         );
       })() : (
-        <div className="bg-white shadow-sm rounded-2xl p-8 text-center">
+        <div className="bg-surface-elevated shadow-sm rounded-2xl p-8 text-center">
           <Trophy size={24} className="text-amber-300 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-slate-500">No performance data yet</p>
-          <p className="text-xs text-slate-400 mt-1">Start tracking metrics to see your top performer here</p>
+          <p className="text-sm font-semibold text-themed-secondary">No performance data yet</p>
+          <p className="text-xs text-themed-muted mt-1">Start tracking metrics to see your top performer here</p>
         </div>
       )}
 
       {/* ═══ Pipeline (compact full-width bar) ═══════════════════════════════ */}
-      <button onClick={() => onNavigate("PIPELINE")} className="w-full bg-white shadow-sm hover:shadow-md rounded-2xl px-5 py-4 text-left transition-all duration-200">
+      <button onClick={() => onNavigate("PIPELINE")} className="w-full bg-surface-elevated shadow-sm hover:shadow-md rounded-2xl px-5 py-4 text-left transition-all duration-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</p>

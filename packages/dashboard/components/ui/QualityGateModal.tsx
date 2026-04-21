@@ -72,9 +72,9 @@ export const QualityGateModal: React.FC<QualityGateModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-[60]" onClick={onCancel} />
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] bg-white rounded-2xl shadow-xl z-[61] overflow-hidden">
+      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[420px] bg-surface-elevated rounded-2xl shadow-xl z-[61] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+        <div className="flex items-center justify-between p-4 border-b border-themed">
           <div className="flex items-center gap-2">
             <ShieldCheck size={16} className="text-teal-600" />
             <div>

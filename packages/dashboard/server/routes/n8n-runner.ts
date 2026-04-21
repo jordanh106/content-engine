@@ -10,8 +10,15 @@ import { appendIdeasToFile } from "./ideas.js";
 import { generatedCarousels, carouselSlides } from "../../shared/schema.js";
 import type { MetricsSyncEntry, IdeaCategory } from "../../shared/types.js";
 
-const POLL_INTERVAL_MS = 5_000;
-const TIMEOUT_MS = 4 * 60 * 1_000; // 4 minutes
+const INITIAL_POLL_MS = 2_000;
+const MAX_POLL_MS = 15_000;
+const TIMEOUT_MS = 10 * 60 * 1_000; // 10 minutes (up from 4)
+
+// Circuit breaker: track consecutive failures
+let consecutiveFailures = 0;
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_RESET_MS = 5 * 60 * 1_000; // 5 min cooldown
+let circuitBreakerTrippedAt = 0;
 
 type RunResult =
   | { triggered: true; ingested: boolean; executionId: string | number; durationMs: number; detail: Record<string, unknown> }
@@ -42,14 +49,17 @@ async function triggerAndWait(
     throw new Error("n8n did not return an executionId");
   }
 
-  // Poll until success, error, or timeout
+  // Poll with exponential backoff until success, error, or timeout
+  let pollInterval = INITIAL_POLL_MS;
   while (true) {
     const elapsed = Date.now() - start;
     if (elapsed > TIMEOUT_MS) {
       throw new Error(`Execution timed out after ${Math.round(elapsed / 1000)}s`);
     }
 
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+    await new Promise((r) => setTimeout(r, pollInterval));
+    // Exponential backoff: 2s → 4s → 8s → 15s (capped)
+    pollInterval = Math.min(pollInterval * 2, MAX_POLL_MS);
 
     const pollRes = await fetch(`${apiUrl}/executions/${executionId}`, {
       headers: { "X-N8N-API-KEY": apiKey },
@@ -272,10 +282,25 @@ export function createN8nRunnerRouter(contentLibraryPath: string) {
       return;
     }
 
+    // Circuit breaker check
+    if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+      const elapsed = Date.now() - circuitBreakerTrippedAt;
+      if (elapsed < CIRCUIT_BREAKER_RESET_MS) {
+        const remainingSec = Math.round((CIRCUIT_BREAKER_RESET_MS - elapsed) / 1000);
+        res.status(503).json({ error: `n8n circuit breaker open after ${CIRCUIT_BREAKER_THRESHOLD} failures. Retry in ${remainingSec}s.` });
+        return;
+      }
+      // Reset after cooldown
+      consecutiveFailures = 0;
+    }
+
     try {
       console.log(`[n8n-runner] Triggering ${workflowType} workflow (${workflowId})...`);
       const { executionId, durationMs } = await triggerAndWait(apiUrl, apiKey, workflowId);
       console.log(`[n8n-runner] Execution ${executionId} succeeded in ${Math.round(durationMs / 1000)}s. Ingesting...`);
+
+      // Reset circuit breaker on success
+      consecutiveFailures = 0;
 
       let detail: Record<string, unknown>;
       if (workflowType === "content-intel") {
@@ -290,8 +315,13 @@ export function createN8nRunnerRouter(contentLibraryPath: string) {
       const result: RunResult = { triggered: true, ingested: true, executionId, durationMs, detail };
       res.status(200).json(result);
     } catch (error) {
+      consecutiveFailures++;
+      if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+        circuitBreakerTrippedAt = Date.now();
+        console.error(`[n8n-runner] Circuit breaker tripped after ${consecutiveFailures} consecutive failures`);
+      }
       const message = error instanceof Error ? error.message : "Unknown error";
-      console.error(`[n8n-runner] Error:`, message);
+      console.error(`[n8n-runner] Error (failure ${consecutiveFailures}/${CIRCUIT_BREAKER_THRESHOLD}):`, message);
       res.status(500).json({ error: message });
     }
   });

@@ -16,6 +16,8 @@ export const videoStatus = sqliteTable("video_status", {
   publishedAt: text("published_at"),
   productionStyle: text("production_style"),
   sourceIdeaTopic: text("source_idea_topic"),
+  hookPatternUsed: text("hook_pattern_used"),
+  targetPlatform: text("target_platform"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });
