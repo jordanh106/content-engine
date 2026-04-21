@@ -40,5 +40,10 @@ jobs:
       - name: Install pytest
         run: python -m pip install --upgrade pip pytest
 
-      - name: Run skill tests
-        run: npm run test:skills
+      - name: Collect tests (verify no import errors)
+        working-directory: skills/last30days
+        run: python -m pytest tests/ --collect-only -q
+
+      - name: Run skill tests (verbose)
+        working-directory: skills/last30days
+        run: python -m pytest tests/ -v --tb=short
