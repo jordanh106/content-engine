@@ -74,7 +74,7 @@ export const HiggsfieldCharactersPanel: React.FC<Props> = ({ open, onClose }) =>
               onClick={() => sync.mutate()}
               disabled={sync.isPending}
               title="Re-sync from CLI"
-              className="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center gap-1.5"
             >
               <RefreshCw size={11} className={sync.isPending ? "animate-spin" : ""} />
               Sync
@@ -95,7 +95,7 @@ export const HiggsfieldCharactersPanel: React.FC<Props> = ({ open, onClose }) =>
             </div>
             <button
               onClick={() => deactivate.mutate()}
-              className="text-[10px] font-black uppercase tracking-widest text-emerald-700 hover:text-emerald-900"
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-900"
             >
               Deactivate
             </button>
@@ -154,7 +154,7 @@ export const HiggsfieldCharactersPanel: React.FC<Props> = ({ open, onClose }) =>
                     <button
                       onClick={() => activate.mutate(c.id)}
                       disabled={c.status !== "completed" || activate.isPending}
-                      className="px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-[10px] font-black uppercase tracking-widest text-teal-700 hover:bg-teal-100 disabled:opacity-40"
+                      className="px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-xs font-semibold text-teal-700 hover:bg-teal-100 disabled:opacity-40"
                     >
                       Activate
                     </button>
@@ -192,7 +192,7 @@ export const HiggsfieldCharacterChip: React.FC<{ onClick: () => void }> = ({ onC
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
         active
           ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
           : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"

@@ -130,7 +130,7 @@ export const QuickCaptureFAB: React.FC<{ isHidden?: boolean }> = ({ isHidden = f
         <Tooltip content="Quick Capture (N) · Convert (C)" side="left">
           <button
             onClick={() => { setMode("capture"); setOpen(true); }}
-            className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-40 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg hover:bg-teal-700 hover:shadow-xl flex items-center justify-center transition-all active:scale-95 group"
+            className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-40 w-14 h-14 rounded-full bg-teal-600 text-white shadow-md hover:bg-teal-700 hover:shadow-lg flex items-center justify-center transition-all active:scale-95 group"
           >
             <Plus size={24} className="group-hover:rotate-90 transition-transform" />
           </button>
@@ -154,7 +154,7 @@ export const QuickCaptureFAB: React.FC<{ isHidden?: boolean }> = ({ isHidden = f
             <div className="flex items-center gap-1 p-1 mb-3 bg-surface-hover rounded-full">
               <button
                 onClick={() => { setMode("capture"); setConvertResult(null); }}
-                className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                className={`flex-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   mode === "capture" ? "bg-white text-slate-900 shadow-sm" : "text-themed-tertiary"
                 }`}
               >
@@ -162,7 +162,7 @@ export const QuickCaptureFAB: React.FC<{ isHidden?: boolean }> = ({ isHidden = f
               </button>
               <button
                 onClick={() => { setMode("convert"); }}
-                className={`flex-1 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                className={`flex-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   mode === "convert" ? "bg-white text-slate-900 shadow-sm" : "text-themed-tertiary"
                 }`}
               >
@@ -229,7 +229,7 @@ export const QuickCaptureFAB: React.FC<{ isHidden?: boolean }> = ({ isHidden = f
                       <button
                         key={c.key}
                         onClick={() => setConvertFormat(c.key)}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                           convertFormat === c.key
                             ? "bg-teal-600 text-white"
                             : "bg-surface-hover text-themed-secondary hover:bg-surface-elevated"

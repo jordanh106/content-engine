@@ -138,7 +138,7 @@ const Coachmark: React.FC<CoachmarkProps> = ({
                 <p className="text-sm text-slate-700 leading-relaxed mb-3">{content}</p>
                 <button
                   onClick={dismiss}
-                  className="text-[10px] font-black uppercase tracking-widest text-teal-600 hover:text-teal-700 transition-colors"
+                  className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"
                 >
                   Got it
                 </button>

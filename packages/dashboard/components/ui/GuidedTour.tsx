@@ -83,7 +83,7 @@ export const GuidedTour: React.FC = () => {
           )}
           <button
             onClick={handleNext}
-            className="flex items-center gap-0.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white rounded-full bg-teal-600 hover:bg-teal-700 transition-colors"
+            className="flex items-center gap-0.5 px-3 py-1.5 text-xs font-semibold text-white rounded-full bg-teal-600 hover:bg-teal-700 transition-colors"
           >
             {isLastStep ? "Finish" : "Next"}
             {!isLastStep && <ChevronRight size={10} />}

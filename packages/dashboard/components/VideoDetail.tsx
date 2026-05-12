@@ -254,7 +254,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 onClick={() => renderAllShotsMutation.mutate()}
                 disabled={renderAllShotsMutation.isPending || hasActiveShotJobs}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
+                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-colors min-h-[36px]",
                   renderAllShotsMutation.isPending || hasActiveShotJobs
                     ? "bg-surface-hover text-themed-tertiary cursor-not-allowed"
                     : "bg-teal-600 text-white hover:bg-teal-700",
@@ -276,7 +276,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 onClick={() => renderMutation.mutate()}
                 disabled={renderMutation.isPending || isRendering}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors min-h-[36px]",
+                  "inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-colors min-h-[36px]",
                   renderMutation.isPending || isRendering
                     ? "bg-surface-hover text-themed-tertiary cursor-not-allowed"
                     : "bg-slate-600 text-white hover:bg-slate-700",
@@ -1586,7 +1586,7 @@ const ProduceTab: React.FC<{
           <button
             onClick={() => generateMutation.mutate(code)}
             disabled={generateMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-surface-hover text-themed-secondary hover:bg-surface-hover disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-surface-hover text-themed-secondary hover:bg-surface-hover disabled:opacity-50 transition-colors"
           >
             {generateMutation.isPending ? (
               <><Loader2 size={12} className="animate-spin" /> Generating...</>
@@ -1799,7 +1799,7 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
             <button
               onClick={() => generateMutation.mutate()}
               disabled={generateMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-50"
             >
               {generateMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
               Generate Missing
@@ -1991,7 +1991,7 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
         <button
           onClick={() => publishMutation.mutate()}
           disabled={publishMutation.isPending}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
         >
           {publishMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           Mark as Published
@@ -2770,7 +2770,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-full text-xs font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors"
           >
             {isGenerating ? (
               <Loader2 size={14} className="animate-spin" />
@@ -3067,7 +3067,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                                     onClick={() =>
                                       copyToClipboard(prompt.promptText, `prompt-${prompt.id}`)
                                     }
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-themed text-themed-secondary hover:bg-surface-hover transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-themed text-themed-secondary hover:bg-surface-hover transition-colors"
                                   >
                                     {copiedId === `prompt-${prompt.id}` ? (
                                       <Check size={12} className="text-emerald-500" />
@@ -3084,7 +3084,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                             <button
                               onClick={() => handleGeneratePrompt(shot.shotNumber)}
                               disabled={generatingPromptShot === shot.shotNumber}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-50 transition-colors"
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-50 transition-colors"
                             >
                               {generatingPromptShot === shot.shotNumber ? (
                                 <Loader2 size={12} className="animate-spin" />

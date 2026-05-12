@@ -510,19 +510,19 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
   const categories: (IdeaCategory | "all")[] = ["all", "trending", "competitor", "evergreen", "audience", "personal", "archived"];
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+    <div className="p-6 md:p-12 space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Lightbulb size={20} className="text-amber-500" />
-            <h2 className="text-lg font-serif font-bold text-themed">Idea Bank</h2>
+          <div className="flex items-center gap-3 mb-2">
+            <Lightbulb size={24} className="text-amber-500" />
+            <h1 className="type-h1">Idea bank</h1>
           </div>
-          <p className="text-sm text-themed-tertiary">
+          <p className="type-body">
             Content ideas staged for future planning. Click an idea to develop, edit, or archive it.
           </p>
           {syncMessage && (
-            <p className="text-xs text-teal-600 mt-1.5">{syncMessage}</p>
+            <p className="text-xs text-teal-600 mt-2">{syncMessage}</p>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">

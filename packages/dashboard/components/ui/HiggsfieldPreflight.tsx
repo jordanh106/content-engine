@@ -259,7 +259,7 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
                       <button
                         key={a.value}
                         onClick={() => setSelection((s) => ({ ...s, aspectRatio: a.value }))}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                           picked
                             ? "bg-teal-600 text-white"
                             : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-teal-300"
@@ -284,7 +284,7 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
                           <button
                             key={d}
                             onClick={() => setSelection((s) => ({ ...s, duration: d }))}
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                               picked
                                 ? "bg-teal-600 text-white"
                                 : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-teal-300"
@@ -307,7 +307,7 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
                             <button
                               key={r}
                               onClick={() => setSelection((s) => ({ ...s, resolution: r as PreflightSelection["resolution"] }))}
-                              className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                                 picked
                                   ? "bg-teal-600 text-white"
                                   : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-teal-300"
@@ -331,7 +331,7 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
                             <button
                               key={g}
                               onClick={() => setSelection((s) => ({ ...s, genre: g }))}
-                              className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                                 picked
                                   ? "bg-teal-600 text-white"
                                   : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-teal-300"
@@ -373,7 +373,7 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
                                 : { ...s, quality: v as "low" | "medium" | "high" | "basic" | "1.5k" | "2k", resolution: undefined },
                             )
                           }
-                          className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                             picked
                               ? "bg-teal-600 text-white"
                               : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-teal-300"
@@ -431,14 +431,14 @@ export const HiggsfieldPreflight: React.FC<Props> = ({ open, onClose, useCase, i
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={confirm}
               disabled={!selectedModel || pending || !canAfford || !status?.configured}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-40 transition-colors"
             >
               {pending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
               {pending ? "Generating…" : `Generate · ${formatCredits(totalCredits)} cr`}

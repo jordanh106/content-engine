@@ -79,7 +79,7 @@ export const ComplianceBadge: React.FC<Props> = ({ script, format, duration, aud
       <button
         onClick={() => mutation.mutate()}
         disabled={!script || script.trim().length < 20}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40"
         title="Score this script against the Master Blueprint"
       >
         <ShieldCheck size={12} strokeWidth={2.5} />
@@ -225,7 +225,7 @@ export const ComplianceBadge: React.FC<Props> = ({ script, format, duration, aud
               <span className="text-[10px] text-slate-400">Passing threshold: {result.threshold}/100</span>
               <button
                 onClick={() => { setResult(null); mutation.mutate(); }}
-                className="px-3 py-1.5 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors"
+                className="px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition-colors"
               >
                 Re-audit
               </button>

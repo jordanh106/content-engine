@@ -571,7 +571,7 @@ const ReadyStep: React.FC<{
             Download MP4
           </Button>
         )}
-        <Button as="a" variant="primary" tone="slate-dark" href={`/api/storytelling/reels/${reelId}/bundle.zip`} download icon={<Download size={11} />}>
+        <Button as="a" variant="primary" tone="slate" href={`/api/storytelling/reels/${reelId}/bundle.zip`} download icon={<Download size={11} />}>
           Editor Bundle
         </Button>
         {manifest.voiceover && (

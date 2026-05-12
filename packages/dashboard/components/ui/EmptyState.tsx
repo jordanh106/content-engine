@@ -33,7 +33,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {action && (
             <button
               onClick={action.onClick}
-              className="px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
+              className="px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
             >
               {action.label}
             </button>
@@ -41,7 +41,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {secondaryAction && (
             <button
               onClick={secondaryAction.onClick}
-              className="px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors"
+              className="px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
             >
               {secondaryAction.label}
             </button>

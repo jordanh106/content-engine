@@ -86,7 +86,7 @@ export const HiggsfieldMarketingStudio: React.FC<Props> = ({ title, defaultPromp
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
         title="Generate a branded DTC ad via Higgsfield Marketing Studio"
       >
         <Sparkles size={11} />
@@ -133,7 +133,7 @@ export const HiggsfieldMarketingStudio: React.FC<Props> = ({ title, defaultPromp
                   <div className="flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setBrandKitId(null)}
-                      className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                         brandKitId === null
                           ? "bg-rose-600 text-white"
                           : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-rose-300"
@@ -145,7 +145,7 @@ export const HiggsfieldMarketingStudio: React.FC<Props> = ({ title, defaultPromp
                       <button
                         key={k.id}
                         onClick={() => setBrandKitId(k.id)}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                           brandKitId === k.id
                             ? "bg-rose-600 text-white"
                             : "bg-slate-50 border border-slate-200 text-slate-700 hover:border-rose-300"
@@ -312,7 +312,7 @@ export const HiggsfieldMarketingStudio: React.FC<Props> = ({ title, defaultPromp
               <button
                 onClick={() => generate.mutate()}
                 disabled={!formatId || !prompt.trim() || generate.isPending}
-                className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 disabled:opacity-40 transition-colors flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 disabled:opacity-40 transition-colors flex items-center gap-2"
               >
                 {generate.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                 {generate.isPending ? "Generating…" : "Generate Ad"}

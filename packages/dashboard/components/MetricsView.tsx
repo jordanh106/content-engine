@@ -3,18 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  Legend,
   LineChart,
   Line,
 } from "recharts";
+import { ChartTooltip as Tooltip, ChartGrid as CartesianGrid, ChartXAxis as XAxis, ChartYAxis as YAxis, ChartLegend as Legend, chartPalette, chartColors } from "./ui/Chart.js";
 import {
   TrendingUp,
   Eye,
@@ -578,7 +574,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
   const hasPerformanceData = performers.length > 0;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-8">
       {/* ================================================================ */}
       {/* CONTENT INTELLIGENCE SECTION                                     */}
       {/* ================================================================ */}
@@ -588,17 +584,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       <header className="space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Search size={20} className="text-teal-600" />
-              <h2 className="text-lg font-serif font-bold text-themed">Content Intelligence</h2>
+            <div className="flex items-center gap-3 mb-2">
+              <Search size={24} className="text-teal-600" />
+              <h1 className="type-h1">Content intelligence</h1>
               {intel && (
-                <span className="flex items-center gap-1 ml-2 text-[10px] font-bold text-themed-muted uppercase tracking-widest">
-                  <Calendar size={10} />
+                <span className="type-eyebrow flex items-center gap-1 ml-3">
+                  <Calendar size={11} />
                   {intel.date}
                 </span>
               )}
             </div>
-            <p className="text-sm text-themed-tertiary">
+            <p className="type-body">
               Market trends, social signals, hook patterns, and strategic opportunities.
             </p>
             {/* Data source counts */}
@@ -1534,7 +1530,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
                     <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Avg Views"]} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: unknown) => [(value ?? 0).toLocaleString(), "Avg Views"]} />
                     <Bar dataKey="avgViews" radius={[6, 6, 0, 0]}>
                       {formats.map((entry) => (
                         <Cell key={entry.format} fill={entry.avgViews > 0 ? (FORMAT_COLORS[entry.format] ?? "#94a3b8") : "#e2e8f0"} />
@@ -1576,7 +1572,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                           <Cell key={i} fill={PLATFORM_COLORS[i % PLATFORM_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined) => [(value ?? 0).toLocaleString(), "Views"]} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: unknown) => [(value ?? 0).toLocaleString(), "Views"]} />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value: string) => <span className="text-xs text-themed-secondary">{value}</span>} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1599,7 +1595,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis dataKey="format" tick={{ fontSize: 12, fill: "#64748b" }} tickFormatter={(f: string) => FORMATS[f as keyof typeof FORMATS]?.shortName ?? f} />
                   <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" />
-                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: number | undefined, name: string | undefined) => [`${value ?? 0}%`, name === "engagementRate" ? "Engagement Rate" : "Save Rate"]} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }} formatter={(value: unknown, name: unknown) => [`${value ?? 0}%`, name === "engagementRate" ? "Engagement Rate" : "Save Rate"]} />
                   <Bar dataKey="engagementRate" fill="#0d9488" name="engagementRate" radius={[6, 6, 0, 0]} />
                   <Bar dataKey="saveRate" fill="#7c3aed" name="saveRate" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -1644,7 +1640,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                     />
                     <Tooltip
                       contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
-                      formatter={(value: number | undefined) => [`${value ?? 0}d`, "Avg Days"]}
+                      formatter={(value: unknown) => [`${value ?? 0}d`, "Avg Days"]}
                       labelFormatter={(label: unknown) => {
                         const labelStr = String(label);
                         const t = velocityData.transitions.find((tr) => tr.fromStatus === labelStr);

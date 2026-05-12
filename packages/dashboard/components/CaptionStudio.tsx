@@ -805,7 +805,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               <button
                 onClick={handleBatchGenerate}
                 disabled={!!batchProgress}
-                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors disabled:opacity-50"
+                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50"
               >
                 <Sparkles size={14} />
                 Generate {batchSelected.size} Selected
@@ -965,7 +965,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     freeformMutation.mutate(params as { description: string; mood?: string; platforms?: string[]; tags?: string[] });
                   }}
                   disabled={freeformMutation.isPending || !freeformDesc.trim()}
-                  className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors disabled:opacity-50"
+                  className="w-full mt-4 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   {freeformMutation.isPending ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -997,7 +997,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 <button
                   onClick={() => setShowUpload(true)}
                   disabled={analysisLoading}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-teal-200 bg-teal-50 text-teal-700 text-[10px] font-black uppercase tracking-widest hover:bg-teal-100 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-teal-200 bg-teal-50 text-teal-700 text-xs font-semibold hover:bg-teal-100 transition-colors disabled:opacity-50"
                 >
                   {analysisLoading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                   {analysisLoading ? analysisStep : "Analyze Video File"}
@@ -1025,14 +1025,14 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         });
                       }}
                       disabled={hookMutation.isPending}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-teal-200 text-teal-700 text-[10px] font-black uppercase tracking-widest hover:bg-teal-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-teal-200 text-teal-700 text-xs font-semibold hover:bg-teal-50 transition-colors disabled:opacity-50"
                     >
                       {hookMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                       Hook Lab
                     </button>
                     <button
                       onClick={() => setShowTemplates(!showTemplates)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-xs font-semibold hover:bg-surface-hover transition-colors"
                     >
                       <FileText size={12} />
                       Templates
@@ -1040,7 +1040,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     <button
                       onClick={() => setShowUpload(true)}
                       disabled={analysisLoading}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-themed text-themed-secondary text-xs font-semibold hover:bg-surface-hover transition-colors disabled:opacity-50"
                     >
                       {analysisLoading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                       {analysisLoading ? analysisStep : "Analyze"}
@@ -1050,7 +1050,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         if (selectedVideo) generateMutation.mutate({ videoCode: selectedVideo });
                       }}
                       disabled={generateMutation.isPending}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50"
                     >
                       {generateMutation.isPending ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -1355,7 +1355,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     key={tab}
                     onClick={() => setWorkspaceTab(tab)}
                     className={cn(
-                      "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
+                      "px-4 py-1.5 rounded-full text-xs font-semibold transition-colors",
                       workspaceTab === tab ? "bg-surface-elevated text-themed shadow-sm" : "text-themed-tertiary hover:text-themed-secondary",
                     )}
                   >
@@ -1426,7 +1426,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                             <p className="text-sm text-themed-secondary whitespace-pre-wrap mb-3 line-clamp-4">{approved.caption}</p>
                             <button
                               onClick={() => handleCopy(approved.id, approved.caption)}
-                              className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors"
+                              className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
                             >
                               {copiedId === approved.id ? <Check size={14} /> : <Copy size={14} />}
                               {copiedId === approved.id ? "Copied!" : "Copy Caption"}
@@ -1438,7 +1438,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                               if (selectedVideo) generateMutation.mutate({ videoCode: selectedVideo, platforms: [plat] });
                             }}
                             disabled={generateMutation.isPending}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-xs font-semibold hover:bg-surface-hover transition-colors"
                           >
                             <Sparkles size={14} />
                             Generate
@@ -1472,7 +1472,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         }).filter(Boolean).join("\n\n");
                         navigator.clipboard.writeText(allText);
                       }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
                     >
                       <Copy size={14} />
                       Copy All
@@ -1489,7 +1489,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           });
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-[10px] font-black uppercase tracking-widest hover:bg-surface-hover transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-themed text-themed-secondary text-xs font-semibold hover:bg-surface-hover transition-colors"
                     >
                       <Check size={14} />
                       Mark All Posted
@@ -1506,7 +1506,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                           });
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-200 text-emerald-600 text-xs font-semibold hover:bg-emerald-50 transition-colors"
                     >
                       <Check size={14} />
                       Approve All Drafts
@@ -1796,7 +1796,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         queryClient.invalidateQueries({ queryKey: ["captions", selectedVideo] });
                         queryClient.invalidateQueries({ queryKey: ["caption-counts"] });
                       }}
-                      className="mt-3 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors"
+                      className="mt-3 px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors"
                     >
                       Save as Drafts
                     </button>

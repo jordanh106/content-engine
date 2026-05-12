@@ -104,13 +104,11 @@ export const ContentLibrary: React.FC<ContentLibraryProps> = ({
   }, [filteredVideos, sortBy]);
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="p-6 md:p-12 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
-          Content Library
-        </h1>
-        <p className="text-sm text-themed-tertiary mt-1">
+      <div className="mb-8">
+        <h1 className="type-h1">Content library</h1>
+        <p className="type-body mt-2">
           {videos.length} videos across {config?.audiences?.length || 0} audience segments
         </p>
       </div>

@@ -45,10 +45,11 @@ import {
   Film,
 } from "lucide-react";
 import type { DashboardView, CreatorVideo, IntelDigest, Idea } from "../shared/types.js";
-import { HiggsfieldPreflight, HiggsfieldCreditPill } from "./ui/HiggsfieldPreflight.js";
-import { HiggsfieldCharactersPanel, HiggsfieldCharacterChip } from "./ui/HiggsfieldCharacters.js";
+import { HiggsfieldPreflight } from "./ui/HiggsfieldPreflight.js";
+import { HiggsfieldCharactersPanel } from "./ui/HiggsfieldCharacters.js";
 import { StorytellingReelStarter } from "./ui/StorytellingReelStarter.js";
-import { Button, Pill } from "./ui/index.js";
+import { Button, IconButton, KebabMenu } from "./ui/index.js";
+import type { KebabItem } from "./ui/index.js";
 
 type CanvasViewProps = {
   onNavigate: (view: DashboardView) => void;
@@ -447,6 +448,67 @@ type ContextMenuState =
   | null;
 
 const CANVAS_STATE_KEY = "ce-canvas-state-v1";
+
+// ── Canvas Status Strip ───────────────────────────────────────────────────
+// Subdued horizontal status display for the toolbar: credits · character · selection.
+// No pills, no borders — plain text separated by dots. Reads Higgsfield status + active character.
+
+type HFStatus = { configured: boolean; credits?: number; email?: string };
+type HFActiveChar = { active: { soulId: string; name: string } | null };
+
+const CanvasStatusStrip: React.FC<{
+  selectedCount: number;
+  nodeCount: number;
+  onOpenCharacters: () => void;
+  saved: boolean;
+}> = ({ selectedCount, nodeCount, onOpenCharacters, saved }) => {
+  const { data: status } = useQuery<HFStatus>({
+    queryKey: ["higgsfield-status"],
+    queryFn: () => fetch("/api/higgsfield/status").then((r) => r.json()),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+  const { data: chars } = useQuery<HFActiveChar>({
+    queryKey: ["higgsfield-characters"],
+    queryFn: () => fetch("/api/higgsfield/characters").then((r) => r.json()),
+    refetchInterval: 60_000,
+  });
+
+  const credits = status?.credits != null ? `${Math.round(status.credits).toLocaleString()} cr` : null;
+  const charName = chars?.active?.name;
+
+  return (
+    <div className="surface-floating px-4 py-2 flex items-center gap-3 text-[12px] font-medium">
+      {credits && (
+        <span className="flex items-center gap-1.5 text-slate-600 tabular-nums" title={`Higgsfield credits${status?.email ? ` · ${status.email}` : ""}`}>
+          <Sparkles size={13} className="text-teal-500" />
+          {credits}
+        </span>
+      )}
+      {credits && (charName || true) && <span className="text-slate-300">·</span>}
+      <button
+        onClick={onOpenCharacters}
+        className="flex items-center gap-1.5 text-slate-600 hover:text-teal-700 transition-colors"
+        title={charName ? `Active cast: ${charName}` : "No active Soul character — click to pick"}
+      >
+        <Users size={13} className={charName ? "text-emerald-500" : "text-slate-400"} />
+        {charName || "No cast"}
+      </button>
+      <span className="text-slate-300">·</span>
+      <span className="text-slate-600 tabular-nums">
+        {selectedCount > 0 ? <span className="text-teal-700 font-semibold">{selectedCount} selected</span> : `${nodeCount} on canvas`}
+      </span>
+      {saved && (
+        <>
+          <span className="text-slate-300">·</span>
+          <span className="flex items-center gap-1 text-emerald-600 animate-in fade-in">
+            <Check size={13} /> Saved
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
 
 const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -1719,7 +1781,7 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
                 <button
                   onClick={addUrlSource}
                   disabled={!urlInput.trim()}
-                  className="w-full px-3 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-40 transition-colors"
+                  className="w-full px-3 py-2 bg-slate-900 text-white rounded-full text-xs font-semibold hover:bg-teal-700 disabled:opacity-40 transition-colors"
                 >
                   Add Source to Canvas
                 </button>
@@ -1762,51 +1824,77 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
       >
         {!drawerOpen && (
           <div className="absolute top-4 left-4 z-10">
-            <Button variant="secondary" onClick={() => setDrawerOpen(true)} icon={<Layers size={11} />}>
-              Assets
-            </Button>
+            <IconButton icon={<Layers />} label="Open assets drawer" onClick={() => setDrawerOpen(true)} />
           </div>
         )}
 
-        {/* Floating action: generate */}
+        {/* Status strip (LEFT) */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+          <CanvasStatusStrip
+            selectedCount={selectedNodes.size}
+            nodeCount={nodes.length}
+            onOpenCharacters={() => setCharactersOpen(true)}
+            saved={savedFlash}
+          />
+        </div>
+
+        {/* Primary action + overflow (RIGHT) */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          {savedFlash && (
-            <Pill variant="success" icon={<Check size={11} />} className="animate-in fade-in">
-              Canvas Saved
-            </Pill>
-          )}
-          <HiggsfieldCreditPill />
-          <HiggsfieldCharacterChip onClick={() => setCharactersOpen(true)} />
-          <Pill variant="info" icon={<Info size={11} />}>
-            {selectedNodes.size} selected · {nodes.length} on canvas
-          </Pill>
-          <Button variant="secondary" tone="amber" onClick={() => spawnIdeaAtCursor()} icon={<Plus size={11} />} title="New idea · T">
-            New Idea
-          </Button>
-          <Button variant="primary" tone="slate-dark" onClick={() => setStorytellingOpen(true)} icon={<Film size={11} />} title="Storytelling Reel Engine">
-            Storytelling Reel
-          </Button>
-          <Button variant="secondary" onClick={autoArrange} disabled={nodes.length < 2} icon={<LayoutGrid size={11} />} title="Auto-arrange · L">
-            Arrange
-          </Button>
           <Button
             variant="primary"
+            tone="slate"
             onClick={() => generateMutation.mutate()}
             disabled={selectedNodes.size === 0 || generating}
-            icon={generating ? <Loader2 size={11} className="animate-spin" /> : <Wand2 size={11} />}
-            title="Generate · G"
+            loading={generating}
+            icon={<Wand2 />}
+            title="Generate script · G"
           >
-            Generate Script
+            Generate script
           </Button>
+          <KebabMenu
+            triggerLabel="Canvas actions"
+            items={[
+              {
+                id: "new-idea",
+                label: "New idea",
+                icon: <Plus />,
+                kbd: "T",
+                onSelect: () => spawnIdeaAtCursor(),
+              },
+              {
+                id: "storytelling-reel",
+                label: "Storytelling reel",
+                icon: <Film />,
+                onSelect: () => setStorytellingOpen(true),
+              },
+              "divider" as const,
+              {
+                id: "arrange",
+                label: "Auto-arrange",
+                icon: <LayoutGrid />,
+                kbd: "L",
+                onSelect: () => autoArrange(),
+                disabled: nodes.length < 2,
+              },
+              {
+                id: "characters",
+                label: "Soul characters",
+                icon: <Users />,
+                onSelect: () => setCharactersOpen(true),
+              },
+            ] as (KebabItem | "divider")[]}
+          />
         </div>
 
         {/* Keyboard shortcut hint (bottom left) */}
-        <div className="absolute bottom-6 left-6 z-10 px-3 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200 text-[9px] text-slate-500 flex items-center gap-2.5 shadow-sm">
-          <span><kbd className="px-1 py-0.5 bg-slate-100 rounded font-mono">T</kbd> new idea</span>
-          <span><kbd className="px-1 py-0.5 bg-slate-100 rounded font-mono">G</kbd> generate</span>
-          <span><kbd className="px-1 py-0.5 bg-slate-100 rounded font-mono">L</kbd> arrange</span>
-          <span><kbd className="px-1 py-0.5 bg-slate-100 rounded font-mono">⌘V</kbd> paste</span>
-          <span><kbd className="px-1 py-0.5 bg-slate-100 rounded font-mono">⌘S</kbd> save</span>
+        <div className="absolute bottom-6 left-6 z-10 surface-floating px-3.5 py-2 flex items-center gap-3 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-mono text-slate-600">T</kbd> new idea</span>
+          <span className="text-slate-300">·</span>
+          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-mono text-slate-600">G</kbd> generate</span>
+          <span className="text-slate-300">·</span>
+          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-mono text-slate-600">L</kbd> arrange</span>
+          <span className="text-slate-300">·</span>
+          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] font-mono text-slate-600">⌘S</kbd> save</span>
         </div>
 
         <ReactFlow
@@ -2687,7 +2775,7 @@ const ScriptDetailDrawer: React.FC<ScriptDetailDrawerProps> = ({ script, scriptN
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => copy(fullScriptText, "all")}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
               >
                 {copiedField === "all" ? <Check size={12} /> : <Copy size={12} />}
                 {copiedField === "all" ? "Copied" : "Copy Full Brief"}
@@ -2695,7 +2783,7 @@ const ScriptDetailDrawer: React.FC<ScriptDetailDrawerProps> = ({ script, scriptN
               <button
                 onClick={saveAsIdea}
                 disabled={saveState === "saved-idea"}
-                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                   saveState === "saved-idea"
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                     : "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200"
@@ -2705,13 +2793,13 @@ const ScriptDetailDrawer: React.FC<ScriptDetailDrawerProps> = ({ script, scriptN
               </button>
               <button
                 onClick={sendToCarouselLab}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200 text-[10px] font-black uppercase tracking-widest transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200 text-xs font-semibold transition-colors"
               >
                 <Layers size={12} /> Make Carousel
               </button>
               <button
                 onClick={sendToScriptWizard}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200 text-[10px] font-black uppercase tracking-widest transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200 text-xs font-semibold transition-colors"
               >
                 <Wand2 size={12} /> Refine in Wizard
               </button>

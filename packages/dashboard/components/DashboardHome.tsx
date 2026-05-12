@@ -44,6 +44,7 @@ import { ScrollReveal, CountUp } from "./ui/animations.js";
 import { Sparkline } from "./ui/Sparkline.js";
 import { MetricBadge } from "./ui/MetricBadge.js";
 import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
+import { Button, Heading, Eyebrow, Pill } from "./ui/index.js";
 import { QuestChain } from "./ui/QuestChain.js";
 import { GoalRing } from "./ui/GoalRing.js";
 
@@ -820,14 +821,13 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     (pipeline?.summary.ASSEMBLED ?? 0) + (pipeline?.summary.SCHEDULED ?? 0);
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 md:p-12 max-w-6xl mx-auto space-y-10">
 
       {/* ═══ Editorial Header ═══════════════════════════════════════════════ */}
-      <header className="flex items-baseline justify-between border-b border-slate-200 pb-5">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1">{greeting.date}</p>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 leading-tight">{greeting.text}</h1>
-        </div>
+      <header className="flex items-baseline justify-between border-b border-slate-200/70 pb-6">
+        <Heading level={1} eyebrow={greeting.date} display>
+          {greeting.text}
+        </Heading>
         <div className="hidden md:flex items-center gap-2">
           <BlueprintQuickAccess />
         </div>
@@ -838,46 +838,47 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* ═══ Section 1: Performance Command Strip ═══════════════════════════ */}
       <section>
-        <div className="flex items-baseline justify-between mb-4 px-1">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Performance</h2>
-          <span className="text-[10px] font-medium text-slate-400 tabular-nums">Last 7 days</span>
+        <div className="flex items-baseline justify-between mb-5 px-1">
+          <Eyebrow>Performance</Eyebrow>
+          <span className="type-meta tabular-nums">Last 7 days</span>
         </div>
 
-        {/* KPI Cards Row — Editorial bento */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        {/* KPI Cards Row — refined hierarchy */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
           {/* Views (hero card — spans 2 cols on desktop) */}
-          <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-200 transition-colors">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Total Views</p>
-            <p className="text-4xl md:text-5xl font-serif font-bold text-slate-900 tabular-nums leading-none">
+          <div className="md:col-span-2 surface-secondary group hover:border-teal-200 transition-colors">
+            <Eyebrow className="mb-3">Total Views</Eyebrow>
+            <p className="type-stat-hero leading-none">
               {metricsData?.totalViews ? metricsData.totalViews.toLocaleString() : "—"}
             </p>
             {metricsData?.viewsTrend && (
-              <Sparkline data={metricsData.viewsTrend} width={200} height={32} color="#0d9488" fillOpacity={0.12} className="mt-3" />
+              <Sparkline data={metricsData.viewsTrend} width={220} height={36} color="#0d9488" fillOpacity={0.14} className="mt-4" />
             )}
           </div>
 
           {/* Week-over-Week */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between hover:border-teal-200 transition-colors">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">vs Last Week</p>
+          <div className="surface-secondary flex flex-col justify-between hover:border-teal-200 transition-colors">
+            <Eyebrow className="mb-3">vs Last Week</Eyebrow>
             {metricsData?.weekOverWeekDelta !== undefined ? (
-              <p className={`text-3xl font-serif font-bold tabular-nums ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`type-stat-medium ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {metricsData.weekOverWeekDelta >= 0 ? "+" : ""}{metricsData.weekOverWeekDelta}%
               </p>
             ) : (
-              <p className="text-3xl font-serif font-bold text-slate-300 tabular-nums">—</p>
+              <p className="type-stat-medium text-slate-300">—</p>
             )}
+            <p className="type-meta mt-1">7-day delta</p>
           </div>
 
           {/* Engagement + Goal stacked */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex-1 hover:border-teal-200 transition-colors">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Engagement</p>
-              <p className="text-2xl font-serif font-bold text-slate-900 tabular-nums">
+          <div className="flex flex-col gap-4">
+            <div className="surface-secondary py-4 flex-1 hover:border-teal-200 transition-colors">
+              <Eyebrow className="mb-2">Engagement</Eyebrow>
+              <p className="type-stat-medium">
                 {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "—"}
               </p>
             </div>
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex-1 hover:border-teal-200 transition-colors">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Monthly Goal</p>
+            <div className="surface-secondary py-4 flex-1 hover:border-teal-200 transition-colors">
+              <Eyebrow className="mb-2">Monthly Goal</Eyebrow>
               {(() => {
                 const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
                 const current = metricsData?.thisWeek || metricsData?.totalViews || 0;
@@ -885,12 +886,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
                 return (
                   <>
-                    <span className="text-lg font-serif font-bold text-slate-900 tabular-nums">{pct}%</span>
-                    <div className="mt-1">
+                    <span className="type-stat-medium">{pct}%</span>
+                    <div className="mt-2">
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-1 tabular-nums">{formatNum(current)} / {formatNum(goal)}</p>
+                      <p className="type-meta mt-1.5 tabular-nums">{formatNum(current)} / {formatNum(goal)}</p>
                     </div>
                   </>
                 );
@@ -899,22 +900,24 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions — sentence case, premium typography */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Record Tonight", icon: <Mic size={13} />, view: "SESSION" as const },
-            { label: "Schedule Post", icon: <CalendarCheck size={13} />, view: "CALENDAR" as const },
-            { label: "Generate Carousel", icon: <LayoutGrid size={13} />, view: "CAROUSEL_LAB" as const },
-            { label: "View Pipeline", icon: <Activity size={13} />, view: "PIPELINE" as const },
-            { label: "Visual Canvas", icon: <Shuffle size={13} />, view: "CANVAS" as const },
+            { label: "Record tonight", icon: <Mic />, view: "SESSION" as const },
+            { label: "Schedule post", icon: <CalendarCheck />, view: "CALENDAR" as const },
+            { label: "Generate carousel", icon: <LayoutGrid />, view: "CAROUSEL_LAB" as const },
+            { label: "View pipeline", icon: <Activity />, view: "PIPELINE" as const },
+            { label: "Visual canvas", icon: <Shuffle />, view: "CANVAS" as const },
           ].map((a) => (
-            <button
+            <Button
               key={a.view}
+              variant="secondary"
+              size="md"
+              icon={a.icon}
               onClick={() => onNavigate(a.view as DashboardView)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-teal-300 hover:text-teal-700 active:scale-[0.98] transition-all duration-150"
             >
-              {a.icon} {a.label}
-            </button>
+              {a.label}
+            </Button>
           ))}
         </div>
       </section>
@@ -959,10 +962,10 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         }
 
         return (
-          <div className="bg-white shadow-sm hover:shadow-md rounded-2xl overflow-hidden transition-all duration-200">
+          <div className="surface-primary !p-0 overflow-hidden hover:shadow-md transition-all duration-200">
             <div className="flex flex-col md:flex-row">
               {/* Thumbnail */}
-              <div className="w-full md:w-64 lg:w-72 shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-950">
+              <div className="w-full md:w-64 lg:w-72 shrink-0 relative overflow-hidden bg-slate-900">
                 {tp.thumbnailUrl ? (
                   <a href={videoUrl || "#"} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
                     <img
@@ -986,68 +989,64 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-5 md:p-6 lg:p-7">
+              <div className="flex-1 p-6 md:p-8">
                 {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Trophy size={15} className="text-amber-500" />
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600">Your Top Performer</p>
-                  </div>
-                  {formatLabel && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{formatLabel}</span>
-                  )}
+                <div className="flex items-start justify-between mb-4">
+                  <Eyebrow tone="warning" icon={<Trophy size={13} />}>Your top performer</Eyebrow>
+                  {formatLabel && <Pill variant="muted">{formatLabel}</Pill>}
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg md:text-xl font-serif font-bold text-slate-900 leading-snug mb-4">
-                  {tp.title}
-                </h3>
+                <h3 className="type-h3 mb-5">{tp.title}</h3>
 
                 {/* Outlier score — the hero stat */}
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-3xl md:text-4xl font-bold text-amber-600 tabular-nums">{tp.outlierScore}x</span>
-                  <span className="text-sm text-slate-500">your average views</span>
+                <div className="flex items-baseline gap-3 mb-6">
+                  <span className="type-stat-large text-amber-600">{tp.outlierScore}x</span>
+                  <span className="type-body">your average views</span>
                 </div>
 
                 {/* Metrics grid with context */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
                   <div>
-                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.views.toLocaleString()}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Views</p>
+                    <Eyebrow className="mb-1.5">Views</Eyebrow>
+                    <p className="type-stat-small">{tp.views.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.likes.toLocaleString()}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Likes</p>
+                    <Eyebrow className="mb-1.5">Likes</Eyebrow>
+                    <p className="type-stat-small">{tp.likes.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-slate-900 tabular-nums">{tp.saves}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Saves</p>
+                    <Eyebrow className="mb-1.5">Saves</Eyebrow>
+                    <p className="type-stat-small">{tp.saves}</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-teal-700 tabular-nums">{tp.engagementRate}%</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Engagement</p>
+                    <Eyebrow className="mb-1.5">Engagement</Eyebrow>
+                    <p className="type-stat-small text-teal-700">{tp.engagementRate}%</p>
                   </div>
                 </div>
 
                 {/* Why it worked insights */}
                 {insights.length > 0 && (
-                  <div className="mb-5 px-4 py-3 bg-amber-50/70 border border-amber-100 rounded-xl space-y-1.5">
-                    <p className="text-[11px] font-semibold text-amber-700 flex items-center gap-1.5">
-                      <Sparkles size={12} /> Why this worked
-                    </p>
-                    {insights.slice(0, 3).map((insight, i) => (
-                      <p key={i} className="text-[11px] text-amber-800/80 leading-relaxed pl-5">
-                        {insight}
-                      </p>
-                    ))}
+                  <div className="mb-6 px-5 py-4 bg-amber-50 rounded-2xl border border-amber-200/70">
+                    <Eyebrow tone="warning" icon={<Sparkles size={13} />} className="mb-2">Why this worked</Eyebrow>
+                    <div className="space-y-1.5 mt-3">
+                      {insights.slice(0, 3).map((insight, i) => (
+                        <p key={i} className="text-[13px] text-amber-900/80 leading-relaxed">
+                          {insight}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  <button
+                  <Button
+                    variant="primary"
+                    tone="teal"
+                    size="md"
+                    icon={<Sparkles />}
                     onClick={() => {
-                      // Extract the core topic from the title (strip filler words for better hook generation)
                       const coreTopic = tp.title;
                       const seed: import("../shared/types.js").ScriptWizardSeed = {
                         topic: coreTopic,
@@ -1070,18 +1069,17 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                       };
                       onNavigate("SCRIPT_WIZARD", seed);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white text-[11px] font-semibold rounded-lg hover:bg-teal-700 active:scale-[0.98] transition-all"
                   >
-                    <Sparkles size={13} /> Study & Replicate
-                  </button>
+                    Study & replicate
+                  </Button>
                   {videoUrl && (
                     <a
                       href={videoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-teal-600 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-teal-600 transition-colors"
                     >
-                      <Eye size={12} /> View Original <ArrowRight size={10} />
+                      <Eye size={14} /> View original <ArrowRight size={12} />
                     </a>
                   )}
                 </div>
@@ -1098,36 +1096,32 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       )}
 
       {/* ═══ Pipeline (compact full-width bar) ═══════════════════════════════ */}
-      <button onClick={() => onNavigate("PIPELINE")} className="w-full bg-surface-elevated shadow-sm hover:shadow-md rounded-2xl px-5 py-4 text-left transition-all duration-200">
+      <button onClick={() => onNavigate("PIPELINE")} className="w-full surface-secondary hover:border-teal-200 px-6 py-5 text-left transition-all duration-200 group">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</p>
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-6">
+            <Eyebrow>Pipeline</Eyebrow>
+            <div className="flex items-center gap-2">
               {stages.map((stage, i) => {
                 const count = pipeline?.summary[stage.status] ?? 0;
                 return (
                   <React.Fragment key={stage.status}>
-                    <div className="flex items-center gap-1">
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+                    <div className="flex items-center gap-2">
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums transition-colors ${
                         count > 0 ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-400"
                       }`}>
                         {count}
                       </span>
-                      <span className="text-[9px] font-medium text-slate-400 hidden md:block">{stage.label}</span>
+                      <span className="type-meta hidden md:block">{stage.label}</span>
                     </div>
-                    {i < stages.length - 1 && <ChevronRight size={10} className="text-slate-300 shrink-0" />}
+                    {i < stages.length - 1 && <ChevronRight size={12} className="text-slate-300 shrink-0" />}
                   </React.Fragment>
                 );
               })}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{inProgress + (pipeline?.summary.SCRIPTED ?? 0)} in flight</span>
-            {bottleneckStatus && maxCount > 0 && (
-              <span className="text-[10px] text-slate-400 hidden md:block">
-                {maxCount} in {bottleneckStatus.toLowerCase()} <ArrowRight size={10} className="inline" />
-              </span>
-            )}
+            <span className="text-sm font-medium text-slate-600 tabular-nums">{inProgress + (pipeline?.summary.SCRIPTED ?? 0)} in flight</span>
+            <ArrowRight size={14} className="text-slate-400 group-hover:text-teal-600 transition-colors" />
           </div>
         </div>
       </button>
@@ -1138,11 +1132,8 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
       {/* ═══ Section 3: Discover (consolidated) ════════════════════════════ */}
       {(outlierVideos?.videos?.length ?? 0) > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <TrendingUp size={12} className="text-teal-500" />
-              Trending Now
-            </h2>
+          <div className="flex items-center justify-between mb-4 px-1">
+            <Eyebrow icon={<TrendingUp size={13} className="text-teal-500" />}>Trending now</Eyebrow>
             <div className="flex items-center gap-3">
               <BlowingUpRefresh onDone={() => queryClient.invalidateQueries({ queryKey: ["outlier-videos-home"] })} />
               <button
@@ -1226,19 +1217,24 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 // What's Next Hero — editorial CTA card
 // ═══════════════════════════════════════════════════════════════════════════
 const WhatsNextHero: React.FC<{ whatsNext: WhatsNextAction; onNavigate: (view: DashboardView) => void }> = ({ whatsNext, onNavigate }) => (
-  <section className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 hover:border-teal-200 transition-colors group">
-    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+  <section className="surface-primary group hover:border-teal-200 transition-colors">
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
       <div className="md:max-w-2xl">
-        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-teal-600 mb-3">What's Next</p>
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-slate-900 leading-tight mb-2">{whatsNext.headline}</h2>
-        <p className="text-sm text-slate-500 leading-relaxed">{whatsNext.description}</p>
+        <Heading level={2} eyebrow="What's next" eyebrowTone="accent">
+          {whatsNext.headline}
+        </Heading>
+        <p className="type-body mt-3">{whatsNext.description}</p>
       </div>
-      <button
+      <Button
+        variant="primary"
+        tone="slate"
+        size="lg"
         onClick={() => onNavigate(whatsNext.target)}
-        className="self-start md:self-end inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors group-hover:bg-teal-700"
+        iconRight={<ArrowRight />}
+        className="self-start md:self-end"
       >
-        {whatsNext.cta} <ArrowRight size={13} />
-      </button>
+        {whatsNext.cta}
+      </Button>
     </div>
   </section>
 );
@@ -1254,16 +1250,19 @@ const BlueprintQuickAccess: React.FC = () => {
   });
   if (!data?.blueprint) return null;
   return (
-    <a
+    <Button
+      as="a"
       href="/api/blueprint/raw"
       target="_blank"
       rel="noopener"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-colors"
+      variant="tag"
+      tone="teal"
+      size="sm"
+      icon={<Sparkles />}
       title={`Blueprint v${data.blueprint.version} · ${data.blueprint.hookArchetypes.length} archetypes`}
     >
-      <Sparkles size={12} />
       Blueprint v{data.blueprint.version}
-    </a>
+    </Button>
   );
 };
 
@@ -1294,7 +1293,7 @@ const BlueprintCard: React.FC<{ onNavigate: (view: DashboardView) => void }> = (
           href="/api/blueprint/raw"
           target="_blank"
           rel="noopener"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-colors"
         >
           View Full
         </a>
@@ -1325,7 +1324,7 @@ const BlueprintCard: React.FC<{ onNavigate: (view: DashboardView) => void }> = (
               // Trigger the FAB convert mode via keyboard shortcut
               window.dispatchEvent(new KeyboardEvent("keydown", { key: "c" }));
             }}
-            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors w-fit"
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-full text-xs font-semibold hover:bg-teal-700 transition-colors w-fit"
           >
             <Wand2 size={11} /> Open Convert
           </button>

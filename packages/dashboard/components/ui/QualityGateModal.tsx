@@ -167,14 +167,14 @@ export const QualityGateModal: React.FC<QualityGateModalProps> = ({
         <div className="flex items-center gap-2 p-4 border-t border-slate-100">
           <button
             onClick={onConfirm}
-            className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+            className="flex-1 text-xs font-semibold text-slate-500 hover:text-slate-700 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
           >
             Skip
           </button>
           <button
             onClick={onConfirm}
             className={cn(
-              "flex-1 text-[10px] font-black uppercase tracking-widest py-2.5 rounded-xl transition-colors",
+              "flex-1 text-xs font-semibold py-2.5 rounded-xl transition-colors",
               pct === 100
                 ? "bg-emerald-600 text-white hover:bg-emerald-700"
                 : "bg-teal-600 text-white hover:bg-teal-700",

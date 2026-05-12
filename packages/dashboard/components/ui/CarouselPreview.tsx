@@ -72,7 +72,7 @@ export function CarouselPreview({ slides, platform, status }: CarouselPreviewPro
           </div>
           <button
             onClick={handleDownloadAll}
-            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-teal-600 hover:text-teal-700 min-h-[44px] min-w-[44px] justify-center"
+            className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700 min-h-[44px] min-w-[44px] justify-center"
           >
             <Download size={14} />
             All

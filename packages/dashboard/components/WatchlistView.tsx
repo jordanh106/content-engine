@@ -409,21 +409,21 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
   });
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="p-6 md:p-12 space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Eye size={20} className="text-teal-600" />
-            <h2 className="text-lg font-serif font-bold text-themed">Creator Watchlist</h2>
+          <div className="flex items-center gap-3 mb-2">
+            <Eye size={24} className="text-teal-600" />
+            <h1 className="type-h1">Creator watchlist</h1>
           </div>
-          <p className="text-sm text-themed-tertiary">
+          <p className="type-body">
             Track competitors and inspiration creators. Analyze their patterns directly from here.
           </p>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 transition-colors"
         >
           <Plus size={12} />
           Add Creator
@@ -614,7 +614,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                   setAnalysisResult(result);
                 }}
                 disabled={analyzeMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors"
               >
                 {analyzeMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 {analyzeMutation.isPending ? "Analyzing..." : "Analyze Position"}
@@ -1393,7 +1393,7 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
       <div className="flex justify-end gap-2 mt-4">
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-themed-tertiary hover:text-themed-secondary"
+          className="px-4 py-2 rounded-full text-xs font-semibold text-themed-tertiary hover:text-themed-secondary"
         >
           Cancel
         </button>
@@ -1409,7 +1409,7 @@ const AddCreatorForm: React.FC<AddCreatorFormProps> = ({ sections, onSubmit, onC
             section: section || undefined,
           })}
           disabled={isPending || !handle.trim()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
         >
           {isPending ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
           Add to Watchlist

@@ -94,7 +94,7 @@ export const HiggsfieldThumbnailPack: React.FC<Props> = ({
           }
         }}
         disabled={mutation.isPending}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-60 transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-60 transition-colors"
         title="Pick a model, see cost, then generate 4 A/B-ready thumbnail variants"
       >
         {mutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
@@ -140,7 +140,7 @@ export const HiggsfieldThumbnailPack: React.FC<Props> = ({
                 <button
                   onClick={() => { setResultsOpen(false); setPreflightOpen(true); }}
                   disabled={mutation.isPending}
-                  className="text-[10px] font-black uppercase tracking-widest text-teal-700 hover:text-teal-700 disabled:opacity-40 flex items-center gap-1"
+                  className="text-xs font-semibold text-teal-700 hover:text-teal-700 disabled:opacity-40 flex items-center gap-1"
                   title="Pick a different model and regenerate"
                 >
                   <RefreshCw size={10} />

@@ -159,7 +159,7 @@ const AccordionSection: React.FC<{
                       e.stopPropagation();
                       onAdvance(video.code);
                     }}
-                    className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
+                    className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
                   >
                     Move to {nextStatus}
                     <ChevronRight size={12} />
@@ -431,13 +431,11 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-6 md:p-12 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
-          Pipeline
-        </h1>
-        <p className="text-sm text-themed-tertiary mt-1">
+      <div className="mb-8">
+        <h1 className="type-h1">Pipeline</h1>
+        <p className="type-body mt-2">
           {data.total} videos across {PRODUCTION_STATUSES.length} stages
         </p>
       </div>

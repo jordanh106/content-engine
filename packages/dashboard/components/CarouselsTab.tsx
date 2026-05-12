@@ -102,7 +102,7 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
         </div>
         <button
           onClick={() => setShowGenerator(!showGenerator)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors min-h-[44px]"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition-colors min-h-[44px]"
         >
           <Plus size={14} />
           Generate
@@ -197,7 +197,7 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
                   })
                 }
                 disabled={generateMutation.isPending}
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 min-h-[44px]"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-50 min-h-[44px]"
               >
                 {generateMutation.isPending ? (
                   <>

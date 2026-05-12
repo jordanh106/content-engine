@@ -224,14 +224,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
   const totalGaps = gapsData?.gaps?.length ?? 0;
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="p-6 md:p-12 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold text-themed">
-            Content Calendar
-          </h1>
-          <p className="text-sm text-themed-tertiary mt-1">
+          <h1 className="type-h1">Content calendar</h1>
+          <p className="type-body mt-2">
             {entries.length} entries {viewMode === "week" ? "this week" : "this month"}
             {totalGaps > 0 && (
               <FeatureHint id="calendar-gaps" content={FEATURE_HINTS["calendar-gaps"].content} side="bottom">

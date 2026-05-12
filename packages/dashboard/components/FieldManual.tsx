@@ -154,7 +154,7 @@ const BlockRenderer: React.FC<{ block: GuideBlock; onNavigate: (view: DashboardV
       return (
         <button
           onClick={() => { onNavigate(block.targetView); onClose(); }}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors min-h-[44px]"
         >
           {block.label}
           <ArrowRight size={12} />

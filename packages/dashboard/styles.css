@@ -99,6 +99,178 @@
 .shadow-themed-md { box-shadow: var(--shadow-md); }
 .accent-glow { box-shadow: var(--accent-glow); }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY SYSTEM
+   The ONLY accepted way to style headings, eyebrows, stats, and body text.
+   Replaces 8+ inline variants of each that crept in over time. Single source of truth.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Display — page heroes only (Home greeting, modal cinematic titles) */
+.type-display {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+@media (min-width: 768px) {
+  .type-display { font-size: 3rem; }
+}
+
+/* H1 — view-level page titles */
+.type-h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 1.875rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+/* H2 — major section titles inside a view */
+.type-h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* H3 — card titles */
+.type-h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+/* H4 — subsection titles inside cards */
+.type-h4 {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+/* Body */
+.type-body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.type-body-strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Eyebrow — the SINGLE uppercase label style */
+.type-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+.type-eyebrow-accent { color: var(--accent); }
+.type-eyebrow-success { color: #047857; }
+.type-eyebrow-warning { color: #b45309; }
+.type-eyebrow-danger { color: #b91c1c; }
+
+/* Stat numbers — tabular-nums always */
+.type-stat-hero {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.type-stat-large {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.type-stat-medium {
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.type-stat-small {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* Caption / meta */
+.type-caption {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+.type-meta {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SURFACE HIERARCHY
+   4 differentiated card treatments. Replaces ad-hoc `bg-white border rounded-2xl`.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.surface-primary {
+  background-color: var(--surface-primary);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04);
+  border: 1px solid color-mix(in srgb, var(--surface-border) 50%, transparent);
+}
+@media (min-width: 768px) {
+  .surface-primary { padding: 2rem; }
+}
+:root.dark .surface-primary {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-color: var(--surface-border-subtle);
+}
+
+.surface-secondary {
+  background-color: var(--surface-primary);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--surface-border-subtle);
+}
+
+.surface-tertiary {
+  background-color: var(--surface-secondary);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.surface-floating {
+  background-color: var(--surface-primary);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(15, 23, 42, 0.05), 0 12px 32px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--surface-border-subtle);
+}
+:root.dark .surface-floating {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
 /* Global body background */
 body {
   background-color: var(--surface-body);

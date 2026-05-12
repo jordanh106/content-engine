@@ -259,15 +259,15 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
   const trending = data?.pages[0]?.trending ?? [];
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 pb-24 md:pb-8">
+    <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-8 pb-24 md:pb-8">
       {/* Header */}
       <ScrollReveal delay={0}>
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <Compass size={22} className="text-teal-600" />
-            <h1 className="text-2xl font-bold text-themed font-serif">Discover</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <Compass size={24} className="text-teal-600" />
+            <h1 className="type-h1">Discover</h1>
           </div>
-          <p className="text-sm text-themed-tertiary">
+          <p className="type-body">
             Video inspiration from creators you follow and across the web.
           </p>
         </div>
