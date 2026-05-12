@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .content-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: {{PADDING}}px;
+    background: {{TEXT_LIGHT}};
+    position: relative;
+  }
+  .number-block {
+    background: {{TEXT}};
+    color: {{ACCENT}};
+    display: inline-block;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 18px 28px;
+    border-radius: 12px;
+    margin-bottom: 36px;
+    letter-spacing: -0.02em;
+  }
+  .slide-number-label {
+    position: absolute;
+    top: 36px;
+    right: {{PADDING}}px;
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: {{TEXT}};
+  }
+  .point-title {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: calc({{TITLE_SIZE}}px * 1.2);
+    font-weight: 900;
+    color: {{TEXT}};
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    max-width: 92%;
+    text-transform: uppercase;
+  }
+  .point-body {
+    font-size: calc({{BODY_SIZE}}px * 1.05);
+    font-weight: 700;
+    color: {{TEXT}};
+    line-height: 1.45;
+    max-width: 88%;
+  }
+  .footer-row {
+    position: absolute;
+    bottom: 36px;
+    left: {{PADDING}}px;
+    right: {{PADDING}}px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-mark {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: {{MUTED}};
+  }
+  .accent-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: {{ACCENT}};
+  }
+</style>
+</head>
+<body>
+<div class="content-slide">
+  <div class="slide-number-label">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  <div class="number-block">{{POINT_NUMBER}}</div>
+  <div class="point-title">{{POINT_TITLE}}</div>
+  <div class="point-body">{{POINT_BODY}}</div>
+  <div class="footer-row">
+    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="accent-dot"></div>
+  </div>
+</div>
+</body>
+</html>

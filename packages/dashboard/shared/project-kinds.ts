@@ -84,7 +84,7 @@ const OFFICE_TOUR_SECTIONS: ProjectKindBriefSection[] = [
 
 const DID_YOU_KNOW_SECTIONS: ProjectKindBriefSection[] = [
   { heading: "Topic", placeholder: 'e.g. "Things you probably do every day that quietly wreck your spine"', required: true, minLength: 20, rows: 2 },
-  { heading: "Slide hooks (5-7 lines)", placeholder: "1. Hook slide (one bold sentence)\n2.\n3.\n4.\n5.\n6.\n7. CTA slide", required: true, minLength: 60, rows: 8, hint: "Each line becomes one slide." },
+  { heading: "Slide hooks (5-7 lines)", placeholder: "1. Hook slide (one bold sentence)\n2.\n3.\n4.\n5.\n6.\n7. CTA slide", required: false, minLength: 60, rows: 8, hint: "Optional — leave blank and the AI will draft these from your Topic. Or write them yourself, one slide per line." },
 ];
 
 const BRAND_LAUNCH_SECTIONS: ProjectKindBriefSection[] = [

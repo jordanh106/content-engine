@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .content-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: {{PADDING}}px;
+    background: {{BACKGROUND}};
+    position: relative;
+  }
+  .accent-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    background: linear-gradient(180deg, {{PRIMARY}} 0%, {{ACCENT}} 100%);
+  }
+  .slide-number-label {
+    position: absolute;
+    top: 36px;
+    right: {{PADDING}}px;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: {{MUTED}};
+  }
+  .big-number {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{NUMBER_SIZE}}px;
+    font-weight: bold;
+    color: {{PRIMARY}};
+    opacity: {{NUMBER_OPACITY}};
+    line-height: 1;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .point-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{TITLE_SIZE}}px;
+    font-weight: bold;
+    color: {{TEXT}};
+    line-height: 1.18;
+    letter-spacing: -0.005em;
+    margin-bottom: 20px;
+    max-width: 92%;
+  }
+  .point-body {
+    font-size: {{BODY_SIZE}}px;
+    font-weight: 400;
+    color: {{MUTED}};
+    line-height: 1.55;
+    max-width: 90%;
+  }
+  .brand-mark {
+    position: absolute;
+    bottom: 36px;
+    left: {{PADDING}}px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(100,116,139,0.35);
+  }
+</style>
+</head>
+<body>
+<div class="content-slide">
+  <div class="accent-bar"></div>
+  <div class="slide-number-label">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  <div class="big-number">{{POINT_NUMBER}}</div>
+  <div class="point-title">{{POINT_TITLE}}</div>
+  <div class="point-body">{{POINT_BODY}}</div>
+  <div class="brand-mark">Collective Family Chiropractic</div>
+</div>
+</body>
+</html>

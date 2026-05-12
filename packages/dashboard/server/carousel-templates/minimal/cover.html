@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: calc({{PADDING}}px * 1.5);
+    background: {{BACKGROUND}};
+    position: relative;
+  }
+  .rule {
+    width: 64px;
+    height: 2px;
+    background: {{PRIMARY}};
+    margin-bottom: 36px;
+  }
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: {{MUTED}};
+    margin-bottom: 36px;
+  }
+  .headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: calc({{HEADLINE_SIZE}}px * 0.95);
+    font-weight: 400;
+    color: {{TEXT}};
+    line-height: 1.12;
+    letter-spacing: -0.005em;
+    margin-bottom: 36px;
+    max-width: 88%;
+  }
+  .subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 300;
+    color: {{MUTED}};
+    line-height: 1.55;
+    max-width: 70%;
+  }
+  .footer-row {
+    position: absolute;
+    bottom: 48px;
+    left: calc({{PADDING}}px * 1.5);
+    right: calc({{PADDING}}px * 1.5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-mark {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: {{MUTED}};
+  }
+  .swipe-indicator {
+    font-size: 11px;
+    font-weight: 400;
+    color: {{MUTED}};
+    letter-spacing: 0.18em;
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="eyebrow">Did you know</div>
+  <div class="rule"></div>
+  <div class="headline">{{HOOK_LINE}}</div>
+  <div class="subhead">{{SUBTITLE}}</div>
+  <div class="footer-row">
+    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="swipe-indicator">Swipe &rarr;</div>
+  </div>
+</div>
+</body>
+</html>

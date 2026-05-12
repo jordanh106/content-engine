@@ -86,6 +86,7 @@ export const ProjectDetail: React.FC<Props> = ({
   const [briefDraft, setBriefDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [activeOutput, setActiveOutput] = useState<ProjectOutput | null>(null);
+  const [carouselVariant, setCarouselVariant] = useState<"editorial" | "bold" | "minimal">("editorial");
   const briefHydratedRef = useRef(false);
 
   useEffect(() => {
@@ -227,7 +228,9 @@ export const ProjectDetail: React.FC<Props> = ({
         project={project}
         kindDef={def}
         activeStep={activeStep}
-        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc })}
+        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant })}
+        carouselVariant={carouselVariant}
+        onCarouselVariantChange={setCarouselVariant}
         onMarkPublished={() => updateStatus.mutate("published")}
         onAddRef={() => fileInputRef.current?.click()}
         onRetry={() => retry.mutate()}
@@ -244,6 +247,7 @@ export const ProjectDetail: React.FC<Props> = ({
           schema={def.briefSections}
           disabled={isGenerating}
           onChange={setBriefDraft}
+          projectId={projectId}
         />
       </section>
 
@@ -354,14 +358,19 @@ function triggerGenerate(args: {
   onOpenStorytellingReelForProject?: (id: string) => void;
   onOpenMarketingStudioForProject?: (id: string) => void;
   qc: ReturnType<typeof useQueryClient>;
+  carouselVariant?: "editorial" | "bold" | "minimal";
 }) {
-  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc } = args;
+  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant } = args;
   const mode = def.generationMode;
   if (mode.type === "orchestrator") {
+    const body: Record<string, unknown> = { briefMd: briefDraft };
+    if (project.kind === "did_you_know" && carouselVariant) {
+      body.variant = carouselVariant;
+    }
     fetch(`/api/projects/${project.id}/${mode.endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ briefMd: briefDraft }),
+      body: JSON.stringify(body),
     }).then(() => qc.invalidateQueries({ queryKey: ["project", project.id] }));
     return;
   }
@@ -385,7 +394,9 @@ const CurrentStepPanel: React.FC<{
   onAddRef: () => void;
   onRetry: () => void;
   savedFlash: boolean;
-}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash }) => {
+  carouselVariant?: "editorial" | "bold" | "minimal";
+  onCarouselVariantChange?: (v: "editorial" | "bold" | "minimal") => void;
+}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash, carouselVariant, onCarouselVariantChange }) => {
   const isGenerating = project.status === "generating";
   const isTemplateOnly = kindDef.generationMode.type === "template_only";
 
@@ -504,6 +515,7 @@ const CurrentStepPanel: React.FC<{
   }
 
   if (activeStep === "generate") {
+    const isCarousel = project.kind === "did_you_know";
     return (
       <div className="surface-primary !py-5">
         <div className="flex items-start gap-4">
@@ -514,6 +526,25 @@ const CurrentStepPanel: React.FC<{
             <Eyebrow tone="accent">Ready to generate</Eyebrow>
             <h3 className="type-h3 mt-1">{kindDef.generateCtaLabel}</h3>
             <p className="type-body mt-1">{kindDef.generateBlurb}</p>
+            {isCarousel && carouselVariant && onCarouselVariantChange && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="type-meta">Look:</span>
+                {(["editorial", "bold", "minimal"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => onCarouselVariantChange(v)}
+                    className={cn(
+                      "px-3 py-1 text-xs font-semibold rounded-full border transition-colors capitalize",
+                      carouselVariant === v
+                        ? "bg-teal-600 text-white border-teal-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
+                    )}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Button
             variant="primary"

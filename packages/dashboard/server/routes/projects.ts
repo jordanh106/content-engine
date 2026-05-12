@@ -18,7 +18,9 @@ import { parseQuickStartTemplates } from "../parsers/quickstart-templates.js";
 import { predictVirality } from "../lib/virality-predictor.js";
 import { generateImage, generateVideo, uploadMediaFromUrl, isConfigured } from "../lib/higgsfield-client.js";
 import { logStage, queueStages, readGenerationLog, failPendingStages, clearProjectLog, viralityModeForKind } from "../lib/project-orchestrators.js";
-import { parseBriefSections } from "../../utils/project-steps.js";
+import type { CarouselVariant, CarouselAspect } from "../lib/carousel-renderer.js";
+import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
+import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
 
 type Row = Record<string, unknown>;
@@ -304,6 +306,132 @@ export function createProjectsRouter(projectsDataDir: string, quickstartTemplate
       fs.unlinkSync(ref.file_path);
     }
     res.json({ deleted: true });
+  });
+
+  // POST /api/projects/:id/suggest-brief — AI brief drafting
+  // body { topicSeed: string }
+  // Returns { suggestedBrief: string } — full markdown ready to replace the BriefEditor content.
+  router.post("/:id/suggest-brief", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    const { topicSeed } = req.body as { topicSeed?: string };
+    if (!topicSeed || topicSeed.trim().length < 6) {
+      res.status(422).json({ error: "topicSeed too short — add a bit more detail" });
+      return;
+    }
+
+    const def = PROJECT_KIND_REGISTRY[project.kind] ?? PROJECT_KIND_REGISTRY.generic;
+    const schema = def.briefSections;
+    if (schema.length === 0) {
+      res.status(422).json({ error: `${def.label} has no brief sections to fill` });
+      return;
+    }
+
+    const isCarouselKind = project.kind === "did_you_know";
+    const strategyExcerpt = isCarouselKind ? `
+Carousel hook patterns (ranked by save rate):
+1. Listicle promise — "3 things you didn't know about X"
+2. Myth opener — "You probably think X works like Y. It doesn't."
+3. Stat anchor — "92% of people do X wrong. Here's the fix."
+4. Regret frame — "I wish someone told me X before I started Y."
+5. Quick win — "Do this 30-second thing every morning."
+6. Contrarian — "Everyone says X. The opposite is true."
+
+Copy length rules (Instagram 1:1):
+- Cover headline: 10-15 words max, bold and punchy.
+- Content titles: 5-8 words.
+- Content bodies: 1-2 short sentences (20-35 words).
+- CTA: action-driven, save-first ("Save this for later") or share-trigger ("Tag a friend who needs this").
+
+NO emdashes. Use commas, periods, or sentence fragments.
+`.trim() : "";
+
+    const brandVoice = `You write for Collective Family Chiropractic — a family chiropractic practice in Australia. Warm, educational, empowering tone. Address adults 30-55 with chronic discomfort, parents thinking about family wellness. NO emdashes ever. Plain language, no jargon.`;
+
+    // For AI Suggest we want a complete draft, so we fill every section regardless of
+    // the required flag — the flag just tells the human filling it themselves which can
+    // be skipped. AI Suggest always produces a full brief.
+    const sectionInstructions = schema.map((s) => {
+      const len = s.minLength ? ` (at least ${s.minLength} characters of substantive content)` : "";
+      const hint = s.hint ? ` — ${s.hint}` : "";
+      return `## ${s.heading}\nFill this with real, specific content${len}${hint}\nWhat goes here: ${s.placeholder}`;
+    }).join("\n\n");
+
+    try {
+      const client = new Anthropic();
+      const resp = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{
+          role: "user",
+          content: `You are filling in a creative brief for a "${def.label}" project. Output ONLY the brief markdown — no preamble, no explanation, no code fence.
+
+${brandVoice}
+
+${strategyExcerpt ? strategyExcerpt + "\n\n" : ""}TOPIC SEED FROM USER:
+${topicSeed}
+
+Required output format — fill EVERY section listed below with concrete content matching the heading exactly. Do not invent new sections, do not skip sections, do not include the placeholder text:
+
+${sectionInstructions}
+
+Return the brief as markdown with one ## heading per section, content beneath each, blank line between sections.`,
+        }],
+      });
+
+      const block = resp.content.find((b) => b.type === "text");
+      const raw = block && block.type === "text" ? block.text.trim() : "";
+      if (!raw) {
+        res.status(502).json({ error: "AI returned an empty brief" });
+        return;
+      }
+
+      // Parse + re-serialize to enforce schema heading order and drop unknown sections.
+      const parsed = parseBriefSections(raw);
+      const normalized: Record<string, string> = {};
+      for (const s of schema) {
+        normalized[s.heading] = parsed[s.heading] ?? "";
+      }
+      const suggestedBrief = serializeBriefSections(normalized, schema);
+
+      // AI Suggest produces a full draft, so verify minLength on EVERY section that has one
+      // (not just required). One repair pass expands sections that came back too short.
+      const shortSections = schema.filter((s) => (normalized[s.heading] ?? "").trim().length < (s.minLength ?? 1));
+      if (shortSections.length > 0) {
+        try {
+          const repair = await client.messages.create({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1500,
+            messages: [{
+              role: "user",
+              content: `The following brief sections are too short. Expand ONLY these sections, keep everything else identical. Output the complete brief in the same ## heading format, no preamble.
+
+CURRENT BRIEF:
+${suggestedBrief}
+
+EXPAND THESE SECTIONS to meet their minimum length:
+${shortSections.map((s) => `- ${s.heading} (needs ${s.minLength} chars, currently ${(normalized[s.heading] ?? "").length})`).join("\n")}
+
+${brandVoice}`,
+            }],
+          });
+          const rblock = repair.content.find((b) => b.type === "text");
+          if (rblock && rblock.type === "text") {
+            const reparsed = parseBriefSections(rblock.text.trim());
+            for (const s of schema) {
+              if (reparsed[s.heading]) normalized[s.heading] = reparsed[s.heading];
+            }
+          }
+        } catch { /* keep original if repair fails */ }
+      }
+
+      const final = serializeBriefSections(normalized, schema);
+      res.json({ suggestedBrief: final });
+    } catch (err) {
+      console.error("[suggest-brief] failed:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : "suggest-brief failed" });
+    }
   });
 
   // POST /api/projects/:id/generate-brand-kit — the killer workflow.
@@ -928,51 +1056,63 @@ Return ONLY the caption text.`,
     const project = loadProject(id);
     if (!project) { res.status(404).json({ error: "project not found" }); return; }
 
-    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const body = req.body as { briefMd?: string; variant?: CarouselVariant; aspect?: CarouselAspect };
+    const brief = body.briefMd ?? project.briefMd ?? "";
+    const variant: CarouselVariant = (body.variant as CarouselVariant | undefined) ?? "editorial";
+    const aspect: CarouselAspect = (body.aspect as CarouselAspect | undefined) ?? "1:1";
+
     const sections = parseBriefSections(brief);
     const topic = sections.Topic ?? "";
-    const slideHooks = sections["Slide hooks (5-7 lines)"] ?? "";
-    if (!topic || !slideHooks) {
-      res.status(422).json({ error: "brief incomplete — fill in Topic and Slide hooks" });
+    const slideHooksRaw = sections["Slide hooks (5-7 lines)"] ?? "";
+    if (!topic) {
+      res.status(422).json({ error: "brief incomplete — fill in at least the Topic. Use AI Suggest to draft the rest." });
       return;
     }
 
     sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
     clearProjectLog(id);
 
-    // Parse the slide hooks (split by lines, drop empties, drop leading numbering)
-    const slides = slideHooks
+    // Parse the slide hooks if provided. If not, the expand step will generate them from the topic.
+    const providedHooks = slideHooksRaw
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean)
       .map((l) => l.replace(/^\d+\.\s*/, ""))
       .slice(0, 7);
 
-    queueStages(id, ["expand_slides", ...slides.map((_, i) => `slide_${i + 1}`)]);
+    // We don't know the final count until we expand; queue a placeholder set.
+    const provisionalCount = providedHooks.length > 0 ? providedHooks.length : 7;
+    queueStages(id, ["expand_slides", ...Array.from({ length: provisionalCount }, (_, i) => `render_slide_${i + 1}`)]);
     res.json({ status: "generating", projectId: id });
 
     (async () => {
-      // Expand the bare slide hooks into full slide content via Anthropic
+      // 1. Expand into structured slide content (cover + content + cta).
       logStage(id, "expand_slides", "running");
-      let expanded: { title: string; body: string }[] = slides.map((s) => ({ title: s, body: "" }));
+      let expanded: Array<{ kind: "cover" | "content" | "cta"; title: string; body: string; cta_button?: string }> = [];
       try {
         const client = new Anthropic();
+        const promptHooks = providedHooks.length > 0
+          ? `Slide hooks (use these verbatim where possible):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
+          : "No slide hooks provided — generate 7 slides yourself: a cover, 5 surprising fact slides, and a CTA.";
         const resp = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 1500,
+          max_tokens: 2000,
           messages: [{
             role: "user",
-            content: `Expand the slide hooks below into full carousel content for an Instagram "Did you know" carousel from Collective Family Chiropractic. Each slide needs a short bold title (≤9 words) and a body of 1-2 short sentences. NO emdashes. Warm, educational tone.
+            content: `Build a 5-7 slide Instagram "Did you know" carousel for Collective Family Chiropractic. Warm, educational tone, save-first CTA. NO emdashes. Use commas and periods instead.
 
 Topic: ${topic}
 
-Slide hooks:
-${slides.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+${promptHooks}
 
-Return JSON only:
+Output JSON ONLY (no preamble, no code fence). The first slide MUST be a cover, the last MUST be a cta, all middle slides MUST be content slides. Bodies stay short: 1-2 sentences max, max 35 words.
+
+Schema:
 [
-  { "title": "...", "body": "..." },
+  { "kind": "cover",   "title": "<short hook headline, ≤10 words>", "body": "<one-line subtitle, ≤15 words>" },
+  { "kind": "content", "title": "<bold fact title, ≤9 words>",     "body": "<1-2 sentence body, ≤35 words>" },
   ...
+  { "kind": "cta",     "title": "<CTA headline, ≤9 words>",        "body": "<one-line motivator, ≤15 words>", "cta_button": "<2-3 word button label e.g. Save this>" }
 ]`,
           }],
         });
@@ -980,39 +1120,98 @@ Return JSON only:
         if (block && block.type === "text") {
           const match = block.text.match(/\[[\s\S]*\]/);
           if (match) {
-            const parsed = JSON.parse(match[0]) as { title: string; body: string }[];
-            if (Array.isArray(parsed) && parsed.length > 0) expanded = parsed.slice(0, slides.length);
+            const parsed = JSON.parse(match[0]) as typeof expanded;
+            if (Array.isArray(parsed) && parsed.length > 0) expanded = parsed.slice(0, 7);
           }
         }
-        logStage(id, "expand_slides", "completed");
+        if (expanded.length === 0) throw new Error("expansion returned no slides");
+        logStage(id, "expand_slides", "completed", `${expanded.length} slides`);
       } catch (err) {
         logStage(id, "expand_slides", "failed", err instanceof Error ? err.message : String(err));
+        sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+        return;
       }
 
-      // Persist each slide as a text output. The frontend can render them as cards
-      // and "Render slides" can push to the existing Carousel Lab pipeline.
+      // 2. Build slide specs for the renderer.
+      const totalSlides = expanded.length;
+      const { renderCarousel } = await import("../lib/carousel-renderer.js");
+      const slideSpecs = expanded.map((s, i) => {
+        if (s.kind === "cover") {
+          return { templateName: "cover" as const, variables: { HOOK_LINE: s.title, SUBTITLE: s.body, TOTAL_SLIDES: String(totalSlides) } };
+        }
+        if (s.kind === "cta") {
+          return {
+            templateName: "cta" as const,
+            variables: { CTA_HEADLINE: s.title, CTA_SUBHEAD: s.body, CTA_BUTTON_TEXT: (s.cta_button ?? "Save this").toUpperCase() },
+          };
+        }
+        const contentIndex = expanded.slice(0, i).filter((x) => x.kind === "content").length + 1;
+        return {
+          templateName: "content" as const,
+          variables: {
+            POINT_NUMBER: String(contentIndex).padStart(2, "0"),
+            POINT_TITLE: s.title,
+            POINT_BODY: s.body,
+            SLIDE_INDEX: String(i + 1),
+            TOTAL_SLIDES: String(totalSlides),
+          },
+        };
+      });
+
+      // 3. Render → PNGs.
       const outDir = path.join(projectsDataDir, id, "outputs");
       fs.mkdirSync(outDir, { recursive: true });
 
-      for (let i = 0; i < expanded.length; i++) {
-        const stage = `slide_${i + 1}`;
+      let rendered: Array<{ slideIndex: number; filePath: string; templateName: string }> = [];
+      try {
+        rendered = await renderCarousel({
+          slides: slideSpecs,
+          variant,
+          aspect,
+          outDir,
+          prefix: "slide_",
+        });
+      } catch (err) {
+        logStage(id, "render_slide_1", "failed", err instanceof Error ? err.message : String(err));
+        sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+        return;
+      }
+
+      // 4. Persist each PNG as an image output.
+      for (let i = 0; i < rendered.length; i++) {
+        const stage = `render_slide_${i + 1}`;
         logStage(id, stage, "running");
-        const slide = expanded[i];
-        const slidePath = path.join(outDir, `slide_${i + 1}.md`);
-        const content = `# ${slide.title}\n\n${slide.body}\n`;
-        fs.writeFileSync(slidePath, content, "utf-8");
+        const r = rendered[i];
+        const s = expanded[i];
+        const publicUrl = `/projects/${id}/outputs/${path.basename(r.filePath)}`;
         recordProjectOutput({
           projectId: id,
-          kind: "text",
-          label: `slide_${i + 1}`,
-          url: `/projects/${id}/outputs/slide_${i + 1}.md`,
-          filePath: slidePath,
-          modelUsed: "claude-haiku-4-5",
-          prompt: slide.title,
+          kind: "image",
+          label: `slide_${r.slideIndex}`,
+          url: publicUrl,
+          filePath: r.filePath,
+          modelUsed: `carousel:${variant}`,
+          prompt: `${s.title} — ${s.body}`,
           costCredits: 0,
         });
-        logStage(id, stage, "completed", `${slide.title.slice(0, 80)}`);
+        logStage(id, stage, "completed", s.title.slice(0, 80));
       }
+
+      // 5. Bundle the outline as a single text output for caption / reference.
+      const outlineMd = `# Carousel outline (${variant}, ${aspect})\n\n` +
+        expanded.map((s, i) => `## ${i + 1}. ${s.kind === "cover" ? "Cover" : s.kind === "cta" ? "CTA" : "Slide"} — ${s.title}\n\n${s.body}\n`).join("\n");
+      const outlinePath = path.join(outDir, "slide_outlines.md");
+      fs.writeFileSync(outlinePath, outlineMd, "utf-8");
+      recordProjectOutput({
+        projectId: id,
+        kind: "text",
+        label: "slide_outlines",
+        url: `/projects/${id}/outputs/slide_outlines.md`,
+        filePath: outlinePath,
+        modelUsed: "claude-haiku-4-5",
+        prompt: topic,
+        costCredits: 0,
+      });
 
       sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
     })().catch((err) => {

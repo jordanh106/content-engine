@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .cta-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: {{PADDING}}px;
+    background: linear-gradient({{GRADIENT_ANGLE}}deg, {{BG_DARK}} 0%, {{PRIMARY}} 100%);
+    position: relative;
+  }
+  .accent-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: {{ACCENT_BAR_HEIGHT}}px;
+    background: {{ACCENT}};
+  }
+  .eyebrow {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 28px;
+  }
+  .cta-headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{HEADLINE_SIZE}}px;
+    font-weight: bold;
+    color: {{TEXT_LIGHT}};
+    line-height: 1.15;
+    letter-spacing: -0.005em;
+    margin-bottom: 24px;
+    max-width: 85%;
+  }
+  .cta-subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.72);
+    line-height: 1.45;
+    margin-bottom: 48px;
+    max-width: 78%;
+  }
+  .cta-button {
+    display: inline-block;
+    background: {{TEXT_LIGHT}};
+    color: {{PRIMARY}};
+    font-size: {{BUTTON_SIZE}}px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    padding: {{BUTTON_PV}}px {{BUTTON_PH}}px;
+    border-radius: {{BUTTON_RADIUS}}px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+  .brand-mark {
+    position: absolute;
+    bottom: 56px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.4);
+  }
+</style>
+</head>
+<body>
+<div class="cta-slide">
+  <div class="eyebrow">One more thing</div>
+  <div class="cta-headline">{{CTA_HEADLINE}}</div>
+  <div class="cta-subhead">{{CTA_SUBHEAD}}</div>
+  <div class="cta-button">{{CTA_BUTTON_TEXT}}</div>
+  <div class="brand-mark">Collective Family Chiropractic</div>
+  <div class="accent-bar"></div>
+</div>
+</body>
+</html>

@@ -52,5 +52,50 @@
     "subheadFontSize": 32,
     "textShadowBlur": 8,
     "overlayOpacity": 0.7
+  },
+  "variants": {
+    "editorial": {
+      "brand": {
+        "primary": "#0d9488",
+        "accent": "#14b8a6",
+        "background": "#fafaf7",
+        "backgroundDark": "#0f172a",
+        "text": "#0f172a",
+        "textLight": "#fafaf7",
+        "muted": "#64748b"
+      }
+    },
+    "bold": {
+      "brand": {
+        "primary": "#0f172a",
+        "accent": "#14b8a6",
+        "background": "#ffffff",
+        "backgroundDark": "#0f172a",
+        "text": "#0f172a",
+        "textLight": "#ffffff",
+        "muted": "#475569"
+      }
+    },
+    "minimal": {
+      "brand": {
+        "primary": "#0d9488",
+        "accent": "#0d9488",
+        "background": "#ffffff",
+        "backgroundDark": "#ffffff",
+        "text": "#0f172a",
+        "textLight": "#ffffff",
+        "muted": "#64748b"
+      },
+      "cover": {
+        "headlineFontSize": 64,
+        "subheadFontSize": 26,
+        "paddingPercent": 10
+      },
+      "cta": {
+        "headlineFontSize": 44,
+        "subheadFontSize": 24,
+        "buttonFontSize": 16
+      }
+    }
   }
 }

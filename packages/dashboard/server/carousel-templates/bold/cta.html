@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .cta-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: {{PADDING}}px;
+    background: {{ACCENT}};
+    position: relative;
+  }
+  .badge {
+    position: absolute;
+    top: {{PADDING}}px;
+    background: {{TEXT}};
+    color: {{ACCENT}};
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    padding: 14px 22px;
+    border-radius: 999px;
+  }
+  .cta-headline {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: calc({{HEADLINE_SIZE}}px * 1.2);
+    font-weight: 900;
+    color: {{TEXT}};
+    line-height: 1.0;
+    letter-spacing: -0.025em;
+    margin-bottom: 28px;
+    max-width: 90%;
+    text-transform: uppercase;
+  }
+  .cta-subhead {
+    font-size: calc({{SUBHEAD_SIZE}}px * 1.05);
+    font-weight: 700;
+    color: rgba(15,23,42,0.78);
+    line-height: 1.35;
+    margin-bottom: 56px;
+    max-width: 78%;
+  }
+  .cta-button {
+    display: inline-block;
+    background: {{TEXT}};
+    color: {{TEXT_LIGHT}};
+    font-size: calc({{BUTTON_SIZE}}px * 1.05);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    padding: {{BUTTON_PV}}px {{BUTTON_PH}}px;
+    border-radius: {{BUTTON_RADIUS}}px;
+  }
+  .brand-mark {
+    position: absolute;
+    bottom: 48px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: rgba(15,23,42,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="cta-slide">
+  <div class="badge">Take action</div>
+  <div class="cta-headline">{{CTA_HEADLINE}}</div>
+  <div class="cta-subhead">{{CTA_SUBHEAD}}</div>
+  <div class="cta-button">{{CTA_BUTTON_TEXT}}</div>
+  <div class="brand-mark">Collective Family Chiropractic</div>
+</div>
+</body>
+</html>
