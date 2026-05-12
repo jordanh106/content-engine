@@ -347,7 +347,14 @@ Copy length rules (Instagram 1:1):
 NO emdashes. Use commas, periods, or sentence fragments.
 `.trim() : "";
 
-    const brandVoice = `You write for Collective Family Chiropractic — a family chiropractic practice in Australia. Warm, educational, empowering tone. Address adults 30-55 with chronic discomfort, parents thinking about family wellness. NO emdashes ever. Plain language, no jargon.`;
+    // STYLE only. No audience-targeting, no subject framing.
+    // Subject matter comes from the user's topic seed and the brief sections.
+    const brandVoice = `Voice and style guide:
+- Warm, plain, friendly. Like an editor explaining something curious to a friend.
+- No emdashes. Use commas, periods, or sentence fragments instead.
+- No jargon. No marketing speak. No "in today's world" openers.
+- Concrete and specific. Show, do not tell.
+- Sentence-case headlines. No ALL CAPS unless emphasising a single key word.`;
 
     // For AI Suggest we want a complete draft, so we fill every section regardless of
     // the required flag — the flag just tells the human filling it themselves which can
@@ -371,6 +378,11 @@ ${brandVoice}
 
 ${strategyExcerpt ? strategyExcerpt + "\n\n" : ""}TOPIC SEED FROM USER:
 ${topicSeed}
+
+TOPIC ANCHOR (most important rule):
+Every section you write must stay strictly on the user's topic seed above. Do not bridge to chiropractic, posture, back pain, or family wellness unless those words appear in the topic seed itself. Brand connection lives only in the footer brand mark on the rendered slides — not in the copy.
+
+If the topic seed is "the origin of the chainsaw", every section is about chainsaw history. The closing CTA can be topic-relevant ("Save this for your next dinner-party fact") but must not pivot to chiropractic services. The same rule applies to every topic: stay on the subject the user gave you.
 
 Required output format — fill EVERY section listed below with concrete content matching the heading exactly. Do not invent new sections, do not skip sections, do not include the placeholder text:
 
@@ -405,7 +417,7 @@ Return the brief as markdown with one ## heading per section, content beneath ea
             max_tokens: 1500,
             messages: [{
               role: "user",
-              content: `The following brief sections are too short. Expand ONLY these sections, keep everything else identical. Output the complete brief in the same ## heading format, no preamble.
+              content: `The following brief sections are too short. Expand ONLY these sections, keep everything else identical. Stay strictly on the user's existing topic — do not introduce new subject matter, do not bridge to chiropractic or wellness unless the topic itself was already about those things. Output the complete brief in the same ## heading format, no preamble.
 
 CURRENT BRIEF:
 ${suggestedBrief}
@@ -1099,7 +1111,10 @@ Return ONLY the caption text.`,
           max_tokens: 2000,
           messages: [{
             role: "user",
-            content: `Build a 5-7 slide Instagram "Did you know" carousel for Collective Family Chiropractic. Warm, educational tone, save-first CTA. NO emdashes. Use commas and periods instead.
+            content: `Build a 5-7 slide Instagram "Did you know" carousel. Warm, plain, editorial tone. Save-first CTA. NO emdashes. Use commas and periods.
+
+TOPIC ANCHOR (most important rule):
+Every slide must stay strictly on the user's topic below. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. The cover hooks the topic, the middle slides teach the topic, the CTA invites saving or sharing the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy.
 
 Topic: ${topic}
 

@@ -9,121 +9,150 @@
     height: {{HEIGHT}}px;
     overflow: hidden;
     font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: {{BACKGROUND}};
   }
   .content-slide {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: {{PADDING}}px;
-    background: #faf6ed;
+    padding: calc({{PADDING}}px * 1.1);
+    background: {{BACKGROUND}};
     position: relative;
   }
-  .accent-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 8px;
-    height: 100%;
-    background: linear-gradient(180deg, {{PRIMARY}} 0%, {{ACCENT}} 100%);
-  }
-  .top-row {
+  .masthead {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 18px;
-    margin-bottom: 44px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(26,26,26,0.12);
   }
-  .eyebrow {
+  .masthead-brand {
     font-size: 13px;
     font-weight: 900;
-    text-transform: uppercase;
     letter-spacing: 0.32em;
-    color: {{PRIMARY}};
-  }
-  .page-counter {
-    font-size: 13px;
-    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.25em;
+    color: {{TEXT}};
+  }
+  .masthead-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
     color: {{MUTED}};
   }
-  .header-zone {
-    margin-bottom: 28px;
+  .body-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 36px 0;
+  }
+  .number-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 36px;
+    margin-bottom: 40px;
   }
   .big-number {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{NUMBER_SIZE}}px;
-    font-weight: bold;
-    color: {{PRIMARY}};
-    opacity: 0.85;
-    line-height: 1;
-    margin-bottom: 22px;
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    color: {{ACCENT}};
+    line-height: 0.82;
+    letter-spacing: -0.04em;
+    flex-shrink: 0;
   }
-  .rule {
-    width: 88px;
-    height: 3px;
-    background: {{PRIMARY}};
-    margin-bottom: 28px;
+  .number-meta {
+    flex: 1;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .meta-eyebrow {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
+  }
+  .meta-label {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 400;
+    font-style: italic;
+    color: {{MUTED}};
+    line-height: 1.3;
+  }
+  .meta-rule {
+    width: 56px;
+    height: 1px;
+    background: rgba(26,26,26,0.18);
+    margin-top: 6px;
   }
   .point-title {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{TITLE_SIZE}}px;
-    font-weight: bold;
+    font-weight: 700;
     color: {{TEXT}};
-    line-height: 1.14;
-    letter-spacing: -0.008em;
-    margin-bottom: 22px;
-    max-width: 94%;
+    line-height: 1.08;
+    letter-spacing: -0.018em;
+    margin-bottom: 26px;
+    max-width: 96%;
   }
   .point-body {
     font-size: {{BODY_SIZE}}px;
     font-weight: 400;
-    color: {{MUTED}};
-    line-height: 1.55;
+    color: {{TEXT}};
+    line-height: 1.5;
     max-width: 92%;
+    opacity: 0.86;
   }
   .footer-row {
-    position: absolute;
-    bottom: 36px;
-    left: {{PADDING}}px;
-    right: {{PADDING}}px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-top: 18px;
+    border-top: 1px solid rgba(26,26,26,0.12);
   }
-  .brand-mark {
-    font-size: 11px;
+  .footer-label {
+    font-size: 12px;
     font-weight: 900;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: rgba(15,23,42,0.4);
+    color: {{MUTED}};
   }
-  .footer-counter {
-    font-size: 11px;
+  .footer-swipe {
+    font-size: 12px;
     font-weight: 900;
-    letter-spacing: 0.22em;
-    color: rgba(15,23,42,0.4);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
   }
 </style>
 </head>
 <body>
 <div class="content-slide">
-  <div class="accent-bar"></div>
-  <div class="top-row">
-    <div class="eyebrow">Fact {{POINT_NUMBER}}</div>
-    <div class="page-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  <div class="masthead">
+    <div class="masthead-brand">Collective Family Chiropractic</div>
+    <div class="masthead-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
   </div>
-  <div class="header-zone">
-    <div class="big-number">{{POINT_NUMBER}}</div>
-    <div class="rule"></div>
+  <div class="body-zone">
+    <div class="number-row">
+      <div class="big-number">{{POINT_NUMBER}}</div>
+      <div class="number-meta">
+        <div class="meta-eyebrow">The case</div>
+        <div class="meta-label">Fact no. {{POINT_NUMBER}} of {{TOTAL_SLIDES}}</div>
+        <div class="meta-rule"></div>
+      </div>
+    </div>
     <div class="point-title">{{POINT_TITLE}}</div>
     <div class="point-body">{{POINT_BODY}}</div>
   </div>
   <div class="footer-row">
-    <div class="brand-mark">Collective Family Chiropractic</div>
-    <div class="footer-counter">SWIPE &rarr;</div>
+    <div class="footer-label">Did you know</div>
+    <div class="footer-swipe">Swipe &rarr;</div>
   </div>
 </div>
 </body>

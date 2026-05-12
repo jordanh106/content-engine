@@ -57,12 +57,31 @@
     "editorial": {
       "brand": {
         "primary": "#0d9488",
-        "accent": "#14b8a6",
-        "background": "#fafaf7",
-        "backgroundDark": "#0f172a",
-        "text": "#0f172a",
-        "textLight": "#fafaf7",
-        "muted": "#64748b"
+        "accent": "#e11d48",
+        "background": "#faf6ed",
+        "backgroundDark": "#1a1a1a",
+        "text": "#1a1a1a",
+        "textLight": "#faf6ed",
+        "muted": "#737373"
+      },
+      "cover": {
+        "headlineFontSize": 96,
+        "subheadFontSize": 28,
+        "paddingPercent": 9
+      },
+      "content": {
+        "numberFontSize": 200,
+        "titleFontSize": 46,
+        "bodyFontSize": 25,
+        "paddingPercent": 8
+      },
+      "cta": {
+        "headlineFontSize": 72,
+        "subheadFontSize": 26,
+        "buttonFontSize": 18,
+        "buttonPaddingH": 56,
+        "buttonPaddingV": 22,
+        "buttonBorderRadius": 999
       }
     },
     "bold": {

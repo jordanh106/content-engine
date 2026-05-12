@@ -9,119 +9,146 @@
     height: {{HEIGHT}}px;
     overflow: hidden;
     font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: {{BACKGROUND}};
   }
   .cta-slide {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: {{PADDING}}px;
-    background: linear-gradient({{GRADIENT_ANGLE}}deg, {{BG_DARK}} 0%, {{PRIMARY}} 100%);
+    padding: calc({{PADDING}}px * 1.1);
+    background: {{BACKGROUND}};
     position: relative;
   }
-  .accent-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: {{ACCENT_BAR_HEIGHT}}px;
-    background: {{ACCENT}};
-  }
-  .top-row {
+  .masthead {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(26,26,26,0.12);
   }
-  .eyebrow {
+  .masthead-brand {
     font-size: 13px;
     font-weight: 900;
-    letter-spacing: 0.36em;
+    letter-spacing: 0.32em;
     text-transform: uppercase;
-    color: {{ACCENT}};
+    color: {{TEXT}};
   }
-  .page-counter {
-    font-size: 13px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    color: rgba(255,255,255,0.5);
+  .masthead-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: {{MUTED}};
   }
   .body-zone {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-bottom: 28px;
+    padding: 30px 0;
   }
-  .rule {
-    width: 96px;
-    height: 3px;
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .eyebrow-mark {
+    width: 12px;
+    height: 12px;
     background: {{ACCENT}};
-    margin-bottom: 32px;
+    border-radius: 2px;
+  }
+  .eyebrow-text {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
   }
   .cta-headline {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{HEADLINE_SIZE}}px;
-    font-weight: bold;
-    color: {{TEXT_LIGHT}};
-    line-height: 1.12;
-    letter-spacing: -0.012em;
-    margin-bottom: 24px;
-    max-width: 90%;
+    font-weight: 700;
+    color: {{TEXT}};
+    line-height: 1.0;
+    letter-spacing: -0.022em;
+    margin-bottom: 32px;
+    max-width: 96%;
   }
   .cta-subhead {
     font-size: {{SUBHEAD_SIZE}}px;
     font-weight: 400;
-    color: rgba(255,255,255,0.78);
-    line-height: 1.45;
-    margin-bottom: 48px;
-    max-width: 84%;
+    color: {{TEXT}};
+    line-height: 1.5;
+    margin-bottom: 56px;
+    max-width: 86%;
+    opacity: 0.78;
+    padding-top: 24px;
+    border-top: 1px solid rgba(26,26,26,0.12);
   }
   .cta-button {
     align-self: flex-start;
-    display: inline-block;
-    background: {{TEXT_LIGHT}};
-    color: {{PRIMARY}};
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: {{ACCENT}};
+    color: {{TEXT_LIGHT}};
     font-size: {{BUTTON_SIZE}}px;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.28em;
     padding: {{BUTTON_PV}}px {{BUTTON_PH}}px;
     border-radius: {{BUTTON_RADIUS}}px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    box-shadow: 0 12px 32px rgba(225,29,72,0.22);
+  }
+  .cta-button .icon {
+    font-size: 18px;
+    line-height: 1;
+    transform: translateY(-1px);
   }
   .footer-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid rgba(26,26,26,0.12);
   }
-  .brand-mark {
+  .footer-label {
     font-size: 12px;
     font-weight: 900;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    color: rgba(255,255,255,0.5);
+    color: {{MUTED}};
+  }
+  .footer-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: {{MUTED}};
   }
 </style>
 </head>
 <body>
 <div class="cta-slide">
-  <div class="top-row">
-    <div class="eyebrow">One more thing</div>
-    <div class="page-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  <div class="masthead">
+    <div class="masthead-brand">Collective Family Chiropractic</div>
+    <div class="masthead-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
   </div>
   <div class="body-zone">
-    <div class="rule"></div>
+    <div class="eyebrow-row">
+      <div class="eyebrow-mark"></div>
+      <div class="eyebrow-text">One last thing</div>
+    </div>
     <div class="cta-headline">{{CTA_HEADLINE}}</div>
     <div class="cta-subhead">{{CTA_SUBHEAD}}</div>
-    <div class="cta-button">{{CTA_BUTTON_TEXT}}</div>
+    <div class="cta-button"><span class="icon">&#9733;</span><span>{{CTA_BUTTON_TEXT}}</span></div>
   </div>
   <div class="footer-row">
-    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="footer-label">End of issue</div>
+    <div class="footer-counter">Did you know, a series</div>
   </div>
-  <div class="accent-bar"></div>
 </div>
 </body>
 </html>
