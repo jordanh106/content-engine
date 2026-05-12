@@ -587,7 +587,7 @@ const CurrentStepPanel: React.FC<{
                 </div>
                 <p className="type-meta italic">
                   {willUseHiggsfield
-                    ? "~$0.15–0.40 estimated · 4–6 AI background images via Higgsfield Nano Banana 2."
+                    ? "~$0.20 estimated · HOOK uses ChatGPT Image 2, BUILD + TENSION use Nano Banana 2. CONTEXT, PAYOFF, CTA are text-only."
                     : "Free · no AI image credits used."}
                 </p>
               </div>

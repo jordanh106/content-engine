@@ -21,6 +21,7 @@ import { logStage, queueStages, readGenerationLog, failPendingStages, clearProje
 import type { CarouselVariant, CarouselAspect, SlideSpec } from "../lib/carousel-renderer.js";
 import { generateAndCacheImage } from "../lib/higgsfield-image-cache.js";
 import { BRAND_DEFAULT_SYSTEM, deserializeVisualSystem, summarizeVisualSystem, type VisualSystem } from "../lib/visual-system.js";
+import { buildHiggsfieldPrompt, modelForRole, isImageBrief, type ImageBrief, type SlideRole } from "../lib/image-prompt-builder.js";
 import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
 import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
@@ -80,6 +81,45 @@ function rowToOutput(r: Row): ProjectOutput {
 function loadProject(id: string): Project | null {
   const row = sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(id) as Row | undefined;
   return row ? rowToProject(row) : null;
+}
+
+/** Map a framework SlideRole to the renderer's templateName + variant override. */
+function templateForRole(role: SlideRole, slideStyle: "cinematic" | "text"): { templateName: "cover" | "content" | "cta"; variant: CarouselVariant } {
+  // HOOK always uses the cover template; CTA always uses the cta template; everything else is content.
+  // Variant: cinematic if the role's slideStyle is cinematic (image bg + overlay), otherwise paper.
+  switch (role) {
+    case "hook":
+      return { templateName: "cover", variant: slideStyle === "cinematic" ? "cinematic" : "editorial" };
+    case "cta":
+      return { templateName: "cta", variant: "minimal" };
+    case "context":
+    case "payoff":
+      return { templateName: "content", variant: "minimal" };
+    case "tension":
+      return { templateName: "content", variant: slideStyle === "cinematic" ? "cinematic" : "editorial" };
+    case "build_1":
+    case "build_2":
+    default:
+      return { templateName: "content", variant: slideStyle === "cinematic" ? "cinematic" : "editorial" };
+  }
+}
+
+/** Hard-cap a headline to the framework's 6-word maximum without amputating mid-word. */
+function trimHeadlineToWords(s: string, maxWords: number): string {
+  const cleaned = (s ?? "").trim().replace(/\s+/g, " ");
+  if (!cleaned) return cleaned;
+  const words = cleaned.split(" ");
+  if (words.length <= maxWords) return cleaned;
+  return words.slice(0, maxWords).join(" ");
+}
+
+/** Hard-cap a body to a maximum number of "lines" (sentences) per framework rules. */
+function trimBodyToLines(s: string, maxSentences: number): string {
+  const cleaned = (s ?? "").trim().replace(/\s+/g, " ");
+  if (!cleaned) return cleaned;
+  // Split on sentence boundaries, keep punctuation.
+  const parts = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [cleaned];
+  return parts.slice(0, maxSentences).join(" ").trim();
 }
 
 function loadProjectWithAssets(id: string): ProjectWithAssets | null {
@@ -1112,12 +1152,11 @@ Return ONLY the caption text.`,
       .map((l) => l.replace(/^\d+\.\s*/, ""))
       .slice(0, 7);
 
-    // Provisional stage queue — refined once we know cinematic vs text per slide
-    const provisionalCount = providedHooks.length > 0 ? providedHooks.length : 6;
+    // Alex's Carousel Framework is strict 7: HOOK/CONTEXT/BUILD_1/BUILD_2/TENSION/PAYOFF/CTA.
     queueStages(id, [
       "lock_visual_system",
       "plan_slides",
-      ...Array.from({ length: provisionalCount }, (_, i) => `slide_${i + 1}`),
+      ...Array.from({ length: 7 }, (_, i) => `slide_${i + 1}`),
     ]);
     res.json({ status: "generating", projectId: id });
 
@@ -1129,116 +1168,189 @@ Return ONLY the caption text.`,
       const vsSummary = summarizeVisualSystem(visualSystem);
       logStage(id, "lock_visual_system", "completed", visualSystem.style.slice(0, 60));
 
-      // ─── 2. Plan slides via Haiku ─────────────────────────────────────────
+      // ─── 2. Plan slides via Haiku (Carousel Framework: HOOK/CONTEXT/BUILD_1/BUILD_2/TENSION/PAYOFF/CTA) ─
       logStage(id, "plan_slides", "running");
+      const FRAMEWORK_ROLES: SlideRole[] = ["hook", "context", "build_1", "build_2", "tension", "payoff", "cta"];
+
       type PlannedSlide = {
-        kind: "cover" | "content" | "cta";
+        role: SlideRole;
         slideStyle: "cinematic" | "text";
         headline: string;
         body: string;
-        visualDirection?: string;
+        imageBrief?: ImageBrief;
         ctaButton?: string;
       };
+
+      // Default framework slide-style assignment per role. slideMix can override.
+      const baseStyleForRole = (role: SlideRole): "cinematic" | "text" => {
+        switch (role) {
+          case "hook":
+          case "build_1":
+          case "tension":
+            return "cinematic";
+          case "context":
+          case "build_2":
+          case "payoff":
+          case "cta":
+          default:
+            return "text";
+        }
+      };
+
       let planned: PlannedSlide[] = [];
 
       try {
         const client = new Anthropic();
-        const mixGuidance =
-          slideMix === "all_cinematic" ? "Every slide must use slideStyle: \"cinematic\"."
-          : slideMix === "all_text"    ? "Every slide must use slideStyle: \"text\". Omit visualDirection for every slide."
-          : "Mix the two: use \"cinematic\" when the content benefits from a hero image (people, places, action, mood-rich subjects). Use \"text\" for numbers, quotes, definitions, or list bullets that read better on paper. Aim for roughly 60% cinematic / 40% text.";
+        const styleOverrideRule =
+          slideMix === "all_cinematic" ? "OVERRIDE: every slide except CONTEXT and CTA must use slideStyle: \"cinematic\". CONTEXT and CTA stay text by framework design."
+          : slideMix === "all_text"    ? "OVERRIDE: every slide must use slideStyle: \"text\". Omit imageBrief for every slide."
+          : "Use the default slideStyle per role as listed in the framework below.";
 
         const promptHooks = providedHooks.length > 0
-          ? `Slide hooks (use these verbatim where possible):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
-          : "No slide hooks provided — generate 6 slides yourself: a cover, 4 surprising fact slides, and a CTA.";
+          ? `Slide hooks provided by the user (use as inspiration for headlines; do not copy verbatim — restructure for the framework):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
+          : "";
 
         const resp = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 2500,
+          max_tokens: 3500,
           messages: [{
             role: "user",
-            content: `Build a 5-7 slide Instagram "Did you know" carousel. Warm, plain, editorial tone. Save-first CTA. NO emdashes. Use commas and periods.
-
-VISUAL SYSTEM (locked, every slide inherits this):
-${vsSummary}
-
-TOPIC ANCHOR (most important rule):
-Every slide must stay strictly on the user's topic below. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. The cover hooks the topic, the middle slides teach the topic, the CTA invites saving or sharing the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy.
+            content: `Build a 7-slide Instagram carousel following Alex's Carousel Framework. Warm, plain, editorial tone. NO emdashes. Plain English. Use commas and periods.
 
 Topic: ${topic}
 
+Visual System (locked, every slide inherits this):
+${vsSummary}
+
+TOPIC ANCHOR (load-bearing rule):
+Every slide and every imageBrief MUST reference specific nouns from the topic. If the topic mentions "chainsaw", the imageBrief.subject MUST mention "chainsaw" or "surgical chainsaw" or the specific era item, NOT generic "vintage medical equipment" or "old industrial tool". Stay strictly on the user's topic. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy or in the image.
+
+THE FRAMEWORK (mandatory 7 slides in this exact order):
+1. HOOK     — slideStyle: cinematic. Stop the scroll. Provoke curiosity or tension. Headline must work standalone in the Explore feed.
+2. CONTEXT  — slideStyle: text.      Frame the problem. Why this matters now. Clean breathing room.
+3. BUILD_1  — slideStyle: cinematic. Core insight #1. ONE idea. Warm textural image.
+4. BUILD_2  — slideStyle: text.      Core insight #2. ONE idea. Text-only fact card.
+5. TENSION  — slideStyle: cinematic. The reframe. Challenge the assumption. Conceptual / abstract image.
+6. PAYOFF   — slideStyle: text.      The key takeaway. Resolved. Clean.
+7. CTA      — slideStyle: text.      Earn the follow. Save-first or share-first. ctaButton required.
+
+${styleOverrideRule}
+
+RULES (non-negotiable):
+- Headlines: 6 words MAXIMUM. No exceptions.
+- Bodies: 3 lines MAXIMUM (roughly 25 words).
+- One idea per slide. If you need a second sentence to explain it, simplify the idea.
+- Tension before payoff. Always.
+- Slide 1 (HOOK) must read standalone if someone sees it in Explore.
+- Plain language. No jargon. No marketing speak. No "in today's world" openers.
+- Never copy slide hooks verbatim. Restructure for the framework.
+
 ${promptHooks}
 
-Slide mix rule: ${mixGuidance}
+For every cinematic slide, fill in an imageBrief with these EXACT fields (no extras, no missing):
+- subject:       <topic-specific noun phrase. MUST mention the actual subject of the carousel (not generic mood). For a chainsaw topic, say "an 1786 hand-cranked surgical chainsaw" — never "vintage medical equipment".>
+- setting:       <where and when. Specific era, location, surface, light source.>
+- action:        <usually "static" — e.g., "static museum still", "static studio still">
+- lighting:      <direction, quality, color temperature in Kelvin>
+- focalLength:   <"85mm" for hero / "50mm" for build close-up / "35mm" for tension>
+- aperture:      <"f/2.8" or similar — shallower for hero, moderate for build>
+- angle:         <e.g. "three-quarter overhead", "low angle eye level", "overhead flat-lay">
+- moodKeywords:  <array of 3-5 mood phrases — e.g., ["candlelit chiaroscuro", "antique brass patina"]>
+- avoidKeywords: <array of 3-5 phrases to NOT include — e.g., ["modern materials", "people", "color saturation", "plastic"]>
 
-For every cinematic slide, write a "visualDirection" field: a 1-2 sentence cinematographer description (subject + environment + lighting + composition). Be specific. Lower-third negative space for text overlay. NEVER include text or words in the image description (we add text in post).
-
-Output JSON ONLY (no preamble, no code fence). First slide MUST be a cover. Last slide MUST be a cta. All middle slides MUST be content slides. Bodies stay short: 1-2 sentences max, max 35 words.
-
-Schema:
-[
-  { "kind": "cover",   "slideStyle": "cinematic" | "text", "headline": "<short hook headline, ≤10 words>", "body": "<one-line subtitle, ≤15 words>", "visualDirection": "<cinematographer description, omit if slideStyle is text>" },
-  { "kind": "content", "slideStyle": "cinematic" | "text", "headline": "<bold fact title, ≤9 words>",      "body": "<1-2 sentence body, ≤35 words>", "visualDirection": "..." },
-  ...
-  { "kind": "cta",     "slideStyle": "cinematic" | "text", "headline": "<CTA headline, ≤9 words>",         "body": "<one-line motivator, ≤15 words>", "ctaButton": "<2-3 word button label e.g. Save this>", "visualDirection": "..." }
-]`,
+Output JSON ONLY (no preamble, no code fence, no markdown):
+{
+  "slides": [
+    { "role": "hook",     "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { "subject": "...", "setting": "...", "action": "...", "lighting": "...", "focalLength": "85mm", "aperture": "f/2.8", "angle": "...", "moodKeywords": [...], "avoidKeywords": [...] } },
+    { "role": "context",  "slideStyle": "text",      "headline": "...", "body": "..." },
+    { "role": "build_1",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { ... } },
+    { "role": "build_2",  "slideStyle": "text",      "headline": "...", "body": "..." },
+    { "role": "tension",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { ... } },
+    { "role": "payoff",   "slideStyle": "text",      "headline": "...", "body": "..." },
+    { "role": "cta",      "slideStyle": "text",      "headline": "...", "body": "...", "ctaButton": "Save this" }
+  ]
+}`,
           }],
         });
         const block = resp.content.find((b) => b.type === "text");
-        if (block && block.type === "text") {
-          const match = block.text.match(/\[[\s\S]*\]/);
-          if (match) {
-            const parsed = JSON.parse(match[0]) as PlannedSlide[];
-            if (Array.isArray(parsed) && parsed.length > 0) planned = parsed.slice(0, 7);
+        if (!block || block.type !== "text") throw new Error("planner returned no text");
+        const match = block.text.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("planner returned no JSON object");
+        const parsed = JSON.parse(match[0]) as { slides?: PlannedSlide[] };
+        const raw = Array.isArray(parsed.slides) ? parsed.slides : [];
+        if (raw.length === 0) throw new Error("planner returned no slides");
+
+        // Reindex by role and enforce the exact 7-slide framework.
+        // If a role is missing from the model output, we fall back to a minimal placeholder
+        // so the carousel still renders (caller can re-run if any slide is weak).
+        const byRole: Record<string, PlannedSlide> = {};
+        for (const s of raw) byRole[s.role] = s;
+        planned = FRAMEWORK_ROLES.map((role) => {
+          const found = byRole[role];
+          const defaultStyle = baseStyleForRole(role);
+          const override =
+            slideMix === "all_text" ? "text" as const :
+            slideMix === "all_cinematic" && (role !== "context" && role !== "cta") ? "cinematic" as const :
+            defaultStyle;
+          if (!found) {
+            return { role, slideStyle: override, headline: role.replace("_", " "), body: "" };
           }
-        }
-        if (planned.length === 0) throw new Error("slide planner returned no slides");
-        // Sanity: force first=cover, last=cta
-        if (planned[0].kind !== "cover") planned[0].kind = "cover";
-        if (planned[planned.length - 1].kind !== "cta") planned[planned.length - 1].kind = "cta";
-        // Force slide style based on slideMix override
-        if (slideMix === "all_text") planned.forEach((p) => { p.slideStyle = "text"; p.visualDirection = undefined; });
-        if (slideMix === "all_cinematic") planned.forEach((p) => { p.slideStyle = "cinematic"; });
-        logStage(id, "plan_slides", "completed", `${planned.length} slides (${planned.filter((p) => p.slideStyle === "cinematic").length} cinematic)`);
+          const slide: PlannedSlide = {
+            role,
+            slideStyle: override,
+            headline: trimHeadlineToWords(found.headline, 6),
+            body: trimBodyToLines(found.body, 3),
+            ctaButton: role === "cta" ? (found.ctaButton ?? "Save this") : undefined,
+          };
+          // Attach imageBrief only when the slide is cinematic. Drop it otherwise.
+          if (slide.slideStyle === "cinematic" && found.imageBrief && isImageBrief(found.imageBrief)) {
+            slide.imageBrief = found.imageBrief;
+          }
+          return slide;
+        });
+
+        const cinematicCount = planned.filter((p) => p.slideStyle === "cinematic" && p.imageBrief).length;
+        logStage(id, "plan_slides", "completed", `7 slides, ${cinematicCount} cinematic`);
       } catch (err) {
         logStage(id, "plan_slides", "failed", err instanceof Error ? err.message : String(err));
         sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
         return;
       }
 
-      // ─── 3. Per-slide: generate background image (if cinematic) + composite ──
+      // ─── 3. Per-cinematic-slide: generate background image with structured prompt + per-role model ─
       const totalSlides = planned.length;
       const outDir = path.join(projectsDataDir, id, "outputs");
       fs.mkdirSync(outDir, { recursive: true });
 
-      const bgImageByIndex: Record<number, { localPath: string; remoteUrl: string; cost: number; prompt: string }> = {};
+      const bgImageByIndex: Record<number, { localPath: string; remoteUrl: string; cost: number; prompt: string; model: string }> = {};
       let totalImageCost = 0;
 
       for (let i = 0; i < planned.length; i++) {
         const slide = planned[i];
-        if (slide.slideStyle !== "cinematic") continue;
+        if (slide.slideStyle !== "cinematic" || !slide.imageBrief) continue;
+        const modelKey = modelForRole(slide.role);
+        if (!modelKey) continue;
         const stage = `slide_${i + 1}`;
-        logStage(id, stage, "running", "generating image");
-        const direction = slide.visualDirection ?? slide.headline;
-        const imagePrompt = `${visualSystem.style} ${direction} ${visualSystem.mood}. Editorial photography, scroll-stop composition, lower-third negative space reserved for text overlay. No text or words in the image.`;
+        logStage(id, stage, "running", `image · ${modelKey}`);
+        const imagePrompt = buildHiggsfieldPrompt(slide.imageBrief, visualSystem, slide.role);
         try {
           const result = await generateAndCacheImage({
             prompt: imagePrompt,
             aspect,
             outDir,
             filename: `slide_${i + 1}_bg.png`,
+            modelKey,
+            resolution: modelKey === "gpt_image" ? "2k" : "1k",
           });
-          bgImageByIndex[i] = { localPath: result.localPath, remoteUrl: result.remoteUrl, cost: result.costCredits, prompt: imagePrompt };
+          bgImageByIndex[i] = { localPath: result.localPath, remoteUrl: result.remoteUrl, cost: result.costCredits, prompt: imagePrompt, model: modelKey };
           totalImageCost += result.costCredits;
-          // Persist intermediate bg image so user can debug / reuse
-          const bgPublicUrl = `/projects/${id}/outputs/slide_${i + 1}_bg.png`;
           recordProjectOutput({
             projectId: id,
             kind: "image",
-            label: `slide_${i + 1}_bg`,
-            url: bgPublicUrl,
+            label: `slide_${i + 1}_bg_${slide.role}`,
+            url: `/projects/${id}/outputs/slide_${i + 1}_bg.png`,
             filePath: result.localPath,
-            modelUsed: "nano_banana_2",
+            modelUsed: modelKey,
             prompt: imagePrompt,
             costCredits: result.costCredits,
           });
@@ -1249,11 +1361,11 @@ Schema:
         }
       }
 
-      // ─── 4. Build slide specs and render all slides ───────────────────────
+      // ─── 4. Build slide specs and render. Role drives templateName + variant. ─
       const slideSpecs: SlideSpec[] = planned.map((s, i): SlideSpec => {
-        const slideVariant: CarouselVariant = s.slideStyle === "cinematic" ? "cinematic" : "editorial";
+        const { templateName, variant: slideVariant } = templateForRole(s.role, s.slideStyle);
         const bg = bgImageByIndex[i]?.localPath;
-        if (s.kind === "cover") {
+        if (templateName === "cover") {
           return {
             templateName: "cover",
             variant: slideVariant,
@@ -1265,7 +1377,7 @@ Schema:
             },
           };
         }
-        if (s.kind === "cta") {
+        if (templateName === "cta") {
           return {
             templateName: "cta",
             variant: slideVariant,
@@ -1279,7 +1391,8 @@ Schema:
             },
           };
         }
-        const contentIndex = planned.slice(0, i).filter((x) => x.kind === "content").length + 1;
+        // content template — derive a per-slide number for the big-numeral block
+        const contentIndex = planned.slice(0, i).filter((x, j) => templateForRole(x.role, x.slideStyle).templateName === "content").length + 1;
         return {
           templateName: "content",
           variant: slideVariant,
@@ -1319,22 +1432,36 @@ Schema:
         recordProjectOutput({
           projectId: id,
           kind: "image",
-          label: `slide_${r.slideIndex}`,
+          label: `slide_${r.slideIndex}_${s.role}`,
           url: publicUrl,
           filePath: r.filePath,
-          modelUsed: `carousel:${s.slideStyle}`,
+          modelUsed: `carousel:${s.role}:${s.slideStyle}`,
           prompt: `${s.headline} — ${s.body}`,
           costCredits: bgImageByIndex[i]?.cost ?? 0,
         });
-        logStage(id, stage, "completed", s.headline.slice(0, 80));
+        logStage(id, stage, "completed", `${s.role}: ${s.headline.slice(0, 60)}`);
       }
 
       // ─── 6. Outline + Visual System artifact ──────────────────────────────
-      const outlineMd = `# Carousel outline (${moodPreset}, ${aspect}, mix=${slideMix})\n\n` +
-        `**Visual System:** ${visualSystem.style}\n` +
-        `**Palette:** ${visualSystem.palette.join(", ")}\n` +
-        `**Mood:** ${visualSystem.mood}\n\n` +
-        planned.map((s, i) => `## ${i + 1}. ${s.kind === "cover" ? "Cover" : s.kind === "cta" ? "CTA" : "Slide"} (${s.slideStyle}) — ${s.headline}\n\n${s.body}\n${s.visualDirection ? `\n*Visual direction:* ${s.visualDirection}\n` : ""}`).join("\n");
+      const outlineMd = `# Carousel outline (${moodPreset}, ${aspect}, mix=${slideMix})
+
+**Visual System:** ${visualSystem.style}
+**Palette:** ${visualSystem.palette.join(", ")}
+**Mood:** ${visualSystem.mood}
+
+${planned.map((s, i) => {
+  const lines = [
+    `## ${i + 1}. ${s.role.toUpperCase().replace("_", " ")} (${s.slideStyle}) — ${s.headline}`,
+    "",
+    s.body,
+  ];
+  if (s.imageBrief) {
+    lines.push("", `**Image brief:**`, `- Subject: ${s.imageBrief.subject}`, `- Setting: ${s.imageBrief.setting}`, `- Lighting: ${s.imageBrief.lighting}`, `- Camera: ${s.imageBrief.focalLength}, ${s.imageBrief.aperture}, ${s.imageBrief.angle}`, `- Mood: ${s.imageBrief.moodKeywords.join(", ")}`, `- Avoid: ${s.imageBrief.avoidKeywords.join(", ")}`);
+  }
+  if (s.role === "cta" && s.ctaButton) lines.push("", `**CTA button:** ${s.ctaButton}`);
+  return lines.join("\n");
+}).join("\n\n")}
+`;
       const outlinePath = path.join(outDir, "slide_outlines.md");
       fs.writeFileSync(outlinePath, outlineMd, "utf-8");
       recordProjectOutput({
