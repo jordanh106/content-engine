@@ -16,7 +16,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { sqlite } from "../db.js";
 import { parseQuickStartTemplates } from "../parsers/quickstart-templates.js";
 import { predictVirality } from "../lib/virality-predictor.js";
-import { generateImage, generateVideo, uploadMediaFromUrl, uploadMediaFromPath, isConfigured } from "../lib/higgsfield-client.js";
+import { generateImage, generateVideo, uploadMediaFromUrl, isConfigured } from "../lib/higgsfield-client.js";
+import { logStage, queueStages, readGenerationLog, failPendingStages, clearProjectLog, viralityModeForKind } from "../lib/project-orchestrators.js";
+import { parseBriefSections } from "../../utils/project-steps.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
 
 type Row = Record<string, unknown>;
@@ -462,8 +464,557 @@ Return ONLY the HTML — start with <!DOCTYPE html>. Include the strongest hero 
       sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
     })().catch((err) => {
       console.error("[brand-kit] orchestrator crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
       sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
     });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // GET /api/projects/:id/generation-log — UI polls this every 2s during generation
+  // ────────────────────────────────────────────────────────────────────────────
+  router.get("/:id/generation-log", (req, res) => {
+    const id = String(req.params.id);
+    if (!loadProject(id)) {
+      res.status(404).json({ error: "project not found" });
+      return;
+    }
+    res.json({ log: readGenerationLog(id) });
+  });
+
+  // POST /api/projects/:id/retry — clears the log and re-flips status to 'drafting'
+  // so the user can re-run from a clean slate.
+  router.post("/:id/retry", (req, res) => {
+    const id = String(req.params.id);
+    if (!loadProject(id)) {
+      res.status(404).json({ error: "project not found" });
+      return;
+    }
+    clearProjectLog(id);
+    sqlite.prepare("UPDATE projects SET status = 'drafting', updated_at = datetime('now') WHERE id = ?").run(id);
+    res.json({ project: loadProject(id) });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-explainer
+  // For chiropractic_explainer + office_tour kinds. Hook score + 4 teaching shots
+  // + 5-7s hero motion + script draft.
+  // ────────────────────────────────────────────────────────────────────────────
+  router.post("/:id/generate-explainer", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    if (brief.trim().length < 80 || !sections.Topic || !sections.Audience) {
+      res.status(422).json({ error: "brief incomplete — fill in Topic, Audience, Hook, Teaching beats, CTA" });
+      return;
+    }
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, ["hook_score", "shot_1", "shot_2", "shot_3", "shot_4", "hero_motion", "script_draft"]);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const topic = sections.Topic ?? "";
+      const audience = sections.Audience ?? "";
+      const hook = sections.Hook ?? "";
+      const teaching = sections["Teaching beats (3 things they'll learn)"] ?? sections["Walkthrough beats"] ?? "";
+      const cta = sections.CTA ?? sections["Voiceover hook"] ?? "";
+      const chiroPrefix = "Photo-real. Warm, educational, family-friendly chiropractic aesthetic. Natural light. NOT clinical-sterile. NOT stock-photo. Real people, real moments. Soft palette. 9:16 vertical.";
+
+      // 1. Score the hook
+      logStage(id, "hook_score", "running");
+      const hookVirality = await predictVirality(
+        { kind: "hook", text: hook, mode, projectKind: project.kind, format: project.kind, context: `Topic: ${topic.slice(0, 200)}` },
+        { blueprintPath },
+      ).catch(() => null);
+      recordProjectOutput({
+        projectId: id,
+        kind: "text",
+        label: "hook_scored",
+        prompt: hook,
+        predictedVirality: hookVirality?.score,
+        predictedViralityBreakdown: hookVirality?.breakdown,
+      });
+      logStage(id, "hook_score", "completed", hookVirality ? `score ${hookVirality.score}/100` : undefined);
+
+      // 2. Generate 4 teaching shots in parallel
+      const shotPrompts = [
+        `${chiroPrefix}\n\nTopic: ${topic}\n\nShot 1 — establishing hero shot illustrating the topic.`,
+        `${chiroPrefix}\n\nTopic: ${topic}\n\nShot 2 — close-up detail or before/after moment.`,
+        `${chiroPrefix}\n\nTopic: ${topic}\n\nShot 3 — practitioner-and-patient moment, warm and human.`,
+        `${chiroPrefix}\n\nTopic: ${topic}\n\nShot 4 — CTA / outcome scene.`,
+      ];
+      const shots = await Promise.allSettled(shotPrompts.map(async (prompt, i) => {
+        const stage = `shot_${i + 1}`;
+        logStage(id, stage, "running");
+        try {
+          const r = await generateImage({
+            prompt,
+            modelKey: "nano_banana_2",
+            aspectRatio: "9:16",
+            resolution: "2k",
+          });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: prompt, mode, projectKind: project.kind, context: `Audience: ${audience.slice(0, 200)}` },
+            { blueprintPath },
+          ).catch(() => null);
+          const out = recordProjectOutput({
+            projectId: id,
+            kind: "image",
+            label: `shot_${i + 1}`,
+            url: r.imageUrl,
+            modelUsed: "nano_banana_2",
+            prompt,
+            costCredits: 2,
+            predictedVirality: vir?.score,
+            predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed");
+          return out;
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          throw err;
+        }
+      }));
+      const okShots = shots.filter((s) => s.status === "fulfilled").map((s) => (s as PromiseFulfilledResult<ProjectOutput>).value);
+      const bestShot = okShots.sort((a, b) => (b.predictedVirality ?? 0) - (a.predictedVirality ?? 0))[0];
+
+      // 3. Hero motion clip from the best shot
+      if (bestShot?.url) {
+        logStage(id, "hero_motion", "running");
+        try {
+          const uploadId = await uploadMediaFromUrl(bestShot.url);
+          const motionPrompt = `${chiroPrefix}\n\nTopic: ${topic}\n\n5-7 second hero motion. Subtle camera push, slight subject movement. No fast cuts.`;
+          const motion = await generateVideo({
+            prompt: motionPrompt,
+            modelKey: "kling",
+            imageUploadIds: [uploadId],
+            duration: 5,
+            aspectRatio: "9:16",
+            sound: "on",
+          });
+          recordProjectOutput({
+            projectId: id,
+            kind: "video",
+            label: "hero_motion",
+            url: motion.videoUrl,
+            modelUsed: "kling3_0",
+            prompt: motionPrompt,
+            costCredits: 10,
+          });
+          logStage(id, "hero_motion", "completed");
+        } catch (err) {
+          logStage(id, "hero_motion", "failed", err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        logStage(id, "hero_motion", "failed", "no successful shots");
+      }
+
+      // 4. Script draft via Anthropic
+      logStage(id, "script_draft", "running");
+      try {
+        const client = new Anthropic();
+        const scriptResp = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 1200,
+          messages: [{
+            role: "user",
+            content: `You are writing a 30-45 second educational reel script for Collective Family Chiropractic. Output should be in plain markdown, no emdashes, warm and educational tone, NOT salesy. Structure: HOOK (0-3s, on-screen text) → TEACHING BEAT 1 (3-10s) → TEACHING BEAT 2 (10-20s) → TEACHING BEAT 3 (20-30s) → CTA (30-35s). For each beat include: voiceover line + on-screen text overlay.
+
+BRIEF:
+Topic: ${topic}
+Audience: ${audience}
+Hook direction: ${hook}
+Teaching beats: ${teaching}
+CTA: ${cta}
+
+Return markdown.`,
+          }],
+        });
+        const block = scriptResp.content.find((b) => b.type === "text");
+        if (block && block.type === "text") {
+          recordProjectOutput({
+            projectId: id,
+            kind: "text",
+            label: "script_draft",
+            prompt: topic,
+            modelUsed: "claude-haiku-4-5",
+            url: undefined,
+            costCredits: 0,
+            // Stash the script in the prompt field for now (no separate body field on outputs schema)
+          });
+          // Use the `message` of the log row to surface a preview to the UI
+          logStage(id, "script_draft", "completed", block.text.slice(0, 240));
+          // Save the full script to a file so the UI can render it
+          const outDir = path.join(projectsDataDir, id, "outputs");
+          fs.mkdirSync(outDir, { recursive: true });
+          const scriptPath = path.join(outDir, "script.md");
+          fs.writeFileSync(scriptPath, block.text, "utf-8");
+          // Update the just-recorded output with file_path + url
+          sqlite.prepare(`UPDATE project_outputs SET file_path = ?, url = ? WHERE project_id = ? AND label = 'script_draft' AND id = (SELECT MAX(id) FROM project_outputs WHERE project_id = ? AND label = 'script_draft')`)
+            .run(scriptPath, `/projects/${id}/outputs/script.md`, id, id);
+        }
+      } catch (err) {
+        logStage(id, "script_draft", "failed", err instanceof Error ? err.message : String(err));
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[explainer] orchestrator crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-patient-story
+  // ────────────────────────────────────────────────────────────────────────────
+  router.post("/:id/generate-patient-story", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    if (brief.trim().length < 80) {
+      res.status(422).json({ error: "brief incomplete" });
+      return;
+    }
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, ["scene_1", "scene_2", "scene_3", "hero_clip", "caption_draft"]);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const problem = sections["Their problem before"] ?? "";
+      const change = sections["What changed"] ?? "";
+      const visualStyle = sections["Visual style"] ?? "Warm, candid, golden-hour. NO stock photo energy.";
+      const closingLine = sections["Closing line"] ?? "";
+      const patient = sections["Patient (anonymous or by initial)"] ?? "Anonymous";
+
+      const scenePrompts = [
+        `Warm candid golden-hour photo. Patient (${patient}) in their everyday life dealing with: ${problem}. ${visualStyle}. Real moment, NOT stock photo. 9:16 vertical.`,
+        `Warm candid golden-hour photo. Mid-transformation moment — patient finding relief or returning to activity. ${visualStyle}. 9:16 vertical.`,
+        `Warm candid golden-hour photo. Patient after their change: ${change}. ${visualStyle}. 9:16 vertical.`,
+      ];
+      const shots = await Promise.allSettled(scenePrompts.map(async (prompt, i) => {
+        const stage = `scene_${i + 1}`;
+        logStage(id, stage, "running");
+        try {
+          const r = await generateImage({ prompt, modelKey: "nano_banana_2", aspectRatio: "9:16", resolution: "2k" });
+          const vir = await predictVirality({ kind: "image_prompt", imagePrompt: prompt, mode, projectKind: project.kind }, { blueprintPath }).catch(() => null);
+          const out = recordProjectOutput({
+            projectId: id, kind: "image", label: `scene_${i + 1}`, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed");
+          return out;
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          throw err;
+        }
+      }));
+      const okShots = shots.filter((s) => s.status === "fulfilled").map((s) => (s as PromiseFulfilledResult<ProjectOutput>).value);
+      const bestScene = okShots.sort((a, b) => (b.predictedVirality ?? 0) - (a.predictedVirality ?? 0))[0];
+
+      if (bestScene?.url) {
+        logStage(id, "hero_clip", "running");
+        try {
+          const uploadId = await uploadMediaFromUrl(bestScene.url);
+          const motionPrompt = `Patient story hero clip. Subtle camera move, candid moment. ${visualStyle}. 5 seconds.`;
+          const motion = await generateVideo({ prompt: motionPrompt, modelKey: "kling", imageUploadIds: [uploadId], duration: 5, aspectRatio: "9:16", sound: "on" });
+          recordProjectOutput({ projectId: id, kind: "video", label: "hero_clip", url: motion.videoUrl, modelUsed: "kling3_0", prompt: motionPrompt, costCredits: 10 });
+          logStage(id, "hero_clip", "completed");
+        } catch (err) {
+          logStage(id, "hero_clip", "failed", err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        logStage(id, "hero_clip", "failed", "no successful scenes");
+      }
+
+      // Caption draft
+      logStage(id, "caption_draft", "running");
+      try {
+        const client = new Anthropic();
+        const resp = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          messages: [{
+            role: "user",
+            content: `Write a warm, human social caption for an Instagram reel that's a patient story.
+
+Patient (anonymized): ${patient}
+Problem before: ${problem}
+What changed: ${change}
+Closing line: ${closingLine}
+
+Rules: NO emdashes. NO "Did you know". NO stock-photo energy. Sound human. 2-4 short paragraphs. End with the closing line as the final beat. Include 3-5 relevant hashtags on the last line.
+
+Return ONLY the caption text.`,
+          }],
+        });
+        const block = resp.content.find((b) => b.type === "text");
+        if (block && block.type === "text") {
+          const outDir = path.join(projectsDataDir, id, "outputs");
+          fs.mkdirSync(outDir, { recursive: true });
+          const capPath = path.join(outDir, "caption.md");
+          fs.writeFileSync(capPath, block.text, "utf-8");
+          recordProjectOutput({
+            projectId: id, kind: "text", label: "caption_draft",
+            url: `/projects/${id}/outputs/caption.md`,
+            filePath: capPath,
+            modelUsed: "claude-haiku-4-5", prompt: closingLine, costCredits: 0,
+          });
+          logStage(id, "caption_draft", "completed", block.text.slice(0, 240));
+        }
+      } catch (err) {
+        logStage(id, "caption_draft", "failed", err instanceof Error ? err.message : String(err));
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[patient-story] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-carousel
+  // For did_you_know kind. Parses brief → 7 slide texts → saves each as text output.
+  // (Image rendering via existing Carousel Lab pipeline is a separate "Render slides" action.)
+  // ────────────────────────────────────────────────────────────────────────────
+  router.post("/:id/generate-carousel", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    const topic = sections.Topic ?? "";
+    const slideHooks = sections["Slide hooks (5-7 lines)"] ?? "";
+    if (!topic || !slideHooks) {
+      res.status(422).json({ error: "brief incomplete — fill in Topic and Slide hooks" });
+      return;
+    }
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+
+    // Parse the slide hooks (split by lines, drop empties, drop leading numbering)
+    const slides = slideHooks
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => l.replace(/^\d+\.\s*/, ""))
+      .slice(0, 7);
+
+    queueStages(id, ["expand_slides", ...slides.map((_, i) => `slide_${i + 1}`)]);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      // Expand the bare slide hooks into full slide content via Anthropic
+      logStage(id, "expand_slides", "running");
+      let expanded: { title: string; body: string }[] = slides.map((s) => ({ title: s, body: "" }));
+      try {
+        const client = new Anthropic();
+        const resp = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 1500,
+          messages: [{
+            role: "user",
+            content: `Expand the slide hooks below into full carousel content for an Instagram "Did you know" carousel from Collective Family Chiropractic. Each slide needs a short bold title (≤9 words) and a body of 1-2 short sentences. NO emdashes. Warm, educational tone.
+
+Topic: ${topic}
+
+Slide hooks:
+${slides.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+Return JSON only:
+[
+  { "title": "...", "body": "..." },
+  ...
+]`,
+          }],
+        });
+        const block = resp.content.find((b) => b.type === "text");
+        if (block && block.type === "text") {
+          const match = block.text.match(/\[[\s\S]*\]/);
+          if (match) {
+            const parsed = JSON.parse(match[0]) as { title: string; body: string }[];
+            if (Array.isArray(parsed) && parsed.length > 0) expanded = parsed.slice(0, slides.length);
+          }
+        }
+        logStage(id, "expand_slides", "completed");
+      } catch (err) {
+        logStage(id, "expand_slides", "failed", err instanceof Error ? err.message : String(err));
+      }
+
+      // Persist each slide as a text output. The frontend can render them as cards
+      // and "Render slides" can push to the existing Carousel Lab pipeline.
+      const outDir = path.join(projectsDataDir, id, "outputs");
+      fs.mkdirSync(outDir, { recursive: true });
+
+      for (let i = 0; i < expanded.length; i++) {
+        const stage = `slide_${i + 1}`;
+        logStage(id, stage, "running");
+        const slide = expanded[i];
+        const slidePath = path.join(outDir, `slide_${i + 1}.md`);
+        const content = `# ${slide.title}\n\n${slide.body}\n`;
+        fs.writeFileSync(slidePath, content, "utf-8");
+        recordProjectOutput({
+          projectId: id,
+          kind: "text",
+          label: `slide_${i + 1}`,
+          url: `/projects/${id}/outputs/slide_${i + 1}.md`,
+          filePath: slidePath,
+          modelUsed: "claude-haiku-4-5",
+          prompt: slide.title,
+          costCredits: 0,
+        });
+        logStage(id, stage, "completed", `${slide.title.slice(0, 80)}`);
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[carousel] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-holiday-variant
+  // Requires at least one ref image. Re-themes the brand asset for the season.
+  // ────────────────────────────────────────────────────────────────────────────
+  router.post("/:id/generate-holiday-variant", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const refs = sqlite.prepare("SELECT * FROM project_refs WHERE project_id = ? ORDER BY id ASC").all(id) as Row[];
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    if (refs.length === 0) {
+      res.status(422).json({ error: "need at least 1 reference image (the base brand asset to re-theme)" });
+      return;
+    }
+    if (!sections["Holiday / season"] || !sections["Holiday treatment"]) {
+      res.status(422).json({ error: "brief incomplete — fill in Holiday/season and Holiday treatment" });
+      return;
+    }
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, ["variant_1", "variant_2", "variant_3", "motion_variant"]);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const season = sections["Holiday / season"] ?? "";
+      const treatment = sections["Holiday treatment"] ?? "";
+      const baseRef = refs[0];
+      const baseRefUrl = baseRef?.url as string | null;
+
+      const variantPrompts = [
+        `Re-theme the reference brand asset for the ${season} season. ${treatment}. Tasteful, editorial, NOT cliché. Photo-real.`,
+        `Re-theme the reference brand asset for the ${season} season. ${treatment}. Different angle / composition variant. Photo-real.`,
+        `Re-theme the reference brand asset for the ${season} season. ${treatment}. Closer detail / hero crop. Photo-real.`,
+      ];
+
+      const variants = await Promise.allSettled(variantPrompts.map(async (prompt, i) => {
+        const stage = `variant_${i + 1}`;
+        logStage(id, stage, "running");
+        try {
+          const r = await generateImage({
+            prompt,
+            modelKey: "nano_banana_2",
+            aspectRatio: "1:1",
+            resolution: "2k",
+          });
+          const vir = await predictVirality({ kind: "image_prompt", imagePrompt: prompt, mode, projectKind: project.kind }, { blueprintPath }).catch(() => null);
+          const out = recordProjectOutput({
+            projectId: id, kind: "image", label: `variant_${i + 1}`, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed");
+          return out;
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          throw err;
+        }
+      }));
+      const okVariants = variants.filter((v) => v.status === "fulfilled").map((v) => (v as PromiseFulfilledResult<ProjectOutput>).value);
+
+      const bestVariant = okVariants.sort((a, b) => (b.predictedVirality ?? 0) - (a.predictedVirality ?? 0))[0];
+      if (bestVariant?.url) {
+        logStage(id, "motion_variant", "running");
+        try {
+          const uploadId = await uploadMediaFromUrl(bestVariant.url);
+          const motionPrompt = `Holiday variant motion clip. Subtle camera move, season-appropriate. ${treatment}. 4 seconds.`;
+          const motion = await generateVideo({ prompt: motionPrompt, modelKey: "kling", imageUploadIds: [uploadId], duration: 5, aspectRatio: "9:16", sound: "on" });
+          recordProjectOutput({ projectId: id, kind: "video", label: "motion_variant", url: motion.videoUrl, modelUsed: "kling3_0", prompt: motionPrompt, costCredits: 10 });
+          logStage(id, "motion_variant", "completed");
+        } catch (err) {
+          logStage(id, "motion_variant", "failed", err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        logStage(id, "motion_variant", "failed", "no successful variants");
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[holiday] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // POST /api/projects/:id/outputs — internal endpoint for specialist surfaces
+  // (Storytelling Reel modal, Marketing Studio) to attach their final outputs to a project.
+  router.post("/:id/outputs", (req, res) => {
+    const id = String(req.params.id);
+    if (!loadProject(id)) {
+      res.status(404).json({ error: "project not found" });
+      return;
+    }
+    const body = req.body as Partial<{
+      kind: ProjectOutput["kind"];
+      label: string;
+      url: string;
+      filePath: string;
+      modelUsed: string;
+      prompt: string;
+      costCredits: number;
+      predictedVirality: number;
+      predictedViralityBreakdown: ViralityBreakdown;
+    }>;
+    if (!body.kind || !body.label) {
+      res.status(400).json({ error: "kind and label required" });
+      return;
+    }
+    const out = recordProjectOutput({
+      projectId: id,
+      kind: body.kind,
+      label: body.label,
+      url: body.url,
+      filePath: body.filePath,
+      modelUsed: body.modelUsed,
+      prompt: body.prompt,
+      costCredits: body.costCredits,
+      predictedVirality: body.predictedVirality,
+      predictedViralityBreakdown: body.predictedViralityBreakdown,
+    });
+    res.status(201).json({ output: out });
   });
 
   return router;

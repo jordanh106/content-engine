@@ -13,3 +13,8 @@ export type { KebabItem } from "./KebabMenu.js";
 export { HomeNowStrip } from "./HomeNowStrip.js";
 export { RecentGenerationsGrid } from "./RecentGenerationsGrid.js";
 export { QuickStartGallery } from "./QuickStartGallery.js";
+export { BriefEditor } from "./BriefEditor.js";
+export { ProjectStepper } from "./ProjectStepper.js";
+export { ExpectedOutputsStrip } from "./ExpectedOutputsStrip.js";
+export { ProjectGenerationTimeline } from "./ProjectGenerationTimeline.js";
+export { OutputActionsMenu } from "./OutputActionsMenu.js";

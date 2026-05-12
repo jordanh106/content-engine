@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -7,22 +7,43 @@ import {
   Trash2,
   Loader2,
   Sparkles,
-  Save,
   Play,
   Image as ImageIcon,
   FileCode,
-  Film,
+  FileText,
   Pin,
   PinOff,
   ExternalLink,
+  RefreshCw,
+  ArrowRight,
+  CheckCircle2,
+  Download,
+  Send,
+  Lock,
 } from "lucide-react";
 import type { ProjectWithAssets, ProjectStatus, ProjectOutput, ProjectRef } from "../shared/types.js";
-import { Heading, Eyebrow, Button, Pill } from "./ui/index.js";
+import {
+  Heading,
+  Eyebrow,
+  Button,
+  Pill,
+  BriefEditor,
+  ProjectStepper,
+  ExpectedOutputsStrip,
+  ProjectGenerationTimeline,
+  OutputActionsMenu,
+} from "./ui/index.js";
+import { PROJECT_KIND_REGISTRY, PROJECT_STATUS_LABELS } from "../shared/project-kinds.js";
+import { computeStepStatuses, activeStepId } from "../utils/project-steps.js";
 import { cn } from "../utils/cn.js";
 
 type Props = {
   projectId: string;
   onBack: () => void;
+  /** Optional: open the Storytelling Reel modal with a projectId pre-set */
+  onOpenStorytellingReelForProject?: (projectId: string) => void;
+  /** Optional: open the Marketing Studio modal with a projectId pre-set */
+  onOpenMarketingStudioForProject?: (projectId: string) => void;
 };
 
 const STATUS_TONE: Record<ProjectStatus, "info" | "warning" | "success" | "muted" | "accent" | "danger"> = {
@@ -33,43 +54,54 @@ const STATUS_TONE: Record<ProjectStatus, "info" | "warning" | "success" | "muted
   archived: "muted",
 };
 
-export const ProjectDetail: React.FC<Props> = ({ projectId, onBack }) => {
+export const ProjectDetail: React.FC<Props> = ({
+  projectId,
+  onBack,
+  onOpenStorytellingReelForProject,
+  onOpenMarketingStudioForProject,
+}) => {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<{ project: ProjectWithAssets }>({
     queryKey: ["project", projectId],
     queryFn: () => fetch(`/api/projects/${projectId}`).then((r) => r.json()),
-    refetchInterval: 30_000,
+    refetchInterval: (data) => (data?.state?.data?.project?.status === "generating" ? 5_000 : 30_000),
   });
 
-  const [briefMd, setBriefMd] = useState("");
+  const [briefDraft, setBriefDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [activeOutput, setActiveOutput] = useState<ProjectOutput | null>(null);
-  const briefInitializedRef = useRef(false);
+  const briefHydratedRef = useRef(false);
 
   useEffect(() => {
-    if (data?.project && !briefInitializedRef.current) {
-      setBriefMd(data.project.briefMd ?? "");
-      briefInitializedRef.current = true;
+    if (data?.project && !briefHydratedRef.current) {
+      setBriefDraft(data.project.briefMd ?? "");
+      briefHydratedRef.current = true;
     }
   }, [data]);
 
-  const saveBrief = useMutation({
-    mutationFn: () =>
+  // Auto-save brief on debounce
+  const lastSavedRef = useRef<string>("");
+  useEffect(() => {
+    if (!data?.project) return;
+    if (briefDraft === (data.project.briefMd ?? "")) return;
+    if (briefDraft === lastSavedRef.current) return;
+    const t = setTimeout(() => {
+      lastSavedRef.current = briefDraft;
       fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ briefMd }),
-      }).then((r) => r.json()),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["project", projectId] });
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1500);
-    },
-  });
+        body: JSON.stringify({ briefMd: briefDraft }),
+      }).then(() => {
+        qc.invalidateQueries({ queryKey: ["project", projectId] });
+        setSavedFlash(true);
+        setTimeout(() => setSavedFlash(false), 1200);
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [briefDraft, data, projectId, qc]);
 
   const toggleActive = useMutation({
-    mutationFn: () =>
-      fetch(`/api/projects/${projectId}/set-active`, { method: "POST" }).then((r) => r.json()),
+    mutationFn: () => fetch(`/api/projects/${projectId}/set-active`, { method: "POST" }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["project", projectId] });
       qc.invalidateQueries({ queryKey: ["project-active"] });
@@ -86,13 +118,8 @@ export const ProjectDetail: React.FC<Props> = ({ projectId, onBack }) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["project", projectId] }),
   });
 
-  const generateBrandKit = useMutation({
-    mutationFn: () =>
-      fetch(`/api/projects/${projectId}/generate-brand-kit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      }).then((r) => r.json()),
+  const retry = useMutation({
+    mutationFn: () => fetch(`/api/projects/${projectId}/retry`, { method: "POST" }).then((r) => r.json()),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["project", projectId] }),
   });
 
@@ -109,8 +136,7 @@ export const ProjectDetail: React.FC<Props> = ({ projectId, onBack }) => {
   });
 
   const deleteRef = useMutation({
-    mutationFn: (refId: number) =>
-      fetch(`/api/projects/${projectId}/refs/${refId}`, { method: "DELETE" }).then((r) => r.json()),
+    mutationFn: (refId: number) => fetch(`/api/projects/${projectId}/refs/${refId}`, { method: "DELETE" }).then((r) => r.json()),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["project", projectId] }),
   });
 
@@ -121,156 +147,364 @@ export const ProjectDetail: React.FC<Props> = ({ projectId, onBack }) => {
       </div>
     );
   }
+
   const project = data.project;
+  const def = PROJECT_KIND_REGISTRY[project.kind] ?? PROJECT_KIND_REGISTRY.generic;
+  const steps = computeStepStatuses(project, def);
+  const activeStep = activeStepId(steps);
+  const isGenerating = project.status === "generating";
 
   return (
-    <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0">
-          <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-teal-700 mb-3 transition-colors">
-            <ArrowLeft size={13} /> Back to projects
-          </button>
-          <div className="flex items-center gap-3 mb-2 min-w-0">
-            <FolderKanban size={20} className="text-teal-600 shrink-0" />
-            <h1 className="type-h1 truncate">{project.name}</h1>
+    <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-7">
+      {/* Top bar — back button */}
+      <div>
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-teal-700 mb-3 transition-colors">
+          <ArrowLeft size={13} /> Back to projects
+        </button>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <FolderKanban size={22} className="text-teal-600 shrink-0" />
+              <h1 className="type-h1 truncate">{project.name}</h1>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Pill variant={STATUS_TONE[project.status]}>
+                {project.status === "generating" && <Loader2 size={11} className="animate-spin mr-1" />}
+                {PROJECT_STATUS_LABELS[project.status] ?? project.status}
+              </Pill>
+              <Pill variant="muted">{def.label}</Pill>
+              {project.costCredits > 0 && <Pill variant="warning">{project.costCredits.toFixed(1)} cr</Pill>}
+              {project.active && <Pill variant="accent">Active</Pill>}
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Pill variant={STATUS_TONE[project.status]}>{project.status}</Pill>
-            <Pill variant="muted">{project.kind.replace(/_/g, " ")}</Pill>
-            {project.costCredits > 0 && <Pill variant="warning">{project.costCredits.toFixed(1)} cr spent</Pill>}
-            {project.active && <Pill variant="accent">Active</Pill>}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            tone={project.active ? "teal" : "slate"}
-            icon={project.active ? <PinOff /> : <Pin />}
-            onClick={() => toggleActive.mutate()}
-            disabled={toggleActive.isPending}
-          >
-            {project.active ? "Unpin" : "Pin as active"}
-          </Button>
-          {project.kind === "brand_launch" && project.status !== "generating" && (
+          <div className="flex items-center gap-2 shrink-0">
             <Button
-              variant="primary"
-              tone="teal"
-              icon={<Sparkles />}
-              loading={generateBrandKit.isPending}
-              disabled={generateBrandKit.isPending || (project.briefMd ?? "").length < 20}
-              onClick={() => generateBrandKit.mutate()}
+              variant="secondary"
+              tone={project.active ? "teal" : "slate"}
+              size="sm"
+              icon={project.active ? <PinOff /> : <Pin />}
+              onClick={() => toggleActive.mutate()}
+              disabled={toggleActive.isPending}
             >
-              Generate brand kit
+              {project.active ? "Unpin" : "Pin"}
             </Button>
-          )}
-          {project.status === "generating" && (
-            <Pill variant="warning"><Loader2 size={12} className="animate-spin mr-1" /> Generating…</Pill>
-          )}
-          {project.status === "ready" && (
-            <Button variant="primary" tone="emerald" onClick={() => updateStatus.mutate("published")}>
-              Mark published
-            </Button>
-          )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
-        {/* LEFT — Brief + Refs */}
-        <div className="space-y-6">
-          <section className="surface-secondary">
-            <div className="flex items-center justify-between mb-3">
-              <Eyebrow>Brief</Eyebrow>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={savedFlash ? undefined : <Save />}
-                onClick={() => saveBrief.mutate()}
-                disabled={saveBrief.isPending}
-              >
-                {savedFlash ? "Saved" : "Save"}
-              </Button>
-            </div>
-            <textarea
-              value={briefMd}
-              onChange={(e) => setBriefMd(e.target.value)}
-              placeholder={"## Brand\n\n## Mood\n\n## Hero subject\n\n## Audience"}
-              rows={14}
-              className="w-full p-3 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm font-mono leading-relaxed bg-white text-slate-800 resize-y"
-            />
-          </section>
+      {/* Stepper */}
+      <ProjectStepper steps={steps} />
 
-          <section className="surface-secondary">
-            <div className="flex items-center justify-between mb-3">
+      {/* Expected outputs strip */}
+      <ExpectedOutputsStrip outputs={def.expectedOutputs} />
+
+      {/* Current step panel — the answer to "what now?" */}
+      <CurrentStepPanel
+        project={project}
+        kindDef={def}
+        activeStep={activeStep}
+        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc })}
+        onMarkPublished={() => updateStatus.mutate("published")}
+        onAddRef={() => fileInputRef.current?.click()}
+        onRetry={() => retry.mutate()}
+        savedFlash={savedFlash}
+      />
+
+      {/* Generation timeline (only when there's log content) */}
+      <ProjectGenerationTimeline projectId={project.id} isActive={isGenerating} />
+
+      {/* Brief panel */}
+      <section>
+        <BriefEditor
+          briefMd={briefDraft}
+          schema={def.briefSections}
+          disabled={isGenerating}
+          onChange={setBriefDraft}
+        />
+      </section>
+
+      {/* References */}
+      {def.refsMinimum > 0 && (
+        <section className="surface-secondary">
+          <div className="flex items-center justify-between mb-3">
+            <div>
               <Eyebrow>References ({project.refs.length})</Eyebrow>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<Upload />}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadRef.isPending}
-              >
-                {uploadRef.isPending ? "Uploading..." : "Add file"}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadRef.mutate(file);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-              />
+              <p className="type-meta mt-0.5">Min {def.refsMinimum} to generate</p>
             </div>
-            {project.refs.length === 0 ? (
-              <p className="type-meta">No references yet. Add reference images to anchor your generation prompts.</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {project.refs.map((r) => (
-                  <RefTile key={r.id} ref={r} onDelete={() => deleteRef.mutate(r.id)} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-
-        {/* RIGHT — Outputs */}
-        <section className="surface-secondary min-h-[400px]">
-          <div className="flex items-center justify-between mb-4">
-            <Eyebrow>Outputs ({project.outputs.length})</Eyebrow>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Upload />}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadRef.isPending || isGenerating}
+            >
+              {uploadRef.isPending ? "Uploading…" : "Add file"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadRef.mutate(file);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            />
           </div>
-          {project.outputs.length === 0 ? (
-            <div className="text-center py-16">
-              <Sparkles size={28} className="text-teal-300 mx-auto mb-3" />
-              <p className="type-body max-w-sm mx-auto">
-                Nothing generated yet. Fill in the brief, add reference images, then run a generation from a quick-start
-                template on Home.
-              </p>
-            </div>
+          {project.refs.length === 0 ? (
+            <p className="type-meta">No references yet. Add reference images to anchor your generation prompts.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {project.outputs.map((o) => (
-                <OutputTile key={o.id} output={o} onClick={() => setActiveOutput(o)} />
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {project.refs.map((r) => (
+                <RefTile key={r.id} refItem={r} onDelete={() => deleteRef.mutate(r.id)} />
               ))}
             </div>
           )}
         </section>
-      </div>
+      )}
+
+      {/* Outputs */}
+      <section>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <Eyebrow>Outputs ({project.outputs.length})</Eyebrow>
+          {project.outputs.length > 0 && (
+            <span className="type-meta">{project.outputs.filter((o) => o.predictedVirality != null).length} scored</span>
+          )}
+        </div>
+        {project.outputs.length === 0 ? (
+          <div className="surface-secondary text-center py-12">
+            <Sparkles size={28} className="text-teal-300 mx-auto mb-3" />
+            <p className="type-body max-w-md mx-auto">
+              {def.expectedOutputs.length > 0
+                ? "Outputs will appear here once you run the generation."
+                : "This template is in preview. Save the brief; the orchestrator ships soon."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {project.outputs.map((o) => (
+              <OutputTile key={o.id} output={o} onClick={() => setActiveOutput(o)} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {activeOutput && <OutputPreview output={activeOutput} onClose={() => setActiveOutput(null)} />}
     </div>
   );
 };
 
-const RefTile: React.FC<{ ref: ProjectRef; onDelete: () => void }> = ({ ref, onDelete }) => {
+/**
+ * Trigger the Generate action for whatever kind we're in.
+ * orchestrator → POST the endpoint and let the timeline render progress.
+ * route → open the specialist modal (project_id is passed so its outputs come back here).
+ * template_only → no-op (UI shows "coming soon").
+ */
+function triggerGenerate(args: {
+  project: ProjectWithAssets;
+  def: typeof PROJECT_KIND_REGISTRY[keyof typeof PROJECT_KIND_REGISTRY];
+  briefDraft: string;
+  onOpenStorytellingReelForProject?: (id: string) => void;
+  onOpenMarketingStudioForProject?: (id: string) => void;
+  qc: ReturnType<typeof useQueryClient>;
+}) {
+  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc } = args;
+  const mode = def.generationMode;
+  if (mode.type === "orchestrator") {
+    fetch(`/api/projects/${project.id}/${mode.endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ briefMd: briefDraft }),
+    }).then(() => qc.invalidateQueries({ queryKey: ["project", project.id] }));
+    return;
+  }
+  if (mode.type === "route") {
+    if (mode.surface === "storytelling-reel-modal") {
+      onOpenStorytellingReelForProject?.(project.id);
+    } else if (mode.surface === "marketing-studio-modal") {
+      onOpenMarketingStudioForProject?.(project.id);
+    }
+    return;
+  }
+  // template_only — no-op
+}
+
+const CurrentStepPanel: React.FC<{
+  project: ProjectWithAssets;
+  kindDef: typeof PROJECT_KIND_REGISTRY[keyof typeof PROJECT_KIND_REGISTRY];
+  activeStep: ReturnType<typeof activeStepId>;
+  onGenerate: () => void;
+  onMarkPublished: () => void;
+  onAddRef: () => void;
+  onRetry: () => void;
+  savedFlash: boolean;
+}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash }) => {
+  const isGenerating = project.status === "generating";
+  const isTemplateOnly = kindDef.generationMode.type === "template_only";
+
+  if (isGenerating) {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+            <Loader2 size={20} className="animate-spin" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow tone="warning">Generating</Eyebrow>
+            <h3 className="type-h3 mt-1">Working on your {kindDef.label.toLowerCase()}…</h3>
+            <p className="type-body mt-1">Live progress below. You can leave this page — generation continues in the background.</p>
+          </div>
+          <Button variant="secondary" tone="rose" size="sm" icon={<RefreshCw />} onClick={onRetry} title="Cancel and reset (clears the log; you can re-run from scratch)">
+            Reset
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (project.status === "published") {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={22} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow tone="success">Published</Eyebrow>
+            <h3 className="type-h3 mt-1">Project is published.</h3>
+            <p className="type-body mt-1">Project assets remain available below. Mark archived to hide from active project list.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (project.status === "ready") {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={22} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow tone="accent">Ready to ship</Eyebrow>
+            <h3 className="type-h3 mt-1">Generation complete.</h3>
+            <p className="type-body mt-1">Review the outputs below. Use each tile's kebab to download or send to Canvas. When you've shipped, mark it published.</p>
+          </div>
+          <Button variant="primary" tone="emerald" icon={<Send />} onClick={onMarkPublished}>
+            Mark published
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isTemplateOnly) {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+            <Lock size={20} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow>Template only — orchestrator coming soon</Eyebrow>
+            <h3 className="type-h3 mt-1">{kindDef.generateCtaLabel}</h3>
+            <p className="type-body mt-1">{kindDef.generateBlurb}</p>
+            {savedFlash && <p className="text-xs text-emerald-600 font-semibold mt-2">Brief saved.</p>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Active step decides the CTA copy
+  if (activeStep === "brief") {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 font-bold">1</span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow>Current step</Eyebrow>
+            <h3 className="type-h3 mt-1">Fill in the brief</h3>
+            <p className="type-body mt-1">
+              Complete every required section below. The orchestrator uses your brief verbatim — be specific.
+            </p>
+            {savedFlash && <p className="text-xs text-emerald-600 font-semibold mt-2">Saved.</p>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStep === "refs") {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 font-bold">2</span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow>Current step</Eyebrow>
+            <h3 className="type-h3 mt-1">Add reference images</h3>
+            <p className="type-body mt-1">
+              At least {kindDef.refsMinimum} reference image needed to anchor your generation prompts.
+            </p>
+          </div>
+          <Button variant="primary" tone="teal" icon={<Upload />} onClick={onAddRef}>
+            Add reference
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeStep === "generate") {
+    return (
+      <div className="surface-primary !py-5">
+        <div className="flex items-start gap-4">
+          <span className="w-10 h-10 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+            <Sparkles size={20} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <Eyebrow tone="accent">Ready to generate</Eyebrow>
+            <h3 className="type-h3 mt-1">{kindDef.generateCtaLabel}</h3>
+            <p className="type-body mt-1">{kindDef.generateBlurb}</p>
+          </div>
+          <Button
+            variant="primary"
+            tone={kindDef.generationMode.type === "route" ? "slate" : "teal"}
+            icon={kindDef.generationMode.type === "route" ? <ArrowRight /> : <Sparkles />}
+            onClick={onGenerate}
+          >
+            {kindDef.generateCtaLabel}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback
+  return (
+    <div className="surface-primary !py-5">
+      <div className="flex items-start gap-4">
+        <span className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">·</span>
+        <div className="flex-1 min-w-0">
+          <Eyebrow>Step</Eyebrow>
+          <h3 className="type-h3 mt-1">Review outputs</h3>
+          <p className="type-body mt-1">Pick winners, regenerate weaker assets, then ship.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RefTile: React.FC<{ refItem: ProjectRef; onDelete: () => void }> = ({ refItem, onDelete }) => {
   return (
     <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square group">
-      {ref.kind === "image" && ref.url ? (
-        <img src={ref.url} alt={ref.label ?? ""} className="w-full h-full object-cover" loading="lazy" />
-      ) : ref.kind === "video" && ref.url ? (
-        <video src={ref.url} className="w-full h-full object-cover" muted />
+      {refItem.kind === "image" && refItem.url ? (
+        <img src={refItem.url} alt={refItem.label ?? ""} className="w-full h-full object-cover" loading="lazy" />
+      ) : refItem.kind === "video" && refItem.url ? (
+        <video src={refItem.url} className="w-full h-full object-cover" muted />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-slate-300">
           <ImageIcon size={20} />
@@ -283,9 +517,9 @@ const RefTile: React.FC<{ ref: ProjectRef; onDelete: () => void }> = ({ ref, onD
       >
         <Trash2 size={13} />
       </button>
-      {ref.label && (
+      {refItem.label && (
         <span className="absolute bottom-1.5 left-1.5 right-1.5 truncate text-[9px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded">
-          {ref.label}
+          {refItem.label}
         </span>
       )}
     </div>
@@ -295,64 +529,98 @@ const RefTile: React.FC<{ ref: ProjectRef; onDelete: () => void }> = ({ ref, onD
 const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void }> = ({ output, onClick }) => {
   const isVideo = output.kind === "video";
   const isHtml = output.kind === "html";
+  const isText = output.kind === "text";
 
   return (
-    <button onClick={onClick} className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square group text-left hover:border-teal-300 hover:shadow-md transition-all">
-      {output.url && !isHtml ? (
-        <img src={output.url} alt={output.label ?? ""} className="w-full h-full object-cover" loading="lazy" />
-      ) : isHtml ? (
-        <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center gap-2">
-          <FileCode size={28} className="text-teal-500" />
-          <span className="type-meta">Landing page</span>
-        </div>
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-slate-300">
-          <ImageIcon size={24} />
-        </div>
-      )}
-      {isVideo && (
-        <span className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <Play size={32} className="text-white drop-shadow-lg" fill="currentColor" />
-        </span>
-      )}
+    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square group transition-all hover:border-teal-300 hover:shadow-md">
+      <button onClick={onClick} className="block w-full h-full text-left">
+        {output.url && !isHtml && !isText ? (
+          <img src={output.url} alt={output.label ?? ""} className="w-full h-full object-cover" loading="lazy" />
+        ) : isHtml ? (
+          <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center gap-2">
+            <FileCode size={28} className="text-teal-500" />
+            <span className="type-meta">Landing page</span>
+          </div>
+        ) : isText ? (
+          <div className="w-full h-full bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col items-center justify-center gap-2 p-3">
+            <FileText size={28} className="text-amber-600" />
+            <span className="type-meta text-amber-700 text-center px-2 line-clamp-2">{output.label}</span>
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-300">
+            <ImageIcon size={24} />
+          </div>
+        )}
+        {isVideo && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <Play size={32} className="text-white drop-shadow-lg" fill="currentColor" />
+          </span>
+        )}
+      </button>
       {output.predictedVirality != null && (
-        <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold bg-teal-600 text-white px-1.5 py-0.5 rounded-full tabular-nums shadow">
+        <span className={cn(
+          "absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full tabular-nums shadow",
+          output.predictedVirality >= 70 ? "bg-emerald-600 text-white" :
+          output.predictedVirality >= 50 ? "bg-amber-500 text-white" :
+          "bg-slate-700 text-white",
+        )}>
           {Math.round(output.predictedVirality)}/100
         </span>
       )}
-      <span className="absolute bottom-1.5 left-1.5 right-1.5 truncate text-[9px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded">
+      <span className="absolute bottom-1.5 left-1.5 right-1.5 truncate text-[9px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded pointer-events-none">
         {output.label ?? output.kind}
       </span>
-    </button>
+      <div className="absolute top-1.5 right-1.5">
+        <OutputActionsMenu output={output} />
+      </div>
+    </div>
   );
 };
 
 const OutputPreview: React.FC<{ output: ProjectOutput; onClose: () => void }> = ({ output, onClose }) => {
   const isVideo = output.kind === "video";
   const isHtml = output.kind === "html";
+  const isText = output.kind === "text";
+  const [textContent, setTextContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isText && output.url) {
+      fetch(output.url).then((r) => r.text()).then(setTextContent).catch(() => setTextContent(null));
+    }
+  }, [isText, output.url]);
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="surface-elevated max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="aspect-video bg-slate-900 relative">
+        <div className={cn("relative", isVideo || (!isText && !isHtml) ? "bg-slate-900 aspect-video" : isHtml ? "h-[60vh]" : "")}>
           {isVideo && output.url ? (
             <video controls autoPlay className="w-full h-full object-contain">
               <source src={output.url} />
             </video>
           ) : isHtml && output.url ? (
             <iframe src={output.url} className="w-full h-full bg-white" title={output.label ?? "Landing page"} />
+          ) : isText && textContent ? (
+            <div className="bg-amber-50 px-6 py-5 max-h-[60vh] overflow-y-auto">
+              <pre className="text-sm leading-relaxed text-slate-800 whitespace-pre-wrap font-sans">{textContent}</pre>
+            </div>
           ) : output.url ? (
             <img src={output.url} alt="" className="w-full h-full object-contain" />
           ) : null}
         </div>
-        <div className="p-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="p-6 space-y-3 overflow-y-auto">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <Eyebrow>{output.kind} · {output.modelUsed ?? "?"}</Eyebrow>
-              <h3 className="type-h4 mt-1">{output.label}</h3>
+              <h3 className="type-h4 mt-1 truncate">{output.label}</h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {output.predictedVirality != null && (
                 <Pill variant="accent">Score {Math.round(output.predictedVirality)}/100</Pill>
+              )}
+              {output.url && (
+                <Button as="a" variant="secondary" size="sm" href={output.url} download icon={<Download />}>
+                  Download
+                </Button>
               )}
               {output.url && (
                 <Button as="a" variant="secondary" size="sm" href={output.url} target="_blank" rel="noreferrer" icon={<ExternalLink />}>
@@ -361,7 +629,12 @@ const OutputPreview: React.FC<{ output: ProjectOutput; onClose: () => void }> = 
               )}
             </div>
           </div>
-          {output.prompt && <p className="type-body whitespace-pre-wrap">{output.prompt}</p>}
+          {output.prompt && (
+            <details className="text-xs text-slate-500">
+              <summary className="cursor-pointer hover:text-slate-700 font-medium">Prompt</summary>
+              <p className="mt-2 whitespace-pre-wrap leading-relaxed">{output.prompt}</p>
+            </details>
+          )}
         </div>
       </div>
     </div>

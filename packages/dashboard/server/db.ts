@@ -870,8 +870,20 @@ CREATE TABLE IF NOT EXISTS project_outputs (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Append-only progress log for in-flight orchestrators.
+-- Each row is a stage state transition. UI dedupes to latest state per stage.
+CREATE TABLE IF NOT EXISTS project_generation_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  stage TEXT NOT NULL,
+  status TEXT NOT NULL,
+  message TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_kind ON projects(kind);
 CREATE INDEX IF NOT EXISTS idx_project_outputs_project ON project_outputs(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_refs_project ON project_refs(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_log_project_created ON project_generation_log(project_id, created_at DESC);
 `);

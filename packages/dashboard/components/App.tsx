@@ -30,6 +30,7 @@ import { ScriptWizard } from "./ScriptWizard.js";
 import { CanvasView } from "./CanvasView.js";
 import { ProjectsView } from "./ProjectsView.js";
 import { ProjectDetail } from "./ProjectDetail.js";
+import { StorytellingReelStarter } from "./ui/StorytellingReelStarter.js";
 import { ViewTransition } from "./ui/animations.js";
 import { QuickCaptureFAB } from "./ui/QuickCaptureFAB.js";
 import { QuestProvider, useQuest } from "./context/QuestContext.js";
@@ -43,6 +44,7 @@ const AppInner: React.FC = () => {
   const [carouselSeed, setCarouselSeed] = useState<CarouselRemixSeed | null>(null);
   const [scriptSeed, setScriptSeed] = useState<ScriptWizardSeed | null>(null);
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [storytellingProjectId, setStorytellingProjectId] = useState<string | null>(null);
   const [vaultOpen, setVaultOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [personasOpen, setPersonasOpen] = useState(false);
@@ -156,6 +158,8 @@ const AppInner: React.FC = () => {
               onSelectVideo={handleSelectVideo}
               onNavigate={handleNavigate}
               onOpenProject={(id) => { setOpenProjectId(id); setView("PROJECT_DETAIL"); }}
+              onOpenStorytellingReelForProject={(id) => setStorytellingProjectId(id)}
+              onOpenMarketingStudioForProject={() => { /* coming soon */ }}
             />
           )}
           {view === "PIPELINE" && (
@@ -176,7 +180,12 @@ const AppInner: React.FC = () => {
           {view === "CANVAS" && <CanvasView onNavigate={handleNavigate} />}
           {view === "PROJECTS" && !openProjectId && <ProjectsView onOpenProject={(id) => { setOpenProjectId(id); setView("PROJECT_DETAIL"); }} onNavigate={handleNavigate} />}
           {view === "PROJECT_DETAIL" && openProjectId && (
-            <ProjectDetail projectId={openProjectId} onBack={() => { setOpenProjectId(null); setView("PROJECTS"); }} />
+            <ProjectDetail
+              projectId={openProjectId}
+              onBack={() => { setOpenProjectId(null); setView("PROJECTS"); }}
+              onOpenStorytellingReelForProject={(id) => setStorytellingProjectId(id)}
+              onOpenMarketingStudioForProject={() => { /* coming soon */ }}
+            />
           )}
         </ViewTransition>
         </ErrorBoundary>
@@ -193,6 +202,13 @@ const AppInner: React.FC = () => {
 
       {/* Vault slide-out panel */}
       <VaultPanel open={vaultOpen} onClose={handleCloseVault} />
+
+      {/* App-level Storytelling Reel modal — opened from a Project context (carries projectId) */}
+      <StorytellingReelStarter
+        open={!!storytellingProjectId}
+        onClose={() => setStorytellingProjectId(null)}
+        projectId={storytellingProjectId ?? undefined}
+      />
 
       {/* Creator Personas panel */}
       {personasOpen && <PersonaPanel onClose={() => setPersonasOpen(false)} />}

@@ -17,6 +17,8 @@ type Step = "setup" | "hook" | "generating" | "ready";
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Optional Project id to attach the final reel + bundle to. */
+  projectId?: string;
 };
 
 type StylesResponse = { styles: StorytellingStyle[] };
@@ -45,7 +47,7 @@ const TIER_COSTS: Record<StorytellingTier, { credits: number; minutes: number; b
 
 const DURATION_OPTIONS = [15, 30, 45, 60] as const;
 
-export const StorytellingReelStarter: React.FC<Props> = ({ open, onClose }) => {
+export const StorytellingReelStarter: React.FC<Props> = ({ open, onClose, projectId }) => {
   const [step, setStep] = useState<Step>("setup");
   const [topic, setTopic] = useState("");
   const [styles, setStyles] = useState<StorytellingStyle[]>([]);
@@ -181,6 +183,28 @@ export const StorytellingReelStarter: React.FC<Props> = ({ open, onClose }) => {
       // Refresh manifest
       const fresh = await fetch(`/api/storytelling/reels/${reelId}`).then((r) => r.json());
       setManifest(fresh);
+
+      // If invoked from a Project, attach the final reel back to that project
+      if (projectId && fresh?.finalMp4Url) {
+        await fetch(`/api/projects/${projectId}/outputs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: "video",
+            label: `storytelling_reel_${reelId.slice(0, 8)}`,
+            url: fresh.finalMp4Url,
+            modelUsed: "storytelling-reel-engine",
+            prompt: fresh.title ?? "Storytelling reel",
+            costCredits: fresh.cost?.actualCredits ?? 0,
+          }),
+        }).catch(() => { /* best-effort attach */ });
+        // Mark the project as ready since the reel landed
+        await fetch(`/api/projects/${projectId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ready" }),
+        }).catch(() => { /* best-effort */ });
+      }
     } catch (e) {
       setErrMsg(e instanceof Error ? e.message : String(e));
     } finally {

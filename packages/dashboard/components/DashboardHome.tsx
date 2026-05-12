@@ -52,6 +52,8 @@ type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
   onNavigate: (view: DashboardView, payload?: CarouselRemixSeed | ScriptWizardSeed) => void;
   onOpenProject?: (projectId: string) => void;
+  onOpenStorytellingReelForProject?: (projectId: string) => void;
+  onOpenMarketingStudioForProject?: (projectId: string) => void;
 };
 
 type WhatsNextAction = {
@@ -704,6 +706,8 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
   onNavigate,
   onOpenProject,
+  onOpenStorytellingReelForProject,
+  onOpenMarketingStudioForProject,
 }) => {
   const queryClient = useQueryClient();
   const { data: pipeline, isLoading } = useQuery<PipelineResponse>({
@@ -852,7 +856,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* ═══ Quick Start template gallery ═══════════════════════════════════ */}
       {onOpenProject && (
-        <QuickStartGallery onOpenProject={onOpenProject} onNavigate={onNavigate} />
+        <QuickStartGallery
+          onOpenProject={onOpenProject}
+          onNavigate={onNavigate}
+          onOpenStorytellingReelForProject={onOpenStorytellingReelForProject}
+          onOpenMarketingStudioForProject={onOpenMarketingStudioForProject}
+        />
       )}
 
       {/* ═══ Recent generations (live Higgsfield activity) ══════════════════ */}
