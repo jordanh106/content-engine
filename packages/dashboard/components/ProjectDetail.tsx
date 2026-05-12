@@ -33,6 +33,7 @@ import {
   ProjectGenerationTimeline,
   OutputActionsMenu,
 } from "./ui/index.js";
+import { VisualSystemLock } from "./ui/VisualSystemLock.js";
 import { PROJECT_KIND_REGISTRY, PROJECT_STATUS_LABELS } from "../shared/project-kinds.js";
 import { computeStepStatuses, activeStepId } from "../utils/project-steps.js";
 import { enqueueCanvasImport } from "./CanvasView.js";
@@ -86,7 +87,8 @@ export const ProjectDetail: React.FC<Props> = ({
   const [briefDraft, setBriefDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [activeOutput, setActiveOutput] = useState<ProjectOutput | null>(null);
-  const [carouselVariant, setCarouselVariant] = useState<"editorial" | "bold" | "minimal">("editorial");
+  const [carouselVariant, setCarouselVariant] = useState<"cinematic" | "editorial" | "bold" | "minimal">("cinematic");
+  const [carouselSlideMix, setCarouselSlideMix] = useState<"mixed" | "all_cinematic" | "all_text">("mixed");
   const briefHydratedRef = useRef(false);
 
   useEffect(() => {
@@ -228,9 +230,11 @@ export const ProjectDetail: React.FC<Props> = ({
         project={project}
         kindDef={def}
         activeStep={activeStep}
-        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant })}
+        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant, carouselSlideMix })}
         carouselVariant={carouselVariant}
         onCarouselVariantChange={setCarouselVariant}
+        carouselSlideMix={carouselSlideMix}
+        onCarouselSlideMixChange={setCarouselSlideMix}
         onMarkPublished={() => updateStatus.mutate("published")}
         onAddRef={() => fileInputRef.current?.click()}
         onRetry={() => retry.mutate()}
@@ -250,6 +254,11 @@ export const ProjectDetail: React.FC<Props> = ({
           projectId={projectId}
         />
       </section>
+
+      {/* Visual style anchor — only for did_you_know (cinematic carousels) */}
+      {project.kind === "did_you_know" && (
+        <VisualSystemLock projectId={projectId} refs={project.refs} disabled={isGenerating} />
+      )}
 
       {/* References */}
       {def.refsMinimum > 0 && (
@@ -358,14 +367,16 @@ function triggerGenerate(args: {
   onOpenStorytellingReelForProject?: (id: string) => void;
   onOpenMarketingStudioForProject?: (id: string) => void;
   qc: ReturnType<typeof useQueryClient>;
-  carouselVariant?: "editorial" | "bold" | "minimal";
+  carouselVariant?: "cinematic" | "editorial" | "bold" | "minimal";
+  carouselSlideMix?: "mixed" | "all_cinematic" | "all_text";
 }) {
-  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant } = args;
+  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant, carouselSlideMix } = args;
   const mode = def.generationMode;
   if (mode.type === "orchestrator") {
     const body: Record<string, unknown> = { briefMd: briefDraft };
-    if (project.kind === "did_you_know" && carouselVariant) {
-      body.variant = carouselVariant;
+    if (project.kind === "did_you_know") {
+      if (carouselVariant) body.variant = carouselVariant;
+      if (carouselSlideMix) body.slideMix = carouselSlideMix;
     }
     fetch(`/api/projects/${project.id}/${mode.endpoint}`, {
       method: "POST",
@@ -394,9 +405,11 @@ const CurrentStepPanel: React.FC<{
   onAddRef: () => void;
   onRetry: () => void;
   savedFlash: boolean;
-  carouselVariant?: "editorial" | "bold" | "minimal";
-  onCarouselVariantChange?: (v: "editorial" | "bold" | "minimal") => void;
-}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash, carouselVariant, onCarouselVariantChange }) => {
+  carouselVariant?: "cinematic" | "editorial" | "bold" | "minimal";
+  onCarouselVariantChange?: (v: "cinematic" | "editorial" | "bold" | "minimal") => void;
+  carouselSlideMix?: "mixed" | "all_cinematic" | "all_text";
+  onCarouselSlideMixChange?: (v: "mixed" | "all_cinematic" | "all_text") => void;
+}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash, carouselVariant, onCarouselVariantChange, carouselSlideMix, onCarouselSlideMixChange }) => {
   const isGenerating = project.status === "generating";
   const isTemplateOnly = kindDef.generationMode.type === "template_only";
 
@@ -516,6 +529,7 @@ const CurrentStepPanel: React.FC<{
 
   if (activeStep === "generate") {
     const isCarousel = project.kind === "did_you_know";
+    const willUseHiggsfield = isCarousel && carouselSlideMix !== "all_text";
     return (
       <div className="surface-primary !py-5">
         <div className="flex items-start gap-4">
@@ -526,23 +540,56 @@ const CurrentStepPanel: React.FC<{
             <Eyebrow tone="accent">Ready to generate</Eyebrow>
             <h3 className="type-h3 mt-1">{kindDef.generateCtaLabel}</h3>
             <p className="type-body mt-1">{kindDef.generateBlurb}</p>
-            {isCarousel && carouselVariant && onCarouselVariantChange && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="type-meta">Look:</span>
-                {(["editorial", "bold", "minimal"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => onCarouselVariantChange(v)}
-                    className={cn(
-                      "px-3 py-1 text-xs font-semibold rounded-full border transition-colors capitalize",
-                      carouselVariant === v
-                        ? "bg-teal-600 text-white border-teal-600"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
-                    )}
-                  >
-                    {v}
-                  </button>
-                ))}
+            {isCarousel && carouselVariant && onCarouselVariantChange && onCarouselSlideMixChange && carouselSlideMix && (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="type-meta w-20">Look:</span>
+                  {([
+                    { v: "cinematic", label: "Cinematic" },
+                    { v: "editorial", label: "Editorial" },
+                    { v: "bold",      label: "Bold" },
+                    { v: "minimal",   label: "Minimal" },
+                  ] as const).map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => onCarouselVariantChange(v)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-full border transition-colors",
+                        carouselVariant === v
+                          ? "bg-teal-600 text-white border-teal-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="type-meta w-20">Slide mix:</span>
+                  {([
+                    { v: "mixed",          label: "Mixed (recommended)" },
+                    { v: "all_cinematic",  label: "All cinematic" },
+                    { v: "all_text",       label: "All text" },
+                  ] as const).map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => onCarouselSlideMixChange(v)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-full border transition-colors",
+                        carouselSlideMix === v
+                          ? "bg-rose-600 text-white border-rose-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-rose-400 hover:text-rose-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="type-meta italic">
+                  {willUseHiggsfield
+                    ? "~$0.15–0.40 estimated · 4–6 AI background images via Higgsfield Nano Banana 2."
+                    : "Free · no AI image credits used."}
+                </p>
               </div>
             )}
           </div>

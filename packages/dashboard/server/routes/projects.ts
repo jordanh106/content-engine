@@ -18,7 +18,9 @@ import { parseQuickStartTemplates } from "../parsers/quickstart-templates.js";
 import { predictVirality } from "../lib/virality-predictor.js";
 import { generateImage, generateVideo, uploadMediaFromUrl, isConfigured } from "../lib/higgsfield-client.js";
 import { logStage, queueStages, readGenerationLog, failPendingStages, clearProjectLog, viralityModeForKind } from "../lib/project-orchestrators.js";
-import type { CarouselVariant, CarouselAspect } from "../lib/carousel-renderer.js";
+import type { CarouselVariant, CarouselAspect, SlideSpec } from "../lib/carousel-renderer.js";
+import { generateAndCacheImage } from "../lib/higgsfield-image-cache.js";
+import { BRAND_DEFAULT_SYSTEM, deserializeVisualSystem, summarizeVisualSystem, type VisualSystem } from "../lib/visual-system.js";
 import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
 import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
@@ -1060,18 +1062,30 @@ Return ONLY the caption text.`,
 
   // ────────────────────────────────────────────────────────────────────────────
   // POST /api/projects/:id/generate-carousel
-  // For did_you_know kind. Parses brief → 7 slide texts → saves each as text output.
-  // (Image rendering via existing Carousel Lab pipeline is a separate "Render slides" action.)
+  //
+  // Mixed-media pipeline:
+  //   1. Lock Visual System (reference image teardown OR brand default)
+  //   2. Plan slides via Haiku — mixes cinematic (AI image bg + text overlay) and
+  //      text-only paper slides, all under one Visual System
+  //   3. For each cinematic slide: Higgsfield Nano Banana 2 → local PNG
+  //   4. Render every slide via Playwright (cinematic/* or editorial/* template)
+  //   5. Persist outputs
   // ────────────────────────────────────────────────────────────────────────────
   router.post("/:id/generate-carousel", async (req, res) => {
     const id = String(req.params.id);
     const project = loadProject(id);
     if (!project) { res.status(404).json({ error: "project not found" }); return; }
 
-    const body = req.body as { briefMd?: string; variant?: CarouselVariant; aspect?: CarouselAspect };
+    const body = req.body as {
+      briefMd?: string;
+      variant?: CarouselVariant;
+      aspect?: CarouselAspect;
+      slideMix?: "mixed" | "all_cinematic" | "all_text";
+    };
     const brief = body.briefMd ?? project.briefMd ?? "";
-    const variant: CarouselVariant = (body.variant as CarouselVariant | undefined) ?? "editorial";
-    const aspect: CarouselAspect = (body.aspect as CarouselAspect | undefined) ?? "1:1";
+    const moodPreset: CarouselVariant = body.variant ?? "cinematic";
+    const aspect: CarouselAspect = body.aspect ?? "1:1";
+    const slideMix = body.slideMix ?? "mixed";
 
     const sections = parseBriefSections(brief);
     const topic = sections.Topic ?? "";
@@ -1081,10 +1095,16 @@ Return ONLY the caption text.`,
       return;
     }
 
+    // Higgsfield required for any cinematic slide
+    const needsHiggsfield = slideMix !== "all_text";
+    if (needsHiggsfield && !(await isConfigured())) {
+      res.status(503).json({ error: "Higgsfield CLI not configured. Switch slide mix to 'All text' to skip image gen." });
+      return;
+    }
+
     sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
     clearProjectLog(id);
 
-    // Parse the slide hooks if provided. If not, the expand step will generate them from the topic.
     const providedHooks = slideHooksRaw
       .split("\n")
       .map((l) => l.trim())
@@ -1092,26 +1112,55 @@ Return ONLY the caption text.`,
       .map((l) => l.replace(/^\d+\.\s*/, ""))
       .slice(0, 7);
 
-    // We don't know the final count until we expand; queue a placeholder set.
-    const provisionalCount = providedHooks.length > 0 ? providedHooks.length : 7;
-    queueStages(id, ["expand_slides", ...Array.from({ length: provisionalCount }, (_, i) => `render_slide_${i + 1}`)]);
+    // Provisional stage queue — refined once we know cinematic vs text per slide
+    const provisionalCount = providedHooks.length > 0 ? providedHooks.length : 6;
+    queueStages(id, [
+      "lock_visual_system",
+      "plan_slides",
+      ...Array.from({ length: provisionalCount }, (_, i) => `slide_${i + 1}`),
+    ]);
     res.json({ status: "generating", projectId: id });
 
     (async () => {
-      // 1. Expand into structured slide content (cover + content + cta).
-      logStage(id, "expand_slides", "running");
-      let expanded: Array<{ kind: "cover" | "content" | "cta"; title: string; body: string; cta_button?: string }> = [];
+      // ─── 1. Lock Visual System ────────────────────────────────────────────
+      logStage(id, "lock_visual_system", "running");
+      const storedVs = (sqlite.prepare("SELECT visual_system_json FROM projects WHERE id = ?").get(id) as { visual_system_json?: string } | undefined)?.visual_system_json;
+      const visualSystem: VisualSystem = deserializeVisualSystem(storedVs) ?? BRAND_DEFAULT_SYSTEM;
+      const vsSummary = summarizeVisualSystem(visualSystem);
+      logStage(id, "lock_visual_system", "completed", visualSystem.style.slice(0, 60));
+
+      // ─── 2. Plan slides via Haiku ─────────────────────────────────────────
+      logStage(id, "plan_slides", "running");
+      type PlannedSlide = {
+        kind: "cover" | "content" | "cta";
+        slideStyle: "cinematic" | "text";
+        headline: string;
+        body: string;
+        visualDirection?: string;
+        ctaButton?: string;
+      };
+      let planned: PlannedSlide[] = [];
+
       try {
         const client = new Anthropic();
+        const mixGuidance =
+          slideMix === "all_cinematic" ? "Every slide must use slideStyle: \"cinematic\"."
+          : slideMix === "all_text"    ? "Every slide must use slideStyle: \"text\". Omit visualDirection for every slide."
+          : "Mix the two: use \"cinematic\" when the content benefits from a hero image (people, places, action, mood-rich subjects). Use \"text\" for numbers, quotes, definitions, or list bullets that read better on paper. Aim for roughly 60% cinematic / 40% text.";
+
         const promptHooks = providedHooks.length > 0
           ? `Slide hooks (use these verbatim where possible):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
-          : "No slide hooks provided — generate 7 slides yourself: a cover, 5 surprising fact slides, and a CTA.";
+          : "No slide hooks provided — generate 6 slides yourself: a cover, 4 surprising fact slides, and a CTA.";
+
         const resp = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 2000,
+          max_tokens: 2500,
           messages: [{
             role: "user",
             content: `Build a 5-7 slide Instagram "Did you know" carousel. Warm, plain, editorial tone. Save-first CTA. NO emdashes. Use commas and periods.
+
+VISUAL SYSTEM (locked, every slide inherits this):
+${vsSummary}
 
 TOPIC ANCHOR (most important rule):
 Every slide must stay strictly on the user's topic below. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. The cover hooks the topic, the middle slides teach the topic, the CTA invites saving or sharing the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy.
@@ -1120,14 +1169,18 @@ Topic: ${topic}
 
 ${promptHooks}
 
-Output JSON ONLY (no preamble, no code fence). The first slide MUST be a cover, the last MUST be a cta, all middle slides MUST be content slides. Bodies stay short: 1-2 sentences max, max 35 words.
+Slide mix rule: ${mixGuidance}
+
+For every cinematic slide, write a "visualDirection" field: a 1-2 sentence cinematographer description (subject + environment + lighting + composition). Be specific. Lower-third negative space for text overlay. NEVER include text or words in the image description (we add text in post).
+
+Output JSON ONLY (no preamble, no code fence). First slide MUST be a cover. Last slide MUST be a cta. All middle slides MUST be content slides. Bodies stay short: 1-2 sentences max, max 35 words.
 
 Schema:
 [
-  { "kind": "cover",   "title": "<short hook headline, ≤10 words>", "body": "<one-line subtitle, ≤15 words>" },
-  { "kind": "content", "title": "<bold fact title, ≤9 words>",     "body": "<1-2 sentence body, ≤35 words>" },
+  { "kind": "cover",   "slideStyle": "cinematic" | "text", "headline": "<short hook headline, ≤10 words>", "body": "<one-line subtitle, ≤15 words>", "visualDirection": "<cinematographer description, omit if slideStyle is text>" },
+  { "kind": "content", "slideStyle": "cinematic" | "text", "headline": "<bold fact title, ≤9 words>",      "body": "<1-2 sentence body, ≤35 words>", "visualDirection": "..." },
   ...
-  { "kind": "cta",     "title": "<CTA headline, ≤9 words>",        "body": "<one-line motivator, ≤15 words>", "cta_button": "<2-3 word button label e.g. Save this>" }
+  { "kind": "cta",     "slideStyle": "cinematic" | "text", "headline": "<CTA headline, ≤9 words>",         "body": "<one-line motivator, ≤15 words>", "ctaButton": "<2-3 word button label e.g. Save this>", "visualDirection": "..." }
 ]`,
           }],
         });
@@ -1135,75 +1188,133 @@ Schema:
         if (block && block.type === "text") {
           const match = block.text.match(/\[[\s\S]*\]/);
           if (match) {
-            const parsed = JSON.parse(match[0]) as typeof expanded;
-            if (Array.isArray(parsed) && parsed.length > 0) expanded = parsed.slice(0, 7);
+            const parsed = JSON.parse(match[0]) as PlannedSlide[];
+            if (Array.isArray(parsed) && parsed.length > 0) planned = parsed.slice(0, 7);
           }
         }
-        if (expanded.length === 0) throw new Error("expansion returned no slides");
-        logStage(id, "expand_slides", "completed", `${expanded.length} slides`);
+        if (planned.length === 0) throw new Error("slide planner returned no slides");
+        // Sanity: force first=cover, last=cta
+        if (planned[0].kind !== "cover") planned[0].kind = "cover";
+        if (planned[planned.length - 1].kind !== "cta") planned[planned.length - 1].kind = "cta";
+        // Force slide style based on slideMix override
+        if (slideMix === "all_text") planned.forEach((p) => { p.slideStyle = "text"; p.visualDirection = undefined; });
+        if (slideMix === "all_cinematic") planned.forEach((p) => { p.slideStyle = "cinematic"; });
+        logStage(id, "plan_slides", "completed", `${planned.length} slides (${planned.filter((p) => p.slideStyle === "cinematic").length} cinematic)`);
       } catch (err) {
-        logStage(id, "expand_slides", "failed", err instanceof Error ? err.message : String(err));
+        logStage(id, "plan_slides", "failed", err instanceof Error ? err.message : String(err));
         sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
         return;
       }
 
-      // 2. Build slide specs for the renderer.
-      const totalSlides = expanded.length;
-      const { renderCarousel } = await import("../lib/carousel-renderer.js");
-      const slideSpecs = expanded.map((s, i) => {
-        if (s.kind === "cover") {
-          return { templateName: "cover" as const, variables: { HOOK_LINE: s.title, SUBTITLE: s.body, TOTAL_SLIDES: String(totalSlides) } };
+      // ─── 3. Per-slide: generate background image (if cinematic) + composite ──
+      const totalSlides = planned.length;
+      const outDir = path.join(projectsDataDir, id, "outputs");
+      fs.mkdirSync(outDir, { recursive: true });
+
+      const bgImageByIndex: Record<number, { localPath: string; remoteUrl: string; cost: number; prompt: string }> = {};
+      let totalImageCost = 0;
+
+      for (let i = 0; i < planned.length; i++) {
+        const slide = planned[i];
+        if (slide.slideStyle !== "cinematic") continue;
+        const stage = `slide_${i + 1}`;
+        logStage(id, stage, "running", "generating image");
+        const direction = slide.visualDirection ?? slide.headline;
+        const imagePrompt = `${visualSystem.style} ${direction} ${visualSystem.mood}. Editorial photography, scroll-stop composition, lower-third negative space reserved for text overlay. No text or words in the image.`;
+        try {
+          const result = await generateAndCacheImage({
+            prompt: imagePrompt,
+            aspect,
+            outDir,
+            filename: `slide_${i + 1}_bg.png`,
+          });
+          bgImageByIndex[i] = { localPath: result.localPath, remoteUrl: result.remoteUrl, cost: result.costCredits, prompt: imagePrompt };
+          totalImageCost += result.costCredits;
+          // Persist intermediate bg image so user can debug / reuse
+          const bgPublicUrl = `/projects/${id}/outputs/slide_${i + 1}_bg.png`;
+          recordProjectOutput({
+            projectId: id,
+            kind: "image",
+            label: `slide_${i + 1}_bg`,
+            url: bgPublicUrl,
+            filePath: result.localPath,
+            modelUsed: "nano_banana_2",
+            prompt: imagePrompt,
+            costCredits: result.costCredits,
+          });
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+          return;
         }
-        if (s.kind === "cta") {
+      }
+
+      // ─── 4. Build slide specs and render all slides ───────────────────────
+      const slideSpecs: SlideSpec[] = planned.map((s, i): SlideSpec => {
+        const slideVariant: CarouselVariant = s.slideStyle === "cinematic" ? "cinematic" : "editorial";
+        const bg = bgImageByIndex[i]?.localPath;
+        if (s.kind === "cover") {
           return {
-            templateName: "cta" as const,
+            templateName: "cover",
+            variant: slideVariant,
             variables: {
-              CTA_HEADLINE: s.title,
-              CTA_SUBHEAD: s.body,
-              CTA_BUTTON_TEXT: (s.cta_button ?? "Save this").toUpperCase(),
-              SLIDE_INDEX: String(i + 1),
+              HOOK_LINE: s.headline,
+              SUBTITLE: s.body,
               TOTAL_SLIDES: String(totalSlides),
+              BG_IMAGE_URL: bg,
             },
           };
         }
-        const contentIndex = expanded.slice(0, i).filter((x) => x.kind === "content").length + 1;
+        if (s.kind === "cta") {
+          return {
+            templateName: "cta",
+            variant: slideVariant,
+            variables: {
+              CTA_HEADLINE: s.headline,
+              CTA_SUBHEAD: s.body,
+              CTA_BUTTON_TEXT: (s.ctaButton ?? "Save this").toUpperCase(),
+              SLIDE_INDEX: String(i + 1),
+              TOTAL_SLIDES: String(totalSlides),
+              BG_IMAGE_URL: bg,
+            },
+          };
+        }
+        const contentIndex = planned.slice(0, i).filter((x) => x.kind === "content").length + 1;
         return {
-          templateName: "content" as const,
+          templateName: "content",
+          variant: slideVariant,
           variables: {
             POINT_NUMBER: String(contentIndex).padStart(2, "0"),
-            POINT_TITLE: s.title,
+            POINT_TITLE: s.headline,
             POINT_BODY: s.body,
             SLIDE_INDEX: String(i + 1),
             TOTAL_SLIDES: String(totalSlides),
+            BG_IMAGE_URL: bg,
           },
         };
       });
 
-      // 3. Render → PNGs.
-      const outDir = path.join(projectsDataDir, id, "outputs");
-      fs.mkdirSync(outDir, { recursive: true });
-
       let rendered: Array<{ slideIndex: number; filePath: string; templateName: string }> = [];
       try {
+        const { renderCarousel } = await import("../lib/carousel-renderer.js");
         rendered = await renderCarousel({
           slides: slideSpecs,
-          variant,
+          variant: moodPreset,
           aspect,
           outDir,
           prefix: "slide_",
         });
       } catch (err) {
-        logStage(id, "render_slide_1", "failed", err instanceof Error ? err.message : String(err));
+        logStage(id, `slide_1`, "failed", err instanceof Error ? err.message : String(err));
         sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
         return;
       }
 
-      // 4. Persist each PNG as an image output.
+      // ─── 5. Persist each composited PNG as an image output ────────────────
       for (let i = 0; i < rendered.length; i++) {
-        const stage = `render_slide_${i + 1}`;
-        logStage(id, stage, "running");
+        const stage = `slide_${i + 1}`;
         const r = rendered[i];
-        const s = expanded[i];
+        const s = planned[i];
         const publicUrl = `/projects/${id}/outputs/${path.basename(r.filePath)}`;
         recordProjectOutput({
           projectId: id,
@@ -1211,16 +1322,19 @@ Schema:
           label: `slide_${r.slideIndex}`,
           url: publicUrl,
           filePath: r.filePath,
-          modelUsed: `carousel:${variant}`,
-          prompt: `${s.title} — ${s.body}`,
-          costCredits: 0,
+          modelUsed: `carousel:${s.slideStyle}`,
+          prompt: `${s.headline} — ${s.body}`,
+          costCredits: bgImageByIndex[i]?.cost ?? 0,
         });
-        logStage(id, stage, "completed", s.title.slice(0, 80));
+        logStage(id, stage, "completed", s.headline.slice(0, 80));
       }
 
-      // 5. Bundle the outline as a single text output for caption / reference.
-      const outlineMd = `# Carousel outline (${variant}, ${aspect})\n\n` +
-        expanded.map((s, i) => `## ${i + 1}. ${s.kind === "cover" ? "Cover" : s.kind === "cta" ? "CTA" : "Slide"} — ${s.title}\n\n${s.body}\n`).join("\n");
+      // ─── 6. Outline + Visual System artifact ──────────────────────────────
+      const outlineMd = `# Carousel outline (${moodPreset}, ${aspect}, mix=${slideMix})\n\n` +
+        `**Visual System:** ${visualSystem.style}\n` +
+        `**Palette:** ${visualSystem.palette.join(", ")}\n` +
+        `**Mood:** ${visualSystem.mood}\n\n` +
+        planned.map((s, i) => `## ${i + 1}. ${s.kind === "cover" ? "Cover" : s.kind === "cta" ? "CTA" : "Slide"} (${s.slideStyle}) — ${s.headline}\n\n${s.body}\n${s.visualDirection ? `\n*Visual direction:* ${s.visualDirection}\n` : ""}`).join("\n");
       const outlinePath = path.join(outDir, "slide_outlines.md");
       fs.writeFileSync(outlinePath, outlineMd, "utf-8");
       recordProjectOutput({
@@ -1234,12 +1348,114 @@ Schema:
         costCredits: 0,
       });
 
-      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+      // Update project status + accumulated cost
+      sqlite.prepare("UPDATE projects SET status = 'ready', cost_credits = cost_credits + ?, updated_at = datetime('now') WHERE id = ?").run(totalImageCost, id);
     })().catch((err) => {
       console.error("[carousel] crashed:", err);
       failPendingStages(id, err instanceof Error ? err.message : String(err));
       sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
     });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/visual-teardown
+  // Reads a reference image (first project_refs image) and uses Claude Haiku Vision
+  // to derive a Visual System JSON that locks the carousel's design language.
+  // ────────────────────────────────────────────────────────────────────────────
+  router.post("/:id/visual-teardown", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+
+    const refRow = sqlite.prepare(
+      "SELECT * FROM project_refs WHERE project_id = ? AND kind = 'image' ORDER BY id ASC LIMIT 1"
+    ).get(id) as Row | undefined;
+    if (!refRow) {
+      res.status(422).json({ error: "no reference image attached. Upload a carousel screenshot first." });
+      return;
+    }
+    const refPath = (refRow.file_path as string) ?? "";
+    if (!refPath || !fs.existsSync(refPath)) {
+      res.status(422).json({ error: "reference image file missing on disk" });
+      return;
+    }
+
+    try {
+      const ext = path.extname(refPath).toLowerCase();
+      const mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" =
+        ext === ".png" ? "image/png"
+        : ext === ".webp" ? "image/webp"
+        : ext === ".gif" ? "image/gif"
+        : "image/jpeg";
+      const base64 = fs.readFileSync(refPath).toString("base64");
+
+      const client = new Anthropic();
+      const resp = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1200,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+            {
+              type: "text",
+              text: `Analyse this reference carousel slide. Return JSON ONLY (no preamble, no code fence) describing the Visual System that locks this design language. Use this exact schema:
+
+{
+  "style": "<one sentence describing the overall visual style — e.g. 'Warm editorial cinematic with soft natural light' or 'High-contrast minimalist with hard typography'>",
+  "palette": ["<color name + approximate hex>", "..."],
+  "typographyMood": "<typeface family / weight / character — e.g. 'Bold sans-serif display, light sans body, tight tracking'>",
+  "density": "minimal" | "medium" | "dense",
+  "mood": "<one sentence describing the emotional tone>",
+  "paletteColors": {
+    "primary": "<hex>",
+    "accent": "<hex>",
+    "background": "<hex>",
+    "text": "<hex>"
+  }
+}
+
+Be specific. Pick colors that match what you see. Density: minimal = lots of whitespace, dense = packed.`,
+            },
+          ],
+        }],
+      });
+      const block = resp.content.find((b) => b.type === "text");
+      if (!block || block.type !== "text") {
+        res.status(502).json({ error: "vision returned empty response" });
+        return;
+      }
+      const match = block.text.match(/\{[\s\S]*\}/);
+      if (!match) {
+        res.status(502).json({ error: "vision returned no JSON" });
+        return;
+      }
+      const parsed = JSON.parse(match[0]) as VisualSystem;
+      sqlite.prepare("UPDATE projects SET visual_system_json = ?, updated_at = datetime('now') WHERE id = ?")
+        .run(JSON.stringify(parsed), id);
+      res.json({ visualSystem: parsed });
+    } catch (err) {
+      console.error("[visual-teardown] failed:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : "visual teardown failed" });
+    }
+  });
+
+  // DELETE /api/projects/:id/visual-system — revert to brand default
+  router.delete("/:id/visual-system", (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    sqlite.prepare("UPDATE projects SET visual_system_json = NULL, updated_at = datetime('now') WHERE id = ?").run(id);
+    res.json({ ok: true });
+  });
+
+  // GET /api/projects/:id/visual-system — read currently locked system (or null)
+  router.get("/:id/visual-system", (req, res) => {
+    const id = String(req.params.id);
+    const row = sqlite.prepare("SELECT visual_system_json FROM projects WHERE id = ?").get(id) as { visual_system_json?: string } | undefined;
+    if (!row) { res.status(404).json({ error: "project not found" }); return; }
+    const vs = deserializeVisualSystem(row.visual_system_json);
+    res.json({ visualSystem: vs, isDefault: vs === null });
   });
 
   // ────────────────────────────────────────────────────────────────────────────

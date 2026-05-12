@@ -14,15 +14,40 @@ import path from "path";
 
 const TEMPLATES_ROOT = path.join(import.meta.dirname, "..", "carousel-templates");
 
-export type CarouselVariant = "editorial" | "bold" | "minimal";
+export type CarouselVariant = "editorial" | "bold" | "minimal" | "cinematic";
 export type CarouselAspect = "1:1" | "4:5" | "9:16";
 
 type TemplateName = "cover" | "content" | "cta";
 
+type CoverVars = {
+  HOOK_LINE: string;
+  SUBTITLE: string;
+  TOTAL_SLIDES: string;
+  BG_IMAGE_URL?: string;
+};
+type ContentVars = {
+  POINT_NUMBER: string;
+  POINT_TITLE: string;
+  POINT_BODY: string;
+  SLIDE_INDEX: string;
+  TOTAL_SLIDES: string;
+  BG_IMAGE_URL?: string;
+};
+type CtaVars = {
+  CTA_HEADLINE: string;
+  CTA_SUBHEAD: string;
+  CTA_BUTTON_TEXT: string;
+  SLIDE_INDEX: string;
+  TOTAL_SLIDES: string;
+  BG_IMAGE_URL?: string;
+};
+
+// Per-slide variant override allows mixed-media carousels (some slides cinematic, some text-only)
+// to share one renderCarousel call while resolving to different template folders.
 export type SlideSpec =
-  | { templateName: "cover"; variables: { HOOK_LINE: string; SUBTITLE: string; TOTAL_SLIDES: string } }
-  | { templateName: "content"; variables: { POINT_NUMBER: string; POINT_TITLE: string; POINT_BODY: string; SLIDE_INDEX: string; TOTAL_SLIDES: string } }
-  | { templateName: "cta"; variables: { CTA_HEADLINE: string; CTA_SUBHEAD: string; CTA_BUTTON_TEXT: string; SLIDE_INDEX: string; TOTAL_SLIDES: string } };
+  | { templateName: "cover";   variant?: CarouselVariant; variables: CoverVars }
+  | { templateName: "content"; variant?: CarouselVariant; variables: ContentVars }
+  | { templateName: "cta";     variant?: CarouselVariant; variables: CtaVars };
 
 export type RenderedSlide = {
   slideIndex: number;          // 1-based
@@ -139,14 +164,33 @@ export async function renderCarousel(input: {
   try {
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i];
-      const templatePath = resolveTemplatePath(variant, slide.templateName);
+      // Per-slide variant override (for mixed-media carousels: some slides cinematic, some text-only)
+      const slideVariant: CarouselVariant = slide.variant ?? variant;
+      const templatePath = resolveTemplatePath(slideVariant, slide.templateName);
       const html = fs.readFileSync(templatePath, "utf-8");
 
+      // Resolve variant-specific design tokens (palette, sizing) for this slide
+      const slideBaseVars = slideVariant === variant ? baseVars : commonVariables(config, slideVariant, aspect);
+
       // Content-specific PADDING override (the content template uses a tighter padding)
-      const slideVars: Record<string, string | number> = { ...baseVars, ...slide.variables };
+      const slideVars: Record<string, string | number> = { ...slideBaseVars, ...slide.variables };
       if (slide.templateName === "content") {
         const widthMin = Math.min(dims.width, dims.height);
-        slideVars.PADDING = Math.round((widthMin * config.content.paddingPercent) / 100);
+        const variantContent = config.variants?.[slideVariant]?.content ?? config.content;
+        slideVars.PADDING = Math.round((widthMin * (variantContent.paddingPercent ?? config.content.paddingPercent)) / 100);
+      }
+
+      // BG_IMAGE_URL: a local absolute path can't be loaded from a `data:` origin, so we
+      // inline the image as base64. Remote http(s) URLs pass through and Playwright fetches them.
+      if (typeof slideVars.BG_IMAGE_URL === "string" && slideVars.BG_IMAGE_URL.startsWith("/")) {
+        try {
+          const bytes = fs.readFileSync(slideVars.BG_IMAGE_URL);
+          const mime = slideVars.BG_IMAGE_URL.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+          slideVars.BG_IMAGE_URL = `data:${mime};base64,${bytes.toString("base64")}`;
+        } catch (err) {
+          console.warn(`[carousel-renderer] could not inline bg image ${slideVars.BG_IMAGE_URL}:`, err);
+          slideVars.BG_IMAGE_URL = "";
+        }
       }
 
       const rendered = applyVariables(html, slideVars);
@@ -154,7 +198,7 @@ export async function renderCarousel(input: {
       try {
         // data URL is the fastest path (no disk write needed). base64 encoding handles unicode safely.
         const dataUrl = `data:text/html;base64,${Buffer.from(rendered, "utf-8").toString("base64")}`;
-        await page.goto(dataUrl, { waitUntil: "networkidle", timeout: 15_000 });
+        await page.goto(dataUrl, { waitUntil: "networkidle", timeout: 30_000 });
         // Wait a beat for web-fonts to settle (Google Fonts @import).
         await page.waitForTimeout(400);
 

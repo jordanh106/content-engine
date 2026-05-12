@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: {{BG_DARK}};
+  }
+  .cover {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background-image: url('{{BG_IMAGE_URL}}');
+    background-size: cover;
+    background-position: center;
+    background-color: {{BG_DARK}};
+  }
+  .grain {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.06) 0%, transparent 40%),
+      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.25) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(0,0,0,0.55) 0%,
+      rgba(0,0,0,0.20) 22%,
+      rgba(0,0,0,0.55) 60%,
+      rgba(0,0,0,0.88) 100%
+    );
+  }
+  .frame {
+    position: absolute;
+    inset: calc({{PADDING}}px * 1.0);
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+  }
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.22);
+  }
+  .masthead-brand {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.86);
+  }
+  .masthead-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.6);
+  }
+  .body-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+  }
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .eyebrow-mark {
+    width: 12px;
+    height: 12px;
+    background: {{ACCENT}};
+    border-radius: 2px;
+    box-shadow: 0 0 0 4px rgba(225,29,72,0.18);
+  }
+  .eyebrow-text {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{HEADLINE_SIZE}}px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 0.96;
+    letter-spacing: -0.025em;
+    max-width: 96%;
+    text-shadow:
+      0 2px 12px rgba(0,0,0,0.55),
+      0 4px 28px rgba(0,0,0,0.4);
+  }
+  .subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.42;
+    margin-top: 26px;
+    max-width: 86%;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 22px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: {{ACCENT}};
+    border-radius: 999px;
+    width: calc((1 / {{TOTAL_SLIDES}}) * 100%);
+    box-shadow: 0 0 12px rgba(225,29,72,0.55);
+  }
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+  }
+  .footer-label {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.62);
+  }
+  .swipe-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: {{ACCENT}};
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 999px;
+    box-shadow: 0 12px 32px rgba(225,29,72,0.34);
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="grain"></div>
+  <div class="veil"></div>
+  <div class="frame">
+    <div class="masthead">
+      <div class="masthead-brand">Collective Family Chiropractic</div>
+      <div class="masthead-counter">01 / {{TOTAL_SLIDES}}</div>
+    </div>
+    <div class="body-zone">
+      <div class="eyebrow-row">
+        <div class="eyebrow-mark"></div>
+        <div class="eyebrow-text">Did you know</div>
+      </div>
+      <div class="headline">{{HOOK_LINE}}</div>
+      <div class="subhead">{{SUBTITLE}}</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="footer-row">
+      <div class="footer-label">Issue No. 01</div>
+      <div class="swipe-pill"><span>Swipe to read</span><span>&rarr;</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

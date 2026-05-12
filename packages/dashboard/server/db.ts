@@ -887,3 +887,5 @@ CREATE INDEX IF NOT EXISTS idx_project_outputs_project ON project_outputs(projec
 CREATE INDEX IF NOT EXISTS idx_project_refs_project ON project_refs(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_log_project_created ON project_generation_log(project_id, created_at DESC);
 `);
+
+addColumnIfMissing("projects", "visual_system_json", "TEXT");

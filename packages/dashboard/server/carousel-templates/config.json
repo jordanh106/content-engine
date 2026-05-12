@@ -54,6 +54,36 @@
     "overlayOpacity": 0.7
   },
   "variants": {
+    "cinematic": {
+      "brand": {
+        "primary": "#0d9488",
+        "accent": "#e11d48",
+        "background": "#faf6ed",
+        "backgroundDark": "#0a0a0a",
+        "text": "#ffffff",
+        "textLight": "#ffffff",
+        "muted": "rgba(255,255,255,0.6)"
+      },
+      "cover": {
+        "headlineFontSize": 96,
+        "subheadFontSize": 26,
+        "paddingPercent": 7
+      },
+      "content": {
+        "numberFontSize": 180,
+        "titleFontSize": 44,
+        "bodyFontSize": 24,
+        "paddingPercent": 7
+      },
+      "cta": {
+        "headlineFontSize": 68,
+        "subheadFontSize": 24,
+        "buttonFontSize": 18,
+        "buttonPaddingH": 56,
+        "buttonPaddingV": 22,
+        "buttonBorderRadius": 999
+      }
+    },
     "editorial": {
       "brand": {
         "primary": "#0d9488",
