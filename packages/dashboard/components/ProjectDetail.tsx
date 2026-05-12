@@ -72,6 +72,17 @@ export const ProjectDetail: React.FC<Props> = ({
     refetchInterval: (data) => (data?.state?.data?.project?.status === "generating" ? 5_000 : 30_000),
   });
 
+  // Shared cache hit with ProjectGenerationTimeline: poll the log so we can also
+  // render placeholder tiles in the Outputs panel for stages that haven't shipped output yet.
+  const isGeneratingForLog = data?.project?.status === "generating";
+  const { data: logData } = useQuery<{ log: Array<{ stage: string; status: "queued" | "running" | "completed" | "failed" }> }>({
+    queryKey: ["project-log", projectId],
+    queryFn: () => fetch(`/api/projects/${projectId}/generation-log`).then((r) => r.json()),
+    refetchInterval: isGeneratingForLog ? 2_000 : 30_000,
+    staleTime: 1_000,
+    enabled: !!data?.project,
+  });
+
   const [briefDraft, setBriefDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [activeOutput, setActiveOutput] = useState<ProjectOutput | null>(null);
@@ -158,6 +169,13 @@ export const ProjectDetail: React.FC<Props> = ({
   const steps = computeStepStatuses(project, def);
   const activeStep = activeStepId(steps);
   const isGenerating = project.status === "generating";
+
+  // Placeholder tiles: every queued/running stage that doesn't already have an output
+  const existingLabels = new Set(project.outputs.map((o) => o.label).filter(Boolean));
+  const pendingStages = isGenerating
+    ? (logData?.log ?? [])
+        .filter((r) => (r.status === "queued" || r.status === "running") && !existingLabels.has(r.stage))
+    : [];
 
   return (
     <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-7">
@@ -278,7 +296,7 @@ export const ProjectDetail: React.FC<Props> = ({
             <span className="type-meta">{project.outputs.filter((o) => o.predictedVirality != null).length} scored</span>
           )}
         </div>
-        {project.outputs.length === 0 ? (
+        {project.outputs.length === 0 && pendingStages.length === 0 ? (
           <div className="surface-secondary text-center py-12">
             <Sparkles size={28} className="text-teal-300 mx-auto mb-3" />
             <p className="type-body max-w-md mx-auto">
@@ -293,6 +311,7 @@ export const ProjectDetail: React.FC<Props> = ({
               <OutputTile
                 key={o.id}
                 output={o}
+                projectId={projectId}
                 onClick={() => setActiveOutput(o)}
                 onSendToCanvas={(out) => {
                   if (!out.url) return;
@@ -304,6 +323,13 @@ export const ProjectDetail: React.FC<Props> = ({
                   });
                   onNavigateToCanvas?.();
                 }}
+              />
+            ))}
+            {pendingStages.map((stage) => (
+              <PlaceholderTile
+                key={`pending-${stage.stage}`}
+                stage={stage.stage}
+                status={stage.status as "queued" | "running"}
               />
             ))}
           </div>
@@ -545,7 +571,7 @@ const RefTile: React.FC<{ refItem: ProjectRef; onDelete: () => void }> = ({ refI
   );
 };
 
-const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; onSendToCanvas?: (output: ProjectOutput) => void }> = ({ output, onClick, onSendToCanvas }) => {
+const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; projectId?: string; onSendToCanvas?: (output: ProjectOutput) => void }> = ({ output, onClick, projectId, onSendToCanvas }) => {
   const isVideo = output.kind === "video";
   const isHtml = output.kind === "html";
   const isText = output.kind === "text";
@@ -590,8 +616,73 @@ const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; onSendT
         {output.label ?? output.kind}
       </span>
       <div className="absolute top-1.5 right-1.5">
-        <OutputActionsMenu output={output} onSendToCanvas={onSendToCanvas} />
+        <OutputActionsMenu output={output} projectId={projectId} onSendToCanvas={onSendToCanvas} />
       </div>
+    </div>
+  );
+};
+
+const STAGE_LABEL_FRIENDLY: Record<string, string> = {
+  hero_v1: "Hero still 1",
+  hero_v2: "Hero still 2",
+  hero_v3: "Hero still 3",
+  motion_piece: "Motion piece",
+  social_cutdown: "Social cutdown",
+  landing_page: "Landing page",
+  hook_score: "Hook scoring",
+  shot_1: "Teaching shot 1",
+  shot_2: "Teaching shot 2",
+  shot_3: "Teaching shot 3",
+  shot_4: "Teaching shot 4",
+  hero_motion: "Hero motion",
+  script_draft: "Script draft",
+  scene_1: "Scene 1",
+  scene_2: "Scene 2",
+  scene_3: "Scene 3",
+  hero_clip: "Hero clip",
+  caption_draft: "Caption draft",
+  variant_1: "Themed variant 1",
+  variant_2: "Themed variant 2",
+  variant_3: "Themed variant 3",
+  variant_4: "Variant 4",
+  variant_5: "Variant 5",
+  variant_6: "Variant 6",
+  motion_variant: "Motion variant",
+  hook_variant: "Hook variant",
+  rebuilt_motion: "Rebuilt motion clip",
+  frame_1: "Rotation frame 1",
+  frame_2: "Rotation frame 2",
+  frame_3: "Rotation frame 3",
+  frame_4: "Rotation frame 4",
+  frame_5: "Rotation frame 5",
+  frame_6: "Rotation frame 6",
+  frame_7: "Rotation frame 7",
+  frame_8: "Rotation frame 8",
+  square_1x1: "Square hero",
+  portrait_4x5: "Portrait hero",
+  wide_16x9: "Wide hero",
+  story_9x16: "Story hero",
+};
+
+const PlaceholderTile: React.FC<{ stage: string; status: "queued" | "running" }> = ({ stage, status }) => {
+  const label = STAGE_LABEL_FRIENDLY[stage] ?? stage.replace(/_/g, " ");
+  const isRunning = status === "running";
+  return (
+    <div
+      className={cn(
+        "surface-secondary aspect-[3/4] flex flex-col items-center justify-center text-center p-3 border border-dashed",
+        isRunning ? "border-amber-300 bg-amber-50/30" : "border-slate-200",
+      )}
+    >
+      {isRunning ? (
+        <Loader2 size={20} className="text-amber-500 animate-spin mb-2" />
+      ) : (
+        <Sparkles size={20} className="text-slate-300 mb-2" />
+      )}
+      <p className={cn("text-[12px] font-semibold leading-tight", isRunning ? "text-amber-700" : "text-slate-500")}>
+        {label}
+      </p>
+      <p className="type-meta mt-1">{isRunning ? "Generating…" : "Queued"}</p>
     </div>
   );
 };

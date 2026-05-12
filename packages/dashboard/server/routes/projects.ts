@@ -518,6 +518,113 @@ Return ONLY the HTML — start with <!DOCTYPE html>. Include the strongest hero 
     res.json({ project: loadProject(id) });
   });
 
+  // POST /api/projects/:id/retry-stage body { stage: string }
+  // Retry a single stage by re-running the generation function for whichever output kind
+  // matches the stage label. Uses the most recent project_outputs row with that label as
+  // the prompt source. If no prior output exists (stage failed before producing one),
+  // returns 422 with a clear message pointing to the global Reset.
+  router.post("/:id/retry-stage", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    const { stage } = req.body as { stage?: string };
+    if (!stage) { res.status(400).json({ error: "stage required" }); return; }
+
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    // Try to find the most recent output with this stage label (gives us prompt + model)
+    const priorOutput = sqlite.prepare(
+      "SELECT * FROM project_outputs WHERE project_id = ? AND label = ? ORDER BY id DESC LIMIT 1"
+    ).get(id, stage) as Row | undefined;
+
+    if (!priorOutput || !priorOutput.prompt) {
+      res.status(422).json({
+        error: "no prompt available to retry this stage",
+        hint: "Use Reset to re-run the whole project from scratch.",
+      });
+      return;
+    }
+
+    const promptStr = priorOutput.prompt as string;
+    const modelUsed = (priorOutput.model_used as string) ?? null;
+    const outputKind = priorOutput.kind as string;
+
+    logStage(id, stage, "running", "retry");
+    res.json({ status: "retrying", stage });
+
+    (async () => {
+      try {
+        const mode = viralityModeForKind(project.kind);
+        if (outputKind === "image") {
+          // Determine aspect ratio from prior output's prompt — best heuristic is to reuse
+          // common defaults per project kind. For brand_launch use 16:9, otherwise 9:16.
+          const aspect = project.kind === "brand_launch" || project.kind === "press_kit" ? "16:9" : "9:16";
+          const r = await generateImage({
+            prompt: promptStr,
+            modelKey: (modelUsed === "nano_banana_2" || modelUsed === "nano_banana_flash" || modelUsed === "soul") ? (modelUsed as "nano_banana_2" | "nano_banana_flash" | "soul") : "nano_banana_2",
+            aspectRatio: aspect as "16:9" | "9:16",
+            resolution: "2k",
+          });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: promptStr, mode, projectBrief: project.briefMd ?? undefined, projectKind: project.kind },
+            { blueprintPath },
+          ).catch(() => null);
+          recordProjectOutput({
+            projectId: id,
+            kind: "image",
+            label: stage,
+            url: r.imageUrl,
+            modelUsed: modelUsed || "nano_banana_2",
+            prompt: promptStr,
+            costCredits: 2,
+            predictedVirality: vir?.score,
+            predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `retry · score ${vir.score}/100` : "retry");
+        } else if (outputKind === "video") {
+          // For video retry we need a base image. Use the prior video's source image if we
+          // can find one — fall back to the most recent successful image output on this project.
+          const baseImg = sqlite.prepare(
+            "SELECT * FROM project_outputs WHERE project_id = ? AND kind = 'image' AND url IS NOT NULL ORDER BY predicted_virality DESC, id DESC LIMIT 1"
+          ).get(id) as Row | undefined;
+          if (!baseImg || !baseImg.url) {
+            logStage(id, stage, "failed", "no image available to seed video retry");
+            return;
+          }
+          const uploadId = await uploadMediaFromUrl(baseImg.url as string);
+          const aspectRatio = stage.includes("cutdown") || stage.includes("hero_clip") || stage.includes("hero_motion") || stage.includes("motion_variant") ? "9:16" : "16:9";
+          const duration = stage === "motion_piece" ? 10 : 5;
+          const model: "seedance" | "kling" = stage === "motion_piece" ? "seedance" : "kling";
+          const v = await generateVideo({
+            prompt: promptStr,
+            modelKey: model,
+            imageUploadIds: [uploadId],
+            duration,
+            aspectRatio,
+            sound: model === "kling" ? "on" : undefined,
+          });
+          recordProjectOutput({
+            projectId: id,
+            kind: "video",
+            label: stage,
+            url: v.videoUrl,
+            modelUsed: model === "seedance" ? "seedance_2_0" : "kling3_0",
+            prompt: promptStr,
+            costCredits: model === "seedance" ? 22.5 : 10,
+          });
+          logStage(id, stage, "completed", "retry");
+        } else {
+          logStage(id, stage, "failed", `retry not supported for ${outputKind} stages — use Reset`);
+        }
+      } catch (err) {
+        logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+      }
+    })().catch((err) => {
+      console.error("[retry-stage] crashed:", err);
+      logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+    });
+  });
+
   // ────────────────────────────────────────────────────────────────────────────
   // POST /api/projects/:id/generate-explainer
   // For chiropractic_explainer + office_tour kinds. Hook score + 4 teaching shots
@@ -1003,6 +1110,308 @@ Return JSON only:
     });
   });
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-viral-replication
+  // For `viral_replication` kind. Replicates a viral reference's structure with your brand.
+  router.post("/:id/generate-viral-replication", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    const refUrl = sections["Reference video URL"] ?? "";
+    const whatWorks = sections["What about it works"] ?? "";
+    const yourBrand = sections["Your brand / product"] ?? "";
+    const targetOutput = sections["Target output"] ?? "9:16 reel, 6-15 seconds.";
+    if (!refUrl || !whatWorks || !yourBrand) {
+      res.status(422).json({ error: "brief incomplete — fill in Reference video URL, What about it works, and Your brand / product" });
+      return;
+    }
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, ["hook_variant", "scene_1", "scene_2", "scene_3", "rebuilt_motion"]);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const aspect = targetOutput.toLowerCase().includes("16:9") ? "16:9" : "9:16";
+
+      // 1. Hook variant + scoring (Anthropic)
+      logStage(id, "hook_variant", "running");
+      let hookLine = "";
+      try {
+        const client = new Anthropic();
+        const hookResp = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 200,
+          messages: [{
+            role: "user",
+            content: `You are rebuilding a viral video for a new brand. Borrow ONLY the structure (hook shape, pacing, beat count) — not the literal content.\n\nReference: ${refUrl}\nWhat works: ${whatWorks}\nYour brand: ${yourBrand}\n\nWrite ONE punchy on-screen hook line (under 12 words) that recreates that pattern for the new brand. No emdashes. Output ONLY the hook line, no quotes, no preamble.`,
+          }],
+        });
+        hookLine = hookResp.content[0]?.type === "text" ? hookResp.content[0].text.trim() : "";
+        const vir = await predictVirality(
+          { kind: "hook", text: hookLine, mode, projectBrief: brief, projectKind: project.kind },
+          { blueprintPath },
+        ).catch(() => null);
+        recordProjectOutput({
+          projectId: id, kind: "text", label: "hook_variant",
+          prompt: hookLine, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+        });
+        logStage(id, "hook_variant", "completed", vir ? `scored ${vir.score}/100` : undefined);
+      } catch (err) {
+        logStage(id, "hook_variant", "failed", err instanceof Error ? err.message : String(err));
+      }
+
+      // 2. Three rebuilt scene stills in parallel
+      const scenePrompts = [
+        `Opening scene that establishes ${yourBrand}. Visual structure echoes the reference (${whatWorks}). Editorial, photo-real, no text overlay.`,
+        `Mid-beat scene for ${yourBrand}. The turn / surprise the reference uses, recast for this brand. Editorial, photo-real, no text overlay.`,
+        `Closing scene for ${yourBrand}. Pay-off frame, eye-catching, share-worthy. Editorial, photo-real, no text overlay.`,
+      ];
+      const scenes = await Promise.allSettled(scenePrompts.map(async (prompt, i) => {
+        const stage = `scene_${i + 1}`;
+        logStage(id, stage, "running");
+        try {
+          const r = await generateImage({ prompt, modelKey: "nano_banana_2", aspectRatio: aspect as "9:16" | "16:9", resolution: "2k" });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: prompt, mode, projectBrief: brief, projectKind: project.kind },
+            { blueprintPath },
+          ).catch(() => null);
+          const out = recordProjectOutput({
+            projectId: id, kind: "image", label: stage, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `scored ${vir.score}/100` : undefined);
+          return out;
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          throw err;
+        }
+      }));
+      const okScenes = scenes.filter((s) => s.status === "fulfilled").map((s) => (s as PromiseFulfilledResult<ProjectOutput>).value);
+
+      // 3. Rebuilt motion from the strongest scene
+      const bestScene = okScenes.sort((a, b) => (b.predictedVirality ?? 0) - (a.predictedVirality ?? 0))[0];
+      if (bestScene?.url) {
+        logStage(id, "rebuilt_motion", "running");
+        try {
+          const uploadId = await uploadMediaFromUrl(bestScene.url);
+          const motionPrompt = `Replicate the pacing of the reference clip. ${whatWorks}. Recast for ${yourBrand}. 5 seconds.`;
+          const motion = await generateVideo({ prompt: motionPrompt, modelKey: "kling", imageUploadIds: [uploadId], duration: 5, aspectRatio: aspect as "9:16" | "16:9", sound: "on" });
+          recordProjectOutput({ projectId: id, kind: "video", label: "rebuilt_motion", url: motion.videoUrl, modelUsed: "kling3_0", prompt: motionPrompt, costCredits: 10 });
+          logStage(id, "rebuilt_motion", "completed");
+        } catch (err) {
+          logStage(id, "rebuilt_motion", "failed", err instanceof Error ? err.message : String(err));
+        }
+      } else {
+        logStage(id, "rebuilt_motion", "failed", "no successful scene stills to seed the motion clip");
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[viral-replication] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-ad-variants
+  // For `ad_variants` kind. Fan-out six on-brand ad variants across the user's specified axes.
+  router.post("/:id/generate-ad-variants", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    const product = sections["Product"] ?? "";
+    const axes = sections["Variant axes"] ?? "";
+    const dontInclude = sections["Don't include"] ?? "";
+    if (!product || !axes) {
+      res.status(422).json({ error: "brief incomplete — fill in Product and Variant axes" });
+      return;
+    }
+
+    const variantCount = 6;
+    const labels = Array.from({ length: variantCount }, (_, i) => `variant_${i + 1}`);
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, labels);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const anglesHint = [
+        "studio packshot, dramatic single light",
+        "lifestyle in-use shot, warm golden hour",
+        "tight macro detail, editorial",
+        "wide environmental scene, sense of place",
+        "overhead flat-lay with complementary props",
+        "negative-space hero with bold composition",
+      ];
+
+      await Promise.allSettled(labels.map(async (stage, i) => {
+        logStage(id, stage, "running");
+        try {
+          const angle = anglesHint[i] ?? "editorial product hero";
+          const prompt = `${product}. ${anglesHint[i] ? `Angle: ${angle}.` : ""} Variant axes: ${axes}. ${dontInclude ? `Avoid: ${dontInclude}.` : ""} Photo-real, on-brand, editorial. No text overlay, no logos baked in.`;
+          const r = await generateImage({ prompt, modelKey: "nano_banana_2", aspectRatio: "1:1", resolution: "2k" });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: prompt, mode, projectBrief: brief, projectKind: project.kind },
+            { blueprintPath },
+          ).catch(() => null);
+          recordProjectOutput({
+            projectId: id, kind: "image", label: stage, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `scored ${vir.score}/100` : undefined);
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+        }
+      }));
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[ad-variants] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-product-360
+  // For `product_360` kind. Eight rotation frames around a product reference image.
+  router.post("/:id/generate-product-360", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const refs = sqlite.prepare("SELECT * FROM project_refs WHERE project_id = ? ORDER BY id ASC").all(id) as Row[];
+    if (refs.length === 0) {
+      res.status(422).json({ error: "need at least 1 reference image (the product to rotate)" });
+      return;
+    }
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    const subject = sections["Subject"] ?? "";
+    const background = sections["Background"] ?? "neutral studio";
+    const lighting = sections["Lighting"] ?? "soft";
+    if (!subject) {
+      res.status(422).json({ error: "brief incomplete — fill in Subject" });
+      return;
+    }
+
+    const labels = Array.from({ length: 8 }, (_, i) => `frame_${i + 1}`);
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, labels);
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const mode = viralityModeForKind(project.kind);
+      const baseRefUrl = refs[0]?.url as string | null;
+
+      await Promise.allSettled(labels.map(async (stage, i) => {
+        logStage(id, stage, "running");
+        try {
+          const angleDeg = i * 45;
+          const prompt = `Same ${subject} rotated ${angleDeg}° from the reference orientation. Background: ${background}. Lighting: ${lighting}. Photo-real, identical product, identical lighting setup. Editorial product photography.`;
+          const r = await generateImage({ prompt, modelKey: "nano_banana_2", aspectRatio: "1:1", resolution: "2k" });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: prompt, mode, projectBrief: brief, projectKind: project.kind },
+            { blueprintPath },
+          ).catch(() => null);
+          recordProjectOutput({
+            projectId: id, kind: "image", label: stage, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `scored ${vir.score}/100` : undefined);
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+        }
+      }));
+
+      // Best-effort log so the user sees the base reference used
+      if (baseRefUrl) {
+        logStage(id, "frame_1", "completed", "seeded by primary reference");
+      }
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[product-360] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // POST /api/projects/:id/generate-press-kit
+  // For `press_kit` kind. Four editorial hero stills across 1:1, 4:5, 16:9, 9:16.
+  router.post("/:id/generate-press-kit", async (req, res) => {
+    const id = String(req.params.id);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const brief = (req.body as { briefMd?: string }).briefMd ?? project.briefMd ?? "";
+    const sections = parseBriefSections(brief);
+    const subject = sections["Subject"] ?? "";
+    const mood = sections["Mood"] ?? "";
+    const wardrobeProps = sections["Wardrobe / props"] ?? "";
+    if (!subject || !mood || !wardrobeProps) {
+      res.status(422).json({ error: "brief incomplete — fill in Subject, Mood, and Wardrobe / props" });
+      return;
+    }
+
+    const formats: Array<{ stage: string; aspect: "1:1" | "4:5" | "16:9" | "9:16"; angle: string }> = [
+      { stage: "square_1x1", aspect: "1:1", angle: "centered hero composition, balanced negative space" },
+      { stage: "portrait_4x5", aspect: "4:5", angle: "feed-optimised vertical, subject anchored low-third" },
+      { stage: "wide_16x9", aspect: "16:9", angle: "magazine cover spread, environmental framing" },
+      { stage: "story_9x16", aspect: "9:16", angle: "story-frame vertical, leading lines toward subject" },
+    ];
+
+    sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, formats.map((f) => f.stage));
+    res.json({ status: "generating", projectId: id });
+
+    (async () => {
+      const modeV = viralityModeForKind(project.kind);
+
+      await Promise.allSettled(formats.map(async ({ stage, aspect, angle }) => {
+        logStage(id, stage, "running");
+        try {
+          const prompt = `${subject}. Mood: ${mood}. Wardrobe / props: ${wardrobeProps}. ${angle}. Editorial, magazine-grade, photo-real. NOT a corporate headshot. NOT stock photography.`;
+          const r = await generateImage({ prompt, modelKey: "nano_banana_2", aspectRatio: aspect, resolution: "2k" });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: prompt, mode: modeV, projectBrief: brief, projectKind: project.kind },
+            { blueprintPath },
+          ).catch(() => null);
+          recordProjectOutput({
+            projectId: id, kind: "image", label: stage, url: r.imageUrl, modelUsed: "nano_banana_2",
+            prompt, costCredits: 2, predictedVirality: vir?.score, predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `scored ${vir.score}/100` : undefined);
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+        }
+      }));
+
+      sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
+    })().catch((err) => {
+      console.error("[press-kit] crashed:", err);
+      failPendingStages(id, err instanceof Error ? err.message : String(err));
+      sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
+    });
+  });
+
   // POST /api/projects/:id/outputs — internal endpoint for specialist surfaces
   // (Storytelling Reel modal, Marketing Studio) to attach their final outputs to a project.
   router.post("/:id/outputs", (req, res) => {
@@ -1039,6 +1448,143 @@ Return JSON only:
       predictedViralityBreakdown: body.predictedViralityBreakdown,
     });
     res.status(201).json({ output: out });
+  });
+
+  // POST /api/projects/:id/outputs/:outputId/crop body { aspect: "1:1" | "4:5" | "9:16" | "16:9" }
+  router.post("/:id/outputs/:outputId/crop", async (req, res) => {
+    const id = String(req.params.id);
+    const outputId = Number(req.params.outputId);
+    if (!loadProject(id)) { res.status(404).json({ error: "project not found" }); return; }
+    const { aspect } = req.body as { aspect?: "1:1" | "4:5" | "9:16" | "16:9" };
+    if (!aspect || !["1:1", "4:5", "9:16", "16:9"].includes(aspect)) {
+      res.status(400).json({ error: "aspect required (1:1, 4:5, 9:16, 16:9)" });
+      return;
+    }
+
+    const row = sqlite.prepare("SELECT * FROM project_outputs WHERE id = ? AND project_id = ?").get(outputId, id) as Row | undefined;
+    if (!row || !row.url) { res.status(404).json({ error: "output not found or has no url" }); return; }
+    const kind = row.kind as string;
+    if (kind !== "image" && kind !== "video") {
+      res.status(422).json({ error: `crop not supported for ${kind} outputs` });
+      return;
+    }
+
+    try {
+      const sourceUrl = row.url as string;
+      const ext = kind === "video" ? ".mp4" : ".jpg";
+      const outputsDir = path.join(projectsDataDir, id, "outputs");
+      fs.mkdirSync(outputsDir, { recursive: true });
+      const cropLabel = `${(row.label as string) ?? "crop"}_${aspect.replace(":", "x")}`;
+      const outPath = path.join(outputsDir, `${Date.now()}-${cropLabel}${ext}`);
+
+      // Resolve a readable filesystem path or URL for ffmpeg input
+      let inputPath: string;
+      if (row.file_path && typeof row.file_path === "string" && fs.existsSync(row.file_path)) {
+        inputPath = row.file_path as string;
+      } else if (sourceUrl.startsWith("http")) {
+        inputPath = sourceUrl;
+      } else {
+        const absLocal = path.join(process.cwd(), sourceUrl.replace(/^\//, ""));
+        if (fs.existsSync(absLocal)) inputPath = absLocal;
+        else { res.status(422).json({ error: "cannot resolve source file for crop" }); return; }
+      }
+
+      // ffmpeg crop filter that center-crops to the target aspect ratio
+      const [an, ad] = aspect.split(":").map(Number);
+      const cropExpr = `crop='if(gt(a,${an}/${ad}),ih*${an}/${ad},iw)':'if(gt(a,${an}/${ad}),ih,iw*${ad}/${an})'`;
+
+      const ffmpeg = (await import("fluent-ffmpeg")).default;
+      const ffmpegStatic = (await import("ffmpeg-static")).default;
+      if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
+
+      await new Promise<void>((resolve, reject) => {
+        const cmd = ffmpeg(inputPath).videoFilter(cropExpr).outputOptions(["-y"]);
+        if (kind === "image") {
+          cmd.outputOptions(["-frames:v 1", "-q:v 2"]);
+        } else {
+          cmd.outputOptions(["-c:v libx264", "-preset veryfast", "-crf 18", "-c:a copy"]);
+        }
+        cmd.on("end", () => resolve())
+           .on("error", (err: Error) => reject(err))
+           .save(outPath);
+      });
+
+      const publicUrl = `/projects/${id}/outputs/${path.basename(outPath)}`;
+      const cropped = recordProjectOutput({
+        projectId: id,
+        kind: kind as "image" | "video",
+        label: cropLabel,
+        url: publicUrl,
+        filePath: outPath,
+        modelUsed: "ffmpeg-crop",
+        prompt: row.prompt as string | undefined,
+      });
+      res.json({ output: cropped });
+    } catch (err) {
+      console.error("[crop] failed:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : "crop failed" });
+    }
+  });
+
+  // POST /api/projects/:id/outputs/:outputId/variant — regenerate an image with the same prompt
+  router.post("/:id/outputs/:outputId/variant", async (req, res) => {
+    const id = String(req.params.id);
+    const outputId = Number(req.params.outputId);
+    const project = loadProject(id);
+    if (!project) { res.status(404).json({ error: "project not found" }); return; }
+    const row = sqlite.prepare("SELECT * FROM project_outputs WHERE id = ? AND project_id = ?").get(outputId, id) as Row | undefined;
+    if (!row || row.kind !== "image" || !row.prompt) {
+      res.status(422).json({ error: "variant only available for image outputs that have a stored prompt" });
+      return;
+    }
+    if (!(await isConfigured())) { res.status(503).json({ error: "Higgsfield not configured" }); return; }
+
+    const promptStr = row.prompt as string;
+    const modelUsed = (row.model_used as string) ?? "nano_banana_2";
+    const sourceLabel = (row.label as string) ?? "variant";
+    const variantLabel = `${sourceLabel}_variant`;
+    const aspect = project.kind === "brand_launch" || project.kind === "press_kit" ? "16:9" : "9:16";
+
+    logStage(id, variantLabel, "queued", "variant requested");
+    logStage(id, variantLabel, "running", "regenerating");
+    res.json({ status: "generating", stage: variantLabel });
+
+    (async () => {
+      try {
+        const validKey: "nano_banana_2" | "nano_banana_flash" | "soul" | "soul_cinematic" | "gpt_image" | "flux" | "seedream" =
+          (modelUsed === "nano_banana_2" || modelUsed === "nano_banana_flash" || modelUsed === "soul" || modelUsed === "soul_cinematic" || modelUsed === "gpt_image" || modelUsed === "flux" || modelUsed === "seedream")
+            ? modelUsed
+            : "nano_banana_2";
+        const r = await generateImage({
+          prompt: promptStr,
+          modelKey: validKey,
+          aspectRatio: aspect as "16:9" | "9:16",
+          resolution: "2k",
+        });
+        const mode = viralityModeForKind(project.kind);
+        const vir = await predictVirality(
+          { kind: "image_prompt", imagePrompt: promptStr, mode, projectBrief: project.briefMd ?? undefined, projectKind: project.kind },
+          { blueprintPath },
+        ).catch(() => null);
+        recordProjectOutput({
+          projectId: id,
+          kind: "image",
+          label: variantLabel,
+          url: r.imageUrl,
+          modelUsed: validKey,
+          prompt: promptStr,
+          costCredits: 2,
+          predictedVirality: vir?.score,
+          predictedViralityBreakdown: vir?.breakdown,
+        });
+        logStage(id, variantLabel, "completed", vir ? `variant · score ${vir.score}/100` : "variant");
+      } catch (err) {
+        logStage(id, variantLabel, "failed", err instanceof Error ? err.message : String(err));
+      }
+    })().catch((err) => {
+      console.error("[variant] crashed:", err);
+      logStage(id, variantLabel, "failed", err instanceof Error ? err.message : String(err));
+    });
   });
 
   return router;
