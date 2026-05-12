@@ -53,7 +53,7 @@ type SearchResult = {
 const SEARCH_ICONS: Record<string, JSX.Element> = {
   video: <FileText size={14} className="text-teal-500" />,
   idea: <Lightbulb size={14} className="text-amber-500" />,
-  creator: <User size={14} className="text-violet-500" />,
+  creator: <User size={14} className="text-teal-600" />,
   hook: <Hash size={14} className="text-emerald-500" />,
   calendar: <Calendar size={14} className="text-sky-500" />,
   discover: <Compass size={14} className="text-rose-500" />,

@@ -37,7 +37,7 @@ const FORMAT_COLORS: Record<string, string> = {
   B: "bg-emerald-100 text-emerald-800 border-emerald-200",
   C: "bg-sky-100 text-sky-800 border-sky-200",
   D: "bg-rose-100 text-rose-800 border-rose-200",
-  E: "bg-violet-100 text-violet-800 border-violet-200",
+  E: "bg-teal-100 text-teal-800 border-teal-200",
   F: "bg-orange-100 text-orange-800 border-orange-200",
   G: "bg-pink-100 text-pink-800 border-pink-200",
 };
@@ -325,12 +325,12 @@ const ScriptDraftPanel: React.FC<{
       { label: "Setup", color: "bg-slate-100 text-slate-600 border-slate-200" },
       { label: "Rehook", color: "bg-sky-100 text-sky-700 border-sky-200" },
       { label: "Build", color: "bg-slate-100 text-slate-600 border-slate-200" },
-      { label: "Final Hook", color: "bg-violet-100 text-violet-700 border-violet-200" },
+      { label: "Final Hook", color: "bg-teal-100 text-teal-700 border-teal-200" },
     ];
 
     return (
-      <div className="mt-3 p-3 bg-violet-50 border border-violet-200 rounded-xl space-y-2.5 w-full">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500">Script Draft</p>
+      <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2.5 w-full">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600">Script Draft</p>
         <p className="text-sm font-bold italic text-slate-800">"{draft.hookLine}"</p>
         <div className="space-y-1.5">
           {draft.keyPoints.map((kp, i) => {
@@ -351,7 +351,7 @@ const ScriptDraftPanel: React.FC<{
         {/* Script Structure */}
         <FeatureHint id="script-structure" content={FEATURE_HINTS["script-structure"].content} side="bottom">
         <details className="group">
-          <summary className="text-[10px] font-bold text-violet-500 cursor-pointer list-none flex items-center gap-1 select-none">
+          <summary className="text-[10px] font-bold text-teal-600 cursor-pointer list-none flex items-center gap-1 select-none">
             <ChevronDown size={10} className="group-open:rotate-180 transition-transform" />
             Script Structure
           </summary>
@@ -386,7 +386,7 @@ const ScriptDraftPanel: React.FC<{
             </FeatureHint>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-violet-700 transition-colors"
             >
               {copied ? <Check size={9} /> : <Copy size={9} />}
               {copied ? "Copied!" : "Copy Script"}
@@ -414,8 +414,8 @@ const ScriptDraftPanel: React.FC<{
               className={cn(
                 "flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold border transition-colors text-center",
                 scriptMode === m.id
-                  ? "bg-violet-600 text-white border-violet-600"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-violet-400 hover:text-violet-600"
+                  ? "bg-teal-600 text-white border-violet-600"
+                  : "bg-white text-slate-500 border-slate-200 hover:border-violet-400 hover:text-teal-700"
               )}
             >
               {m.label}
@@ -446,7 +446,7 @@ const ScriptDraftPanel: React.FC<{
           <button
             onClick={() => handleWriteScript(scriptMode)}
             disabled={(scriptMode === "finisher" && !rawNotes.trim()) || (scriptMode === "fixer" && !roughDraft.trim())}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <FileText size={10} />
             Generate
@@ -462,7 +462,7 @@ const ScriptDraftPanel: React.FC<{
   return (
     <button
       onClick={() => setShowModeSelect(true)}
-      className="flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-800 transition-colors"
+      className="flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-800 transition-colors"
     >
       <FileText size={10} />
       Write Script
@@ -1264,7 +1264,7 @@ type IdeaLabProps = {
 
 const AVATAR_COLOR_MAP: Record<string, string> = {
   teal: "bg-teal-600",
-  violet: "bg-violet-600",
+  violet: "bg-teal-600",
   amber: "bg-amber-500",
   rose: "bg-rose-500",
   sky: "bg-sky-500",
@@ -1305,8 +1305,8 @@ export const IdeaLab: React.FC<IdeaLabProps> = ({ onClose, onIdeaAdded, existing
       label: "Guide Me",
       tagline: "Shape a loose idea",
       description: "Describe a feeling, something you noticed, or a vague notion. I will ask one question at a time to help you shape it into a production-ready concept.",
-      color: "border-violet-200 hover:border-violet-400 hover:bg-violet-50",
-      activeColor: "border-violet-500 bg-violet-50",
+      color: "border-teal-200 hover:border-violet-400 hover:bg-teal-50",
+      activeColor: "border-violet-500 bg-teal-50",
     },
     {
       id: "quick",

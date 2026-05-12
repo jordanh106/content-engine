@@ -759,3 +759,71 @@ const progressCount = sqlite.prepare("SELECT COUNT(*) as count FROM creator_prog
 if (progressCount.count === 0) {
   sqlite.prepare("INSERT INTO creator_progress (level, level_name, xp) VALUES (1, 'Observer', 0)").run();
 }
+
+// Higgsfield Soul Characters: trained character refs with auto-inject support
+sqlite.exec(`CREATE TABLE IF NOT EXISTS higgsfield_characters (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  soul_id TEXT NOT NULL UNIQUE,
+  training_image_ids TEXT,
+  thumbnail_url TEXT,
+  status TEXT NOT NULL DEFAULT 'training',
+  active INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// Storytelling Reel Engine: reel manifests + per-shot rows + reroll audit
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS storytelling_reels (
+  reel_id TEXT PRIMARY KEY,
+  topic TEXT NOT NULL,
+  title TEXT,
+  style TEXT NOT NULL,
+  tier TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'scripting',
+  total_duration_sec INTEGER NOT NULL,
+  soul_character_id TEXT,
+  voice_id TEXT,
+  voiceover_url TEXT,
+  voiceover_duration_sec REAL,
+  voiceover_provider TEXT,
+  music_url TEXT,
+  music_duration_sec REAL,
+  captions_srt TEXT,
+  final_mp4_url TEXT,
+  alternate_hooks_json TEXT,
+  cost_credits REAL DEFAULT 0,
+  cost_breakdown_json TEXT,
+  manifest_json TEXT,
+  source_text TEXT,
+  source_urls_json TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS storytelling_shots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reel_id TEXT NOT NULL REFERENCES storytelling_reels(reel_id) ON DELETE CASCADE,
+  shot_index INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  image_prompt TEXT NOT NULL,
+  motion_prompt TEXT NOT NULL,
+  image_url TEXT,
+  video_url TEXT,
+  start_sec REAL NOT NULL DEFAULT 0,
+  end_sec REAL NOT NULL DEFAULT 0,
+  sfx_beat TEXT,
+  UNIQUE(reel_id, shot_index)
+);
+
+CREATE TABLE IF NOT EXISTS storytelling_rerolls (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reel_id TEXT NOT NULL,
+  shot_index INTEGER NOT NULL,
+  reroll_type TEXT NOT NULL,
+  previous_value TEXT,
+  new_value TEXT,
+  credits_spent REAL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+`);

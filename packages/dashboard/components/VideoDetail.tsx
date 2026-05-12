@@ -34,6 +34,11 @@ import {
   suggestCameraMovement,
 } from "../shared/production-knowledge.js";
 import { CarouselsTab } from "./CarouselsTab.js";
+import { ComplianceBadge } from "./ui/ComplianceBadge.js";
+import { HiggsfieldThumbnailPack } from "./ui/HiggsfieldThumbnailPack.js";
+import { HiggsfieldCreditPill } from "./ui/HiggsfieldPreflight.js";
+import { HiggsfieldMarketingStudio } from "./ui/HiggsfieldMarketingStudio.js";
+import { HiggsfieldCharacterChip, HiggsfieldCharactersPanel } from "./ui/HiggsfieldCharacters.js";
 
 type VideoDetailProps = {
   code: string;
@@ -200,7 +205,7 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                 <h2 className="text-lg font-serif font-bold text-themed leading-snug">
                   {video.title}
                 </h2>
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
                   <FormatBadge format={video.format} />
                   <AudienceBadge
                     audience={video.audience}
@@ -209,6 +214,18 @@ export const VideoDetail: React.FC<VideoDetailProps> = ({ code, onClose }) => {
                   <span className="text-[10px] font-bold text-themed-muted uppercase tracking-wider px-2 py-0.5">
                     {video.duration}s
                   </span>
+                  <HiggsfieldThumbnailPack
+                    title={video.title}
+                    hookSpoken={video.script?.split("\n").find((l) => l.trim().length > 0) || undefined}
+                    audience={video.audienceLabel}
+                    format={video.formatName}
+                  />
+                  <HiggsfieldMarketingStudio
+                    title={video.title}
+                    defaultPrompt={video.title}
+                  />
+                  <VideoDetailCharacterChip />
+                  <HiggsfieldCreditPill />
                 </div>
               </>
             )}
@@ -655,6 +672,13 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               <Check size={10} /> Saved
             </span>
           )}
+          <ComplianceBadge
+            script={displayScript}
+            format={video.format}
+            duration={video.duration}
+            audience={video.audience}
+            compact
+          />
         </div>
         <div className="flex items-center gap-2">
           {!editing ? (
@@ -667,7 +691,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
                 Edit
               </button>
               <div className="relative" onMouseEnter={handleAdaptEnter} onMouseLeave={handleAdaptLeave}>
-                <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors">
+                <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors">
                   <Wand2 size={10} />
                   Adapt
                 </button>
@@ -693,7 +717,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               <button
                 onClick={() => setRefineOpen(!refineOpen)}
                 disabled={refineMutation.isPending}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors"
               >
                 {refineMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                 AI Refine
@@ -720,8 +744,8 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 
       {/* AI Refine Panel */}
       {refineOpen && editing && (
-        <div className="mb-4 border border-violet-200 bg-violet-50 rounded-xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-3">
+        <div className="mb-4 border border-teal-200 bg-teal-50 rounded-xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-3">
             AI Refinement
           </p>
           <div className="flex flex-wrap gap-1.5 mb-3">
@@ -730,7 +754,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
                 key={s}
                 onClick={() => refineMutation.mutate(s)}
                 disabled={refineMutation.isPending}
-                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-surface-elevated border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-40"
+                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-surface-elevated border border-teal-200 text-teal-700 hover:bg-teal-100 transition-colors disabled:opacity-40"
               >
                 {s}
               </button>
@@ -743,12 +767,12 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               onChange={(e) => setRefinePrompt(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
               placeholder="Or type a custom instruction..."
-              className="flex-1 px-3 py-2 text-sm border border-violet-200 rounded-lg bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="flex-1 px-3 py-2 text-sm border border-teal-200 rounded-lg bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-violet-300"
             />
             <button
               onClick={() => { if (refinePrompt.trim()) refineMutation.mutate(refinePrompt.trim()); }}
               disabled={!refinePrompt.trim() || refineMutation.isPending}
-              className="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 disabled:opacity-40 transition-colors"
+              className="px-3 py-2 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 disabled:opacity-40 transition-colors"
             >
               {refineMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
             </button>
@@ -825,19 +849,19 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
 
       {/* Adapted Script (preserved) */}
       {adaptMutation.isPending && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-violet-600">
+        <div className="mt-4 flex items-center gap-2 text-sm text-teal-700">
           <Loader2 size={14} className="animate-spin" /> Adapting script...
         </div>
       )}
       {adaptedScript && adaptPlatform && (
-        <div className="mt-4 border border-violet-200 bg-violet-50 rounded-xl p-4">
+        <div className="mt-4 border border-teal-200 bg-teal-50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700">
               Adapted for {ADAPT_PLATFORMS.find((p) => p.key === adaptPlatform)?.label || adaptPlatform}
             </p>
             <div className="flex items-center gap-2">
               <CopyButton text={adaptedScript} label="Copy" />
-              <button onClick={() => { setAdaptedScript(null); setAdaptPlatform(null); }} className="text-[10px] text-violet-400 hover:text-violet-600">
+              <button onClick={() => { setAdaptedScript(null); setAdaptPlatform(null); }} className="text-[10px] text-teal-500 hover:text-teal-700">
                 Dismiss
               </button>
             </div>
@@ -847,7 +871,7 @@ const ScriptTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
               if (!line.trim()) return <div key={i} className="h-2" />;
               const isCue = line.trim().startsWith("[") && line.trim().endsWith("]");
               return (
-                <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-violet-600 font-semibold italic" : "text-themed-secondary")}>
+                <p key={i} className={cn("text-sm leading-relaxed", isCue ? "text-teal-700 font-semibold italic" : "text-themed-secondary")}>
                   {line}
                 </p>
               );
@@ -1072,11 +1096,11 @@ const ShotsTab: React.FC<{ video: VideoDetailResponse }> = ({ video }) => {
       </div>
 
       {video.remotionGraphicsNotes && (
-        <div className="mt-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">
+        <div className="mt-4 bg-teal-50 border border-teal-200 rounded-xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-2">
             Remotion Graphics Notes
           </p>
-          <p className="text-sm text-violet-800">{video.remotionGraphicsNotes}</p>
+          <p className="text-sm text-teal-800">{video.remotionGraphicsNotes}</p>
         </div>
       )}
     </div>
@@ -1171,7 +1195,7 @@ const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }
   real: { bg: "bg-surface-hover", text: "text-themed-secondary", border: "border-themed" },
   ai_enhanced: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
   ai_generated: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200" },
-  motion_graphic: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+  motion_graphic: { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200" },
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -1186,7 +1210,7 @@ const ACT_COLORS: Record<string, string> = {
   conflict: "bg-amber-100 text-amber-700",
   build: "bg-sky-100 text-sky-700",
   resolution: "bg-emerald-100 text-emerald-700",
-  cta: "bg-violet-100 text-violet-700",
+  cta: "bg-teal-100 text-teal-700",
 };
 
 const ProduceChecklist: React.FC<{
@@ -1406,8 +1430,8 @@ const ShotCard: React.FC<{
         {/* Remotion component */}
         {shot.remotionComponent && (
           <div className="flex items-center gap-1.5">
-            <Bot size={10} className="text-violet-500 flex-shrink-0" />
-            <span className="text-[10px] text-violet-600 font-mono">{shot.remotionComponent}</span>
+            <Bot size={10} className="text-teal-600 flex-shrink-0" />
+            <span className="text-[10px] text-teal-700 font-mono">{shot.remotionComponent}</span>
           </div>
         )}
       </div>
@@ -1985,16 +2009,16 @@ const PublishTab: React.FC<{ code: string }> = ({ code }) => {
 // ============================================
 
 const COMPONENT_TYPE_COLORS: Record<string, string> = {
-  TitleCard: "bg-violet-100 text-violet-700",
+  TitleCard: "bg-teal-100 text-teal-700",
   StatCard: "bg-blue-100 text-blue-700",
   SectionCard: "bg-teal-100 text-teal-700",
   HookText: "bg-amber-100 text-amber-700",
   ChecklistOverlay: "bg-emerald-100 text-emerald-700",
   MythTruthReveal: "bg-rose-100 text-rose-700",
-  StepIndicator: "bg-indigo-100 text-indigo-700",
+  StepIndicator: "bg-teal-100 text-teal-700",
   FrequencyCard: "bg-cyan-100 text-cyan-700",
   CallToAction: "bg-orange-100 text-orange-700",
-  KineticText: "bg-fuchsia-100 text-fuchsia-700",
+  KineticText: "bg-rose-100 text-rose-700",
 };
 
 function findJobForShot(jobs: RenderJob[], shotId: string): RenderJob | null {
@@ -2079,9 +2103,9 @@ const RenderShotCard: React.FC<{
 const TIER_META: Record<string, { label: string; color: string }> = {
   source: { label: "Source", color: "bg-teal-100 text-teal-700" },
   cutdown: { label: "Cutdown", color: "bg-sky-100 text-sky-700" },
-  short: { label: "Short", color: "bg-violet-100 text-violet-700" },
+  short: { label: "Short", color: "bg-teal-100 text-teal-700" },
   text: { label: "Text", color: "bg-amber-100 text-amber-700" },
-  carousel: { label: "Carousels", color: "bg-violet-100 text-violet-700" },
+  carousel: { label: "Carousels", color: "bg-teal-100 text-teal-700" },
 };
 
 function parseSlides(description: string): string[] {
@@ -2286,7 +2310,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
           <button
             onClick={() => autoGenMutation.mutate()}
             disabled={autoGenMutation.isPending || repurposeMutation.isPending}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
             title="Matt Gray system: generates 12 derivatives (3 IG, 2 TikTok, 2 YT Shorts, 3 text, 2 carousel)"
           >
             {autoGenMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
@@ -2310,21 +2334,21 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
 
       {/* AI Suggestions */}
       {suggestions.length > 0 && (
-        <div className="border border-violet-200 bg-violet-50 rounded-xl p-3 space-y-2">
+        <div className="border border-teal-200 bg-teal-50 rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">
               AI Suggestions ({suggestions.length})
             </p>
-            <button onClick={() => setSuggestions([])} className="text-[10px] text-violet-400 hover:text-violet-600">
+            <button onClick={() => setSuggestions([])} className="text-[10px] text-teal-500 hover:text-teal-700">
               Dismiss
             </button>
           </div>
           {suggestions.map((s, i) => (
-            <div key={i} className="bg-surface-elevated border border-violet-100 rounded-lg p-2.5">
+            <div key={i} className="bg-surface-elevated border border-teal-100 rounded-lg p-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[9px] font-bold uppercase text-violet-500">{s.tier}</span>
+                    <span className="text-[9px] font-bold uppercase text-teal-600">{s.tier}</span>
                     {s.platform && <span className="text-[9px] text-themed-muted">{s.platform}</span>}
                   </div>
                   <p className="text-xs font-medium text-themed">{s.description}</p>
@@ -2337,7 +2361,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                     "shrink-0 px-2 py-1 rounded-full text-[10px] font-bold transition-colors",
                     addedSuggestions.has(i)
                       ? "bg-emerald-100 text-emerald-700"
-                      : "bg-violet-100 text-violet-700 hover:bg-violet-200",
+                      : "bg-teal-100 text-teal-700 hover:bg-teal-200",
                   )}
                 >
                   {addedSuggestions.has(i) ? <Check size={10} /> : <Plus size={10} />}
@@ -2492,9 +2516,9 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                     const slides = parseSlides(item.description ?? "");
                     const isExpanded = expandedCarousels.has(item.id);
                     return (
-                      <div key={item.id} className="border border-violet-200 rounded-xl bg-violet-50/30 overflow-hidden">
+                      <div key={item.id} className="border border-teal-200 rounded-xl bg-teal-50/30 overflow-hidden">
                         <div className="flex items-center gap-2 px-3 py-2">
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 uppercase shrink-0">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 uppercase shrink-0">
                             Carousel
                           </span>
                           {item.platform && (
@@ -2521,23 +2545,23 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
                               isExpanded ? next.delete(item.id) : next.add(item.id);
                               return next;
                             })}
-                            className="text-themed-muted hover:text-violet-600 transition-colors shrink-0"
+                            className="text-themed-muted hover:text-teal-700 transition-colors shrink-0"
                           >
                             {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                           </button>
                         </div>
                         {isExpanded && slides.length > 0 && (
-                          <div className="px-3 pb-3 space-y-1 border-t border-violet-100 pt-2">
+                          <div className="px-3 pb-3 space-y-1 border-t border-teal-100 pt-2">
                             {slides.map((slide, i) => (
                               <div key={i} className="flex gap-2 text-xs">
-                                <span className="font-bold text-violet-400 shrink-0 w-12 text-[10px]">Slide {i + 1}</span>
+                                <span className="font-bold text-teal-500 shrink-0 w-12 text-[10px]">Slide {i + 1}</span>
                                 <span className="text-themed-secondary text-[11px]">{slide}</span>
                               </div>
                             ))}
                           </div>
                         )}
                         {isExpanded && slides.length === 0 && (
-                          <p className="px-3 pb-3 text-xs text-themed-secondary border-t border-violet-100 pt-2">{item.description}</p>
+                          <p className="px-3 pb-3 text-xs text-themed-secondary border-t border-teal-100 pt-2">{item.description}</p>
                         )}
                       </div>
                     );
@@ -2559,7 +2583,7 @@ const WaterfallTab: React.FC<{ code: string }> = ({ code }) => {
 const SB_METHOD_COLORS: Record<string, { dot: string; label: string; text: string }> = {
   real: { dot: "bg-emerald-500", label: "text-emerald-700 bg-emerald-50", text: "Film" },
   ai_enhanced: { dot: "bg-blue-500", label: "text-blue-700 bg-blue-50", text: "AI Enhanced" },
-  ai_generated: { dot: "bg-violet-500", label: "text-violet-700 bg-violet-50", text: "AI Generated" },
+  ai_generated: { dot: "bg-teal-500", label: "text-teal-700 bg-teal-50", text: "AI Generated" },
   motion_graphic: { dot: "bg-teal-500", label: "text-teal-700 bg-teal-50", text: "Motion Graphic" },
 };
 
@@ -2568,14 +2592,14 @@ const SB_ACT_COLORS: Record<string, string> = {
   conflict: "bg-amber-100 text-amber-700",
   build: "bg-sky-100 text-sky-700",
   resolution: "bg-emerald-100 text-emerald-700",
-  cta: "bg-violet-100 text-violet-700",
+  cta: "bg-teal-100 text-teal-700",
 };
 
 const TECHNIQUE_COLORS: Record<string, string> = {
   set_enhancement: "bg-emerald-50 text-emerald-700",
   ai_transition: "bg-sky-50 text-sky-700",
   scene_extension: "bg-amber-50 text-amber-700",
-  full_generation: "bg-violet-50 text-violet-700",
+  full_generation: "bg-teal-50 text-teal-700",
 };
 
 const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
@@ -2850,14 +2874,14 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                             <button
                               key={s}
                               onClick={() => setFrameStyles((prev) => ({ ...prev, [shot.id]: s }))}
-                              className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors", active ? "bg-violet-600 text-white" : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover")}
+                              className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors", active ? "bg-teal-600 text-white" : "bg-surface-hover text-themed-tertiary hover:bg-surface-hover")}
                             >{s}</button>
                           );
                         })}
                         <button
                           onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? "sketch")}
                           disabled={generatingFrameShots.has(shot.id)}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors disabled:opacity-50"
                         >
                           {generatingFrameShots.has(shot.id) ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                           Frame
@@ -2879,7 +2903,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         <button
                           onClick={() => handleGenerateFrame(shot.id, frameStyles[shot.id] ?? shot.imageStyle ?? "sketch")}
                           disabled={generatingFrameShots.has(shot.id)}
-                          className="absolute top-1 right-1 opacity-0 group-hover/frame:opacity-100 p-1 bg-white/80 backdrop-blur-sm rounded-lg text-themed-secondary hover:text-violet-700 transition-all"
+                          className="absolute top-1 right-1 opacity-0 group-hover/frame:opacity-100 p-1 bg-white/80 backdrop-blur-sm rounded-lg text-themed-secondary hover:text-teal-700 transition-all"
                           title="Regenerate"
                         >
                           <RefreshCw size={12} />
@@ -2908,7 +2932,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                         const rec = recommendToolAndModel(shot.productionMethod, shot.shotType ?? null, shot.act ?? null);
                         if (rec) {
                           badges.push(
-                            <span key="tool" className="text-[10px] font-medium text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
+                            <span key="tool" className="text-[10px] font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">
                               {rec.tool} &middot; {rec.model}
                             </span>,
                           );
@@ -3060,7 +3084,7 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
                             <button
                               onClick={() => handleGeneratePrompt(shot.shotNumber)}
                               disabled={generatingPromptShot === shot.shotNumber}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-50 transition-colors"
                             >
                               {generatingPromptShot === shot.shotNumber ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -3114,5 +3138,15 @@ const StoryboardTab: React.FC<{ code: string }> = ({ code }) => {
         </div>
       )}
     </div>
+  );
+};
+
+const VideoDetailCharacterChip: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <HiggsfieldCharacterChip onClick={() => setOpen(true)} />
+      <HiggsfieldCharactersPanel open={open} onClose={() => setOpen(false)} />
+    </>
   );
 };

@@ -389,7 +389,7 @@ export const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ onSelectVideo, onNav
       {trending.length > 0 && (
         <section className="pt-2">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles size={16} className="text-violet-500" />
+            <Sparkles size={16} className="text-teal-600" />
             <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-themed-tertiary">
               Trending Topics
             </h2>

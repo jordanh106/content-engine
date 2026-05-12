@@ -27,6 +27,7 @@ import {
   Settings,
   X,
   UserPlus,
+  Wand2,
 } from "lucide-react";
 import type {
   PipelineResponse,
@@ -74,7 +75,7 @@ const STATUS_COLORS: Record<ProductionStatus, { bg: string; text: string; ring: 
   RECORDING: { bg: "bg-amber-100", text: "text-amber-600", ring: "ring-amber-300" },
   GENERATING: { bg: "bg-sky-100", text: "text-sky-600", ring: "ring-sky-300" },
   ASSEMBLED: { bg: "bg-teal-100", text: "text-teal-600", ring: "ring-teal-300" },
-  SCHEDULED: { bg: "bg-violet-100", text: "text-violet-600", ring: "ring-violet-300" },
+  SCHEDULED: { bg: "bg-teal-100", text: "text-teal-700", ring: "ring-violet-300" },
   PUBLISHED: { bg: "bg-emerald-100", text: "text-emerald-600", ring: "ring-emerald-300" },
 };
 
@@ -224,7 +225,7 @@ function determineWhatsNext(
         cta: "Start Voiceover Session",
         target: "SESSION",
         gradient: "from-sky-50 to-violet-50",
-        borderColor: "border-violet-200",
+        borderColor: "border-teal-200",
       };
     }
 
@@ -256,7 +257,7 @@ function determineWhatsNext(
       cta: "Schedule Videos",
       target: "CALENDAR",
       gradient: "from-violet-50 to-purple-50",
-      borderColor: "border-violet-200",
+      borderColor: "border-teal-200",
     };
   }
 
@@ -305,7 +306,7 @@ function PlatformBadge({ platform }: { platform: string }) {
   return (
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
       platform === "TikTok" ? "bg-black text-white" :
-      platform === "Instagram" ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" :
+      platform === "Instagram" ? "bg-rose-600 text-white" :
       "bg-red-500 text-white"
     }`}>{platform}</span>
   );
@@ -552,7 +553,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
       <section>
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-themed-muted flex items-center gap-1.5">
-            <LayoutGrid size={12} className="text-violet-500" />
+            <LayoutGrid size={12} className="text-teal-600" />
             Trending Carousels
           </h2>
           <div className="flex items-center gap-3">
@@ -564,14 +565,14 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="text-[10px] font-bold text-themed-muted hover:text-violet-600 transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="text-[10px] font-bold text-themed-muted hover:text-teal-700 transition-colors disabled:opacity-40 flex items-center gap-1"
             >
               <TrendingUp size={10} className={refreshing ? "animate-spin" : ""} />
               {refreshing ? "Scanning..." : "Refresh"}
             </button>
             <button
               onClick={() => onNavigate("CAROUSEL_LAB")}
-              className="text-[10px] font-bold text-violet-600 hover:text-violet-700 transition-colors"
+              className="text-[10px] font-bold text-teal-700 hover:text-teal-700 transition-colors"
             >
               Carousel Lab →
             </button>
@@ -613,13 +614,13 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
                   </div>
                 ) : (
                   <div className={`w-full h-28 flex flex-col items-center justify-center gap-1.5 ${
-                    trend.platform === "tiktok" ? "bg-gradient-to-br from-slate-900 to-slate-800"
-                    : trend.platform === "linkedin" ? "bg-gradient-to-br from-blue-900 to-blue-800"
-                    : "bg-gradient-to-br from-fuchsia-900 via-purple-900 to-orange-900"
+                    trend.platform === "tiktok" ? "bg-slate-900"
+                    : trend.platform === "linkedin" ? "bg-slate-800"
+                    : "bg-slate-900"
                   }`}>
                     <span className="text-white/90 text-lg font-black">@{trend.creatorHandle || "creator"}</span>
                     <div className="flex items-center gap-2">
-                      <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"} />
+                      <Zap size={10} className={trend.engagementSignal === "high" ? "text-amber-400" : "text-teal-300"} />
                       <span className={`text-[9px] font-black uppercase tracking-wider ${
                         trend.engagementSignal === "high" ? "text-amber-400" : "text-violet-300"
                       }`}>
@@ -643,7 +644,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
                   })}
                   className="w-full text-left p-3 space-y-1.5"
                 >
-                  <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-violet-700 transition-colors">
+                  <p className="text-sm font-bold text-themed leading-snug line-clamp-2 group-hover:text-teal-700 transition-colors">
                     {trend.topic}
                   </p>
                   {trend.creatorHandle && (
@@ -651,7 +652,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
                   )}
                   <p className="text-[11px] text-themed-muted line-clamp-1">{trend.proof}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
                       {trend.archetype}
                     </span>
                   </div>
@@ -680,7 +681,7 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
                           sourceUrl: trend.postUrl,
                         });
                       }}
-                      className="text-[9px] font-bold text-violet-600 hover:text-violet-700 flex items-center gap-0.5 ml-auto cursor-pointer"
+                      className="text-[9px] font-bold text-teal-700 hover:text-teal-700 flex items-center gap-0.5 ml-auto cursor-pointer"
                     >
                       <Shuffle size={8} /> Remix
                     </span>
@@ -819,56 +820,64 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     (pipeline?.summary.ASSEMBLED ?? 0) + (pipeline?.summary.SCHEDULED ?? 0);
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
+
+      {/* ═══ Editorial Header ═══════════════════════════════════════════════ */}
+      <header className="flex items-baseline justify-between border-b border-slate-200 pb-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-1">{greeting.date}</p>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-slate-900 leading-tight">{greeting.text}</h1>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <BlueprintQuickAccess />
+        </div>
+      </header>
+
+      {/* ═══ What's Next Hero ═══════════════════════════════════════════════ */}
+      <WhatsNextHero whatsNext={whatsNext} onNavigate={onNavigate} />
 
       {/* ═══ Section 1: Performance Command Strip ═══════════════════════════ */}
       <section>
         <div className="flex items-baseline justify-between mb-4 px-1">
-          <h2 className="text-base font-serif font-bold text-themed">{greeting.text}</h2>
-          <span className="text-[10px] text-themed-muted hidden md:block">{greeting.date}</span>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Performance</h2>
+          <span className="text-[10px] font-medium text-slate-400 tabular-nums">Last 7 days</span>
         </div>
 
-        {/* KPI Cards Row */}
+        {/* KPI Cards Row — Editorial bento */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {/* Views (hero card — spans 2 cols on desktop) */}
-          <div className="md:col-span-2 bg-gradient-to-br from-teal-50/60 to-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Total Views</p>
-            <p className="text-4xl md:text-5xl font-bold text-slate-900 tabular-nums">
-              {metricsData?.totalViews ? metricsData.totalViews.toLocaleString() : "---"}
+          <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-200 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Total Views</p>
+            <p className="text-4xl md:text-5xl font-serif font-bold text-slate-900 tabular-nums leading-none">
+              {metricsData?.totalViews ? metricsData.totalViews.toLocaleString() : "—"}
             </p>
             {metricsData?.viewsTrend && (
-              <Sparkline data={metricsData.viewsTrend} width={200} height={32} color="#0d9488" fillOpacity={0.15} className="mt-2" />
+              <Sparkline data={metricsData.viewsTrend} width={200} height={32} color="#0d9488" fillOpacity={0.12} className="mt-3" />
             )}
           </div>
 
           {/* Week-over-Week */}
-          <div className={`shadow-sm hover:shadow-md transition-shadow rounded-2xl p-5 flex flex-col justify-between ${
-            metricsData?.weekOverWeekDelta !== undefined && metricsData.weekOverWeekDelta >= 0
-              ? "bg-gradient-to-br from-emerald-50 to-white"
-              : metricsData?.weekOverWeekDelta !== undefined && metricsData.weekOverWeekDelta < 0
-                ? "bg-gradient-to-br from-rose-50 to-white"
-                : "bg-surface-elevated"
-          }`}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">vs Last Week</p>
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between hover:border-teal-200 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">vs Last Week</p>
             {metricsData?.weekOverWeekDelta !== undefined ? (
-              <p className={`text-3xl font-bold tabular-nums ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-3xl font-serif font-bold tabular-nums ${metricsData.weekOverWeekDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {metricsData.weekOverWeekDelta >= 0 ? "+" : ""}{metricsData.weekOverWeekDelta}%
               </p>
             ) : (
-              <p className="text-3xl font-bold text-slate-300 tabular-nums">---</p>
+              <p className="text-3xl font-serif font-bold text-slate-300 tabular-nums">—</p>
             )}
           </div>
 
           {/* Engagement + Goal stacked */}
           <div className="flex flex-col gap-3">
-            <div className="bg-surface-elevated shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Engagement</p>
-              <p className="text-2xl font-bold text-slate-900 tabular-nums">
-                {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "---"}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex-1 hover:border-teal-200 transition-colors">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Engagement</p>
+              <p className="text-2xl font-serif font-bold text-slate-900 tabular-nums">
+                {metricsData?.engagementRate ? `${metricsData.engagementRate}%` : "—"}
               </p>
             </div>
-            <div className="bg-surface-elevated shadow-sm hover:shadow-md transition-shadow rounded-2xl p-4 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Monthly Goal</p>
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex-1 hover:border-teal-200 transition-colors">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Monthly Goal</p>
               {(() => {
                 const goal = parseInt(localStorage.getItem("ce-monthly-views-goal") || "50000", 10);
                 const current = metricsData?.thisWeek || metricsData?.totalViews || 0;
@@ -876,12 +885,12 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                 const formatNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
                 return (
                   <>
-                    <span className="text-lg font-bold text-slate-900 tabular-nums">{pct}%</span>
+                    <span className="text-lg font-serif font-bold text-slate-900 tabular-nums">{pct}%</span>
                     <div className="mt-1">
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${pct}%` }} />
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-0.5">{formatNum(current)} / {formatNum(goal)}</p>
+                      <p className="text-[9px] text-slate-400 mt-1 tabular-nums">{formatNum(current)} / {formatNum(goal)}</p>
                     </div>
                   </>
                 );
@@ -891,17 +900,18 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </div>
 
         {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {[
-            { label: "Record Tonight", icon: <Mic size={14} />, view: "SESSION" as const },
-            { label: "Schedule Post", icon: <CalendarCheck size={14} />, view: "CALENDAR" as const },
-            { label: "Generate Carousel", icon: <LayoutGrid size={14} />, view: "CAROUSEL_LAB" as const },
-            { label: "View Pipeline", icon: <Activity size={14} />, view: "PIPELINE" as const },
+            { label: "Record Tonight", icon: <Mic size={13} />, view: "SESSION" as const },
+            { label: "Schedule Post", icon: <CalendarCheck size={13} />, view: "CALENDAR" as const },
+            { label: "Generate Carousel", icon: <LayoutGrid size={13} />, view: "CAROUSEL_LAB" as const },
+            { label: "View Pipeline", icon: <Activity size={13} />, view: "PIPELINE" as const },
+            { label: "Visual Canvas", icon: <Shuffle size={13} />, view: "CANVAS" as const },
           ].map((a) => (
             <button
               key={a.view}
-              onClick={() => onNavigate(a.view)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-white shadow-sm rounded-xl text-[11px] font-semibold text-slate-600 hover:shadow-md hover:text-teal-700 active:scale-[0.98] transition-all duration-200"
+              onClick={() => onNavigate(a.view as DashboardView)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-teal-300 hover:text-teal-700 active:scale-[0.98] transition-all duration-150"
             >
               {a.icon} {a.label}
             </button>
@@ -1205,28 +1215,123 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         </button>
       )}
 
-      {/* ═══ Section 5: Progress (collapsed gamification) ══════════════════ */}
-      <div className="bg-white shadow-sm rounded-2xl overflow-hidden">
-        <button
-          onClick={() => setProgressExpanded((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50/50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Your Progress</span>
-            <span className="text-xs font-semibold text-slate-600">Observer · Level 1 · 30/100 XP</span>
-          </div>
-          <ChevronRight size={14} className={`text-slate-400 transition-transform ${progressExpanded ? "rotate-90" : ""}`} />
-        </button>
-        {progressExpanded && (
-          <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
-            <CreatorLevelBadge variant="home" />
-            <QuestChain onNavigate={onNavigate} />
-          </div>
-        )}
-      </div>
+      {/* ═══ Master Blueprint Surface ═══════════════════════════════════════ */}
+      <BlueprintCard onNavigate={onNavigate} />
 
-      {/* Trend Pulse compressed into Discover chips; Trending Carousels moved to Carousel Lab */}
     </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// What's Next Hero — editorial CTA card
+// ═══════════════════════════════════════════════════════════════════════════
+const WhatsNextHero: React.FC<{ whatsNext: WhatsNextAction; onNavigate: (view: DashboardView) => void }> = ({ whatsNext, onNavigate }) => (
+  <section className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 hover:border-teal-200 transition-colors group">
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      <div className="md:max-w-2xl">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-teal-600 mb-3">What's Next</p>
+        <h2 className="text-2xl md:text-3xl font-serif font-bold text-slate-900 leading-tight mb-2">{whatsNext.headline}</h2>
+        <p className="text-sm text-slate-500 leading-relaxed">{whatsNext.description}</p>
+      </div>
+      <button
+        onClick={() => onNavigate(whatsNext.target)}
+        className="self-start md:self-end inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors group-hover:bg-teal-700"
+      >
+        {whatsNext.cta} <ArrowRight size={13} />
+      </button>
+    </div>
+  </section>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Blueprint Quick Access — header chip
+// ═══════════════════════════════════════════════════════════════════════════
+const BlueprintQuickAccess: React.FC = () => {
+  const { data } = useQuery<{ blueprint: { version: string; generated: string; hookArchetypes: string[] } }>({
+    queryKey: ["master-blueprint"],
+    queryFn: () => fetch("/api/blueprint").then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+  if (!data?.blueprint) return null;
+  return (
+    <a
+      href="/api/blueprint/raw"
+      target="_blank"
+      rel="noopener"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-colors"
+      title={`Blueprint v${data.blueprint.version} · ${data.blueprint.hookArchetypes.length} archetypes`}
+    >
+      <Sparkles size={12} />
+      Blueprint v{data.blueprint.version}
+    </a>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Master Blueprint Card — replaces gamification, surfaces compliance system
+// ═══════════════════════════════════════════════════════════════════════════
+const BlueprintCard: React.FC<{ onNavigate: (view: DashboardView) => void }> = ({ onNavigate }) => {
+  const { data } = useQuery<{ blueprint: { version: string; generated: string; hookArchetypes: string[]; antiPatterns: string[]; passingScore: number } }>({
+    queryKey: ["master-blueprint"],
+    queryFn: () => fetch("/api/blueprint").then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+  if (!data?.blueprint) return null;
+  const bp = data.blueprint;
+  return (
+    <section className="bg-white border border-slate-200 rounded-3xl overflow-hidden">
+      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
+            <Sparkles size={16} strokeWidth={2.5} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Master Blueprint</p>
+            <p className="text-base font-serif font-bold text-slate-900 leading-tight">v{bp.version} · pass ≥ {bp.passingScore}/100</p>
+          </div>
+        </div>
+        <a
+          href="/api/blueprint/raw"
+          target="_blank"
+          rel="noopener"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-colors"
+        >
+          View Full
+        </a>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+        <div className="p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Hook Archetypes</p>
+          <ul className="space-y-1.5">
+            {bp.hookArchetypes.slice(0, 4).map((arch) => (
+              <li key={arch} className="text-xs text-slate-700 flex items-center gap-2">
+                <span className="w-1 h-1 rounded-full bg-teal-500" /> {arch}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="p-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-3">Anti-Patterns</p>
+          <p className="text-2xl font-serif font-bold text-slate-900 tabular-nums leading-none">{bp.antiPatterns.length}</p>
+          <p className="text-xs text-slate-500 mt-1">flagged as hard fails</p>
+        </div>
+        <div className="p-5 flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Quick Convert</p>
+            <p className="text-xs text-slate-600 leading-relaxed">Paste any URL or text and get a blueprint-compliant script.</p>
+          </div>
+          <button
+            onClick={() => {
+              // Trigger the FAB convert mode via keyboard shortcut
+              window.dispatchEvent(new KeyboardEvent("keydown", { key: "c" }));
+            }}
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors w-fit"
+          >
+            <Wand2 size={11} /> Open Convert
+          </button>
+        </div>
+      </div>
+    </section>
   );
 };
 

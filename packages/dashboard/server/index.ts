@@ -54,6 +54,13 @@ import { createPersonasRouter } from "./routes/personas.js";
 import { createCarouselsRouter } from "./routes/carousels.js";
 import { createDiscoverRouter } from "./routes/discover.js";
 import { createGrowthRouter } from "./routes/growth.js";
+import { createMasterBlueprintRouter } from "./routes/master-blueprint.js";
+import { createIngestRouter } from "./routes/ingest.js";
+import { createHiggsfieldRouter } from "./routes/higgsfield.js";
+import { createHiggsfieldCharactersRouter } from "./routes/higgsfield-characters.js";
+import { createStorytellingRouter } from "./routes/storytelling.js";
+import { invalidateStorytellingStylesCache } from "./parsers/storytelling-styles.js";
+import { invalidateBlueprintCache } from "./parsers/master-blueprint.js";
 import { invalidateCache } from "./parsers/content-library.js";
 import { invalidateConfigCache } from "./parsers/config.js";
 import { invalidateIdeaCache } from "./parsers/idea-bank.js";
@@ -96,6 +103,15 @@ const thumbnailsDir = path.join(dataDir, "thumbnails");
 if (!fs.existsSync(thumbnailsDir)) fs.mkdirSync(thumbnailsDir, { recursive: true });
 app.use("/thumbnails", express.static(thumbnailsDir));
 
+// Storytelling reel engine data dirs + static mounts
+const voiceoversDir = path.join(dataDir, "voiceovers");
+const reelsDir = path.join(dataDir, "reels");
+const storytellingStylesPath = path.join(repoRoot, "industries", "_shared", "storytelling-styles.md");
+if (!fs.existsSync(voiceoversDir)) fs.mkdirSync(voiceoversDir, { recursive: true });
+if (!fs.existsSync(reelsDir)) fs.mkdirSync(reelsDir, { recursive: true });
+app.use("/voiceovers", express.static(voiceoversDir));
+app.use("/reels", express.static(reelsDir));
+
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
@@ -132,6 +148,12 @@ app.use("/api/personas", createPersonasRouter());
 app.use("/api/carousels", createCarouselsRouter(contentLibraryPath, carouselImagesDir));
 app.use("/api/discover", createDiscoverRouter(contentLibraryPath, viralInsightsDir, thumbnailsDir));
 app.use("/api/growth", createGrowthRouter());
+app.use("/api/blueprint", createMasterBlueprintRouter(industryDir, contentLibraryPath));
+app.use("/api/ingest", createIngestRouter(industryDir));
+app.use("/api/higgsfield", createHiggsfieldRouter());
+app.use("/api/higgsfield/characters", createHiggsfieldCharactersRouter());
+const PORT = parseInt(process.env.PORT || "3001", 10);
+app.use("/api/storytelling", createStorytellingRouter(storytellingStylesPath, reelsDir, voiceoversDir, PORT));
 app.use("/rendered", express.static(renderOutputDir));
 
 // Health check endpoint
@@ -162,8 +184,10 @@ const creatorInsightsDir = path.join(industryDir, "creator-insights");
 const productionPlansDir = path.join(industryDir, "production-plans");
 const watchlistIntelDir = path.join(industryDir, "watchlist-insights");
 
+const masterBlueprintPath = path.join(industryDir, "master-blueprint.md");
+
 const watcher = chokidar.watch(
-  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, productionPlansDir, viralInsightsDir, creatorInsightsDir, watchlistIntelDir],
+  [contentLibraryPath, configPath, ideaBankPath, watchlistPath, hookPatternsPath, productionPlansDir, viralInsightsDir, creatorInsightsDir, watchlistIntelDir, masterBlueprintPath],
   { ignoreInitial: true },
 );
 
@@ -196,6 +220,9 @@ watcher.on("change", (filePath) => {
   if (filePath.includes("watchlist-insights")) {
     invalidateWatchlistIntelCache();
   }
+  if (filePath.includes("master-blueprint")) {
+    invalidateBlueprintCache();
+  }
 });
 
 // Watch last30days research output (separate watcher for external directory)
@@ -208,7 +235,12 @@ researchWatcher.on("change", (filePath) => {
   }
 });
 
-const PORT = parseInt(process.env.PORT || "3001", 10);
+// Watch storytelling styles for changes (industry-agnostic shared dir)
+const stylesWatcher = chokidar.watch(storytellingStylesPath, { ignoreInitial: true });
+stylesWatcher.on("change", () => {
+  console.log("[watcher] storytelling-styles.md changed");
+  invalidateStorytellingStylesCache();
+});
 
 ViteExpress.listen(app, PORT, () => {
   console.log(`Content Engine Dashboard running at http://localhost:${PORT}`);
@@ -219,6 +251,7 @@ function cleanup() {
   console.log("[server] Shutting down file watchers...");
   watcher.close();
   researchWatcher.close();
+  stylesWatcher.close();
   process.exit(0);
 }
 process.on("SIGTERM", cleanup);

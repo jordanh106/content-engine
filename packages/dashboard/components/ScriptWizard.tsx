@@ -626,7 +626,7 @@ export const ScriptWizard: React.FC<ScriptWizardProps> = ({
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string; icon: string }> = {
   emerald: { bg: "bg-emerald-500/5", border: "border-emerald-500/10", text: "text-emerald-400", icon: "text-emerald-400" },
   rose: { bg: "bg-rose-500/5", border: "border-rose-500/10", text: "text-rose-400", icon: "text-rose-400" },
-  violet: { bg: "bg-violet-500/5", border: "border-violet-500/10", text: "text-violet-400", icon: "text-violet-400" },
+  violet: { bg: "bg-teal-500/5", border: "border-violet-500/10", text: "text-teal-500", icon: "text-teal-500" },
   blue: { bg: "bg-blue-500/5", border: "border-blue-500/10", text: "text-blue-400", icon: "text-blue-400" },
 };
 

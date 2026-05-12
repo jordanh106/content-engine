@@ -239,7 +239,7 @@ export function CarouselsTab({ code }: CarouselsTabProps) {
               {/* Style badge */}
               {carousel.carouselStyle === "remotion3d" && (
                 <div className="absolute top-3 left-4 z-10">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-violet-100 text-violet-700 text-[9px] font-black uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-teal-100 text-teal-700 text-[9px] font-black uppercase tracking-wider">
                     <Box size={10} />
                     3D
                   </span>

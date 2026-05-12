@@ -15,7 +15,7 @@ import { ScrollReveal } from "./ui/animations.js";
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; icon: React.ReactNode; color: string }> = {
   trending: { label: "Trending", icon: <Flame size={14} />, color: "text-orange-600 bg-orange-50" },
-  competitor: { label: "Competitor", icon: <Users size={14} />, color: "text-violet-600 bg-violet-50" },
+  competitor: { label: "Competitor", icon: <Users size={14} />, color: "text-teal-700 bg-teal-50" },
   evergreen: { label: "Evergreen", icon: <Leaf size={14} />, color: "text-emerald-600 bg-emerald-50" },
   audience: { label: "Audience", icon: <MessageCircle size={14} />, color: "text-sky-600 bg-sky-50" },
   personal: { label: "Personal", icon: <Sparkles size={14} />, color: "text-pink-600 bg-pink-50" },
@@ -356,21 +356,21 @@ const ResearchSuggestions: React.FC = () => {
   if (suggestions.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200/60 rounded-2xl p-4">
+    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4">
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-between w-full"
       >
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-violet-500" />
-          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-violet-600">
+          <Sparkles size={16} className="text-teal-600" />
+          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-teal-700">
             From Research
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-violet-200 text-violet-700 text-[10px] font-bold">
+          <span className="px-2 py-0.5 rounded-full bg-teal-200 text-teal-800 text-[10px] font-bold">
             {suggestions.length} new
           </span>
         </div>
-        {collapsed ? <ChevronDown size={16} className="text-violet-400" /> : <ChevronUp size={16} className="text-violet-400" />}
+        {collapsed ? <ChevronDown size={16} className="text-teal-500" /> : <ChevronUp size={16} className="text-teal-500" />}
       </button>
 
       {!collapsed && (
@@ -384,7 +384,7 @@ const ResearchSuggestions: React.FC = () => {
               className={cn(
                 "flex-shrink-0 bg-surface-elevated rounded-xl border border-themed p-3 shadow-sm transition-all",
                 isExpanded ? "w-80" : "w-64",
-                hasContext ? "cursor-pointer hover:shadow-md hover:border-violet-300" : "hover:shadow-md",
+                hasContext ? "cursor-pointer hover:shadow-md hover:border-teal-300" : "hover:shadow-md",
               )}
               onClick={() => hasContext && setExpandedTopic(isExpanded ? null : idea.topic)}
             >
@@ -420,7 +420,7 @@ const ResearchSuggestions: React.FC = () => {
                 <div className="mb-2.5 space-y-2 border-t border-themed-subtle pt-2">
                   {idea.context && (
                     <div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-violet-500">Why it's trending</span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-teal-600">Why it's trending</span>
                       <p className="text-[11px] text-themed-secondary leading-snug mt-0.5">{idea.context}</p>
                     </div>
                   )}
@@ -435,7 +435,7 @@ const ResearchSuggestions: React.FC = () => {
 
               {/* Collapsed hint */}
               {!isExpanded && hasContext && (
-                <div className="text-[9px] text-violet-400 mb-2 flex items-center gap-1">
+                <div className="text-[9px] text-teal-500 mb-2 flex items-center gap-1">
                   <Eye size={10} /> Click to preview context
                 </div>
               )}
@@ -540,7 +540,7 @@ export const IdeasView: React.FC<IdeasViewProps> = ({ onNavigate }) => {
           </button>
           <button
             onClick={() => setGeneratorOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-teal-600 text-white hover:bg-teal-700 transition-colors"
           >
             <Sparkles size={14} />
             Generate
@@ -733,29 +733,29 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
   const displayIdeas = expanded ? ideas : ideas.slice(0, 3);
 
   return (
-    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 md:p-5">
+    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 md:p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Eye size={16} className="text-violet-600" />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600">
+          <Eye size={16} className="text-teal-700" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700">
             Competitor Insights
           </p>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-200 text-violet-700">
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-200 text-teal-800">
             {ideas.length}
           </span>
         </div>
         {intelDate && (
-          <p className="text-[10px] text-violet-400">{intelDate}</p>
+          <p className="text-[10px] text-teal-500">{intelDate}</p>
         )}
       </div>
-      <p className="text-xs text-violet-600 mb-3">
+      <p className="text-xs text-teal-700 mb-3">
         Non-obvious opportunities from watchlist intelligence. Add promising ones to your idea bank.
       </p>
       <div className="space-y-2">
         {displayIdeas.map((idea, i) => {
           const wasAdded = addedTopics.has(idea.topic);
           return (
-            <div key={i} className="bg-surface-elevated border border-violet-100 rounded-xl p-3">
+            <div key={i} className="bg-surface-elevated border border-teal-100 rounded-xl p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-themed">{idea.topic}</p>
@@ -763,11 +763,11 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
                     <p className="text-xs text-themed-tertiary mt-0.5">{idea.hookAngle}</p>
                   )}
                   {idea.whyNonObvious && (
-                    <p className="text-[11px] text-violet-600 mt-1 italic">"{idea.whyNonObvious}"</p>
+                    <p className="text-[11px] text-teal-700 mt-1 italic">"{idea.whyNonObvious}"</p>
                   )}
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {idea.inspiredBy && (
-                      <span className="text-[10px] text-violet-500">Inspired by: {idea.inspiredBy}</span>
+                      <span className="text-[10px] text-teal-600">Inspired by: {idea.inspiredBy}</span>
                     )}
                     {idea.suggestedFormat && (
                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
@@ -786,7 +786,7 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
                     "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
                     wasAdded
                       ? "bg-emerald-100 text-emerald-700"
-                      : "bg-violet-100 text-violet-700 hover:bg-violet-200",
+                      : "bg-teal-100 text-teal-800 hover:bg-teal-200",
                   )}
                 >
                   {wasAdded ? <><Check size={12} /> Added</> : <><Plus size={12} /> Add</>}
@@ -799,7 +799,7 @@ const CompetitorInsights: React.FC<{ ideas: WatchlistIntelIdea[]; intelDate: str
       {ideas.length > 3 && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-2 text-xs text-violet-600 hover:text-violet-800 font-medium"
+          className="mt-2 text-xs text-teal-700 hover:text-teal-800 font-medium"
         >
           {expanded ? "Show less" : `Show ${ideas.length - 3} more`}
         </button>

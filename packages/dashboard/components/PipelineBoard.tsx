@@ -541,11 +541,11 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
 
       {/* Bulk Actions Bar */}
       {selectedCodes.size > 0 && (
-        <div className="flex items-center gap-3 mb-4 p-3 bg-violet-50 border border-violet-200 rounded-xl">
-          <span className="text-xs font-bold text-violet-700">
+        <div className="flex items-center gap-3 mb-4 p-3 bg-teal-50 border border-teal-200 rounded-xl">
+          <span className="text-xs font-bold text-teal-700">
             {selectedCodes.size} selected
           </span>
-          <ArrowRight size={14} className="text-violet-400" />
+          <ArrowRight size={14} className="text-teal-500" />
           <select
             value={bulkTarget ?? ""}
             onChange={(e) => setBulkTarget(e.target.value as ProductionStatus)}
@@ -569,7 +569,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
             className={cn(
               "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors",
               bulkTarget
-                ? "bg-violet-600 text-white hover:bg-violet-700"
+                ? "bg-teal-600 text-white hover:bg-violet-700"
                 : "bg-surface-hover text-themed-muted cursor-not-allowed",
             )}
           >
@@ -611,7 +611,7 @@ export const PipelineBoard: React.FC<PipelineBoardProps> = ({
                         className="absolute top-2 right-2 z-10 p-0.5 rounded hover:bg-surface-hover transition-colors"
                       >
                         {selectedCodes.has(video.code) ? (
-                          <CheckSquare size={14} className="text-violet-600" />
+                          <CheckSquare size={14} className="text-teal-700" />
                         ) : (
                           <Square size={14} className="text-themed-muted" />
                         )}

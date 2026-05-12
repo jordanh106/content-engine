@@ -399,12 +399,12 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
   if (!open) return null;
 
   const msgs = type ? LOADING_MESSAGES[type] : [];
-  const spinnerBorder = isViralScout ? "border-amber-100" : "border-violet-100";
+  const spinnerBorder = isViralScout ? "border-amber-100" : "border-teal-100";
   const spinnerTop = isViralScout ? "border-t-amber-500" : "border-t-violet-500";
   const IconComp = isViralScout ? TrendingUp : Target;
-  const iconCls = isViralScout ? "text-amber-500" : "text-violet-500";
-  const summaryBg = isViralScout ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-violet-50 border-violet-200 text-violet-800";
-  const progressBg = isViralScout ? "bg-amber-500" : "bg-violet-500";
+  const iconCls = isViralScout ? "text-amber-500" : "text-teal-600";
+  const summaryBg = isViralScout ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-teal-50 border-teal-200 text-teal-800";
+  const progressBg = isViralScout ? "bg-amber-500" : "bg-teal-500";
 
   return (
     <div className="fixed inset-0 z-[100]">
@@ -420,7 +420,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
             </h2>
             <span className={cn(
               "text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full",
-              isViralScout ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"
+              isViralScout ? "bg-amber-100 text-amber-700" : "bg-teal-100 text-teal-700"
             )}>
               {isViralScout ? "Field Report" : "War Room"}
             </span>
@@ -716,7 +716,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
               {crResult.territoryMap && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <Target size={13} className="text-violet-500" />
+                    <Target size={13} className="text-teal-600" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Territory Map</span>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -789,7 +789,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
               {crResult.positioningGaps?.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <Target size={13} className="text-violet-500" />
+                    <Target size={13} className="text-teal-600" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                       Positioning Gaps ({crResult.positioningGaps.length})
                     </span>
@@ -813,7 +813,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
                           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">They search for</p>
                           <p className="text-[11px] font-mono text-slate-600">"{gap.audienceLanguage}"</p>
                         </div>
-                        <p className="text-[11px] text-violet-700 font-medium mb-2">{gap.ourOwnershipPlay}</p>
+                        <p className="text-[11px] text-teal-700 font-medium mb-2">{gap.ourOwnershipPlay}</p>
                         {gap.whoMissesIt?.length > 0 && (
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] text-slate-400">Missing from:</span>
@@ -832,7 +832,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
               {crResult.creatorDossiers?.length > 0 && (
                 <section>
                   <div className="flex items-center gap-2 mb-3">
-                    <Users size={13} className="text-violet-500" />
+                    <Users size={13} className="text-teal-600" />
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                       Creator Dossiers ({crResult.creatorDossiers.length})
                     </span>
@@ -855,7 +855,7 @@ export const ResearchPanel: React.FC<ResearchPanelProps> = ({ open, onClose, typ
                                 disabled={added || addToWatchlistMutation.isPending}
                                 className={cn(
                                   "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-colors",
-                                  added ? "text-emerald-600 bg-emerald-50" : "text-violet-600 bg-violet-50 hover:bg-violet-100"
+                                  added ? "text-emerald-600 bg-emerald-50" : "text-teal-700 bg-teal-50 hover:bg-teal-100"
                                 )}
                               >
                                 {addToWatchlistMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : added ? <Check size={10} /> : <Plus size={10} />}

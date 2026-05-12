@@ -112,7 +112,7 @@ const EVIDENCE_ICONS: Record<string, React.ReactNode> = {
   reddit: <MessageCircle size={14} className="text-orange-500" />,
   x: <Hash size={14} className="text-sky-500" />,
   web: <Globe size={14} className="text-emerald-500" />,
-  "viral-digest": <Sparkles size={14} className="text-violet-500" />,
+  "viral-digest": <Sparkles size={14} className="text-teal-600" />,
   performance: <BarChart3 size={14} className="text-teal-500" />,
 };
 
@@ -674,7 +674,7 @@ const OpportunityDetail: React.FC<{
                       ? "bg-emerald-100 text-emerald-700 cursor-default"
                       : startProductionMutation.isPending
                         ? "bg-surface-hover text-themed-muted cursor-wait"
-                        : "bg-violet-600 text-white hover:bg-violet-700",
+                        : "bg-teal-600 text-white hover:bg-violet-700",
                   )}
                 >
                   {produced ? (
@@ -797,7 +797,7 @@ const OpportunityDetail: React.FC<{
                     ? "bg-emerald-100 text-emerald-700"
                     : startProductionMutation.isPending
                       ? "bg-surface-hover text-themed-muted"
-                      : "bg-violet-600 text-white hover:bg-violet-700",
+                      : "bg-teal-600 text-white hover:bg-violet-700",
                 )}
               >
                 {produced ? (
@@ -903,7 +903,7 @@ const OpportunityDetail: React.FC<{
               )}
               {opportunity.ideaBankMatch && (
                 <div className="pt-2 border-t border-themed-subtle">
-                  <span className="text-[10px] text-violet-600 font-bold">
+                  <span className="text-[10px] text-teal-700 font-bold">
                     Matches idea: {opportunity.ideaBankMatch}
                   </span>
                 </div>
@@ -1263,7 +1263,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({ onNavigate
       {summary && (
         <div className="flex items-center gap-2 flex-wrap mb-4">
           {summary.hasDigest && (
-            <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
               Market Intel
             </span>
           )}

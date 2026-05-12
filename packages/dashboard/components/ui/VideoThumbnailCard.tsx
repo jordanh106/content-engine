@@ -4,7 +4,7 @@ import { MetricBadge } from "./MetricBadge.js";
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
-  Instagram: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+  Instagram: "bg-rose-600 text-white",
   YouTube: "bg-red-600 text-white",
   multi: "bg-teal-600 text-white",
 };
@@ -308,10 +308,10 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = React.memo(
           {/* Placeholder when no thumbnail — platform-branded */}
           {!hasThumbnail && (
             <div className={`absolute inset-0 flex flex-col items-center justify-center ${
-              platform === "TikTok" ? "bg-gradient-to-br from-slate-800 to-slate-900" :
-              platform === "Instagram" ? "bg-gradient-to-br from-purple-900 to-pink-900" :
-              platform === "YouTube" ? "bg-gradient-to-br from-red-900 to-slate-900" :
-              "bg-gradient-to-br from-slate-700 to-slate-800"
+              platform === "TikTok" ? "bg-slate-900" :
+              platform === "Instagram" ? "bg-rose-900" :
+              platform === "YouTube" ? "bg-red-900" :
+              "bg-slate-800"
             }`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
                 platform === "TikTok" ? "bg-white/10" :
@@ -361,7 +361,7 @@ export const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = React.memo(
               rel="noopener noreferrer"
               className="absolute inset-0 z-[5] flex items-center justify-center bg-black/50"
             >
-              <span className="text-white text-[11px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 rounded-full">
+              <span className="text-white text-[11px] font-bold bg-rose-600 px-3 py-1.5 rounded-full">
                 Watch on Instagram
               </span>
             </a>

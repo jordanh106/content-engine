@@ -161,7 +161,7 @@ const INSIGHT_STYLES: Record<string, { icon: React.ReactNode; border: string; bg
   win: { icon: <Trophy size={14} />, border: "border-emerald-200", bg: "bg-emerald-50", text: "text-emerald-700" },
   opportunity: { icon: <Target size={14} />, border: "border-amber-200", bg: "bg-amber-50", text: "text-amber-700" },
   trend: { icon: <TrendingUp size={14} />, border: "border-sky-200", bg: "bg-sky-50", text: "text-sky-700" },
-  recommendation: { icon: <Lightbulb size={14} />, border: "border-violet-200", bg: "bg-violet-50", text: "text-violet-700" },
+  recommendation: { icon: <Lightbulb size={14} />, border: "border-teal-200", bg: "bg-teal-50", text: "text-teal-700" },
 };
 
 const CONFIDENCE_STYLES: Record<string, string> = {
@@ -245,7 +245,7 @@ const AudienceAnalytics: React.FC = () => {
                     <p className="text-[9px] text-themed-muted">eng rate</p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-violet-600 tabular-nums">{a.saveRate}%</p>
+                    <p className="text-xs font-bold text-teal-700 tabular-nums">{a.saveRate}%</p>
                     <p className="text-[9px] text-themed-muted">save rate</p>
                   </div>
                 </div>
@@ -615,7 +615,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                   </span>
                 )}
                 {counts.hookPatterns > 0 && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold text-violet-600">
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-teal-700">
                     <MessageSquareQuote size={10} /> {counts.hookPatterns} hooks
                   </span>
                 )}
@@ -643,8 +643,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-colors shrink-0 border",
               insightsLoading
-                ? "border-violet-200 text-violet-400 cursor-wait bg-surface-elevated"
-                : "border-violet-300 text-violet-600 bg-surface-elevated hover:bg-violet-50",
+                ? "border-teal-200 text-teal-500 cursor-wait bg-surface-elevated"
+                : "border-teal-300 text-teal-700 bg-surface-elevated hover:bg-teal-50",
             )}
             title="Synthesize existing research data into strategic recommendations"
           >
@@ -748,7 +748,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
           {/* Hook Patterns */}
           <div className="bg-surface-elevated border border-themed rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <MessageSquareQuote size={14} className="text-violet-500" />
+              <MessageSquareQuote size={14} className="text-teal-600" />
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
                 Hook Patterns
               </p>
@@ -985,7 +985,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
       {(insightsData || insightsLoading || insightsError) && (
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles size={14} className="text-violet-500" />
+            <Sparkles size={14} className="text-teal-600" />
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">
               AI Strategy Analysis
             </p>
@@ -993,8 +993,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
 
           {insightsLoading && (
             <div className="bg-surface-elevated border border-themed rounded-2xl p-8 text-center">
-              <Loader2 size={24} className="text-violet-500 animate-spin mx-auto mb-3" />
-              <p className="text-sm text-violet-600">Analyzing market intelligence and building strategy...</p>
+              <Loader2 size={24} className="text-teal-600 animate-spin mx-auto mb-3" />
+              <p className="text-sm text-teal-700">Analyzing market intelligence and building strategy...</p>
             </div>
           )}
 
@@ -1479,7 +1479,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({ onNavigate }) => {
                       {performers.slice(0, 10).map((p) => {
                         const outlier = p.outlierScore ?? null;
                         const outlierCls = outlier && outlier >= 10
-                          ? "bg-violet-100 text-violet-700"
+                          ? "bg-teal-100 text-teal-700"
                           : outlier && outlier >= 5
                           ? "bg-teal-100 text-teal-700"
                           : outlier && outlier >= 2

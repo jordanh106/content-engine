@@ -47,7 +47,7 @@ const FORMAT_COLORS: Record<string, string> = {
   B: "bg-emerald-100 text-emerald-700",
   C: "bg-sky-100 text-sky-700",
   D: "bg-rose-100 text-rose-700",
-  E: "bg-violet-100 text-violet-700",
+  E: "bg-teal-100 text-teal-700",
   F: "bg-orange-100 text-orange-700",
   G: "bg-pink-100 text-pink-700",
 };
@@ -165,7 +165,7 @@ const PlatformPreview: React.FC<{ caption: string; platform: string }> = ({ capt
     return (
       <div className="bg-black rounded-xl p-4 max-w-[280px]">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-violet-500" />
+          <div className="w-8 h-8 rounded-full bg-rose-500" />
           <span className="text-white text-xs font-bold">collectivefamilychiro</span>
         </div>
         <p className="text-white text-xs leading-relaxed">
@@ -916,32 +916,32 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                 <div className="mt-3">
                   <button
                     onClick={() => setShowAlignmentFields(!showAlignmentFields)}
-                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-violet-500 hover:text-violet-700 transition-colors"
+                    className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-teal-600 hover:text-teal-700 transition-colors"
                   >
                     <Zap size={12} />
                     Hook Alignment (Advanced)
                     <ChevronDown size={12} className={cn("transition-transform", showAlignmentFields && "rotate-180")} />
                   </button>
                   {showAlignmentFields && (
-                    <div className="mt-2 space-y-2 p-3 bg-violet-50/50 rounded-xl border border-violet-100">
-                      <p className="text-[10px] text-violet-500 mb-1">Align your 4 hook components for maximum impact. Visual is most important.</p>
+                    <div className="mt-2 space-y-2 p-3 bg-teal-50/50 rounded-xl border border-teal-100">
+                      <p className="text-[10px] text-teal-600 mb-1">Align your 4 hook components for maximum impact. Visual is most important.</p>
                       <input
                         value={freeformVisualHook}
                         onChange={(e) => setFreeformVisualHook(e.target.value)}
                         placeholder="Visual hook: What's the first thing viewers SEE?"
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
+                        className="w-full p-2 border border-teal-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-surface-elevated"
                       />
                       <input
                         value={freeformTextOverlay}
                         onChange={(e) => setFreeformTextOverlay(e.target.value)}
                         placeholder="Text overlay: What text appears on screen?"
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
+                        className="w-full p-2 border border-teal-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-surface-elevated"
                       />
                       <input
                         value={freeformAudioContext}
                         onChange={(e) => setFreeformAudioContext(e.target.value)}
                         placeholder="Audio: Trending sound, original voiceover, ASMR..."
-                        className="w-full p-2 border border-violet-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-surface-elevated"
+                        className="w-full p-2 border border-teal-200 rounded-lg text-xs text-themed-secondary placeholder:text-themed-muted focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-surface-elevated"
                       />
                     </div>
                   )}
@@ -1025,7 +1025,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                         });
                       }}
                       disabled={hookMutation.isPending}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-violet-200 text-violet-600 text-[10px] font-black uppercase tracking-widest hover:bg-violet-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-teal-200 text-teal-700 text-[10px] font-black uppercase tracking-widest hover:bg-teal-50 transition-colors disabled:opacity-50"
                     >
                       {hookMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                       Hook Lab
@@ -1087,7 +1087,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                     <span className={cn(
                       "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full",
                       ["SCRIPTED", "RECORDING", "GENERATING"].includes(videoDetail.status || "")
-                        ? "bg-violet-50 text-violet-600"
+                        ? "bg-teal-50 text-teal-700"
                         : "bg-emerald-50 text-emerald-600",
                     )}>
                       <Sparkles size={10} />
@@ -1112,10 +1112,10 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
 
               {/* Hook Lab Panel */}
               {hookLabOpen && hookVariants.length > 0 && (
-                <div className="bg-surface-elevated border border-violet-200 rounded-2xl p-4">
+                <div className="bg-surface-elevated border border-teal-200 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Zap size={14} className="text-violet-500" />
+                      <Zap size={14} className="text-teal-600" />
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted">Hook Lab</p>
                     </div>
                     <button onClick={() => setHookLabOpen(false)} className="text-themed-muted hover:text-themed-secondary">
@@ -1128,7 +1128,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                       <button
                         key={i}
                         onClick={() => { navigator.clipboard.writeText(hook.text); }}
-                        className="w-full text-left p-3 rounded-xl border border-themed-subtle hover:border-violet-200 hover:bg-violet-50/50 transition-colors group"
+                        className="w-full text-left p-3 rounded-xl border border-themed-subtle hover:border-teal-200 hover:bg-teal-50/50 transition-colors group"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm text-themed-secondary font-medium">{hook.text}</p>
@@ -1141,10 +1141,10 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
                             )}>
                               {hook.score}/33
                             </span>
-                            <Copy size={12} className="text-themed-muted group-hover:text-violet-500 transition-colors" />
+                            <Copy size={12} className="text-themed-muted group-hover:text-teal-600 transition-colors" />
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider mt-1 inline-block">{hook.type}</span>
+                        <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider mt-1 inline-block">{hook.type}</span>
                         {hook.breakdown && (
                           <div className="mt-2 pt-2 border-t border-slate-50 space-y-0.5">
                             <p className="text-[10px] text-themed-muted"><span className="font-bold text-teal-600">Context:</span> {hook.breakdown.contextLean}</p>
@@ -1718,7 +1718,7 @@ export const CaptionStudio: React.FC<CaptionStudioProps> = ({ onNavigate }) => {
               {/* Visual description & mood */}
               <p className="text-sm text-themed-secondary mb-2">{videoAnalysis.visualDescription || ""}</p>
               {videoAnalysis.mood ? (
-                <span className="inline-block px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold mb-3">
+                <span className="inline-block px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold mb-3">
                   {videoAnalysis.mood}
                 </span>
               ) : null}

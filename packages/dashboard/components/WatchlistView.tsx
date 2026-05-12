@@ -37,7 +37,7 @@ type IntelResponse = {
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
-  Instagram: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+  Instagram: "bg-rose-600 text-white",
   YouTube: "bg-red-600 text-white",
   Twitter: "bg-sky-500 text-white",
   X: "bg-slate-900 text-white",
@@ -414,7 +414,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Eye size={20} className="text-violet-500" />
+            <Eye size={20} className="text-teal-600" />
             <h2 className="text-lg font-serif font-bold text-themed">Creator Watchlist</h2>
           </div>
           <p className="text-sm text-themed-tertiary">
@@ -614,7 +614,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                   setAnalysisResult(result);
                 }}
                 disabled={analyzeMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-colors"
               >
                 {analyzeMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                 {analyzeMutation.isPending ? "Analyzing..." : "Analyze Position"}
@@ -638,11 +638,11 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                       <p key={i} className="text-xs text-rose-800 mb-1">- {g}</p>
                     ))}
                   </div>
-                  <div className="border border-violet-200 bg-violet-50 rounded-xl p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-2">Opportunities</p>
+                  <div className="border border-teal-200 bg-teal-50 rounded-xl p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 mb-2">Opportunities</p>
                     {analysisResult.opportunities.map((o, i) => (
                       <div key={i} className="flex items-start justify-between gap-2 mb-1.5">
-                        <p className="text-xs text-violet-800 flex-1">- {o}</p>
+                        <p className="text-xs text-teal-800 flex-1">- {o}</p>
                         <button
                           onClick={() => addIdeaMutation.mutate({
                             topic: o,
@@ -657,7 +657,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                             "shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider transition-colors",
                             addedIdea === o
                               ? "bg-teal-100 text-teal-700"
-                              : "bg-violet-100 text-violet-700 hover:bg-teal-100 hover:text-teal-700",
+                              : "bg-teal-100 text-teal-700 hover:bg-teal-100 hover:text-teal-700",
                           )}
                         >
                           {addedIdea === o ? <Check size={9} /> : <Plus size={9} />}
@@ -802,7 +802,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
                 <button
                   onClick={() => syncMutation.mutate()}
                   disabled={syncMutation.isPending || runNowMutation.isPending}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-700 disabled:opacity-50"
                   title="Sync latest report from n8n"
                 >
                   <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
@@ -1049,7 +1049,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onNavigate }) => {
               <button
                 onClick={() => syncMutation.mutate()}
                 disabled={syncMutation.isPending || runNowMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-violet-50 text-violet-600 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-50 transition-colors"
               >
                 <RefreshCw size={12} className={syncMutation.isPending ? "animate-spin" : ""} />
                 {syncMutation.isPending ? "Syncing..." : "Sync"}
@@ -1223,7 +1223,7 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
             className={cn(
               "inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-all border",
               creator.hasInsight
-                ? "border-violet-200 text-violet-600 hover:bg-violet-50"
+                ? "border-teal-200 text-teal-700 hover:bg-teal-50"
                 : "border-themed text-themed-muted cursor-not-allowed",
             )}
           >
@@ -1236,10 +1236,10 @@ const CreatorCard: React.FC<CreatorCardProps> = ({ creator, isExpanded, onToggle
             className={cn(
               "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all",
               (analyzeMutation.isPending || isEnriching)
-                ? "bg-violet-100 text-violet-500"
+                ? "bg-teal-100 text-teal-600"
                 : creator.hasInsight
                   ? "bg-surface-hover text-themed-secondary hover:bg-surface-hover"
-                  : "bg-violet-600 text-white hover:bg-violet-700",
+                  : "bg-teal-600 text-white hover:bg-teal-700",
             )}
           >
             {(analyzeMutation.isPending || isEnriching) ? (
@@ -1530,7 +1530,7 @@ const CreatorInsightPanel: React.FC<{ handle: string }> = ({ handle }) => {
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-muted mb-1">Hook Styles</p>
           <div className="flex flex-wrap gap-1">
             {insight.hookStyles.slice(0, 6).map((h, i) => (
-              <span key={i} className="bg-violet-50 text-violet-700 text-[10px] px-2 py-0.5 rounded-full">{h}</span>
+              <span key={i} className="bg-teal-50 text-teal-700 text-[10px] px-2 py-0.5 rounded-full">{h}</span>
             ))}
           </div>
         </div>
@@ -1648,10 +1648,10 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
   return (
     <div className="space-y-4">
       {/* Analyze URL */}
-      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-2xl p-4">
+      <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4">
         <button
           onClick={() => { setAnalyzeUrlOpen(!analyzeUrlOpen); setUrlResult(null); }}
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-purple-600 hover:text-purple-700"
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-teal-700 hover:text-teal-800"
         >
           <Link size={12} />
           Analyze Any Video URL
@@ -1664,28 +1664,28 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="Paste YouTube, Instagram, or TikTok URL..."
-                className="flex-1 px-3 py-2 rounded-lg border border-purple-200 text-sm text-themed-secondary focus:outline-none focus:border-purple-400 bg-surface-elevated"
+                className="flex-1 px-3 py-2 rounded-lg border border-teal-200 text-sm text-themed-secondary focus:outline-none focus:border-teal-400 bg-surface-elevated"
               />
               <button
                 onClick={() => { if (urlInput.trim()) analyzeUrlMutation.mutate(urlInput.trim()); }}
                 disabled={analyzeUrlMutation.isPending || !urlInput.trim()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 text-white text-[10px] font-bold hover:bg-purple-700 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-teal-600 text-white text-[10px] font-bold hover:bg-teal-700 disabled:opacity-50"
               >
                 {analyzeUrlMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Dna size={12} />}
                 {analyzeUrlMutation.isPending ? "Analyzing..." : "Deep Analyze"}
               </button>
             </div>
             {analyzeUrlMutation.isPending && (
-              <p className="text-xs text-purple-500">Downloading video, extracting frames, transcribing audio, and analyzing with AI. This may take 1-3 minutes...</p>
+              <p className="text-xs text-teal-600">Downloading video, extracting frames, transcribing audio, and analyzing with AI. This may take 1-3 minutes...</p>
             )}
             {analyzeUrlMutation.isError && (
               <p className="text-xs text-rose-500">{(analyzeUrlMutation.error as Error).message}</p>
             )}
             {urlResult && (
-              <div className="bg-surface-elevated border border-purple-200 rounded-xl p-4 space-y-2">
+              <div className="bg-surface-elevated border border-teal-200 rounded-xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-themed">{urlResult.videoTitle}</p>
-                  <span className="text-[9px] font-bold text-purple-500">
+                  <span className="text-[9px] font-bold text-teal-600">
                     {urlResult.frameCount} frames | {urlResult.hasTranscript ? "Transcribed" : "No transcript"}
                   </span>
                 </div>
@@ -1710,7 +1710,7 @@ const VideosTab: React.FC<VideosTabProps> = ({ creators }) => {
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors",
                 scanMutation.isPending && scanMutation.variables?.handle === c.handle
-                  ? "bg-violet-100 text-violet-500"
+                  ? "bg-teal-100 text-teal-600"
                   : "bg-surface-hover text-themed-secondary hover:bg-surface-hover",
               )}
             >
@@ -1985,9 +1985,9 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
     <div className="space-y-3">
       {/* One-sentence concept banner */}
       {breakdown.oneSentenceConcept && (
-        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-3">
-          <p className="text-[9px] font-black uppercase tracking-wider text-violet-400 mb-1">Core Concept</p>
-          <p className="text-sm font-medium text-violet-900">{breakdown.oneSentenceConcept}</p>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
+          <p className="text-[9px] font-black uppercase tracking-wider text-teal-600 mb-1">Core Concept</p>
+          <p className="text-sm font-medium text-teal-900">{breakdown.oneSentenceConcept}</p>
         </div>
       )}
 
@@ -2041,7 +2041,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
                     conflict: "bg-amber-100 border-amber-200 text-amber-700",
                     build: "bg-sky-100 border-sky-200 text-sky-700",
                     resolution: "bg-emerald-100 border-emerald-200 text-emerald-700",
-                    cta: "bg-violet-100 border-violet-200 text-violet-700",
+                    cta: "bg-teal-100 border-teal-200 text-teal-700",
                   };
                   return (
                     <div key={act} className={cn("flex-1 rounded-lg border p-2", colors[act])}>
@@ -2064,7 +2064,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
               <p className="text-[9px] font-black uppercase tracking-wider text-themed-muted mb-1">Aesthetic Keywords</p>
               <div className="flex flex-wrap gap-1">
                 {aesthetics.map((kw, i) => (
-                  <span key={i} className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-medium border border-purple-200">
+                  <span key={i} className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-medium border border-teal-200">
                     {kw}
                   </span>
                 ))}
@@ -2194,7 +2194,7 @@ const DnaDisplay: React.FC<{ breakdown: VideoBreakdown }> = ({ breakdown }) => {
               <div className="space-y-1.5">
                 {replication.map((step, i) => (
                   <div key={i} className="flex items-start gap-2 bg-surface-hover rounded-lg p-2.5">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-black flex items-center justify-center">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-black flex items-center justify-center">
                       {i + 1}
                     </span>
                     <p className="text-xs text-themed-secondary">{step}</p>
@@ -2291,7 +2291,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
               {video.videoTitle || "Untitled Video"}
             </p>
             {hasDeepDna && (
-              <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[8px] font-bold">
+              <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[8px] font-bold">
                 <Dna size={8} /> DNA
               </span>
             )}
@@ -2318,7 +2318,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
           <div className="flex items-center gap-2 mt-2">
             <button
               onClick={onToggle}
-              className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-600 hover:text-violet-700"
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 hover:text-teal-700"
             >
               {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
               {isExpanded ? "Hide" : "Analyze"}
@@ -2366,7 +2366,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
               <button
                 onClick={() => analyzeMutation.mutate()}
                 disabled={analyzeMutation.isPending || deepAnalyzeMutation.isPending}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold hover:bg-violet-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold hover:bg-teal-100 disabled:opacity-50"
               >
                 {analyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                 {analyzeMutation.isPending ? "Analyzing..." : "Quick Breakdown"}
@@ -2374,7 +2374,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
               <button
                 onClick={() => deepAnalyzeMutation.mutate()}
                 disabled={deepAnalyzeMutation.isPending || analyzeMutation.isPending}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold hover:bg-purple-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold hover:bg-teal-100 disabled:opacity-50"
               >
                 {deepAnalyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Dna size={10} />}
                 {deepAnalyzeMutation.isPending ? "Deep Analyzing..." : "Deep Analyze"}
@@ -2387,7 +2387,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, isExpanded, onToggle }) =>
               <button
                 onClick={() => deepAnalyzeMutation.mutate()}
                 disabled={deepAnalyzeMutation.isPending}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold hover:bg-purple-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold hover:bg-teal-100 disabled:opacity-50"
               >
                 {deepAnalyzeMutation.isPending ? <Loader2 size={10} className="animate-spin" /> : <Dna size={10} />}
                 {deepAnalyzeMutation.isPending ? "Deep Analyzing..." : "Upgrade to Deep DNA"}

@@ -131,7 +131,7 @@ const PLATFORM_OPTIONS = [
 type PlatformOption = (typeof PLATFORM_OPTIONS)[number];
 
 const SLIDE_TYPE_STYLES: Record<string, { label: string; color: string }> = {
-  cover:   { label: "Cover",   color: "bg-violet-100 text-violet-700 border-violet-200" },
+  cover:   { label: "Cover",   color: "bg-teal-100 text-teal-700 border-teal-200" },
   content: { label: "Content", color: "bg-surface-hover text-themed-secondary border-themed"   },
   rehook:  { label: "Rehook",  color: "bg-sky-100 text-sky-700 border-sky-200"         },
   cta:     { label: "CTA",     color: "bg-teal-100 text-teal-700 border-teal-200"      },
@@ -312,7 +312,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-teal-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
             >
               {saving ? <Loader2 size={10} className="animate-spin" /> : null}
               Save
@@ -329,7 +329,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
             <button
               onClick={handleGenerateVariants}
               disabled={loadingVariants}
-              className="flex items-center gap-1.5 text-xs font-bold text-violet-500 hover:text-violet-700 disabled:opacity-40"
+              className="flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:text-teal-700 disabled:opacity-40"
             >
               {loadingVariants ? <Loader2 size={10} className="animate-spin" /> : <FlaskConical size={10} />}
               {loadingVariants ? "Generating..." : variants ? "Regenerate Variants" : "A/B Variants"}
@@ -343,7 +343,7 @@ function SlideEditor({ slide, isActive, carouselId, platform, onUpdated }: Slide
                       <span className="text-[9px] font-black uppercase tracking-wider text-themed-muted">{v.angle}</span>
                       <button
                         onClick={() => applyVariant(v)}
-                        className="text-[10px] font-bold text-violet-500 hover:text-violet-700"
+                        className="text-[10px] font-bold text-teal-600 hover:text-teal-700"
                       >
                         Use this
                       </button>
@@ -384,8 +384,8 @@ function CarouselCard({ carousel, isActive, onSelect }: CarouselCardProps) {
       className={cn(
         "w-full text-left p-3 rounded-xl border transition-all",
         isActive
-          ? "border-violet-400 bg-violet-50"
-          : "border-themed bg-surface-elevated hover:border-violet-300 hover:bg-surface-hover"
+          ? "border-violet-400 bg-teal-50"
+          : "border-themed bg-surface-elevated hover:border-teal-300 hover:bg-surface-hover"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -483,10 +483,10 @@ function AnalyticsPanel({ carousels, open, onToggle }: AnalyticsPanelProps) {
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-themed-tertiary uppercase tracking-wider">Versions</p>
               {latestVersioned.templateVersion && (
-                <p className="text-[10px] text-themed-tertiary">Template <span className="font-mono text-violet-600">{latestVersioned.templateVersion}</span></p>
+                <p className="text-[10px] text-themed-tertiary">Template <span className="font-mono text-teal-700">{latestVersioned.templateVersion}</span></p>
               )}
               {latestVersioned.strategyVersion && (
-                <p className="text-[10px] text-themed-tertiary">Strategy <span className="font-mono text-violet-600">{latestVersioned.strategyVersion}</span></p>
+                <p className="text-[10px] text-themed-tertiary">Strategy <span className="font-mono text-teal-700">{latestVersioned.strategyVersion}</span></p>
               )}
             </div>
           )}
@@ -898,7 +898,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
         <div className="p-3 border-b border-themed">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <LayoutGrid size={14} className="text-violet-600" />
+              <LayoutGrid size={14} className="text-teal-700" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-themed-tertiary">Carousel Lab</span>
             </div>
           </div>
@@ -907,7 +907,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
             {(["library", "watch"] as const).map((tab) => (
               <button key={tab} onClick={() => setLeftTab(tab)}
                 className={cn("px-3 py-1 rounded-full text-[10px] font-bold transition-colors",
-                  leftTab === tab ? "bg-violet-600 text-white" : "text-themed-muted hover:bg-surface-hover"
+                  leftTab === tab ? "bg-teal-600 text-white" : "text-themed-muted hover:bg-surface-hover"
                 )}>
                 {tab === "library" ? "Library" : "Watch"}
               </button>
@@ -1021,7 +1021,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     <option value="linkedin">LI</option>
                   </select>
                   <input name="handle" placeholder="@handle" className="flex-1 text-[11px] bg-surface-elevated border border-themed rounded-lg px-2 py-1.5 placeholder-slate-400" />
-                  <button type="submit" className="px-2 py-1.5 rounded-lg bg-violet-600 text-white text-[10px] font-bold">+</button>
+                  <button type="submit" className="px-2 py-1.5 rounded-lg bg-teal-600 text-white text-[10px] font-bold">+</button>
                 </form>
               </div>
 
@@ -1039,7 +1039,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                           fetch(`/api/carousels/watch/accounts/${acct.id}/scan`, { method: "POST" })
                             .then(() => queryClient.invalidateQueries({ queryKey: ["carousel-watch-feed"] }));
                         }}
-                        className="text-[10px] font-bold text-violet-500 hover:text-violet-700"
+                        className="text-[10px] font-bold text-teal-600 hover:text-teal-700"
                       >
                         Scan
                       </button>
@@ -1074,7 +1074,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-[9px] font-bold text-themed-muted">@{post.handle}</span>
                         {post.analysis?.hookTechnique ? (
-                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                          <span className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
                             {String(post.analysis.hookTechnique)}
                           </span>
                         ) : null}
@@ -1083,7 +1083,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                       <div className="flex items-center gap-2 mt-1 text-[9px] text-themed-muted">
                         {post.likes > 0 && <span>{post.likes} likes</span>}
                         {post.comments > 0 && <span>{post.comments} comments</span>}
-                        <span className="text-violet-500 font-bold ml-auto">Remix</span>
+                        <span className="text-teal-600 font-bold ml-auto">Remix</span>
                       </div>
                     </button>
                   ))}
@@ -1108,11 +1108,11 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                   <button
                     key={spark.topic}
                     onClick={() => applySparkStarter(spark)}
-                    className="w-full text-left p-3 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                    className="w-full text-left p-3 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-teal-50 transition-all group"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm">{spark.icon}</span>
-                      <span className="text-[10px] font-black uppercase tracking-wider text-themed-muted group-hover:text-violet-600">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-themed-muted group-hover:text-teal-700">
                         {spark.archetype}
                       </span>
                     </div>
@@ -1140,10 +1140,10 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     <button
                       key={spark.topic}
                       onClick={() => applySparkStarter(spark)}
-                      className="w-full text-left px-3 py-2 rounded-lg border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 rounded-lg border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-teal-50 transition-all group flex items-center gap-2"
                     >
                       <span className="text-sm shrink-0">{spark.icon}</span>
-                      <p className="text-[11px] font-semibold text-themed-secondary line-clamp-1 group-hover:text-violet-700">{spark.topic}</p>
+                      <p className="text-[11px] font-semibold text-themed-secondary line-clamp-1 group-hover:text-teal-700">{spark.topic}</p>
                     </button>
                   ))}
                 </div>
@@ -1155,7 +1155,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
         <div className="p-3 border-t border-themed">
           <button
             onClick={() => { setActiveCarouselId(null); setLeftTab("library"); }}
-            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-violet-600 text-white text-[11px] font-bold hover:bg-violet-700 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-teal-600 text-white text-[11px] font-bold hover:bg-violet-700 transition-colors"
           >
             <Plus size={12} /> New Carousel
           </button>
@@ -1210,7 +1210,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     className={cn(
                       "px-4 py-2 rounded-full text-xs font-bold border transition-colors flex items-center gap-1.5",
                       mode === m.id
-                        ? "bg-violet-600 text-white border-violet-600"
+                        ? "bg-teal-600 text-white border-violet-600"
                         : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                     )}
                   >
@@ -1234,7 +1234,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                           className={cn(
                             "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
-                              ? "bg-violet-600 text-white border-violet-600"
+                              ? "bg-teal-600 text-white border-violet-600"
                               : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                           )}
                         >
@@ -1257,18 +1257,18 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
 
                       {archetype ? (
                         /* Collapsed — show selected archetype */
-                        <div className="flex items-start gap-3 p-4 rounded-xl border border-violet-200 bg-violet-50">
+                        <div className="flex items-start gap-3 p-4 rounded-xl border border-teal-200 bg-teal-50">
                           <span className="text-2xl">{ARCHETYPE_META[archetype].icon}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-black text-violet-800 capitalize">{archetype}</p>
-                            <p className="text-xs text-violet-600">{ARCHETYPE_META[archetype].descriptor}</p>
+                            <p className="text-sm font-black text-teal-800 capitalize">{archetype}</p>
+                            <p className="text-xs text-teal-700">{ARCHETYPE_META[archetype].descriptor}</p>
                             <p className="text-[11px] italic text-themed-tertiary mt-1 line-clamp-1">
                               e.g. "{ARCHETYPE_META[archetype].exampleHook}"
                             </p>
                           </div>
                           <button
                             onClick={() => setArchetype("")}
-                            className="text-xs font-bold text-violet-500 hover:text-violet-700 shrink-0 mt-0.5"
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 shrink-0 mt-0.5"
                           >
                             Change
                           </button>
@@ -1282,11 +1282,11 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                               <button
                                 key={a.id}
                                 onClick={() => setArchetype(a.id)}
-                                className="text-left p-4 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-violet-50 transition-all group"
+                                className="text-left p-4 rounded-xl border border-themed bg-surface-elevated hover:border-violet-400 hover:bg-teal-50 transition-all group"
                               >
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-xl">{meta.icon}</span>
-                                  <span className="text-sm font-black text-themed-secondary group-hover:text-violet-700">{a.label}</span>
+                                  <span className="text-sm font-black text-themed-secondary group-hover:text-teal-700">{a.label}</span>
                                 </div>
                                 <p className="text-xs text-themed-tertiary leading-relaxed mb-1.5">{meta.descriptor}</p>
                                 <p className="text-[11px] italic text-themed-muted line-clamp-2">"{meta.exampleHook}"</p>
@@ -1355,7 +1355,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                         {/* Hook pattern quick-fill */}
                         <button
                           onClick={() => setShowHookPatterns((v) => !v)}
-                          className="mt-2 flex items-center gap-1 text-xs font-bold text-violet-500 hover:text-violet-700"
+                          className="mt-2 flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-700"
                         >
                           <ChevronDown size={11} className={cn("transition-transform", showHookPatterns && "rotate-180")} />
                           Use a proven pattern
@@ -1367,7 +1367,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                               <div
                                 key={pat.id}
                                 className={cn(
-                                  "flex items-start gap-3 px-3 py-3 hover:bg-violet-50 transition-colors",
+                                  "flex items-start gap-3 px-3 py-3 hover:bg-teal-50 transition-colors",
                                   i < HOOK_PATTERNS.length - 1 && "border-b border-themed-subtle"
                                 )}
                               >
@@ -1392,7 +1392,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                                     "shrink-0 text-xs font-bold mt-0.5",
                                     pendingHookReplace === i
                                       ? "text-rose-500 hover:text-rose-700"
-                                      : "text-violet-500 hover:text-violet-700"
+                                      : "text-teal-600 hover:text-teal-700"
                                   )}
                                 >
                                   {pendingHookReplace === i ? "Replace?" : "Use"}
@@ -1414,7 +1414,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                             <button
                               onClick={() => suggestPointsMutation.mutate()}
                               disabled={suggestPointsMutation.isPending}
-                              className="text-[11px] font-bold text-violet-500 hover:text-violet-700 disabled:opacity-40 flex items-center gap-1 shrink-0"
+                              className="text-[11px] font-bold text-teal-600 hover:text-teal-700 disabled:opacity-40 flex items-center gap-1 shrink-0"
                             >
                               {suggestPointsMutation.isPending ? (
                                 <span className="animate-pulse">Thinking...</span>
@@ -1452,7 +1452,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                           {talkingPoints.length < 6 && (
                             <button
                               onClick={() => setTalkingPoints([...talkingPoints, ""])}
-                              className="text-xs text-violet-500 hover:text-violet-700 font-bold"
+                              className="text-xs text-teal-600 hover:text-teal-700 font-bold"
                             >
                               + Add point
                             </button>
@@ -1473,15 +1473,15 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                                 className={cn(
                                   "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
                                   i < CTA_TEMPLATES.length && "border-b border-themed-subtle",
-                                  isSelected ? "bg-violet-50" : "bg-surface-elevated hover:bg-surface-hover"
+                                  isSelected ? "bg-teal-50" : "bg-surface-elevated hover:bg-surface-hover"
                                 )}
                               >
                                 <div className={cn(
                                   "w-3.5 h-3.5 rounded-full border-2 shrink-0 transition-colors",
-                                  isSelected ? "border-violet-600 bg-violet-600" : "border-themed"
+                                  isSelected ? "border-violet-600 bg-teal-600" : "border-themed"
                                 )} />
                                 <div className="flex-1 min-w-0">
-                                  <p className={cn("text-sm font-semibold", isSelected ? "text-violet-800" : "text-themed-secondary")}>
+                                  <p className={cn("text-sm font-semibold", isSelected ? "text-teal-800" : "text-themed-secondary")}>
                                     {cta.text}
                                   </p>
                                 </div>
@@ -1498,12 +1498,12 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                             onClick={() => setCtaMode("custom")}
                             className={cn(
                               "w-full flex items-center gap-3 px-3 py-3 text-left transition-colors",
-                              ctaMode === "custom" ? "bg-violet-50" : "bg-surface-elevated hover:bg-surface-hover"
+                              ctaMode === "custom" ? "bg-teal-50" : "bg-surface-elevated hover:bg-surface-hover"
                             )}
                           >
                             <div className={cn(
                               "w-3.5 h-3.5 rounded-full border-2 shrink-0",
-                              ctaMode === "custom" ? "border-violet-600 bg-violet-600" : "border-themed"
+                              ctaMode === "custom" ? "border-violet-600 bg-teal-600" : "border-themed"
                             )} />
                             <span className="text-sm font-semibold text-themed-tertiary">Custom…</span>
                           </button>
@@ -1526,7 +1526,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                   <button
                     onClick={() => generateMutation.mutate()}
                     disabled={isGenerating || !topic.trim()}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-teal-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isGenerating ? (
                       <><Loader2 size={12} className="animate-spin" /> Generating…</>
@@ -1550,7 +1550,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                           className={cn(
                             "px-4 py-2 rounded-full text-xs font-bold border transition-colors",
                             platform === opt
-                              ? "bg-violet-600 text-white border-violet-600"
+                              ? "bg-teal-600 text-white border-violet-600"
                               : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                           )}
                         >
@@ -1579,8 +1579,8 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-xl border text-[11px] transition-colors",
                             selectedVideoCode === v.code
-                              ? "border-violet-400 bg-violet-50 font-bold text-violet-800"
-                              : "border-themed bg-surface-elevated hover:border-violet-300 text-themed-secondary"
+                              ? "border-violet-400 bg-teal-50 font-bold text-teal-800"
+                              : "border-themed bg-surface-elevated hover:border-teal-300 text-themed-secondary"
                           )}
                         >
                           <span className="font-mono text-[9px] text-themed-muted mr-2">{String(v.code)}</span>
@@ -1594,7 +1594,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                   <button
                     onClick={() => fromVideoMutation.mutate()}
                     disabled={isGenerating || !selectedVideoCode}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-teal-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isGenerating ? (
                       <><Loader2 size={12} className="animate-spin" /> Generating…</>
@@ -1608,9 +1608,9 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
               {/* ── Remix Mode ─────────────────────────────────────────────── */}
               {mode === "remix" && (
                 <>
-                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-1">
-                    <p className="text-xs font-bold text-violet-800">How Remix works</p>
-                    <p className="text-[11px] text-violet-600">Paste a carousel URL or upload a screenshot. AI extracts the structural DNA (layout, hook technique, content flow) and generates 100% original content in your brand using the same proven structure.</p>
+                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-1">
+                    <p className="text-xs font-bold text-teal-800">How Remix works</p>
+                    <p className="text-[11px] text-teal-700">Paste a carousel URL or upload a screenshot. AI extracts the structural DNA (layout, hook technique, content flow) and generates 100% original content in your brand using the same proven structure.</p>
                   </div>
 
                   {/* Platform */}
@@ -1620,7 +1620,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                       {PLATFORM_OPTIONS.map((opt, i) => (
                         <button key={i} onClick={() => handlePlatformChange(opt)}
                           className={cn("px-4 py-2 rounded-full text-xs font-bold border transition-colors",
-                            platform === opt ? "bg-violet-600 text-white border-violet-600" : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
+                            platform === opt ? "bg-teal-600 text-white border-violet-600" : "bg-surface-elevated text-themed-tertiary border-themed hover:border-violet-400"
                           )}>{opt.label}</button>
                       ))}
                     </div>
@@ -1676,7 +1676,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                     <button
                       onClick={() => remixMutation.mutate()}
                       disabled={remixMutation.isPending || (!remixUrl && !remixImageBase64) || !topic.trim()}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-teal-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       {remixMutation.isPending ? (
                         <><Loader2 size={12} className="animate-spin" /> Analyzing...</>
@@ -1702,14 +1702,14 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                       </div>
 
                       <p className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Generated Content Preview</p>
-                      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-2">
-                        <p className="text-sm font-bold text-violet-800">"{remixAnalysis.generated.hookLine}"</p>
+                      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-2">
+                        <p className="text-sm font-bold text-teal-800">"{remixAnalysis.generated.hookLine}"</p>
                         <ul className="space-y-1">
                           {remixAnalysis.generated.talkingPoints.map((pt, i) => (
-                            <li key={i} className="text-xs text-violet-700">{i + 1}. {pt}</li>
+                            <li key={i} className="text-xs text-teal-700">{i + 1}. {pt}</li>
                           ))}
                         </ul>
-                        <p className="text-[11px] text-violet-600 italic">CTA: {remixAnalysis.generated.ctaText}</p>
+                        <p className="text-[11px] text-teal-700 italic">CTA: {remixAnalysis.generated.ctaText}</p>
                       </div>
 
                       <button
@@ -1743,7 +1743,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                   </span>
                   <span className="text-[10px] text-themed-muted capitalize">{activeCarousel.platform}</span>
                   {activeCarousel.hookArchetype && (
-                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
                       {activeCarousel.hookArchetype}
                     </span>
                   )}
@@ -1760,7 +1760,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
               </div>
 
               {activeCarousel.hookLine && (
-                <p className="text-sm font-bold italic text-themed-secondary bg-violet-50 border border-violet-100 rounded-xl px-4 py-3">
+                <p className="text-sm font-bold italic text-themed-secondary bg-teal-50 border border-teal-100 rounded-xl px-4 py-3">
                   "{activeCarousel.hookLine}"
                 </p>
               )}
@@ -1776,8 +1776,8 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                         className={cn(
                           "shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border transition-all",
                           activeSlideIndex === i
-                            ? "border-violet-400 bg-violet-50 ring-2 ring-violet-300 ring-offset-1"
-                            : "border-themed bg-surface-elevated hover:border-violet-300"
+                            ? "border-violet-400 bg-teal-50 ring-2 ring-violet-300 ring-offset-1"
+                            : "border-themed bg-surface-elevated hover:border-teal-300"
                         )}
                       >
                         <span className="text-[9px] font-black text-themed-tertiary">{i + 1}</span>
@@ -1849,7 +1849,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
                   <button
                     onClick={() => retryMutation.mutate(activeCarousel.id)}
                     disabled={retryMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border border-violet-500 text-violet-600 hover:bg-violet-50 disabled:opacity-40 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold border border-violet-500 text-teal-700 hover:bg-teal-50 disabled:opacity-40 transition-colors"
                   >
                     <RotateCcw size={10} className={retryMutation.isPending ? "animate-spin" : ""} />
                     {retryMutation.isPending ? "Retrying..." : "Retry"}
@@ -1948,7 +1948,7 @@ export function CarouselLab({ onNavigate: _onNavigate, initialRemix, onConsumeRe
 
                   {(autopsyData.improvements as Array<Record<string, unknown>>)?.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Suggested Rewrites</p>
+                      <p className="text-[10px] font-bold text-teal-700 uppercase mb-1">Suggested Rewrites</p>
                       {(autopsyData.improvements as Array<Record<string, unknown>>).map((imp, i) => (
                         <div key={i} className="bg-surface-elevated rounded-xl p-3 border border-themed mt-1.5">
                           <p className="text-[10px] text-themed-muted mb-1">Slide {(imp.slideIndex as number) + 1} — {imp.reason as string}</p>

@@ -22,6 +22,7 @@ import {
   Compass,
   Wand2,
   Zap,
+  Shuffle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
@@ -57,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     phase: "produce",
     items: [
       { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={18} /> },
+      { view: "CANVAS", label: "Canvas", icon: <Shuffle size={18} /> },
       { view: "CAROUSEL_LAB", label: "Carousel Lab", icon: <LayoutGrid size={18} /> },
       { view: "SESSION", label: "Session", icon: <Timer size={18} /> },
     ],
@@ -170,7 +172,7 @@ const NotificationBell: React.FC<{ onNavigate: (view: DashboardView) => void }> 
 
 const AVATAR_COLOR_MAP: Record<string, string> = {
   teal: "bg-teal-600",
-  violet: "bg-violet-600",
+  violet: "bg-teal-600",
   amber: "bg-amber-500",
   rose: "bg-rose-500",
   sky: "bg-sky-500",

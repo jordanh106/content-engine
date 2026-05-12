@@ -37,7 +37,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   youtube_shorts: "bg-red-50 border-red-200 text-red-700",
   youtube_long: "bg-red-50 border-red-200 text-red-700",
   tiktok: "bg-surface-hover border-themed text-themed-secondary",
-  instagram_stories: "bg-purple-50 border-purple-200 text-purple-700",
+  instagram_stories: "bg-rose-50 border-rose-200 text-rose-700",
 };
 
 function getMonday(d: Date): Date {
@@ -72,7 +72,7 @@ const PLATFORM_DOTS: Record<string, string> = {
   youtube_shorts: "bg-red-400",
   youtube_long: "bg-red-600",
   tiktok: "bg-slate-600",
-  instagram_stories: "bg-purple-400",
+  instagram_stories: "bg-rose-400",
 };
 
 export const CalendarView: React.FC<CalendarViewProps> = ({ onNavigate }) => {
@@ -582,7 +582,7 @@ const FORMAT_LABELS: Record<string, { name: string; color: string }> = {
   B: { name: "Checklist", color: "bg-emerald-100 text-emerald-700" },
   C: { name: "Demo", color: "bg-sky-100 text-sky-700" },
   D: { name: "Myth Buster", color: "bg-rose-100 text-rose-700" },
-  E: { name: "Walkthrough", color: "bg-violet-100 text-violet-700" },
+  E: { name: "Walkthrough", color: "bg-teal-100 text-teal-700" },
   F: { name: "Quick Tip", color: "bg-orange-100 text-orange-700" },
   G: { name: "Patient Story", color: "bg-pink-100 text-pink-700" },
 };
@@ -669,15 +669,15 @@ const CalendarIntelligence: React.FC<{
       {/* Audience Coverage */}
       <div className="bg-surface-elevated border border-themed rounded-xl p-3">
         <div className="flex items-center gap-1.5 mb-2">
-          <Users size={12} className="text-violet-500" />
+          <Users size={12} className="text-teal-600" />
           <span className="text-[10px] font-black uppercase tracking-[0.15em] text-themed-muted">Audience Coverage</span>
         </div>
         {audienceEntries.length > 0 ? (
           <>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {audienceEntries.map(([prefix, count]) => (
-                <span key={prefix} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 bg-violet-50 text-violet-700 rounded-full">
-                  {AUDIENCE_PREFIXES[prefix]} <span className="text-violet-400">{count}</span>
+                <span key={prefix} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 bg-teal-50 text-teal-700 rounded-full">
+                  {AUDIENCE_PREFIXES[prefix]} <span className="text-teal-500">{count}</span>
                 </span>
               ))}
             </div>

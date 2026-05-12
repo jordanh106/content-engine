@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "probed_at": "2026-05-11",
+    "cli_version": "0.1.36",
+    "summary": "Higgsfield CLI v0.1.36 has no standalone TTS, music, or SFX models. Audio is bundled into video generation (Kling sound flag, Veo 3.1 native audio, Marketing Studio Video generate_audio flag). For continuous narration we use ElevenLabs as the v1 provider via voiceover-client.ts. When Higgsfield ships standalone Speak/Music/Voice CLI subcommands, swap the provider in voiceover-client.ts without changing routes."
+  },
+  "standalone_audio_models": {
+    "tts": null,
+    "music": null,
+    "sfx": null,
+    "voice_cloning": null
+  },
+  "video_models_with_bundled_audio": [
+    {
+      "model": "kling3_0",
+      "audio_flag": "sound",
+      "audio_flag_type": "string",
+      "audio_flag_values": ["on", "off"],
+      "notes": "Ambient + lip-sync where appropriate"
+    },
+    {
+      "model": "kling2_6",
+      "audio_flag": "sound",
+      "audio_flag_type": "boolean",
+      "notes": "Same as Kling 3.0"
+    },
+    {
+      "model": "cinematic_studio_video",
+      "audio_flag": "sound",
+      "audio_flag_type": "boolean",
+      "notes": "Cinematic Studio bundled audio"
+    },
+    {
+      "model": "marketing_studio_video",
+      "audio_flag": "generate_audio",
+      "audio_flag_type": "boolean",
+      "notes": "DTC ads voiceover via Marketing Studio pipeline"
+    },
+    {
+      "model": "veo3_1",
+      "audio_flag": null,
+      "notes": "Veo 3.1 generates native audio automatically; no flag exposed in CLI params"
+    },
+    {
+      "model": "seedance_2_0",
+      "audio_flag": null,
+      "notes": "Seedance 2.0 has bundled audio in web UI but no audio flag exposed in CLI params"
+    }
+  ],
+  "frame_pair_animation": {
+    "supported_models": ["kling3_0", "kling2_6", "veo3_1", "seedance_2_0", "cinematic_studio_video"],
+    "cli_flags": ["--start-image <upload_id_or_path>", "--end-image <upload_id_or_path>"],
+    "notes": "Per `higgsfield generate create --help`: 'Media flags: --image, --start-image, --end-image, --video, --audio. Media flags accept a UUID (upload id or job id) or a local file path — paths are auto-uploaded.' This is the smooth A→B transition mechanism."
+  },
+  "v1_provider_strategy": {
+    "voice": {
+      "provider": "elevenlabs",
+      "reason": "Higgsfield CLI does not yet expose standalone TTS. ElevenLabs has best-in-class voice quality, free tier (10k chars/mo), instant voice cloning API, and is the industry standard.",
+      "env_var": "ELEVENLABS_API_KEY",
+      "swap_point": "packages/dashboard/server/lib/higgsfield-audio-client.ts:generateVoiceover() — when Higgsfield ships a Speak CLI model, branch on provider here"
+    },
+    "music": {
+      "provider": "user_supplied_or_skip",
+      "reason": "No music gen in Higgsfield CLI; auto-music sourcing deferred to v2",
+      "fallback": "Hero tier reels can run without music; Kling's bundled ambient audio fills the gap"
+    },
+    "sfx": {
+      "provider": "skip_v1",
+      "reason": "No SFX gen in Higgsfield CLI; Kling sound=on bundles ambient SFX per clip"
+    },
+    "voice_cloning": {
+      "provider": "elevenlabs",
+      "reason": "ElevenLabs has instant cloning from a single sample upload",
+      "endpoint": "https://api.elevenlabs.io/v1/voices/add"
+    }
+  }
+}

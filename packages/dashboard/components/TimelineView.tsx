@@ -12,18 +12,18 @@ import { cn } from "../utils/cn.js";
 // ============================================
 
 const COMPONENT_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  TitleCard:        { bg: "bg-violet-100",  text: "text-violet-700",  border: "border-violet-200" },
+  TitleCard:        { bg: "bg-teal-100",  text: "text-teal-700",  border: "border-teal-200" },
   StatCard:         { bg: "bg-blue-100",    text: "text-blue-700",    border: "border-blue-200" },
   SectionCard:      { bg: "bg-teal-100",    text: "text-teal-700",    border: "border-teal-200" },
   HookText:         { bg: "bg-amber-100",   text: "text-amber-700",   border: "border-amber-200" },
   ChecklistOverlay: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200" },
   MythTruthReveal:  { bg: "bg-rose-100",    text: "text-rose-700",    border: "border-rose-200" },
-  StepIndicator:    { bg: "bg-indigo-100",  text: "text-indigo-700",  border: "border-indigo-200" },
+  StepIndicator:    { bg: "bg-teal-100",   text: "text-teal-700",    border: "border-teal-200" },
   FrequencyCard:    { bg: "bg-cyan-100",    text: "text-cyan-700",    border: "border-cyan-200" },
   CallToAction:     { bg: "bg-orange-100",  text: "text-orange-700",  border: "border-orange-200" },
   ChartCard:        { bg: "bg-sky-100",     text: "text-sky-700",     border: "border-sky-200" },
   QuoteCard:        { bg: "bg-pink-100",    text: "text-pink-700",    border: "border-pink-200" },
-  KineticText:      { bg: "bg-fuchsia-100", text: "text-fuchsia-700", border: "border-fuchsia-200" },
+  KineticText:      { bg: "bg-rose-100",   text: "text-rose-700",    border: "border-rose-200" },
 };
 
 const DEFAULT_COLORS = { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-200" };

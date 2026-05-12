@@ -36,7 +36,7 @@ type IdeaDetailProps = {
 
 const CATEGORY_META: Record<IdeaCategory, { label: string; color: string }> = {
   trending: { label: "Trending", color: "text-orange-600 bg-orange-50" },
-  competitor: { label: "Competitor", color: "text-violet-600 bg-violet-50" },
+  competitor: { label: "Competitor", color: "text-teal-700 bg-teal-50" },
   evergreen: { label: "Evergreen", color: "text-emerald-600 bg-emerald-50" },
   audience: { label: "Audience", color: "text-sky-600 bg-sky-50" },
   personal: { label: "Personal", color: "text-pink-600 bg-pink-50" },
@@ -104,26 +104,26 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
 
   if (isLoading) {
     return (
-      <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
-        <p className="text-xs text-violet-400">Loading concept...</p>
+      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+        <p className="text-xs text-teal-500">Loading concept...</p>
       </div>
     );
   }
 
   if (!concept) {
     return (
-      <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-teal-50 to-teal-50/40 border border-teal-200 rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 flex items-center gap-1">
               <Lightbulb size={10} /> Concept Validation
             </p>
-            <p className="text-xs text-violet-600 mt-1">Generate a one-sentence concept and validate it before scripting.</p>
+            <p className="text-xs text-teal-700 mt-1">Generate a one-sentence concept and validate it before scripting.</p>
           </div>
           <button
             onClick={onGenerate}
             disabled={isGenerating}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-600 text-white text-[10px] font-bold hover:bg-violet-700 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-600 text-white text-[10px] font-bold hover:bg-teal-700 disabled:opacity-50"
           >
             {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             {isGenerating ? "Generating..." : "Generate Concept"}
@@ -139,12 +139,12 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
   return (
     <div className={cn(
       "border rounded-xl p-4 space-y-3",
-      concept.approved ? "bg-emerald-50 border-emerald-200" : "bg-violet-50 border-violet-200",
+      concept.approved ? "bg-emerald-50 border-emerald-200" : "bg-teal-50 border-teal-200",
     )}>
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 flex items-center gap-1 mb-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 flex items-center gap-1 mb-1">
             <Lightbulb size={10} /> One-Sentence Concept
             {concept.approved && (
               <span className="inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[8px] font-bold">
@@ -194,8 +194,8 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
 
       {/* Refined version suggestion */}
       {concept.refinedVersion && !concept.approved && (
-        <div className="bg-white border border-violet-200 rounded-lg p-2.5">
-          <p className="text-[9px] font-bold text-violet-500 mb-0.5">AI Suggestion:</p>
+        <div className="bg-white border border-teal-200 rounded-lg p-2.5">
+          <p className="text-[9px] font-bold text-teal-600 mb-0.5">AI Suggestion:</p>
           <p className="text-xs text-slate-700 italic">{concept.refinedVersion}</p>
         </div>
       )}
@@ -221,7 +221,7 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
         {!concept.approved && (
           <button
             onClick={() => setShowRefine(!showRefine)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 text-violet-600 text-[10px] font-bold hover:bg-violet-200"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold hover:bg-teal-200"
           >
             <RefreshCw size={10} /> Refine
           </button>
@@ -243,12 +243,12 @@ const ConceptSection: React.FC<ConceptSectionProps> = ({ concept, isLoading, isG
             value={refineFeedback}
             onChange={(e) => setRefineFeedback(e.target.value)}
             placeholder="Optional feedback for refinement..."
-            className="flex-1 px-3 py-1.5 rounded-lg border border-violet-200 text-xs text-slate-700 focus:outline-none focus:border-violet-400"
+            className="flex-1 px-3 py-1.5 rounded-lg border border-teal-200 text-xs text-slate-700 focus:outline-none focus:border-teal-400"
           />
           <button
             onClick={() => { onRefine(refineFeedback || undefined); setShowRefine(false); setRefineFeedback(""); }}
             disabled={isRefining}
-            className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-[10px] font-bold hover:bg-violet-700 disabled:opacity-50"
+            className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-[10px] font-bold hover:bg-teal-700 disabled:opacity-50"
           >
             {isRefining ? <Loader2 size={10} className="animate-spin" /> : "Refine"}
           </button>
@@ -748,7 +748,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   <button
                     onClick={() => anglesMutation.mutate()}
                     disabled={anglesMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-600 text-[10px] font-bold uppercase tracking-widest hover:bg-violet-100 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-widest hover:bg-teal-100 transition-colors disabled:opacity-50"
                   >
                     {anglesMutation.isPending ? (
                       <Loader2 size={12} className="animate-spin" />
@@ -765,14 +765,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                 {anglesOpen && angles.length > 0 && (
                   <div className="space-y-2">
                     {angles.map((angle, i) => (
-                      <div key={i} className="p-3 bg-white border border-slate-200 rounded-xl hover:border-violet-200 transition-colors">
+                      <div key={i} className="p-3 bg-white border border-slate-200 rounded-xl hover:border-teal-200 transition-colors">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-700">{angle.title}</p>
                             <p className="text-xs text-slate-500 mt-0.5">{angle.description}</p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
                               {angle.archetype}
                             </span>
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-600">
@@ -905,9 +905,9 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   Writing Style
                 </p>
                 {selectedStyleId ? (
-                  <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
+                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-bold text-violet-600">Style Applied</span>
+                      <span className="text-[10px] font-bold text-teal-700">Style Applied</span>
                       <button
                         onClick={() => setSelectedStyleId(null)}
                         className="text-[10px] font-bold text-slate-400 hover:text-slate-600"
@@ -915,14 +915,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                         Clear
                       </button>
                     </div>
-                    <p className="text-sm text-violet-800 font-medium">
+                    <p className="text-sm text-teal-800 font-medium">
                       {stylesData?.styles?.find((s) => s.id === selectedStyleId)?.name || `Style #${selectedStyleId}`}
                     </p>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowStylePicker(!showStylePicker)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700 transition-colors"
                   >
                     <Palette size={14} />
                     Apply Writing Style
@@ -937,14 +937,14 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                         <button
                           key={style.id}
                           onClick={() => { setSelectedStyleId(style.id); setShowStylePicker(false); }}
-                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-slate-100 last:border-b-0"
+                          className="w-full text-left px-3 py-2 hover:bg-teal-50 transition-colors border-b border-slate-100 last:border-b-0"
                         >
                           <p className="text-sm font-medium text-slate-900">{style.name}</p>
                           {style.description && (
                             <p className="text-[10px] text-slate-500 mt-0.5">{style.description}</p>
                           )}
                           {style.sourceCreator && (
-                            <span className="text-[9px] text-violet-500 font-bold">{style.sourceCreator}</span>
+                            <span className="text-[9px] text-teal-600 font-bold">{style.sourceCreator}</span>
                           )}
                         </button>
                       ))
@@ -1033,7 +1033,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                         {developMutation.data.deliveryCues.map((cue, i) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold"
+                            className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded-full text-[10px] font-bold"
                           >
                             {cue}
                           </span>
@@ -1182,7 +1182,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   onChange={(e) => setCustomScript(e.target.value)}
                   placeholder="Paste your own script or notes here (optional)..."
                   rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 placeholder:text-slate-400"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 placeholder:text-slate-400"
                 />
               </div>
 
@@ -1206,7 +1206,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                         <button
                           key={s}
                           onClick={() => handleCaptionSend(s)}
-                          className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                          className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 hover:bg-teal-100 hover:text-teal-700 transition-colors"
                         >
                           {s}
                         </button>
@@ -1224,7 +1224,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                           ? "bg-teal-50 text-teal-900 ml-auto"
                           : msg.isError
                             ? "bg-rose-50 text-rose-800 border border-rose-200"
-                            : "bg-violet-50 text-violet-900",
+                            : "bg-teal-50 text-teal-900",
                       )}
                     >
                       {msg.content}
@@ -1277,7 +1277,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                 ))}
 
                 {captionLoading && (
-                  <div className="flex items-center gap-2 text-xs text-violet-500 py-1">
+                  <div className="flex items-center gap-2 text-xs text-teal-600 py-1">
                     <Loader2 size={12} className="animate-spin" />
                     <span>Writing captions...</span>
                   </div>
@@ -1294,7 +1294,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   placeholder="Generate captions or refine..."
                   rows={1}
                   disabled={captionLoading}
-                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 disabled:opacity-50 placeholder:text-slate-400"
+                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 disabled:opacity-50 placeholder:text-slate-400"
                 />
                 <button
                   onClick={() => handleCaptionSend()}
@@ -1302,7 +1302,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   className={cn(
                     "p-2 rounded-lg transition-colors flex-shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center",
                     captionInput.trim() && !captionLoading
-                      ? "bg-violet-600 text-white hover:bg-violet-700"
+                      ? "bg-teal-600 text-white hover:bg-teal-700"
                       : "bg-slate-100 text-slate-400 cursor-not-allowed",
                   )}
                 >
@@ -1367,7 +1367,7 @@ export const IdeaDetail: React.FC<IdeaDetailProps> = ({ idea, onClose, onUpdated
                   "flex items-center justify-center gap-2 px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-colors",
                   startProductionMutation.isPending
                     ? "bg-slate-100 text-slate-400 cursor-wait"
-                    : "bg-violet-600 text-white hover:bg-violet-700",
+                    : "bg-teal-600 text-white hover:bg-teal-700",
                 )}
               >
                 {startProductionMutation.isPending ? (

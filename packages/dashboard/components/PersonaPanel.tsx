@@ -406,15 +406,15 @@ const PersonaEditor: React.FC<{
               <button
                 onClick={handlePreview}
                 disabled={!previewTopic.trim() || previewing}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 {previewing ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
                 Preview
               </button>
             </div>
             {previewHook && (
-              <div className="p-3 bg-violet-50 border border-violet-200 rounded-xl">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 mb-1">{form.name}'s Hook</p>
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 mb-1">{form.name}'s Hook</p>
                 <p className="text-sm font-bold italic text-slate-800">"{previewHook}"</p>
               </div>
             )}

@@ -11,7 +11,7 @@ type VideoBottomSheetProps = {
 
 const PLATFORM_COLORS: Record<string, string> = {
   TikTok: "bg-slate-900 text-white",
-  Instagram: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+  Instagram: "bg-rose-600 text-white",
   YouTube: "bg-red-600 text-white",
 };
 

@@ -48,18 +48,18 @@ const HOOK_CATEGORIES = [
 
 const CATEGORY_COLORS: Record<string, string> = {
   question: "bg-sky-100 text-sky-700",
-  statistic: "bg-violet-100 text-violet-700",
+  statistic: "bg-teal-100 text-teal-700",
   myth: "bg-rose-100 text-rose-700",
   emotional: "bg-pink-100 text-pink-700",
   didyouknow: "bg-amber-100 text-amber-700",
   pattern_interrupt: "bg-orange-100 text-orange-700",
-  mystery: "bg-indigo-100 text-indigo-700",
+  mystery: "bg-teal-100 text-teal-700",
   list: "bg-emerald-100 text-emerald-700",
   problem: "bg-red-100 text-red-700",
-  shock: "bg-fuchsia-100 text-fuchsia-700",
+  shock: "bg-rose-100 text-rose-700",
   callout: "bg-cyan-100 text-cyan-700",
   transformation: "bg-teal-100 text-teal-700",
-  exclusivity: "bg-purple-100 text-purple-700",
+  exclusivity: "bg-slate-100 text-slate-700",
   controversial: "bg-rose-100 text-rose-700",
   fomo: "bg-yellow-100 text-yellow-700",
   urgency: "bg-red-100 text-red-700",
@@ -236,7 +236,7 @@ const SynthesizeStyleModal: React.FC<{
   };
 
   return (
-    <div className="bg-white border border-violet-200 rounded-2xl p-5 mb-5 shadow-sm">
+    <div className="bg-white border border-teal-200 rounded-2xl p-5 mb-5 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-serif font-bold text-slate-900">Synthesize Visual Style</h3>
         <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
@@ -253,14 +253,14 @@ const SynthesizeStyleModal: React.FC<{
       ) : (
         <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
           {breakdowns.map((b) => (
-            <label key={b.id} className={cn("flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors", selected.has(b.id) ? "border-violet-400 bg-violet-50" : "border-slate-200 hover:border-slate-300")}>
+            <label key={b.id} className={cn("flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors", selected.has(b.id) ? "border-teal-400 bg-teal-50" : "border-slate-200 hover:border-slate-300")}>
               <input type="checkbox" checked={selected.has(b.id)} onChange={() => {
                 setSelected((prev) => {
                   const next = new Set(prev);
                   if (next.has(b.id)) next.delete(b.id); else if (next.size < 5) next.add(b.id);
                   return next;
                 });
-              }} className="accent-violet-600" />
+              }} className="accent-teal-600" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900">{b.creatorHandle}</p>
                 <p className="text-xs text-slate-500 truncate">{b.oneSentenceConcept || b.topic || "Analyzed video"}</p>
@@ -270,7 +270,7 @@ const SynthesizeStyleModal: React.FC<{
         </div>
       )}
       {error && <p className="text-xs text-rose-500 mb-2">{error}</p>}
-      <button onClick={handleSynthesize} disabled={selected.size === 0 || synthesizing} className={cn("w-full py-2.5 rounded-xl text-sm font-bold transition-colors", selected.size === 0 || synthesizing ? "bg-slate-100 text-slate-400" : "bg-violet-600 text-white hover:bg-violet-700")}>
+      <button onClick={handleSynthesize} disabled={selected.size === 0 || synthesizing} className={cn("w-full py-2.5 rounded-xl text-sm font-bold transition-colors", selected.size === 0 || synthesizing ? "bg-slate-100 text-slate-400" : "bg-teal-600 text-white hover:bg-teal-700")}>
         {synthesizing ? "Synthesizing..." : `Synthesize from ${selected.size} Source${selected.size !== 1 ? "s" : ""}`}
       </button>
     </div>
@@ -294,7 +294,7 @@ const VisualStyleCard: React.FC<{
         <div>
           <h3 className="font-serif font-bold text-slate-900">{style.name}</h3>
           {style.description && <p className="text-xs text-slate-500 mt-0.5">{style.description}</p>}
-          {style.sourceCreator && <p className="text-[10px] text-violet-500 mt-1">Source: {style.sourceCreator}</p>}
+          {style.sourceCreator && <p className="text-[10px] text-teal-600 mt-1">Source: {style.sourceCreator}</p>}
         </div>
         <div className="flex items-center gap-2">
           {style.usageCount > 0 && <span className="text-[10px] text-slate-400">{style.usageCount} uses</span>}
@@ -647,7 +647,7 @@ export const VaultView: React.FC = () => {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors shrink-0",
                 showPerformance
-                  ? "bg-violet-100 text-violet-700"
+                  ? "bg-teal-100 text-teal-700"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
             >
@@ -667,7 +667,7 @@ export const VaultView: React.FC = () => {
           {showPerformance && (
             <div className="mb-5 bg-white border border-slate-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <BarChart3 size={16} className="text-violet-600" />
+                <BarChart3 size={16} className="text-teal-700" />
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                   Hook Performance by Category
                 </p>
@@ -787,7 +787,7 @@ export const VaultView: React.FC = () => {
                 <button
                   onClick={handleExtractHook}
                   disabled={extracting || !newHookText.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   <Sparkles size={14} />
                   {extracting ? "Extracting..." : "AI Extract Pattern"}
@@ -1053,7 +1053,7 @@ export const VaultView: React.FC = () => {
                 <button
                   onClick={handleExtractStyle}
                   disabled={extractingStyle || !styleTranscript.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   <Sparkles size={14} />
                   {extractingStyle ? "Analyzing style..." : "Extract & Save Style"}
@@ -1081,8 +1081,8 @@ export const VaultView: React.FC = () => {
                       onClick={() => setExpandedStyleId(isExpanded ? null : style.id)}
                       className="w-full text-left p-4 flex items-start gap-3"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                        <Palette size={16} className="text-violet-600" />
+                      <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                        <Palette size={16} className="text-teal-700" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-900">{style.name}</p>
@@ -1091,7 +1091,7 @@ export const VaultView: React.FC = () => {
                         )}
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {style.sourceCreator && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-500">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-600">
                               {style.sourceCreator}
                             </span>
                           )}
@@ -1212,7 +1212,7 @@ export const VaultView: React.FC = () => {
           <div className="flex justify-end mb-4 gap-2">
             <button
               onClick={() => setSynthesizeModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors"
             >
               <Layers size={16} />
               Synthesize from Analyses

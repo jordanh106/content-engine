@@ -1009,6 +1009,28 @@ export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
       },
     ],
   },
+  CANVAS: {
+    title: "Visual Canvas",
+    description:
+      "Spatial workspace for content workflows. Drag creators, videos, ideas, and URL sources onto an infinite canvas, connect them with edges, then generate a blueprint-compliant script from any selected combination.",
+    tips: [
+      {
+        label: "Add nodes from the Asset Library",
+        detail:
+          "The left drawer has four panels: Creators (your watchlist), Videos (top outliers), Ideas (from your idea bank + trending topics), and Source (paste any URL or text). Click any asset to drop it onto the canvas.",
+      },
+      {
+        label: "Connect & select",
+        detail:
+          "Drag from a node's bottom handle to another node's top handle to draw a connection. Click nodes to select them — selected nodes plus anything connected to them get included in the next generation.",
+      },
+      {
+        label: "Generate from selected",
+        detail:
+          "With one or more nodes selected, click 'Generate Script from Selected' in the top right. Claude reads every selected and connected node, applies the Master Blueprint, and drops the resulting script as a new node on the canvas.",
+      },
+    ],
+  },
 };
 
 export const FEATURE_HINTS: Record<string, HintData> = {

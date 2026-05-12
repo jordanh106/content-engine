@@ -31,7 +31,7 @@ type IdeaGeneratorModalProps = {
 
 const CATEGORY_COLORS: Record<IdeaCategory, string> = {
   trending: "text-orange-600 bg-orange-50",
-  competitor: "text-violet-600 bg-violet-50",
+  competitor: "text-teal-700 bg-teal-50",
   evergreen: "text-emerald-600 bg-emerald-50",
   audience: "text-sky-600 bg-sky-50",
   personal: "text-pink-600 bg-pink-50",
@@ -279,11 +279,11 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-violet-500" />
+            <Sparkles size={16} className="text-teal-600" />
             <h3 className="text-sm font-serif font-bold text-slate-900">
               Idea Generator
             </h3>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-400">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-500">
               AI
             </span>
           </div>
@@ -323,7 +323,7 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
                     ? "bg-teal-50 text-teal-900 ml-auto"
                     : msg.isError
                       ? "bg-rose-50 text-rose-800 border border-rose-200"
-                      : "bg-violet-50 text-violet-900",
+                      : "bg-teal-50 text-violet-900",
                 )}
               >
                 {msg.content}
@@ -363,7 +363,7 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
           ))}
 
           {isGenerating && (
-            <div className="flex items-center gap-2 text-xs text-violet-500 py-1">
+            <div className="flex items-center gap-2 text-xs text-teal-600 py-1">
               <Loader2 size={12} className="animate-spin" />
               <span>Brainstorming ideas...</span>
             </div>
@@ -378,7 +378,7 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
                 key={s}
                 onClick={() => handleSend(s)}
                 disabled={isGenerating}
-                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-700 transition-colors disabled:opacity-50"
+                className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 hover:bg-teal-100 hover:text-teal-700 transition-colors disabled:opacity-50"
               >
                 {s}
               </button>
@@ -396,7 +396,7 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
             placeholder="What kind of ideas do you need?"
             rows={1}
             disabled={isGenerating}
-            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 disabled:opacity-50 placeholder:text-slate-400"
+            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-violet-500 disabled:opacity-50 placeholder:text-slate-400"
           />
           <button
             onClick={() => handleSend()}
@@ -404,7 +404,7 @@ export const IdeaGeneratorModal: React.FC<IdeaGeneratorModalProps> = ({
             className={cn(
               "p-2 rounded-lg transition-colors flex-shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center",
               input.trim() && !isGenerating
-                ? "bg-violet-600 text-white hover:bg-violet-700"
+                ? "bg-teal-600 text-white hover:bg-violet-700"
                 : "bg-slate-100 text-slate-400 cursor-not-allowed",
             )}
           >

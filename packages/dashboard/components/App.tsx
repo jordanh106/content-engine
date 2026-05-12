@@ -27,6 +27,7 @@ import { CarouselLab } from "./CarouselLab.js";
 import { DiscoverFeed } from "./DiscoverFeed.js";
 import { IntelligenceView } from "./IntelligenceView.js";
 import { ScriptWizard } from "./ScriptWizard.js";
+import { CanvasView } from "./CanvasView.js";
 import { ViewTransition } from "./ui/animations.js";
 import { QuickCaptureFAB } from "./ui/QuickCaptureFAB.js";
 import { QuestProvider, useQuest } from "./context/QuestContext.js";
@@ -165,6 +166,7 @@ const AppInner: React.FC = () => {
           {view === "DISCOVER_FEED" && <DiscoverFeed onSelectVideo={handleSelectVideo} onNavigate={handleNavigate} />}
           {view === "INTELLIGENCE" && <IntelligenceView onNavigate={handleNavigate} />}
           {view === "SCRIPT_WIZARD" && <ScriptWizard onClose={() => { handleNavigate("HOME"); setScriptSeed(null); }} inline initialTopic={scriptSeed?.topic} replicateContext={scriptSeed?.replicateContext ?? null} />}
+          {view === "CANVAS" && <CanvasView onNavigate={handleNavigate} />}
         </ViewTransition>
         </ErrorBoundary>
 

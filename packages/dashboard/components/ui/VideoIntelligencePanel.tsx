@@ -244,7 +244,7 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
                       <Zap size={10} /> {breakdown.hookFormat}
                     </span>
                     {breakdown.visualFormat && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-400 text-[11px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-500/15 text-teal-500 text-[11px] font-bold">
                         <Palette size={10} /> {breakdown.visualFormat}
                       </span>
                     )}
@@ -321,7 +321,7 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
                     { key: "conflict", label: "Conflict", color: "border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30" },
                     { key: "build", label: "Build", color: "border-sky-300 bg-sky-50 dark:bg-sky-500/10 dark:border-sky-500/30" },
                     { key: "resolution", label: "Resolution", color: "border-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 dark:border-emerald-500/30" },
-                    { key: "cta", label: "CTA", color: "border-violet-300 bg-violet-50 dark:bg-violet-500/10 dark:border-violet-500/30" },
+                    { key: "cta", label: "CTA", color: "border-teal-300 bg-teal-50 dark:bg-teal-500/10 dark:border-violet-500/30" },
                   ];
                   let parsed: Record<string, { description?: string; timestamp?: string }> = {};
                   try { parsed = JSON.parse(breakdown.storyStructure); } catch { return null; }
@@ -441,7 +441,7 @@ export const VideoIntelligencePanel: React.FC<VideoIntelligencePanelProps> = ({
             <button
               onClick={() => shortlistMutation.mutate()}
               disabled={shortlistMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-hover text-themed-secondary text-[11px] font-bold hover:bg-violet-500/15 hover:text-violet-400 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-hover text-themed-secondary text-[11px] font-bold hover:bg-teal-500/15 hover:text-teal-500 transition-colors disabled:opacity-50"
             >
               <Lightbulb size={12} /> Shortlist Idea
             </button>

@@ -8,7 +8,7 @@ const LEVEL_COLORS: Record<string, { ring: string; bg: string; text: string; glo
   sky:     { ring: "ring-sky-400",     bg: "bg-sky-100",     text: "text-sky-600",     glow: "shadow-sky-200" },
   amber:   { ring: "ring-amber-400",   bg: "bg-amber-100",   text: "text-amber-600",   glow: "shadow-amber-200" },
   emerald: { ring: "ring-emerald-400", bg: "bg-emerald-100", text: "text-emerald-600", glow: "shadow-emerald-200" },
-  violet:  { ring: "ring-violet-400",  bg: "bg-violet-100",  text: "text-violet-600",  glow: "shadow-violet-200" },
+  violet:  { ring: "ring-violet-400",  bg: "bg-teal-100",  text: "text-teal-700",  glow: "shadow-violet-200" },
 };
 
 type CreatorLevelBadgeProps = {
@@ -60,7 +60,7 @@ export const CreatorLevelBadge: React.FC<CreatorLevelBadgeProps> = ({ variant = 
                   currentLevel.color === "sky" ? "bg-sky-500" :
                   currentLevel.color === "amber" ? "bg-amber-500" :
                   currentLevel.color === "emerald" ? "bg-emerald-500" :
-                  "bg-violet-500"
+                  "bg-teal-500"
                 }`}
                 style={{ width: `${xpProgress}%` }}
               />
@@ -91,7 +91,7 @@ export const CreatorLevelBadge: React.FC<CreatorLevelBadgeProps> = ({ variant = 
                 currentLevel.color === "sky" ? "bg-sky-500" :
                 currentLevel.color === "amber" ? "bg-amber-500" :
                 currentLevel.color === "emerald" ? "bg-emerald-500" :
-                "bg-violet-500"
+                "bg-teal-500"
               }`}
               style={{ width: `${xpProgress}%` }}
             />

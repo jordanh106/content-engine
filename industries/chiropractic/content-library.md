@@ -1813,6 +1813,111 @@ These are fully expanded production plans with complete Cinema Studio prompts, m
 
 > [Direct to camera] Most moms think this will hurt. It does not. Here is what actually happens.
 
+
+#### A13: 3-Minute Summer Morning Stretch Before Screen Time
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [HOOK 0-3s] [Jordan stands in bright, natural light, kid visible in background on couch] Summer break just started. Here's what happens next. [Quick cut to slouching kid reaching for tablet] [Text: BEFORE YOUR KID HITS SCREEN TIME]
+>
+> [CONTEXT 3-6s] [Jordan turns to camera, warm and knowing] Kids go straight to screens. Tablets, phones, gaming. And their posture goes with it. [B-roll: quick montage of kid hunching forward, neck craning] [Text: 30 minutes of slouching = hours of tension]
+>
+> [CONFLICT 6-12s] [Jordan walks over to demonstrate on the kid, who's now standing] That forward head position? It locks up their neck, rounds their shoulders, and by August they're complaining about headaches they can't explain. [Demonstrate: show forward head posture, then proper alignment] [Text: Forward head = neck strain by lunchtime]
+>
+> [RE-HOOK 1 12-15s] But here's what most parents miss. One three-minute stretch in the morning actually prevents all of it. [Pause, nod] Yeah.
+>
+> [CONTEXT 2 15-22s] [Jordan demonstrates on kid or uses diagram overlay] We're talking neck rolls, shoulder shrugs, and a simple chest opener. Three minutes. Before the screens go on. [B-roll: smooth demonstration of each stretch, kid copying] [Text: Do this BEFORE screen time starts]
+>
+> [CONFLICT 2 22-28s] Skip this, and you're looking at a kiddo with chronic neck tension by mid-July. Their gaming posture gets worse. The headaches stick around. [Show poor posture again, then cut to proper alignment] [Text: Three minutes now = all summer free]
+>
+> [PAYOFF + CTA 28-45s] [Jordan back to camera, direct and warm] So tomorrow morning, before the tablet comes out, run through these three stretches with them. Make it part of the routine. [Demonstrate one final stretch slowly] Save this video. Use it every morning this summer. Your kid's neck will thank you. [End card: @collectivechiro follow] [Text: Save this for tomorrow morning]
+
+
+#### A14: 3-Minute Summer Morning Stretch Before Screen Time
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [HOOK 0-3s] [Jordan stands in bright, natural light, kid visible in background on couch] Summer break just started. Here's what happens next. [Quick cut to slouching kid reaching for tablet] [Text: BEFORE YOUR KID HITS SCREEN TIME]
+>
+> [CONTEXT 3-6s] [Jordan turns to camera, warm and knowing] Kids go straight to screens. Tablets, phones, gaming. And their posture goes with it. [B-roll: quick montage of kid hunching forward, neck craning] [Text: 30 minutes of slouching = hours of tension]
+>
+> [CONFLICT 6-12s] [Jordan walks over to demonstrate on the kid, who's now standing] That forward head position? It locks up their neck, rounds their shoulders, and by August they're complaining about headaches they can't explain. [Demonstrate: show forward head posture, then proper alignment] [Text: Forward head = neck strain by lunchtime]
+>
+> [RE-HOOK 1 12-15s] But here's what most parents miss. One three-minute stretch in the morning actually prevents all of it. [Pause, nod] Yeah.
+>
+> [CONTEXT 2 15-22s] [Jordan demonstrates on kid or uses diagram overlay] We're talking neck rolls, shoulder shrugs, and a simple chest opener. Three minutes. Before the screens go on. [B-roll: smooth demonstration of each stretch, kid copying] [Text: Do this BEFORE screen time starts]
+>
+> [CONFLICT 2 22-28s] Skip this, and you're looking at a kiddo with chronic neck tension by mid-July. Their gaming posture gets worse. The headaches stick around. [Show poor posture again, then cut to proper alignment] [Text: Three minutes now = all summer free]
+>
+> [PAYOFF + CTA 28-45s] [Jordan back to camera, direct and warm] So tomorrow morning, before the tablet comes out, run through these three stretches with them. Make it part of the routine. [Demonstrate one final stretch slowly] Save this video. Use it every morning this summer. Your kid's neck will thank you. [End card: @collectivechiro follow] [Text: Save this for tomorrow morning]
+
+
+#### A15: 3-Minute Summer Morning Stretch Before Screen Time
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [HOOK 0-3s] [Jordan stands in bright, natural light, kid visible in background on couch] Summer break just started. Here's what happens next. [Quick cut to slouching kid reaching for tablet] [Text: BEFORE YOUR KID HITS SCREEN TIME]
+>
+> [CONTEXT 3-6s] [Jordan turns to camera, warm and knowing] Kids go straight to screens. Tablets, phones, gaming. And their posture goes with it. [B-roll: quick montage of kid hunching forward, neck craning] [Text: 30 minutes of slouching = hours of tension]
+>
+> [CONFLICT 6-12s] [Jordan walks over to demonstrate on the kid, who's now standing] That forward head position? It locks up their neck, rounds their shoulders, and by August they're complaining about headaches they can't explain. [Demonstrate: show forward head posture, then proper alignment] [Text: Forward head = neck strain by lunchtime]
+>
+> [RE-HOOK 1 12-15s] But here's what most parents miss. One three-minute stretch in the morning actually prevents all of it. [Pause, nod] Yeah.
+>
+> [CONTEXT 2 15-22s] [Jordan demonstrates on kid or uses diagram overlay] We're talking neck rolls, shoulder shrugs, and a simple chest opener. Three minutes. Before the screens go on. [B-roll: smooth demonstration of each stretch, kid copying] [Text: Do this BEFORE screen time starts]
+>
+> [CONFLICT 2 22-28s] Skip this, and you're looking at a kiddo with chronic neck tension by mid-July. Their gaming posture gets worse. The headaches stick around. [Show poor posture again, then cut to proper alignment] [Text: Three minutes now = all summer free]
+>
+> [PAYOFF + CTA 28-45s] [Jordan back to camera, direct and warm] So tomorrow morning, before the tablet comes out, run through these three stretches with them. Make it part of the routine. [Demonstrate one final stretch slowly] Save this video. Use it every morning this summer. Your kid's neck will thank you. [End card: @collectivechiro follow] [Text: Save this for tomorrow morning]
+
+
+#### A16: 3-Minute Summer Morning Stretch Before Screen Time
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [HOOK 0-3s] [Jordan stands in bright, natural light, kid visible in background on couch] Summer break just started. Here's what happens next. [Quick cut to slouching kid reaching for tablet] [Text: BEFORE YOUR KID HITS SCREEN TIME]
+>
+> [CONTEXT 3-6s] [Jordan turns to camera, warm and knowing] Kids go straight to screens. Tablets, phones, gaming. And their posture goes with it. [B-roll: quick montage of kid hunching forward, neck craning] [Text: 30 minutes of slouching = hours of tension]
+>
+> [CONFLICT 6-12s] [Jordan walks over to demonstrate on the kid, who's now standing] That forward head position? It locks up their neck, rounds their shoulders, and by August they're complaining about headaches they can't explain. [Demonstrate: show forward head posture, then proper alignment] [Text: Forward head = neck strain by lunchtime]
+>
+> [RE-HOOK 1 12-15s] But here's what most parents miss. One three-minute stretch in the morning actually prevents all of it. [Pause, nod] Yeah.
+>
+> [CONTEXT 2 15-22s] [Jordan demonstrates on kid or uses diagram overlay] We're talking neck rolls, shoulder shrugs, and a simple chest opener. Three minutes. Before the screens go on. [B-roll: smooth demonstration of each stretch, kid copying] [Text: Do this BEFORE screen time starts]
+>
+> [CONFLICT 2 22-28s] Skip this, and you're looking at a kiddo with chronic neck tension by mid-July. Their gaming posture gets worse. The headaches stick around. [Show poor posture again, then cut to proper alignment] [Text: Three minutes now = all summer free]
+>
+> [PAYOFF + CTA 28-45s] [Jordan back to camera, direct and warm] So tomorrow morning, before the tablet comes out, run through these three stretches with them. Make it part of the routine. [Demonstrate one final stretch slowly] Save this video. Use it every morning this summer. Your kid's neck will thank you. [End card: @collectivechiro follow] [Text: Save this for tomorrow morning]
+
+
+#### A17: 3-Minute Summer Morning Stretch Before Screen Time
+
+**Format:** A (Explainer) | **Duration:** 35s | **Tags:** draft, new
+
+**Voiceover Script:**
+
+> [HOOK 0-3s] [Jordan stands in bright, natural light, kid visible in background on couch] Summer break just started. Here's what happens next. [Quick cut to slouching kid reaching for tablet] [Text: BEFORE YOUR KID HITS SCREEN TIME]
+>
+> [CONTEXT 3-6s] [Jordan turns to camera, warm and knowing] Kids go straight to screens. Tablets, phones, gaming. And their posture goes with it. [B-roll: quick montage of kid hunching forward, neck craning] [Text: 30 minutes of slouching = hours of tension]
+>
+> [CONFLICT 6-12s] [Jordan walks over to demonstrate on the kid, who's now standing] That forward head position? It locks up their neck, rounds their shoulders, and by August they're complaining about headaches they can't explain. [Demonstrate: show forward head posture, then proper alignment] [Text: Forward head = neck strain by lunchtime]
+>
+> [RE-HOOK 1 12-15s] But here's what most parents miss. One three-minute stretch in the morning actually prevents all of it. [Pause, nod] Yeah.
+>
+> [CONTEXT 2 15-22s] [Jordan demonstrates on kid or uses diagram overlay] We're talking neck rolls, shoulder shrugs, and a simple chest opener. Three minutes. Before the screens go on. [B-roll: smooth demonstration of each stretch, kid copying] [Text: Do this BEFORE screen time starts]
+>
+> [CONFLICT 2 22-28s] Skip this, and you're looking at a kiddo with chronic neck tension by mid-July. Their gaming posture gets worse. The headaches stick around. [Show poor posture again, then cut to proper alignment] [Text: Three minutes now = all summer free]
+>
+> [PAYOFF + CTA 28-45s] [Jordan back to camera, direct and warm] So tomorrow morning, before the tablet comes out, run through these three stretches with them. Make it part of the routine. [Demonstrate one final stretch slowly] Save this video. Use it every morning this summer. Your kid's neck will thank you. [End card: @collectivechiro follow] [Text: Save this for tomorrow morning]
+
 ### Example 1: "What Is Colic and How Can Chiropractic Help?"
 
 **Based on:** B1 from the video library

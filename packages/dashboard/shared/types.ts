@@ -207,6 +207,7 @@ export const DASHBOARD_VIEWS = [
   "STRATEGY",
   "CAROUSEL_LAB",
   "INTELLIGENCE",
+  "CANVAS",
 ] as const;
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -1820,4 +1821,124 @@ export type ScriptAnalysis = {
     endLine: number;
   }[];
   summary: string;
+};
+
+// ── Storytelling Reel Engine ───────────────────────────────────────────────
+
+export type StorytellingStyleKey = "science_mystery" | "true_crime" | "historical" | "cosmic_horror" | "future_scifi";
+
+export type StorytellingStyleVoice = {
+  elevenlabs_voice_id: string | null;
+  elevenlabs_voice_name: string;
+  direction: string;
+  stability: number;
+  similarity_boost: number;
+  style: number;
+  pace: number;
+};
+
+export type StorytellingStyleVisual = {
+  aesthetic: string;
+  model_hero: string;
+  model_draft: string;
+  resolution: string;
+  compositionFormula: string;
+  negativePrompts: string[];
+};
+
+export type StorytellingStyleMotion = {
+  direction: string;
+  model_hero: string;
+  model_draft: string;
+  defaultDurationSec: number;
+};
+
+export type StorytellingStyleAudio = {
+  music_brief: string;
+  sfx_beats: string[];
+};
+
+export type StorytellingStylePacing = {
+  shotsFor15s: number;
+  shotsFor30s: number;
+  shotsFor45s: number;
+  shotsFor60s: number;
+  averageShotSec: number;
+};
+
+export type StorytellingStyle = {
+  key: string;
+  displayName: string;
+  tagline: string;
+  exampleReels: string[];
+  hookArchetypes: string[];
+  voice: StorytellingStyleVoice;
+  visual: StorytellingStyleVisual;
+  motion: StorytellingStyleMotion;
+  audio_palette: StorytellingStyleAudio;
+  pacing: StorytellingStylePacing;
+};
+
+export type StorytellingTier = "draft" | "hero";
+
+export type StorytellingHookVariant = {
+  text: string;
+  imagePrompt: string;
+  motionPrompt: string;
+  previewImageUrl?: string;
+};
+
+export type StorytellingNarrativeLine = {
+  sentenceIndex: number;
+  text: string;
+  imagePrompt: string;
+  motionPrompt: string;
+  sfxBeat?: string;
+  durationSec: number;
+};
+
+export type StorytellingScriptOutput = {
+  title: string;
+  style: string;
+  hookArchetype: string;
+  hookVariants: StorytellingHookVariant[];
+  narrativeLines: StorytellingNarrativeLine[];
+  musicBrief: string;
+  cta: { text: string; durationSec: number };
+  captionsSrt: string;
+  complianceNotes: string[];
+  estimatedCostDraft: number;
+  estimatedCostHero: number;
+};
+
+export type StorytellingShotAsset = {
+  index: number;
+  text: string;
+  imageUrl: string | null;
+  imagePrompt: string;
+  motionPrompt: string;
+  videoUrl: string | null;
+  startSec: number;
+  endSec: number;
+  sfxBeat?: string;
+};
+
+export type StorytellingReelManifest = {
+  reelId: string;
+  topic: string;
+  title: string;
+  style: string;
+  tier: StorytellingTier;
+  status: "scripting" | "awaiting_hook_choice" | "generating" | "ready_for_assembly" | "assembled" | "failed";
+  voiceover: { url: string; durationSec: number; provider: string } | null;
+  music: { url: string; durationSec: number } | null;
+  shots: StorytellingShotAsset[];
+  alternateHooks: StorytellingHookVariant[];
+  captionsSrt: string;
+  finalMp4Url: string | null;
+  cost: { actualCredits: number; breakdown: Record<string, number> };
+  createdAt: string;
+  updatedAt: string;
+  soulCharacterId?: string | null;
+  voiceId?: string | null;
 };

@@ -27,7 +27,7 @@ type FieldManualProps = {
 };
 
 const PHASE_LABELS: Record<string, { label: string; color: string; activeColor: string }> = {
-  discover: { label: "Discover", color: "text-violet-600 bg-violet-50 border-violet-200", activeColor: "bg-violet-600 text-white border-violet-600" },
+  discover: { label: "Discover", color: "text-teal-700 bg-teal-50 border-teal-200", activeColor: "bg-teal-600 text-white border-violet-600" },
   produce: { label: "Produce", color: "text-sky-600 bg-sky-50 border-sky-200", activeColor: "bg-sky-600 text-white border-sky-600" },
   publish: { label: "Publish", color: "text-emerald-600 bg-emerald-50 border-emerald-200", activeColor: "bg-emerald-600 text-white border-emerald-600" },
   measure: { label: "Measure", color: "text-amber-600 bg-amber-50 border-amber-200", activeColor: "bg-amber-600 text-white border-amber-600" },
