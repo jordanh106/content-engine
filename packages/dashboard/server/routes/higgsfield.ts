@@ -257,6 +257,54 @@ export function createHiggsfieldRouter() {
     res.json({ modelKey, count, ...cost });
   });
 
+  // ── Recent generation jobs (Home "Now" + recent grid) ─────────────────────
+  // GET /api/higgsfield/recent-jobs?kind=image|video|all&limit=12
+  // Cached for 15s to avoid hammering the upstream API.
+  let recentJobsCache: { fetchedAt: number; payload: unknown } | null = null;
+  router.get("/recent-jobs", async (req, res) => {
+    const limit = Math.min(parseInt(String(req.query.limit ?? "12"), 10) || 12, 50);
+    const kind = String(req.query.kind ?? "all");
+
+    if (recentJobsCache && Date.now() - recentJobsCache.fetchedAt < 15_000) {
+      res.json(recentJobsCache.payload);
+      return;
+    }
+    if (!(await isConfigured())) {
+      res.json({ jobs: [], error: "Higgsfield not configured", inFlightCount: 0 });
+      return;
+    }
+    try {
+      const args = ["generate", "list", "--json", "--no-color", "--size", String(limit)];
+      if (kind === "image") args.push("--image");
+      if (kind === "video") args.push("--video");
+      const { stdout } = await runCli(args, { timeoutMs: 10_000 });
+      const parsed = JSON.parse(stdout) as { items?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+      const items = Array.isArray(parsed) ? parsed : parsed.items ?? [];
+      const jobs = items.map((j) => {
+        // Normalise: pick first result_url if multiple
+        const results = (j.results as Array<{ url?: string }>) ?? [];
+        const firstUrl = results[0]?.url ?? (j.result_url as string | undefined) ?? null;
+        return {
+          id: j.id as string,
+          status: (j.status as string) ?? "unknown",
+          modelKey: (j.job_set_type as string) ?? (j.model as string) ?? null,
+          resultUrl: firstUrl,
+          thumbnailUrl: (j.thumbnail_url as string | undefined) ?? firstUrl,
+          prompt: ((j.params as { prompt?: string } | undefined)?.prompt ?? (j.prompt as string | undefined) ?? "").slice(0, 240),
+          createdAt: (j.created_at as string) ?? null,
+          type: (j.type as string) ?? null,
+        };
+      });
+      const inFlight = jobs.filter((j) => j.status === "running" || j.status === "pending" || j.status === "queued").length;
+      const payload = { jobs, inFlightCount: inFlight };
+      recentJobsCache = { fetchedAt: Date.now(), payload };
+      res.json(payload);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.json({ jobs: [], inFlightCount: 0, error: msg.slice(0, 200) });
+    }
+  });
+
   // ── Config check ──────────────────────────────────────────────────────────
   router.get("/status", async (req, res) => {
     if (req.query.refresh === "1") clearAuthCache();

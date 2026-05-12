@@ -827,3 +827,51 @@ CREATE TABLE IF NOT EXISTS storytelling_rerolls (
   created_at TEXT DEFAULT (datetime('now'))
 );
 `);
+
+// ─── Projects (unified unit of work) ──────────────────────────────────────
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'drafting',
+  brief_md TEXT,
+  active INTEGER DEFAULT 0,
+  source_template_id TEXT,
+  thumbnail_url TEXT,
+  cost_credits REAL DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_refs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  label TEXT,
+  upload_id TEXT,
+  url TEXT,
+  file_path TEXT,
+  kind TEXT NOT NULL DEFAULT 'image',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS project_outputs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  label TEXT,
+  url TEXT,
+  file_path TEXT,
+  model_used TEXT,
+  prompt TEXT,
+  cost_credits REAL DEFAULT 0,
+  predicted_virality REAL,
+  predicted_virality_breakdown_json TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_kind ON projects(kind);
+CREATE INDEX IF NOT EXISTS idx_project_outputs_project ON project_outputs(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_refs_project ON project_refs(project_id);
+`);

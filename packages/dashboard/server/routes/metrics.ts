@@ -123,6 +123,34 @@ export function createMetricsRouter(contentLibraryPath: string) {
   const repoRoot = path.resolve(industryDir, "..", "..");
   const last30daysScript = path.join(repoRoot, "skills", "last30days", "scripts", "last30days.py");
 
+  // GET /api/metrics/today — live signals for the Home Now strip.
+  // Returns: { publishedToday, inFlight (Higgsfield running jobs), sessionInProgress }
+  router.get("/today", async (_req, res) => {
+    try {
+      // Use SQLite directly for the date filter — Drizzle's date functions are awkward for "today in local TZ"
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayIso = todayStart.toISOString();
+
+      const publishedRow = sqlite
+        .prepare("SELECT COUNT(*) AS c FROM video_status WHERE published_at >= ?")
+        .get(todayIso) as { c: number } | undefined;
+
+      // Active production session
+      const sessionRow = sqlite
+        .prepare("SELECT id, session_type, audience_category FROM production_sessions WHERE started_at IS NOT NULL AND completed_at IS NULL ORDER BY started_at DESC LIMIT 1")
+        .get() as { id: number; session_type: string; audience_category: string | null } | undefined;
+
+      res.json({
+        publishedToday: publishedRow?.c ?? 0,
+        sessionInProgress: !!sessionRow,
+        session: sessionRow ? { id: sessionRow.id, type: sessionRow.session_type, audience: sessionRow.audience_category } : null,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   // GET /api/metrics - List all metrics, optionally filtered by video code or platform
   router.get("/", (_req, res) => {
     const { videoCode, platform } = _req.query;

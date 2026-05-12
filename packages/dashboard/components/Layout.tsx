@@ -23,6 +23,7 @@ import {
   Wand2,
   Zap,
   Shuffle,
+  FolderKanban,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DashboardView, CreatorPersona } from "../shared/types.js";
@@ -49,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     phase: "create",
     items: [
       { view: "DISCOVER_FEED", label: "Discover", icon: <Compass size={18} /> },
+      { view: "PROJECTS", label: "Projects", icon: <FolderKanban size={18} /> },
       { view: "SCRIPT_WIZARD", label: "Create", icon: <Wand2 size={18} /> },
       { view: "LIBRARY", label: "Library", icon: <Library size={18} /> },
     ],

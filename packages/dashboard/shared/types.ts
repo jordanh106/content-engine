@@ -192,6 +192,8 @@ export type VideoDetailResponse = ParsedVideo & {
 
 export const DASHBOARD_VIEWS = [
   "HOME",
+  "PROJECTS",
+  "PROJECT_DETAIL",
   "DISCOVER_FEED",
   "SCRIPT_WIZARD",
   "PIPELINE",
@@ -1941,4 +1943,110 @@ export type StorytellingReelManifest = {
   updatedAt: string;
   soulCharacterId?: string | null;
   voiceId?: string | null;
+};
+
+// ── Projects ───────────────────────────────────────────────────────────────
+
+export type ProjectKind =
+  | "brand_launch"
+  | "viral_replication"
+  | "avatar_ugc"
+  | "ad_variants"
+  | "product_360"
+  | "press_kit"
+  | "holiday_variant"
+  | "storytelling_reel"
+  | "chiropractic_explainer"
+  | "patient_story"
+  | "office_tour"
+  | "did_you_know"
+  | "generic";
+
+export type ProjectStatus = "drafting" | "generating" | "ready" | "published" | "archived";
+
+export type Project = {
+  id: string;
+  name: string;
+  kind: ProjectKind;
+  status: ProjectStatus;
+  briefMd: string | null;
+  active: boolean;
+  sourceTemplateId: string | null;
+  thumbnailUrl: string | null;
+  costCredits: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectRef = {
+  id: number;
+  projectId: string;
+  label: string | null;
+  uploadId: string | null;
+  url: string | null;
+  filePath: string | null;
+  kind: "image" | "video" | "doc";
+  createdAt: string;
+};
+
+export type ProjectOutputKind = "image" | "video" | "html" | "bundle" | "text";
+
+export type ProjectOutput = {
+  id: number;
+  projectId: string;
+  kind: ProjectOutputKind;
+  label: string | null;
+  url: string | null;
+  filePath: string | null;
+  modelUsed: string | null;
+  prompt: string | null;
+  costCredits: number;
+  predictedVirality: number | null;
+  predictedViralityBreakdown: ViralityBreakdown | null;
+  createdAt: string;
+};
+
+export type ProjectWithAssets = Project & {
+  refs: ProjectRef[];
+  outputs: ProjectOutput[];
+};
+
+// ── Virality predictor ─────────────────────────────────────────────────────
+
+export type ViralityBreakdown = {
+  hookStrength: number;
+  saveTrigger: number;
+  retentionShape: number;
+  brandFit: number;
+  antiPatternRisk: number;
+};
+
+export type ViralityPrediction = {
+  score: number;
+  breakdown: ViralityBreakdown;
+  notes: string[];
+};
+
+// ── Quick-start templates ──────────────────────────────────────────────────
+
+export type QuickStartTemplateGroup = "brand" | "showcase";
+
+export type QuickStartTemplateGenerate =
+  | { kind: "image"; model: string; count?: number; label: string; aspect?: string; resolution?: string }
+  | { kind: "video"; model: string; durationSec: number; label: string; aspect?: string }
+  | { kind: "html"; label: string }
+  | { kind: "carousel"; slides: number; label: string };
+
+export type QuickStartTemplate = {
+  key: string;
+  projectKind: ProjectKind;
+  group: QuickStartTemplateGroup;
+  displayName: string;
+  icon: string;
+  blurb: string;
+  estimatedCreditsLow: number;
+  estimatedCreditsHigh: number;
+  estimatedMinutes: number;
+  briefTemplate: string;
+  generates: QuickStartTemplateGenerate[];
 };

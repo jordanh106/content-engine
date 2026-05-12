@@ -59,6 +59,7 @@ import { createIngestRouter } from "./routes/ingest.js";
 import { createHiggsfieldRouter } from "./routes/higgsfield.js";
 import { createHiggsfieldCharactersRouter } from "./routes/higgsfield-characters.js";
 import { createStorytellingRouter } from "./routes/storytelling.js";
+import { createProjectsRouter } from "./routes/projects.js";
 import { invalidateStorytellingStylesCache } from "./parsers/storytelling-styles.js";
 import { invalidateBlueprintCache } from "./parsers/master-blueprint.js";
 import { invalidateCache } from "./parsers/content-library.js";
@@ -112,6 +113,11 @@ if (!fs.existsSync(reelsDir)) fs.mkdirSync(reelsDir, { recursive: true });
 app.use("/voiceovers", express.static(voiceoversDir));
 app.use("/reels", express.static(reelsDir));
 
+// Projects data directory + static mount
+const projectsDir = path.join(dataDir, "projects");
+if (!fs.existsSync(projectsDir)) fs.mkdirSync(projectsDir, { recursive: true });
+app.use("/projects", express.static(projectsDir));
+
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
@@ -154,6 +160,9 @@ app.use("/api/higgsfield", createHiggsfieldRouter());
 app.use("/api/higgsfield/characters", createHiggsfieldCharactersRouter());
 const PORT = parseInt(process.env.PORT || "3001", 10);
 app.use("/api/storytelling", createStorytellingRouter(storytellingStylesPath, reelsDir, voiceoversDir, PORT));
+const quickstartTemplatesPath = path.join(repoRoot, "industries", "_shared", "quickstart-templates.md");
+const blueprintPathForProjects = path.join(industryDir, "master-blueprint.md");
+app.use("/api/projects", createProjectsRouter(projectsDir, quickstartTemplatesPath, blueprintPathForProjects));
 app.use("/rendered", express.static(renderOutputDir));
 
 // Health check endpoint

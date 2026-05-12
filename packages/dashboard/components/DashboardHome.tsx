@@ -44,13 +44,14 @@ import { ScrollReveal, CountUp } from "./ui/animations.js";
 import { Sparkline } from "./ui/Sparkline.js";
 import { MetricBadge } from "./ui/MetricBadge.js";
 import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
-import { Button, Heading, Eyebrow, Pill } from "./ui/index.js";
+import { Button, Heading, Eyebrow, Pill, HomeNowStrip, RecentGenerationsGrid, QuickStartGallery } from "./ui/index.js";
 import { QuestChain } from "./ui/QuestChain.js";
 import { GoalRing } from "./ui/GoalRing.js";
 
 type DashboardHomeProps = {
   onSelectVideo: (code: string) => void;
   onNavigate: (view: DashboardView, payload?: CarouselRemixSeed | ScriptWizardSeed) => void;
+  onOpenProject?: (projectId: string) => void;
 };
 
 type WhatsNextAction = {
@@ -702,16 +703,21 @@ function TrendingCarousels({ onNavigate }: { onNavigate: (view: DashboardView, p
 export const DashboardHome: React.FC<DashboardHomeProps> = ({
   onSelectVideo,
   onNavigate,
+  onOpenProject,
 }) => {
   const queryClient = useQueryClient();
   const { data: pipeline, isLoading } = useQuery<PipelineResponse>({
     queryKey: ["pipeline"],
     queryFn: () => fetch("/api/pipeline").then((r) => r.json()),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 
   const { data: opportunities } = useQuery<OpportunitiesResponse>({
     queryKey: ["opportunities"],
     queryFn: () => fetch("/api/opportunities").then((r) => r.json()),
+    refetchInterval: 5 * 60_000,
+    staleTime: 2 * 60_000,
   });
 
   const { data: metricsData } = useQuery<{
@@ -738,23 +744,28 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         return null;
       }
     },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   const { data: lastPublishData } = useQuery<{ daysSinceLastPublish: number | null; lastPublishDate: string | null }>({
     queryKey: ["last-publish"],
     queryFn: () => fetch("/api/analytics/last-publish").then((r) => r.json()),
+    refetchInterval: 5 * 60_000,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: pulseData } = useQuery<{ digest: IntelDigest | null }>({
     queryKey: ["viral-insights-latest"],
     queryFn: () => fetch("/api/viral-insights/latest").then((r) => r.json()),
+    refetchInterval: 30 * 60_000,
     staleTime: 1000 * 60 * 30,
   });
 
   const { data: outlierVideos } = useQuery<{ videos: CreatorVideo[]; total: number }>({
     queryKey: ["outlier-videos-home"],
     queryFn: () => fetch("/api/creator-videos?sort=outlierScore&limit=12").then((r) => r.json()),
+    refetchInterval: 5 * 60_000,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -823,6 +834,9 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
   return (
     <div className="p-6 md:p-12 max-w-6xl mx-auto space-y-10">
 
+      {/* ═══ Now Strip (live signals) ═══════════════════════════════════════ */}
+      <HomeNowStrip />
+
       {/* ═══ Editorial Header ═══════════════════════════════════════════════ */}
       <header className="flex items-baseline justify-between border-b border-slate-200/70 pb-6">
         <Heading level={1} eyebrow={greeting.date} display>
@@ -835,6 +849,14 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* ═══ What's Next Hero ═══════════════════════════════════════════════ */}
       <WhatsNextHero whatsNext={whatsNext} onNavigate={onNavigate} />
+
+      {/* ═══ Quick Start template gallery ═══════════════════════════════════ */}
+      {onOpenProject && (
+        <QuickStartGallery onOpenProject={onOpenProject} onNavigate={onNavigate} />
+      )}
+
+      {/* ═══ Recent generations (live Higgsfield activity) ══════════════════ */}
+      <RecentGenerationsGrid />
 
       {/* ═══ Section 1: Performance Command Strip ═══════════════════════════ */}
       <section>

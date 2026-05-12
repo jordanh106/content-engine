@@ -596,6 +596,23 @@ export type HintData = {
 };
 
 export const VIEW_HELP: Record<DashboardView, ViewHelpData> = {
+  PROJECTS: {
+    title: "Projects",
+    description:
+      "Every brief, reference upload, and generated asset lives in a project. Pick a quick-start template from Home or start a blank project.",
+    tips: [
+      { label: "Brief-driven", detail: "Each project has a markdown brief. Edit it, attach reference images, then run generations from the brief." },
+      { label: "Active project", detail: "Pin one project as active. It surfaces in the Home Now strip so you always know what you're working on." },
+    ],
+  },
+  PROJECT_DETAIL: {
+    title: "Project workspace",
+    description: "Edit the brief, attach references, browse generated outputs.",
+    tips: [
+      { label: "References anchor the look", detail: "Upload 1-3 reference images that show the mood, palette, or composition you want. Generation prompts will use them." },
+      { label: "Virality score", detail: "Outputs get scored against the Master Blueprint before you commit Hero credits." },
+    ],
+  },
   HOME: {
     title: "Production Overview",
     description:

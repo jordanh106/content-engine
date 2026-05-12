@@ -10,3 +10,6 @@ export { Eyebrow } from "./Eyebrow.js";
 export { Stat } from "./Stat.js";
 export { KebabMenu } from "./KebabMenu.js";
 export type { KebabItem } from "./KebabMenu.js";
+export { HomeNowStrip } from "./HomeNowStrip.js";
+export { RecentGenerationsGrid } from "./RecentGenerationsGrid.js";
+export { QuickStartGallery } from "./QuickStartGallery.js";
