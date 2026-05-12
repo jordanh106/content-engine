@@ -22,7 +22,7 @@ type TemplateName = "cover" | "content" | "cta";
 export type SlideSpec =
   | { templateName: "cover"; variables: { HOOK_LINE: string; SUBTITLE: string; TOTAL_SLIDES: string } }
   | { templateName: "content"; variables: { POINT_NUMBER: string; POINT_TITLE: string; POINT_BODY: string; SLIDE_INDEX: string; TOTAL_SLIDES: string } }
-  | { templateName: "cta"; variables: { CTA_HEADLINE: string; CTA_SUBHEAD: string; CTA_BUTTON_TEXT: string } };
+  | { templateName: "cta"; variables: { CTA_HEADLINE: string; CTA_SUBHEAD: string; CTA_BUTTON_TEXT: string; SLIDE_INDEX: string; TOTAL_SLIDES: string } };
 
 export type RenderedSlide = {
   slideIndex: number;          // 1-based

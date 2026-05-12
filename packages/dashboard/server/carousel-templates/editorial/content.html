@@ -15,9 +15,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     padding: {{PADDING}}px;
-    background: {{BACKGROUND}};
+    background: #faf6ed;
     position: relative;
   }
   .accent-bar {
@@ -28,63 +27,104 @@
     height: 100%;
     background: linear-gradient(180deg, {{PRIMARY}} 0%, {{ACCENT}} 100%);
   }
-  .slide-number-label {
-    position: absolute;
-    top: 36px;
-    right: {{PADDING}}px;
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    color: {{PRIMARY}};
+  }
+  .page-counter {
     font-size: 13px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.25em;
     color: {{MUTED}};
   }
+  .header-zone {
+    margin-bottom: 28px;
+  }
   .big-number {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{NUMBER_SIZE}}px;
     font-weight: bold;
     color: {{PRIMARY}};
-    opacity: {{NUMBER_OPACITY}};
+    opacity: 0.85;
     line-height: 1;
-    margin-bottom: 12px;
+    margin-bottom: 22px;
     letter-spacing: -0.02em;
+  }
+  .rule {
+    width: 88px;
+    height: 3px;
+    background: {{PRIMARY}};
+    margin-bottom: 28px;
   }
   .point-title {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{TITLE_SIZE}}px;
     font-weight: bold;
     color: {{TEXT}};
-    line-height: 1.18;
-    letter-spacing: -0.005em;
-    margin-bottom: 20px;
-    max-width: 92%;
+    line-height: 1.14;
+    letter-spacing: -0.008em;
+    margin-bottom: 22px;
+    max-width: 94%;
   }
   .point-body {
     font-size: {{BODY_SIZE}}px;
     font-weight: 400;
     color: {{MUTED}};
     line-height: 1.55;
-    max-width: 90%;
+    max-width: 92%;
   }
-  .brand-mark {
+  .footer-row {
     position: absolute;
     bottom: 36px;
     left: {{PADDING}}px;
+    right: {{PADDING}}px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-mark {
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: rgba(100,116,139,0.35);
+    letter-spacing: 0.22em;
+    color: rgba(15,23,42,0.4);
+  }
+  .footer-counter {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    color: rgba(15,23,42,0.4);
   }
 </style>
 </head>
 <body>
 <div class="content-slide">
   <div class="accent-bar"></div>
-  <div class="slide-number-label">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
-  <div class="big-number">{{POINT_NUMBER}}</div>
-  <div class="point-title">{{POINT_TITLE}}</div>
-  <div class="point-body">{{POINT_BODY}}</div>
-  <div class="brand-mark">Collective Family Chiropractic</div>
+  <div class="top-row">
+    <div class="eyebrow">Fact {{POINT_NUMBER}}</div>
+    <div class="page-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  </div>
+  <div class="header-zone">
+    <div class="big-number">{{POINT_NUMBER}}</div>
+    <div class="rule"></div>
+    <div class="point-title">{{POINT_TITLE}}</div>
+    <div class="point-body">{{POINT_BODY}}</div>
+  </div>
+  <div class="footer-row">
+    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="footer-counter">SWIPE &rarr;</div>
+  </div>
 </div>
 </body>
 </html>

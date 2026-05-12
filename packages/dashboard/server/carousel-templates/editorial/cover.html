@@ -15,9 +15,6 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    text-align: left;
     padding: {{PADDING}}px;
     background: linear-gradient({{GRADIENT_ANGLE}}deg, {{BG_DARK}} 0%, {{PRIMARY}} 100%);
     position: relative;
@@ -30,64 +27,93 @@
     height: {{ACCENT_BAR_HEIGHT}}px;
     background: {{ACCENT}};
   }
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+  }
   .eyebrow {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
-    letter-spacing: 0.3em;
+    letter-spacing: 0.36em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 28px;
+    color: {{ACCENT}};
+  }
+  .page-counter {
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.5);
+  }
+  .body-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 28px;
+  }
+  .rule {
+    width: 96px;
+    height: 3px;
+    background: {{ACCENT}};
+    margin-bottom: 32px;
   }
   .headline {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: {{HEADLINE_SIZE}}px;
     font-weight: bold;
     color: {{TEXT_LIGHT}};
-    line-height: 1.08;
-    letter-spacing: -0.01em;
-    margin-bottom: 28px;
-    max-width: 92%;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    margin-bottom: 30px;
+    max-width: 94%;
   }
   .subhead {
     font-size: {{SUBHEAD_SIZE}}px;
     font-weight: 400;
-    color: rgba(255,255,255,0.75);
+    color: rgba(255,255,255,0.78);
     line-height: 1.45;
-    max-width: 80%;
+    max-width: 82%;
   }
   .footer-row {
-    position: absolute;
-    bottom: 36px;
-    left: {{PADDING}}px;
-    right: {{PADDING}}px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-top: auto;
   }
   .brand-mark {
     font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.5);
   }
   .swipe-indicator {
     font-size: 13px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.6);
-    letter-spacing: 0.12em;
+    font-weight: 900;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
   }
 </style>
 </head>
 <body>
 <div class="cover">
   <div class="accent-bar"></div>
-  <div class="eyebrow">Did you know</div>
-  <div class="headline">{{HOOK_LINE}}</div>
-  <div class="subhead">{{SUBTITLE}}</div>
+  <div class="top-row">
+    <div class="eyebrow">Did you know</div>
+    <div class="page-counter">01 / {{TOTAL_SLIDES}}</div>
+  </div>
+  <div class="body-zone">
+    <div class="rule"></div>
+    <div class="headline">{{HOOK_LINE}}</div>
+    <div class="subhead">{{SUBTITLE}}</div>
+  </div>
   <div class="footer-row">
     <div class="brand-mark">Collective Family Chiropractic</div>
-    <div class="swipe-indicator">SWIPE &rarr;</div>
+    <div class="swipe-indicator">Swipe &rarr;</div>
   </div>
 </div>
 </body>

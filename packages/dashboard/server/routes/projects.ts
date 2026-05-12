@@ -1142,7 +1142,13 @@ Schema:
         if (s.kind === "cta") {
           return {
             templateName: "cta" as const,
-            variables: { CTA_HEADLINE: s.title, CTA_SUBHEAD: s.body, CTA_BUTTON_TEXT: (s.cta_button ?? "Save this").toUpperCase() },
+            variables: {
+              CTA_HEADLINE: s.title,
+              CTA_SUBHEAD: s.body,
+              CTA_BUTTON_TEXT: (s.cta_button ?? "Save this").toUpperCase(),
+              SLIDE_INDEX: String(i + 1),
+              TOTAL_SLIDES: String(totalSlides),
+            },
           };
         }
         const contentIndex = expanded.slice(0, i).filter((x) => x.kind === "content").length + 1;
