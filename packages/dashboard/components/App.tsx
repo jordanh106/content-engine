@@ -185,6 +185,7 @@ const AppInner: React.FC = () => {
               onBack={() => { setOpenProjectId(null); setView("PROJECTS"); }}
               onOpenStorytellingReelForProject={(id) => setStorytellingProjectId(id)}
               onOpenMarketingStudioForProject={() => { /* coming soon */ }}
+              onNavigateToCanvas={() => setView("CANVAS")}
             />
           )}
         </ViewTransition>

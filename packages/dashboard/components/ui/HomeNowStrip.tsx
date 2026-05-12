@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Activity, Send, FolderKanban } from "lucide-react";
+import { Sparkles, Activity, Send, FolderKanban, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 
 type HFStatus = { configured: boolean; credits?: number; email?: string };
 type RecentJobs = { jobs: { status: string }[]; inFlightCount: number; error?: string };
 type Today = { publishedToday: number; sessionInProgress: boolean };
-type ActiveProject = { active: { id: string; name: string; kind: string } | null };
+type ActiveProject = { active: { id: string; name: string; kind: string; status: string } | null };
+type GenLog = { log: { stage: string; status: string }[] };
 
 /**
  * Home "Now" strip — live situational awareness across the top of the dashboard.
@@ -41,6 +42,17 @@ export const HomeNowStrip: React.FC = () => {
     staleTime: 15_000,
   });
 
+  // If active project is generating, poll its log for stage progress
+  const activeProjectStatus = activeProj?.active?.status;
+  const activeProjectId = activeProj?.active?.id;
+  const { data: genLog } = useQuery<GenLog>({
+    queryKey: ["project-genlog-now-strip", activeProjectId],
+    queryFn: () => fetch(`/api/projects/${activeProjectId}/generation-log`).then((r) => r.json()),
+    enabled: !!activeProjectId && activeProjectStatus === "generating",
+    refetchInterval: activeProjectStatus === "generating" ? 5_000 : false,
+    staleTime: 2_000,
+  });
+
   // Pulse on data change — track previous values to detect deltas
   const [pulseKey, setPulseKey] = useState(0);
   const credits = status?.credits != null ? Math.round(status.credits) : null;
@@ -48,9 +60,17 @@ export const HomeNowStrip: React.FC = () => {
   const published = today?.publishedToday ?? 0;
   const projectName = activeProj?.active?.name ?? null;
 
+  // Compute "X / Y stages complete" when the active project is generating
+  let projectProgressLabel: string | null = null;
+  if (activeProjectStatus === "generating" && genLog?.log) {
+    const total = genLog.log.length;
+    const done = genLog.log.filter((r) => r.status === "completed").length;
+    if (total > 0) projectProgressLabel = `${done}/${total} stages`;
+  }
+
   useEffect(() => {
     setPulseKey((k) => k + 1);
-  }, [credits, inFlight, published, projectName]);
+  }, [credits, inFlight, published, projectName, projectProgressLabel]);
 
   return (
     <div
@@ -86,11 +106,24 @@ export const HomeNowStrip: React.FC = () => {
       {/* Active project */}
       {projectName && (
         <NowSegment
-          icon={<FolderKanban size={14} className="text-teal-600" />}
+          icon={activeProjectStatus === "generating"
+            ? <Loader2 size={14} className="text-amber-500 animate-spin" />
+            : <FolderKanban size={14} className="text-teal-600" />
+          }
           label="Project"
           value={projectName}
-          tone="accent"
+          tone={activeProjectStatus === "generating" ? "amber" : "accent"}
           asLink={activeProj?.active ? `/projects/${activeProj.active.id}` : undefined}
+        />
+      )}
+
+      {/* Generating-stage progress hint */}
+      {projectProgressLabel && (
+        <NowSegment
+          icon={<Activity size={14} className="text-amber-500" />}
+          label="Progress"
+          value={projectProgressLabel}
+          tone="amber"
         />
       )}
     </div>

@@ -448,6 +448,24 @@ type ContextMenuState =
   | null;
 
 const CANVAS_STATE_KEY = "ce-canvas-state-v1";
+const CANVAS_IMPORT_QUEUE_KEY = "ce-canvas-pending-import-v1";
+
+/** Public helper: from anywhere (e.g. ProjectDetail), queue assets to land on the Canvas
+ * next time the user opens it. The Canvas drains the queue on mount. */
+export type CanvasImportItem = {
+  kind: "broll" | "brollVideo";
+  url: string;
+  prompt?: string;
+  label?: string;
+};
+export function enqueueCanvasImport(item: CanvasImportItem): void {
+  try {
+    const raw = localStorage.getItem(CANVAS_IMPORT_QUEUE_KEY);
+    const queue: CanvasImportItem[] = raw ? JSON.parse(raw) : [];
+    queue.push(item);
+    localStorage.setItem(CANVAS_IMPORT_QUEUE_KEY, JSON.stringify(queue));
+  } catch { /* ignore */ }
+}
 
 // ── Canvas Status Strip ───────────────────────────────────────────────────
 // Subdued horizontal status display for the toolbar: credits · character · selection.
@@ -717,30 +735,68 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
     }
   }, [nodes, edges]);
 
-  // Restore canvas state on mount
+  // Restore canvas state on mount + drain any pending imports from ProjectDetail / elsewhere
   useEffect(() => {
     try {
       const saved = localStorage.getItem(CANVAS_STATE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as { nodes: Node[]; edges: Edge[] };
-      if (parsed.nodes && parsed.nodes.length > 0) {
-        // Re-inject handlers
-        const restored = parsed.nodes.map((n) => ({
-          ...n,
-          data: {
-            ...n.data,
-            onDelete: handleDeleteNode,
-            onExpand: handleExpandScript,
-            onEdit: commitNodeEdit,
-            onStartEdit: startEditNode,
-            onStopEdit: stopEditNode,
-          },
-        }));
-        setNodes(restored);
-        setEdges(parsed.edges || []);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { nodes: Node[]; edges: Edge[] };
+        if (parsed.nodes && parsed.nodes.length > 0) {
+          const restored = parsed.nodes.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              onDelete: handleDeleteNode,
+              onExpand: handleExpandScript,
+              onEdit: commitNodeEdit,
+              onStartEdit: startEditNode,
+              onStopEdit: stopEditNode,
+            },
+          }));
+          setNodes(restored);
+          setEdges(parsed.edges || []);
+        }
       }
     } catch (e) {
       console.error("Failed to restore canvas", e);
+    }
+
+    // Drain pending imports (Send to Canvas from ProjectDetail, etc.)
+    try {
+      const raw = localStorage.getItem(CANVAS_IMPORT_QUEUE_KEY);
+      if (raw) {
+        const queue: CanvasImportItem[] = JSON.parse(raw);
+        if (queue.length > 0) {
+          let yOffset = 80;
+          for (const item of queue) {
+            const id = `${item.kind}-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+            setNodes((nds) => [
+              ...nds,
+              {
+                id,
+                type: item.kind,
+                position: { x: 200 + Math.random() * 300, y: yOffset },
+                data: item.kind === "broll"
+                  ? {
+                      kind: "broll",
+                      imageUrl: item.url,
+                      sourceImagePrompt: item.prompt,
+                      shotDescription: item.label,
+                    }
+                  : {
+                      kind: "brollVideo",
+                      videoUrl: item.url,
+                      motionPrompt: item.prompt,
+                    },
+              } as Node,
+            ]);
+            yOffset += 60;
+          }
+          localStorage.removeItem(CANVAS_IMPORT_QUEUE_KEY);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain canvas import queue", e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

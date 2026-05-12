@@ -35,6 +35,8 @@ import {
 } from "./ui/index.js";
 import { PROJECT_KIND_REGISTRY, PROJECT_STATUS_LABELS } from "../shared/project-kinds.js";
 import { computeStepStatuses, activeStepId } from "../utils/project-steps.js";
+import { enqueueCanvasImport } from "./CanvasView.js";
+import type { DashboardView } from "../shared/types.js";
 import { cn } from "../utils/cn.js";
 
 type Props = {
@@ -44,6 +46,8 @@ type Props = {
   onOpenStorytellingReelForProject?: (projectId: string) => void;
   /** Optional: open the Marketing Studio modal with a projectId pre-set */
   onOpenMarketingStudioForProject?: (projectId: string) => void;
+  /** Optional: jump to the Canvas view (after enqueueing imports) */
+  onNavigateToCanvas?: () => void;
 };
 
 const STATUS_TONE: Record<ProjectStatus, "info" | "warning" | "success" | "muted" | "accent" | "danger"> = {
@@ -59,6 +63,7 @@ export const ProjectDetail: React.FC<Props> = ({
   onBack,
   onOpenStorytellingReelForProject,
   onOpenMarketingStudioForProject,
+  onNavigateToCanvas,
 }) => {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<{ project: ProjectWithAssets }>({
@@ -285,7 +290,21 @@ export const ProjectDetail: React.FC<Props> = ({
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {project.outputs.map((o) => (
-              <OutputTile key={o.id} output={o} onClick={() => setActiveOutput(o)} />
+              <OutputTile
+                key={o.id}
+                output={o}
+                onClick={() => setActiveOutput(o)}
+                onSendToCanvas={(out) => {
+                  if (!out.url) return;
+                  enqueueCanvasImport({
+                    kind: out.kind === "video" ? "brollVideo" : "broll",
+                    url: out.url,
+                    prompt: out.prompt ?? undefined,
+                    label: out.label ?? undefined,
+                  });
+                  onNavigateToCanvas?.();
+                }}
+              />
             ))}
           </div>
         )}
@@ -526,7 +545,7 @@ const RefTile: React.FC<{ refItem: ProjectRef; onDelete: () => void }> = ({ refI
   );
 };
 
-const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void }> = ({ output, onClick }) => {
+const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; onSendToCanvas?: (output: ProjectOutput) => void }> = ({ output, onClick, onSendToCanvas }) => {
   const isVideo = output.kind === "video";
   const isHtml = output.kind === "html";
   const isText = output.kind === "text";
@@ -571,7 +590,7 @@ const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void }> = ({ 
         {output.label ?? output.kind}
       </span>
       <div className="absolute top-1.5 right-1.5">
-        <OutputActionsMenu output={output} />
+        <OutputActionsMenu output={output} onSendToCanvas={onSendToCanvas} />
       </div>
     </div>
   );

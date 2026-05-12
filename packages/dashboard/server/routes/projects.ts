@@ -331,6 +331,8 @@ export function createProjectsRouter(projectsDataDir: string, quickstartTemplate
     }
 
     sqlite.prepare("UPDATE projects SET status = 'generating', updated_at = datetime('now') WHERE id = ?").run(id);
+    clearProjectLog(id);
+    queueStages(id, ["hero_v1", "hero_v2", "hero_v3", "motion_piece", "social_cutdown", "landing_page"]);
 
     // Fire-and-forget orchestrator. We respond immediately with manifest=building so
     // the UI can poll /api/projects/:id every 10-30 sec to watch outputs populate.
@@ -347,36 +349,48 @@ export function createProjectsRouter(projectsDataDir: string, quickstartTemplate
 
       // 1. Three hero stills in parallel
       const heroResults = await Promise.allSettled([1, 2, 3].map(async (n) => {
-        const r = await generateImage({
-          prompt: `${heroPromptBase}\n\nVariant ${n}: emphasise ${n === 1 ? "subject + mood" : n === 2 ? "context + lifestyle" : "detail / close-up"}.`,
-          modelKey: "nano_banana_2",
-          aspectRatio: "16:9",
-          resolution: "2k",
-        });
-        const vir = await predictVirality(
-          { kind: "image_prompt", imagePrompt: r.imageUrl, format: "brand_launch" },
-          { blueprintPath },
-        ).catch(() => null);
-        return recordProjectOutput({
-          projectId: id,
-          kind: "image",
-          label: `hero_v${n}`,
-          url: r.imageUrl,
-          modelUsed: "nano_banana_2",
-          prompt: heroPromptBase,
-          costCredits: 2,
-          predictedVirality: vir?.score,
-          predictedViralityBreakdown: vir?.breakdown,
-        });
+        const stage = `hero_v${n}`;
+        logStage(id, stage, "running");
+        try {
+          const variantPrompt = `${heroPromptBase}\n\nVariant ${n}: emphasise ${n === 1 ? "subject + mood" : n === 2 ? "context + lifestyle" : "detail / close-up"}.`;
+          const r = await generateImage({
+            prompt: variantPrompt,
+            modelKey: "nano_banana_2",
+            aspectRatio: "16:9",
+            resolution: "2k",
+          });
+          const vir = await predictVirality(
+            { kind: "image_prompt", imagePrompt: variantPrompt, mode: "showcase", projectBrief: brief, projectKind: project.kind, format: "brand_launch" },
+            { blueprintPath },
+          ).catch(() => null);
+          const out = recordProjectOutput({
+            projectId: id,
+            kind: "image",
+            label: `hero_v${n}`,
+            url: r.imageUrl,
+            modelUsed: "nano_banana_2",
+            prompt: variantPrompt,
+            costCredits: 2,
+            predictedVirality: vir?.score,
+            predictedViralityBreakdown: vir?.breakdown,
+          });
+          logStage(id, stage, "completed", vir ? `score ${vir.score}/100` : undefined);
+          return out;
+        } catch (err) {
+          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
+          throw err;
+        }
       }));
       const stills = heroResults.filter((r) => r.status === "fulfilled").map((r) => (r as PromiseFulfilledResult<ProjectOutput>).value);
       const bestStill = stills.sort((a, b) => (b.predictedVirality ?? 0) - (a.predictedVirality ?? 0))[0];
       if (!bestStill || !bestStill.url) {
+        failPendingStages(id, "no successful hero stills");
         sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
         return;
       }
 
       // 2. Motion piece (Seedance 10s, 16:9)
+      logStage(id, "motion_piece", "running");
       try {
         const startUploadId = await uploadMediaFromUrl(bestStill.url);
         const motionPrompt = `${brief.slice(0, 800)}\n\nSlow editorial camera move (push-in / drift / parallax). Subtle subject motion. No fast cuts. 10 seconds.`;
@@ -396,8 +410,10 @@ export function createProjectsRouter(projectsDataDir: string, quickstartTemplate
           prompt: motionPrompt,
           costCredits: 22.5,
         });
+        logStage(id, "motion_piece", "completed");
 
         // 3. 9:16 social cutdown (Kling 6s)
+        logStage(id, "social_cutdown", "running");
         const cutdownPrompt = `${brief.slice(0, 500)}\n\nVertical 9:16 social cutdown. Tight composition, faster pacing than the motion piece. 6 seconds.`;
         const cutdown = await generateVideo({
           prompt: cutdownPrompt,
@@ -416,11 +432,15 @@ export function createProjectsRouter(projectsDataDir: string, quickstartTemplate
           prompt: cutdownPrompt,
           costCredits: 10,
         });
+        logStage(id, "social_cutdown", "completed");
       } catch (err) {
         console.error("[brand-kit] motion/cutdown failed:", err);
+        // Best-effort: mark whichever stage was last in-flight as failed
+        logStage(id, "motion_piece", "failed", err instanceof Error ? err.message : String(err));
       }
 
       // 4. Single-file HTML landing page via Anthropic
+      logStage(id, "landing_page", "running");
       try {
         const client = new Anthropic();
         const stillsBlock = stills.map((s, i) => `- Hero ${i + 1}: ${s.url}`).join("\n");
@@ -456,9 +476,13 @@ Return ONLY the HTML — start with <!DOCTYPE html>. Include the strongest hero 
             modelUsed: "claude-haiku-4-5",
             prompt: brief.slice(0, 500),
           });
+          logStage(id, "landing_page", "completed");
+        } else {
+          logStage(id, "landing_page", "failed", "Anthropic returned no text block");
         }
       } catch (err) {
         console.error("[brand-kit] landing page failed:", err);
+        logStage(id, "landing_page", "failed", err instanceof Error ? err.message : String(err));
       }
 
       sqlite.prepare("UPDATE projects SET status = 'ready', updated_at = datetime('now') WHERE id = ?").run(id);
