@@ -19,9 +19,9 @@ import { predictVirality } from "../lib/virality-predictor.js";
 import { generateImage, generateVideo, uploadMediaFromUrl, isConfigured } from "../lib/higgsfield-client.js";
 import { logStage, queueStages, readGenerationLog, failPendingStages, clearProjectLog, viralityModeForKind } from "../lib/project-orchestrators.js";
 import type { CarouselVariant, CarouselAspect, SlideSpec } from "../lib/carousel-renderer.js";
-import { generateAndCacheImage } from "../lib/higgsfield-image-cache.js";
+import { generateAndCacheImage, generateAndCacheImageWithFallback } from "../lib/higgsfield-image-cache.js";
 import { BRAND_DEFAULT_SYSTEM, deserializeVisualSystem, summarizeVisualSystem, type VisualSystem } from "../lib/visual-system.js";
-import { buildHiggsfieldPrompt, modelForRole, isImageBrief, type ImageBrief, type SlideRole } from "../lib/image-prompt-builder.js";
+import { buildHiggsfieldPrompt, modelForRole, fallbackModelForRole, isImageBrief, type ImageBrief, type SlideRole } from "../lib/image-prompt-builder.js";
 import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
 import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
@@ -407,6 +407,33 @@ NO emdashes. Use commas, periods, or sentence fragments.
       return `## ${s.heading}\nFill this with real, specific content${len}${hint}\nWhat goes here: ${s.placeholder}`;
     }).join("\n\n");
 
+    // Per-kind extra formatting rules. The carousel kind needs strict 7-line Slide hooks
+    // mapped to Alex's Carousel Framework roles so downstream generation has clean inputs.
+    const extraFormattingRules = isCarouselKind ? `
+
+ADVANCED FORMATTING FOR THE "Slide hooks (5-7 lines)" SECTION (mandatory):
+This section MUST be EXACTLY 7 numbered lines, one per Carousel Framework role.
+Each line is the working title for that slide. 6 words MAXIMUM per line. No periods at the end of role-1/2/3/4/5/6 unless natural.
+Do NOT write a paragraph here. Do NOT add explanation lines under the numbers. Exactly 7 numbered lines.
+
+Use this exact structure:
+1. <HOOK headline — stop the scroll, provoke curiosity, standalone-readable>
+2. <CONTEXT headline — frame the problem, why this matters now>
+3. <BUILD_1 headline — first core insight, one idea only>
+4. <BUILD_2 headline — second core insight, one idea only>
+5. <TENSION headline — the reframe, challenge the assumption>
+6. <PAYOFF headline — the key takeaway, resolved>
+7. <CTA headline — earn the follow, save-first or share-first>
+
+Example for the topic "the surprising origin story of the chainsaw":
+1. Chainsaws had a very different origin
+2. Before they ever touched a tree
+3. Two Scottish doctors built it in 1786
+4. It was made to cut bone
+5. Then lumberjacks claimed it
+6. Everyday objects hide stranger histories
+7. Save this for your next dinner` : "";
+
     try {
       const client = new Anthropic();
       const resp = await client.messages.create({
@@ -428,7 +455,7 @@ If the topic seed is "the origin of the chainsaw", every section is about chains
 
 Required output format — fill EVERY section listed below with concrete content matching the heading exactly. Do not invent new sections, do not skip sections, do not include the placeholder text:
 
-${sectionInstructions}
+${sectionInstructions}${extraFormattingRules}
 
 Return the brief as markdown with one ## heading per section, content beneath each, blank line between sections.`,
         }],
@@ -1206,8 +1233,20 @@ Return ONLY the caption text.`,
           : slideMix === "all_text"    ? "OVERRIDE: every slide must use slideStyle: \"text\". Omit imageBrief for every slide."
           : "Use the default slideStyle per role as listed in the framework below.";
 
-        const promptHooks = providedHooks.length > 0
-          ? `Slide hooks provided by the user (use as inspiration for headlines; do not copy verbatim — restructure for the framework):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
+        // When the user has pre-written exactly 7 slide hooks via AI Suggest (or by hand),
+        // map line N to role N as a hard headline lock. Fewer than 7 lines = soft inspiration.
+        const sevenLineHooks = providedHooks.length === 7;
+        const promptHooks = sevenLineHooks
+          ? `PRE-WRITTEN HEADLINES (the user has authored exactly 7 lines, one per framework role). USE THESE VERBATIM AS THE HEADLINE for each role unless the line exceeds 6 words (then trim to the most important 6 words and preserve meaning). DO NOT rephrase, DO NOT rewrite. Your job is to generate body + imageBrief, not headlines.
+1. HOOK    headline = "${providedHooks[0]}"
+2. CONTEXT headline = "${providedHooks[1]}"
+3. BUILD_1 headline = "${providedHooks[2]}"
+4. BUILD_2 headline = "${providedHooks[3]}"
+5. TENSION headline = "${providedHooks[4]}"
+6. PAYOFF  headline = "${providedHooks[5]}"
+7. CTA     headline = "${providedHooks[6]}"`
+          : providedHooks.length > 0
+          ? `Slide hooks provided by the user (use as inspiration for headlines; restructure for the framework):\n${providedHooks.map((s, i) => `${i + 1}. ${s}`).join("\n")}`
           : "";
 
         const resp = await client.messages.create({
@@ -1221,6 +1260,14 @@ Topic: ${topic}
 
 Visual System (locked, every slide inherits this):
 ${vsSummary}
+
+APPLYING THE VISUAL SYSTEM:
+The Visual System describes the AESTHETIC, not the subject. Translate it to whatever the slide's subject actually is:
+- If the slide subject is a PERSON, the Visual System describes portrait conventions (lighting, framing, mood).
+- If the slide subject is an OBJECT, translate "portrait photography" into "hero-shot still life" — single object filling the frame, same palette, same dramatic lighting, same emotional tone. Hero-worship aesthetic applied to the object itself.
+- If the slide subject is an ENVIRONMENT, translate into "establishing shot still" with the same lighting, palette, and mood.
+
+Always preserve the Visual System's palette and mood. NEVER abandon the palette to chase the subject's "expected" look.
 
 TOPIC ANCHOR (load-bearing rule):
 Every slide and every imageBrief MUST reference specific nouns from the topic. If the topic mentions "chainsaw", the imageBrief.subject MUST mention "chainsaw" or "surgical chainsaw" or the specific era item, NOT generic "vintage medical equipment" or "old industrial tool". Stay strictly on the user's topic. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy or in the image.
@@ -1243,20 +1290,28 @@ RULES (non-negotiable):
 - Tension before payoff. Always.
 - Slide 1 (HOOK) must read standalone if someone sees it in Explore.
 - Plain language. No jargon. No marketing speak. No "in today's world" openers.
-- Never copy slide hooks verbatim. Restructure for the framework.
 
 ${promptHooks}
 
 For every cinematic slide, fill in an imageBrief with these EXACT fields (no extras, no missing):
-- subject:       <topic-specific noun phrase. MUST mention the actual subject of the carousel (not generic mood). For a chainsaw topic, say "an 1786 hand-cranked surgical chainsaw" — never "vintage medical equipment".>
-- setting:       <where and when. Specific era, location, surface, light source.>
-- action:        <usually "static" — e.g., "static museum still", "static studio still">
-- lighting:      <direction, quality, color temperature in Kelvin>
-- focalLength:   <"85mm" for hero / "50mm" for build close-up / "35mm" for tension>
-- aperture:      <"f/2.8" or similar — shallower for hero, moderate for build>
-- angle:         <e.g. "three-quarter overhead", "low angle eye level", "overhead flat-lay">
-- moodKeywords:  <array of 3-5 mood phrases — e.g., ["candlelit chiaroscuro", "antique brass patina"]>
-- avoidKeywords: <array of 3-5 phrases to NOT include — e.g., ["modern materials", "people", "color saturation", "plastic"]>
+
+- subject: A complete physical description that lets a stranger draw the object from the words alone. INCLUDE:
+   • The OBJECT itself, named (e.g., "1786 hand-cranked surgical chainsaw", not "antique tool")
+   • Its KEY VISIBLE FEATURES (chain blade, sprockets, crank handle, guide bar, etc.)
+   • ITS MATERIALS (oxidized brass, dark steel, ivory grip, leather strap, etc.)
+   • A "LOOKS LIKE" comparison for obscure subjects ("resembles a modern chainsaw shrunk to the size of a pistol")
+   • The SCALE / SIZE if not obvious
+   BAD subject:  "antique medical equipment from 1786"
+   GOOD subject: "1786 hand-cranked surgical chainsaw, the size of a small pistol, with a short steel guide bar and a fine chain blade looping around two brass sprockets, polished brass crank handle on the right side, dark walnut grip. Looks like a miniature chainsaw scaled to fit in one hand."
+
+- setting:       Where and when. Specific era, location, surface, light source.
+- action:        Usually "static" — e.g., "static museum still", "static studio still"
+- lighting:      Direction, quality, color temperature in Kelvin
+- focalLength:   "85mm" for hero / "50mm" for build close-up / "35mm" for tension
+- aperture:      "f/2.8" or similar — shallower for hero, moderate for build
+- angle:         e.g. "three-quarter overhead", "low angle eye level", "overhead flat-lay"
+- moodKeywords:  Array of 3-5 mood phrases that match the locked Visual System palette + mood
+- avoidKeywords: Array of 3-5 phrases to NOT include — e.g. ["modern materials", "people", "color saturation", "plastic"]
 
 Output JSON ONLY (no preamble, no code fence, no markdown):
 {
@@ -1328,21 +1383,26 @@ Output JSON ONLY (no preamble, no code fence, no markdown):
       for (let i = 0; i < planned.length; i++) {
         const slide = planned[i];
         if (slide.slideStyle !== "cinematic" || !slide.imageBrief) continue;
-        const modelKey = modelForRole(slide.role);
-        if (!modelKey) continue;
+        const primaryModel = modelForRole(slide.role);
+        if (!primaryModel) continue;
+        const fallbackModel = fallbackModelForRole(slide.role) ?? undefined;
         const stage = `slide_${i + 1}`;
-        logStage(id, stage, "running", `image · ${modelKey}`);
+        logStage(id, stage, "running", `image · ${primaryModel}`);
         const imagePrompt = buildHiggsfieldPrompt(slide.imageBrief, visualSystem, slide.role);
-        try {
-          const result = await generateAndCacheImage({
-            prompt: imagePrompt,
-            aspect,
-            outDir,
-            filename: `slide_${i + 1}_bg.png`,
-            modelKey,
-            resolution: modelKey === "gpt_image" ? "2k" : "1k",
-          });
-          bgImageByIndex[i] = { localPath: result.localPath, remoteUrl: result.remoteUrl, cost: result.costCredits, prompt: imagePrompt, model: modelKey };
+
+        const outcome = await generateAndCacheImageWithFallback({
+          prompt: imagePrompt,
+          aspect,
+          outDir,
+          filename: `slide_${i + 1}_bg.png`,
+          primaryModel,
+          fallbackModel,
+          onAttempt: (msg) => logStage(id, stage, "running", msg),
+        });
+
+        if (outcome.ok) {
+          const { result, modelUsed, usedFallback } = outcome;
+          bgImageByIndex[i] = { localPath: result.localPath, remoteUrl: result.remoteUrl, cost: result.costCredits, prompt: imagePrompt, model: modelUsed };
           totalImageCost += result.costCredits;
           recordProjectOutput({
             projectId: id,
@@ -1350,14 +1410,20 @@ Output JSON ONLY (no preamble, no code fence, no markdown):
             label: `slide_${i + 1}_bg_${slide.role}`,
             url: `/projects/${id}/outputs/slide_${i + 1}_bg.png`,
             filePath: result.localPath,
-            modelUsed: modelKey,
+            modelUsed,
             prompt: imagePrompt,
             costCredits: result.costCredits,
           });
-        } catch (err) {
-          logStage(id, stage, "failed", err instanceof Error ? err.message : String(err));
-          sqlite.prepare("UPDATE projects SET status = 'drafting' WHERE id = ?").run(id);
-          return;
+          if (usedFallback) {
+            logStage(id, stage, "running", `image ready via ${modelUsed} (fallback used)`);
+          }
+        } else {
+          // Hard failure on both primary and fallback. Re-tag this slide as text so the
+          // composite step uses the editorial/minimal template instead of cinematic. The
+          // carousel continues — we do NOT abort the whole run on a single image-gen miss.
+          slide.slideStyle = "text";
+          slide.imageBrief = undefined;
+          logStage(id, stage, "running", `text fallback (image gen failed: ${outcome.error.slice(0, 80)})`);
         }
       }
 

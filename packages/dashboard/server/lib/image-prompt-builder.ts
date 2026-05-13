@@ -84,6 +84,23 @@ export function modelForRole(role: SlideRole): HiggsfieldModelKey | null {
 }
 
 /**
+ * Fallback model for a role when the primary fails. nano_banana_flash is the cheapest
+ * and fastest Higgsfield model; all cinematic roles can retry through it before we give
+ * up and fall back to text-only rendering.
+ */
+export function fallbackModelForRole(role: SlideRole): HiggsfieldModelKey | null {
+  switch (role) {
+    case "hook":
+    case "build_1":
+    case "build_2":
+    case "tension":
+      return "nano_banana_flash";
+    default:
+      return null;
+  }
+}
+
+/**
  * Compose the multi-paragraph Higgsfield prompt from an ImageBrief + Visual System + role.
  * Sections are labeled (SCENE / STYLE / CAMERA / COMPOSITION / QUALITY / AVOID) so the
  * image model can pick out each axis. Visual System contributes style + mood baseline.
