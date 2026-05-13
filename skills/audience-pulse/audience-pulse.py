@@ -34,6 +34,27 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 AUDIENCES_PATH = REPO_ROOT / "industries" / "chiropractic" / "audiences.md"
 OUT_DIR = REPO_ROOT / "industries" / "chiropractic" / "audience-demand"
 
+
+def load_env_file(path: Path) -> None:
+    """Light-weight .env loader. Only sets keys not already in the process env."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+# Auto-load the dashboard .env so we pick up ANTHROPIC_API_KEY without the user
+# having to remember to export it. The dashboard already keeps these keys in one place.
+load_env_file(REPO_ROOT / "packages" / "dashboard" / ".env")
+load_env_file(REPO_ROOT / ".env")  # fallback to repo-root .env if present
+
 # Default source map per audience. Can be overridden by a <!-- pulse-sources --> block
 # in audiences.md, but keeping defaults here so the skill works out of the box.
 DEFAULT_SUBREDDITS = {
