@@ -19,9 +19,11 @@ export function parseConfig(filePath: string): IndustryConfig {
   const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
   const audiences: Audience[] = (raw.audiences || []).map(
-    (a: { id: string; label: string }) => ({
+    (a: { id: string; label: string; personaRef?: string; videos?: string }) => ({
       id: a.id,
       label: a.label,
+      personaRef: a.personaRef,
+      videos: a.videos,
     }),
   );
 

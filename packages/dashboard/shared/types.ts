@@ -139,6 +139,10 @@ export type ParsedVideo = {
 export type Audience = {
   id: string;
   label: string;
+  /** Optional deep-link to the audience's persona profile in audiences.md */
+  personaRef?: string;
+  /** Optional video-code range (e.g. "P1-P9") */
+  videos?: string;
 };
 
 export type Condition = {

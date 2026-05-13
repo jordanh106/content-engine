@@ -288,6 +288,40 @@ Jordan's natural humor style, calibrated from the chainsaw video and production 
 - **Humor lives inside narrative**, not on top of it
 - **Formula**: Serious setups earn the humor. Humor earns trust. Trust earns the takeaway.
 
+## Content Strategy: Audience-First, Resource-First
+
+Default operating principle for every content decision. Read this before any planning session.
+
+1. **Pick the idea for the audience, not the algorithm.** Every video and carousel exists to answer a real question a specific audience segment has. If you cannot name the segment and the question, do not make it.
+
+2. **Become a resource, not a hook.** Scroll-stop tactics work once. Being the place someone returns to for trustworthy chiropractic information compounds for years. The metric is repeat engagement — saves, shares with a friend, DMs asking follow-up — not first-impression virality.
+
+3. **The 80/20 rule on tooling.** The carousel pipeline, Higgsfield, Cinema Studio, Remotion compositions, AI templates — these get content 80-90% of the way. The last 10-20% is taste: pick the winning idea, edit the cuts, polish the language. Stop optimizing the 80; start optimizing the picking.
+
+4. **One audience per piece.** Multi-audience content is mush. Pick one segment, write to them specifically, and the others will sometimes happen to engage. The reverse never works.
+
+5. **Source every idea.** Every idea in the bank has a source signal: a Reddit thread, a creator pattern, an evergreen audience question, a performance-metric outlier. "Vibes" is not a source. The chain is: audience → signal → idea → production. Skip the first two and the production is wasted effort.
+
+When in doubt, ask: "Which of the 7 segments is this for? What specific question is it answering? What's the source signal that says this question matters to them right now?"
+
+### Audience personas
+
+The 7 audience segments are defined in `industries/chiropractic/config.json` and deeply profiled in `industries/chiropractic/audiences.md` (demographics, fears, search terms, save patterns, conversion triggers, hook archetypes that work and that flop). Every content decision references these personas — they are the source of truth for who the work is for.
+
+### The Ideation pipeline (high level)
+
+```
+audiences.md (who) + viral-insights/ + creator-insights/ + audience-demand/ (what signals)
+        ↓
+IdeaRanker → composite score (audience fit + virality signal + format feasibility + competitive gap)
+        ↓
+"Tonight's Top Ideas" on the Home screen
+        ↓
+Develop into Project → existing carousel / marketing studio / storytelling reel pipeline
+```
+
+The execution layer (Higgsfield, templates, Cinema Studio, Remotion) is unchanged. The ideation layer feeds it audience-tagged ideas with explicit source signals.
+
 ## Production Methodology
 
 ### Batch-by-Category Model

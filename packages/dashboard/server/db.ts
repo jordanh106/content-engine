@@ -889,3 +889,9 @@ CREATE INDEX IF NOT EXISTS idx_project_log_project_created ON project_generation
 `);
 
 addColumnIfMissing("projects", "visual_system_json", "TEXT");
+
+// Audience-first pivot: tag ideas + assets with the audience segment(s) they serve.
+addColumnIfMissing("inspiration_inbox", "audience_tags", "TEXT"); // CSV of audience segment IDs
+addColumnIfMissing("creator_videos", "audience_tags", "TEXT");
+addColumnIfMissing("project_outputs", "audience_tags", "TEXT");
+addColumnIfMissing("projects", "audience_tags", "TEXT");
