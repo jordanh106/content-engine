@@ -41,6 +41,7 @@ scripts/             Repo utilities (install, scaffold)
 | viral-scout | `/viral-scout [niche]` | Find top-performing niche content across platforms, extract patterns |
 | creator-analysis | `/creator-analysis @handle` | Deep-dive on a specific creator's patterns, hooks, and formats |
 | competitor-research | `/competitor-research [niche]` | Broad competitive landscape analysis and positioning |
+| audience-pulse | `/audience-pulse [audience\|all]` | Pull direct demand signal per audience (Reddit threads + Google PAA) → seeds the IdeaRanker |
 | content-planner | `/content-planner` | Research output to weekly content calendar (uses hook patterns, idea bank, viral insights) |
 | video-director | `/video-director` | Calendar entry to full production plan (hook variations, platform optimization, transcript analysis) |
 | remotion-best-practices | Auto-loaded when working with Remotion | Domain knowledge for Remotion video creation |
@@ -57,11 +58,14 @@ scripts/             Repo utilities (install, scaffold)
 
 ### Skill Pipeline
 ```
-/last30days ─┐
-/viral-scout ─┼→ /content-planner → /video-director → Remotion + Cinema Studio → Assembly
-/creator-analysis ─┘         ↑                ↑
-                     idea-bank.md      hook-patterns.md
+/audience-pulse ─┐
+/last30days ─────┤
+/viral-scout ────┼→ IdeaRanker → "Tonight's Top Ideas" → /content-planner → /video-director → Remotion + Cinema Studio → Assembly
+/creator-analysis ┘         ↑              ↑                  ↑                    ↑
+                  audiences.md     idea-bank.md       hook-patterns.md      production guides
 ```
+
+The IdeaRanker (`packages/dashboard/server/lib/idea-ranker.ts`) reads from all signal sources and produces a ranked, audience-tagged queue. The Home screen surfaces the top of that queue as "Tonight's Top Ideas." See **Content Strategy** section above for the audience-first principle.
 
 ## Video Formats
 

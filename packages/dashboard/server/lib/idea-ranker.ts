@@ -95,6 +95,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
   const ideaBank = parseIdeaBank(path.join(input.industryDir, "idea-bank.md"));
   const inboxRows = readInbox();
   const viralIntel = readViralInsightsKeywords(path.join(input.industryDir, "viral-insights"));
+  const demandIdeas = readAudienceDemand(path.join(input.industryDir, "audience-demand"));
   const scheduledTopics = readScheduledTopics();
 
   const ranked: RankedIdea[] = [];
@@ -132,9 +133,80 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
     }));
   }
 
+  // Audience-demand "Suggested idea triggers" entries
+  for (const d of demandIdeas) {
+    ranked.push(scoreIdea({
+      id: `demand-${d.audienceId}-${hashString(d.title)}`,
+      title: d.title,
+      body: d.body,
+      formatHint: d.formatHint,
+      hookAngle: undefined,
+      sources: [{ source: "audience_demand", reference: d.reference, recency: d.recency }],
+      raw: d as unknown as InboxRow,
+      explicitAudienceTags: [d.audienceId],
+      personas, viralIntel, scheduledTopics,
+    }));
+  }
+
   ranked.sort((a, b) => b.scores.composite - a.scores.composite);
   cache = { value: ranked, ts: Date.now() };
   return filterAndLimit(ranked, input.audienceFilter, input.limit);
+}
+
+type DemandIdea = {
+  audienceId: string;
+  title: string;
+  body: string;
+  formatHint?: string;
+  reference: string;
+  recency: "fresh" | "recent" | "stale";
+};
+
+function readAudienceDemand(demandDir: string): DemandIdea[] {
+  const out: DemandIdea[] = [];
+  if (!fs.existsSync(demandDir)) return out;
+  for (const file of fs.readdirSync(demandDir)) {
+    if (!file.startsWith("demand-") || !file.endsWith(".md")) continue;
+    const m = file.match(/^demand-([a-z_]+)-(\d{4}-\d{2}-\d{2})\.md$/);
+    if (!m) continue;
+    const audienceId = m[1];
+    const dateStr = m[2];
+    const full = path.join(demandDir, file);
+    const stat = fs.statSync(full);
+    const recency = classifyRecency(dateStr);
+    if (recency === "stale") continue;
+    const content = fs.readFileSync(full, "utf-8");
+    // Parse the "Suggested idea triggers" section: numbered bullets in the form
+    //   N. **Format** — "Title" — rationale
+    const triggerSection = content.split(/^##\s+Suggested idea triggers\s*$/m)[1];
+    if (!triggerSection) continue;
+    const stopAt = triggerSection.match(/^##\s+/m);
+    const sectionText = stopAt ? triggerSection.slice(0, stopAt.index) : triggerSection;
+    const lineRe = /^\s*\d+\.\s+\*\*([^*]+)\*\*\s*[—-]\s*"([^"]+)"\s*[—-]\s*(.+)$/gm;
+    let lm: RegExpExecArray | null;
+    while ((lm = lineRe.exec(sectionText)) !== null) {
+      const formatText = lm[1].trim();
+      const title = lm[2].trim();
+      const rationale = lm[3].trim();
+      out.push({
+        audienceId,
+        title,
+        body: rationale,
+        formatHint: extractFormatLetter(formatText),
+        reference: `audience-demand/${file}`,
+        recency,
+      });
+    }
+    // Touch mtime so the cache invalidation watch picks up changes without rescan cost
+    void stat;
+  }
+  return out;
+}
+
+function hashString(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
 }
 
 function filterAndLimit(arr: RankedIdea[], audienceFilter?: string, limit?: number): RankedIdea[] {
