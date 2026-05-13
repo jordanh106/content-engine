@@ -388,6 +388,9 @@ export const inspirationInbox = sqliteTable("inspiration_inbox", {
   content: text("content").notNull(),
   sourceUrl: text("source_url"),
   status: text("status").notNull().default("inbox"), // "inbox" | "developed" | "dismissed"
+  audienceTags: text("audience_tags"), // CSV of audience segment IDs
+  source: text("source"), // "manual" | "weekly_studio" | "audience_pulse" | "viral_scout" | etc.
+  metadata: text("metadata"), // JSON-stringified extras (format hint, hook draft, source reference)
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

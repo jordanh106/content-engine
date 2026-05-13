@@ -7,6 +7,7 @@ import { db } from "../db.js";
 import { ideaConcepts } from "../../shared/schema.js";
 import { parseIdeaBank } from "../parsers/idea-bank.js";
 import { parseConfig } from "../parsers/config.js";
+import { getCurrentBrandVoice, formatBrandVoiceForPrompt } from "../lib/brand-voice.js";
 import type {
   IdeaGenerateRequest,
   IdeaGenerateResponse,
@@ -140,9 +141,7 @@ export function createIdeasAiRouter(contentLibraryPath: string) {
     }
 
     try {
-      const brandVoice = fs.existsSync(brandPath)
-        ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
-        : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const config = fs.existsSync(configPath) ? parseConfig(configPath) : null;
       const audiences = config
@@ -208,9 +207,7 @@ export function createIdeasAiRouter(contentLibraryPath: string) {
     }
 
     try {
-      const brandVoice = fs.existsSync(brandPath)
-        ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
-        : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const messages: Array<{ role: "user" | "assistant"; content: string }> =
         [];
@@ -328,7 +325,7 @@ No emdashes. Return JSON only.`;
       const { hookAngle, format, audience } = req.body;
 
       const config = fs.existsSync(configPath) ? parseConfig(configPath) : null;
-      const brandVoice = fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 800) : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
@@ -540,7 +537,7 @@ Create an improved one-sentence concept that scores higher. Re-score all 4 dimen
     }
 
     try {
-      const brandVoice = fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 800) : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const response = await client.messages.create({
         model: "claude-haiku-4-5-20251001",

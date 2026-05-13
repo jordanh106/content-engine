@@ -41,6 +41,7 @@ Ideas from recent research or viral trends. Time-sensitive, schedule within 1-2 
 | 5 Things We Wish Everyone Knew Before Their First Chiropractic Visit | C | 'Most people wait years too long to get adjusted. Here are 5 things we wish every new patient already knew.' — Myth-busting listicle format that clears up 'you have to go forever,' 'it's just for back pain,' and 'it's dangerous' — building trust with skeptical cold audiences. | medium | Viral Scout | 2026-03-19 |
 | What Happens to a Senior's Spine If They Stop Moving | A | 'The biggest mistake aging adults make isn't exercising too much — it's stopping movement altogether. Here's what that does to your spine.' — Education-forward content with empathetic framing for the senior audience, connecting chiropractic care to long-term mobility and quality of life. | medium | Viral Scout | 2026-03-19 |
 | 5 Tech Neck Exercises for Office Workers | F (Quick Tip) | Suffering from tech neck? These 5 exercises will save your spine | High | n8n Content Intelligence | 2026-03-27 |
+| Pregnancy Safety | D (Myth Buster) | The Truth About Pregnancy Adjustments | High | Content Intelligence - 2026-03-15 | 2026-05-13 |
 
 ---
 

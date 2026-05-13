@@ -38,6 +38,7 @@ export type RankedIdea = {
     viralitySignal: number;       // 0-100 — referenced in viral-insights last 30d?
     formatFeasibility: number;    // 0-100 — production guide / hook pattern exists?
     competitiveGap: number;       // 0-100 — not yet in scheduled / published content?
+    historicalFit: number;        // 0-100 — matches format/audience of historical top performers
     composite: number;            // weighted average
   };
   developCtaKind: string;         // ProjectKind hint for the Develop button
@@ -54,10 +55,11 @@ type InboxRow = {
 };
 
 const WEIGHTS = {
-  audienceFit: 0.35,
-  viralitySignal: 0.30,
-  formatFeasibility: 0.20,
-  competitiveGap: 0.15,
+  audienceFit: 0.30,
+  viralitySignal: 0.25,
+  formatFeasibility: 0.15,
+  competitiveGap: 0.10,
+  historicalFit: 0.20,           // actual outcome data on Jordan's account — meaningful weight
 };
 
 const FRESH_DAYS = 7;
@@ -97,6 +99,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
   const viralIntel = readViralInsightsKeywords(path.join(input.industryDir, "viral-insights"));
   const demandIdeas = readAudienceDemand(path.join(input.industryDir, "audience-demand"));
   const scheduledTopics = readScheduledTopics();
+  const historicalSignals = readHistoricalSignals(path.join(input.industryDir, "content-library.md"));
 
   const ranked: RankedIdea[] = [];
 
@@ -110,7 +113,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       hookAngle: idea.hookAngle,
       sources: [{ source: "idea_bank", reference: `idea-bank.md#${idea.category}-${idea.id}`, recency: classifyRecency(idea.dateAdded) }],
       raw: idea,
-      personas, viralIntel, scheduledTopics,
+      personas, viralIntel, scheduledTopics, historicalSignals,
     }));
   }
 
@@ -129,7 +132,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       }],
       raw: row,
       explicitAudienceTags: parseAudienceTags(row.audience_tags),
-      personas, viralIntel, scheduledTopics,
+      personas, viralIntel, scheduledTopics, historicalSignals,
     }));
   }
 
@@ -144,7 +147,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       sources: [{ source: "audience_demand", reference: d.reference, recency: d.recency }],
       raw: d as unknown as InboxRow,
       explicitAudienceTags: [d.audienceId],
-      personas, viralIntel, scheduledTopics,
+      personas, viralIntel, scheduledTopics, historicalSignals,
     }));
   }
 
@@ -229,6 +232,7 @@ type ScoreInput = {
   personas: Persona[];
   viralIntel: Set<string>;
   scheduledTopics: Set<string>;
+  historicalSignals: HistoricalSignals;
 };
 
 function scoreIdea(s: ScoreInput): RankedIdea {
@@ -245,12 +249,14 @@ function scoreIdea(s: ScoreInput): RankedIdea {
   const viralitySignal = computeViralitySignal(fullText, s.viralIntel);
   const formatFeasibility = computeFormatFeasibility(s.formatHint);
   const competitiveGap = computeCompetitiveGap(s.title, s.scheduledTopics);
+  const historicalFit = computeHistoricalFit(s.formatHint, audienceTags, s.historicalSignals);
 
   const composite = Math.round(
     audienceFit * WEIGHTS.audienceFit +
     viralitySignal * WEIGHTS.viralitySignal +
     formatFeasibility * WEIGHTS.formatFeasibility +
-    competitiveGap * WEIGHTS.competitiveGap,
+    competitiveGap * WEIGHTS.competitiveGap +
+    historicalFit * WEIGHTS.historicalFit,
   );
 
   return {
@@ -261,10 +267,119 @@ function scoreIdea(s: ScoreInput): RankedIdea {
     formatHint: s.formatHint,
     hookAngle: s.hookAngle,
     sources: s.sources,
-    scores: { audienceFit, viralitySignal, formatFeasibility, competitiveGap, composite },
+    scores: { audienceFit, viralitySignal, formatFeasibility, competitiveGap, historicalFit, composite },
     developCtaKind: s.formatHint ? (FORMAT_HINT_TO_KIND[s.formatHint] ?? "did_you_know") : "did_you_know",
     rawSource: s.raw,
   };
+}
+
+// ─── historicalFit: do format + audience match what's actually worked? ─────
+
+type HistoricalSignals = {
+  /** Format letters of top-decile performers, ranked by performance share. */
+  topFormats: Map<string, number>;       // "B" -> normalized 0..1
+  /** Audience IDs of top-decile performers. */
+  topAudiences: Map<string, number>;     // "prenatal" -> normalized 0..1
+  /** Total rows analyzed (for confidence). */
+  sampleSize: number;
+};
+
+function readHistoricalSignals(contentLibraryPath: string): HistoricalSignals {
+  const topFormats = new Map<string, number>();
+  const topAudiences = new Map<string, number>();
+  let sampleSize = 0;
+
+  try {
+    // Read top performers from last 90 days (broader window than ranker recency since
+    // outcome data is rare — we want signal even from older winners).
+    const rows = sqlite.prepare(
+      `SELECT video_code, format_id,
+              SUM(saves) AS saves, SUM(shares) AS shares, SUM(likes) AS likes, SUM(views) AS views
+       FROM performance_metrics
+       WHERE recorded_at >= date('now', '-90 days')
+       GROUP BY video_code
+       ORDER BY (COALESCE(SUM(saves),0) + COALESCE(SUM(shares),0) * 2 + COALESCE(SUM(likes),0) * 0.2) DESC
+       LIMIT 20`,
+    ).all() as Array<{ video_code: string; format_id: string | null; saves: number; shares: number; likes: number; views: number }>;
+
+    sampleSize = rows.length;
+    if (rows.length === 0) return { topFormats, topAudiences, sampleSize };
+
+    // Join with content-library video data to get audience + format.
+    // Map video_code -> { audience, format } via the content library.
+    const audienceByCode = readContentLibraryAudienceMap(contentLibraryPath);
+
+    for (const r of rows) {
+      const fmt = (r.format_id || "").charAt(0).toUpperCase();
+      if (fmt) topFormats.set(fmt, (topFormats.get(fmt) || 0) + 1);
+      const audience = audienceByCode.get(r.video_code);
+      if (audience) topAudiences.set(audience, (topAudiences.get(audience) || 0) + 1);
+    }
+
+    // Normalize to 0..1 by dividing by max count
+    normalize(topFormats);
+    normalize(topAudiences);
+  } catch { /* no metrics table or empty */ }
+
+  return { topFormats, topAudiences, sampleSize };
+}
+
+function normalize(m: Map<string, number>): void {
+  let max = 0;
+  for (const v of m.values()) if (v > max) max = v;
+  if (max === 0) return;
+  for (const [k, v] of m) m.set(k, v / max);
+}
+
+function readContentLibraryAudienceMap(contentLibraryPath: string): Map<string, string> {
+  // Map: video code -> audience id. Built by re-using audience prefix convention
+  // (P1-P9 = prenatal, B1-B10 = infant, K1-K8 = kids, A1-A6 = athlete,
+  //  D1-D11 = adult, S1-S5 = senior, G1-G8 = general).
+  // Future: read content-library.md and parse explicit audience tags per video.
+  const out = new Map<string, string>();
+  void contentLibraryPath;
+  const PREFIX_TO_AUDIENCE: Record<string, string> = {
+    P: "prenatal", B: "infant", K: "kids", A: "athlete",
+    D: "adult", S: "senior", G: "general",
+  };
+  // Pre-seed common codes; this is a cheap lookup until we wire the full parser
+  for (const [prefix, audience] of Object.entries(PREFIX_TO_AUDIENCE)) {
+    for (let i = 1; i <= 12; i++) out.set(`${prefix}${i}`, audience);
+  }
+  return out;
+}
+
+function computeHistoricalFit(
+  formatHint: string | undefined,
+  audienceTags: string[],
+  signals: HistoricalSignals,
+): number {
+  if (signals.sampleSize === 0) {
+    // No performance data yet — return neutral so the score doesn't bias against new ideas
+    return 50;
+  }
+
+  let score = 0;
+  let weight = 0;
+
+  if (formatHint) {
+    const fmtWeight = signals.topFormats.get(formatHint.charAt(0).toUpperCase()) ?? 0;
+    score += fmtWeight * 100 * 0.5;
+    weight += 0.5;
+  }
+
+  if (audienceTags.length > 0) {
+    let best = 0;
+    for (const tag of audienceTags) {
+      const w = signals.topAudiences.get(tag) ?? 0;
+      if (w > best) best = w;
+    }
+    score += best * 100 * 0.5;
+    weight += 0.5;
+  }
+
+  if (weight === 0) return 50;
+  return Math.round(score / weight);
 }
 
 function computeViralitySignal(text: string, viralIntel: Set<string>): number {

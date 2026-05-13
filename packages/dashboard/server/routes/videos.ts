@@ -6,6 +6,7 @@ import { db } from "../db.js";
 import { videoStatus, contentWaterfall, performanceMetrics, scriptVersions, vaultHooks, thumbnailConcepts, savedCaptions } from "../../shared/schema.js";
 import { parseContentLibrary, updateVideoScript, invalidateCache } from "../parsers/content-library.js";
 import { parseConfig } from "../parsers/config.js";
+import { getCurrentBrandVoice, formatBrandVoiceForPrompt } from "../lib/brand-voice.js";
 import { loadAllFormatTimings } from "../parsers/format-timing.js";
 import { parseVibeMotion } from "../parsers/vibe-motion.js";
 import { buildTimeline } from "../parsers/timeline-builder.js";
@@ -658,10 +659,8 @@ Return ONLY the JSON array, no markdown.`,
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) { res.status(400).json({ error: "ANTHROPIC_API_KEY not set" }); return; }
 
-      // Load brand guide if available
-      const brandPath = path.join(path.dirname(contentLibraryPath), "brand.md");
-      let brandGuide = "";
-      try { brandGuide = fs.readFileSync(brandPath, "utf-8").slice(0, 2000); } catch { /* no brand file */ }
+      // Load Living Brand Voice (centralized — reads newest voice-*.md)
+      const brandGuide = formatBrandVoiceForPrompt(getCurrentBrandVoice(path.dirname(contentLibraryPath)));
 
       // Find other scripts in same audience for comparison
       const sameAudience = videos.filter((v) => v.audience === video.audience && v.code !== code).slice(0, 3);
@@ -935,10 +934,8 @@ Return ONLY JSON, no markdown.`,
         return;
       }
 
-      // Load brand voice
-      const brandPath = path.resolve(contentLibraryPath, "../../brand.md");
-      let brandVoice = "";
-      try { brandVoice = fs.readFileSync(brandPath, "utf-8"); } catch { /* no brand file */ }
+      // Load Living Brand Voice (centralized)
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(path.dirname(contentLibraryPath)));
 
       const response = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
@@ -1071,12 +1068,7 @@ Return the refined script text only. No explanation, no JSON wrapper.`,
 
       let captionsGenerated = 0;
       if (missingPlatforms.length > 0) {
-        const brandSnippet = (() => {
-          try {
-            const brandPath = path.join(path.dirname(contentLibraryPath), "brand.md");
-            return fs.existsSync(brandPath) ? fs.readFileSync(brandPath, "utf-8").slice(0, 1200) : "";
-          } catch { return ""; }
-        })();
+        const brandSnippet = formatBrandVoiceForPrompt(getCurrentBrandVoice(path.dirname(contentLibraryPath)));
 
         const targetNames = missingPlatforms.map((p) => captionPlatformNames[p]);
         const captionPrompt = `You are a social media caption writer for a chiropractic practice.

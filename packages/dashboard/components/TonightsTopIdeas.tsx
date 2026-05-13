@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Sparkles, ArrowRight, Layers, TrendingUp, Target, Eye } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Sparkles, ArrowRight, Layers, TrendingUp, Target, Eye, History, Loader2, Zap } from "lucide-react";
 import { Eyebrow } from "./ui/Eyebrow.js";
 import { Button } from "./ui/Button.js";
 import { cn } from "../utils/cn.js";
@@ -18,6 +18,7 @@ type RankedIdea = {
     viralitySignal: number;
     formatFeasibility: number;
     competitiveGap: number;
+    historicalFit: number;
     composite: number;
   };
   developCtaKind: string;
@@ -53,12 +54,30 @@ type Props = {
 
 export const TonightsTopIdeas: React.FC<Props> = ({ onDevelop, limit = 5 }) => {
   const [audience, setAudience] = useState<string>("all");
+  const [toast, setToast] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ ideas: RankedIdea[]; total: number }>({
     queryKey: ["ideas-ranked", audience],
     queryFn: () => fetch(`/api/ideas/ranked?audience=${audience}&limit=${limit}`).then((r) => r.json()),
     refetchInterval: 5 * 60_000,
     staleTime: 60_000,
+  });
+
+  const runStudio = useMutation({
+    mutationFn: () =>
+      fetch("/api/studio/run-now", { method: "POST" }).then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || `Studio trigger failed (${r.status})`);
+        return body as { ok: true; message: string };
+      }),
+    onSuccess: (body) => {
+      setToast(body.message || "Studio chain started.");
+      setTimeout(() => setToast(null), 6000);
+    },
+    onError: (err) => {
+      setToast(`Studio trigger failed: ${err instanceof Error ? err.message : String(err)}`);
+      setTimeout(() => setToast(null), 8000);
+    },
   });
 
   const ideas = data?.ideas ?? [];
@@ -70,23 +89,44 @@ export const TonightsTopIdeas: React.FC<Props> = ({ onDevelop, limit = 5 }) => {
           <Eyebrow tone="accent">Tonight's top ideas</Eyebrow>
           <p className="type-meta mt-0.5">Audience-tagged. Source-backed. Pick one and the production tools take it from here.</p>
         </div>
-        <div className="hidden md:flex items-center gap-1.5 flex-wrap">
-          {AUDIENCE_FILTERS.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAudience(a.id)}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-semibold rounded-full border transition-colors",
-                audience === a.id
-                  ? "bg-teal-600 text-white border-teal-600"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
-              )}
-            >
-              {a.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+            {AUDIENCE_FILTERS.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => setAudience(a.id)}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-semibold rounded-full border transition-colors",
+                  audience === a.id
+                    ? "bg-teal-600 text-white border-teal-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
+                )}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => runStudio.mutate()}
+            disabled={runStudio.isPending}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-full border transition-colors",
+              "bg-rose-600 text-white border-rose-600 hover:bg-rose-700",
+              "disabled:opacity-60 disabled:cursor-not-allowed",
+            )}
+            title="Run the Weekly Studio chain now: refresh voice doc, gather signals, seed 10 fresh ideas into the inbox"
+          >
+            {runStudio.isPending ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
+            {runStudio.isPending ? "Triggering…" : "Run Studio"}
+          </button>
         </div>
       </div>
+
+      {toast && (
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50/60 text-rose-900 text-xs px-3 py-2">
+          {toast}
+        </div>
+      )}
 
       {/* Mobile audience picker */}
       <div className="md:hidden flex items-center gap-1.5 flex-wrap mb-3">
@@ -176,11 +216,12 @@ const IdeaCard: React.FC<{ rank: number; idea: RankedIdea; onDevelop?: (idea: Ra
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+      <div className="grid grid-cols-5 gap-1.5 mb-4 text-center">
         <ScoreChip label="Fit" value={idea.scores.audienceFit} icon={<Target size={10} />} />
         <ScoreChip label="Signal" value={idea.scores.viralitySignal} icon={<TrendingUp size={10} />} />
         <ScoreChip label="Format" value={idea.scores.formatFeasibility} icon={<Layers size={10} />} />
         <ScoreChip label="Gap" value={idea.scores.competitiveGap} icon={<Eye size={10} />} />
+        <ScoreChip label="Track" value={idea.scores.historicalFit} icon={<History size={10} />} />
       </div>
 
       <div className="mt-auto">

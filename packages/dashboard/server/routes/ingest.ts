@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseMasterBlueprint } from "../parsers/master-blueprint.js";
 import { parseStorytellingStyles } from "../parsers/storytelling-styles.js";
 import { sqlite } from "../db.js";
+import { getCurrentBrandVoice, formatBrandVoiceForPrompt } from "../lib/brand-voice.js";
 
 type ConvertOutputFormat = "reel" | "tiktok" | "short" | "carousel" | "long" | "storytelling_reel";
 
@@ -382,10 +383,9 @@ export function createIngestRouter(industryDir: string) {
         return;
       }
 
-      // Load blueprint + brand
+      // Load blueprint + Living Brand Voice (centralized)
       const blueprint = parseMasterBlueprint(blueprintPath);
-      let brandVoice = "";
-      try { brandVoice = fs.readFileSync(brandPath, "utf-8").slice(0, 2000); } catch { /* no brand */ }
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const formatSpec = FORMAT_SPECS[outputFormat];
 

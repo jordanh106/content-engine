@@ -895,3 +895,7 @@ addColumnIfMissing("inspiration_inbox", "audience_tags", "TEXT"); // CSV of audi
 addColumnIfMissing("creator_videos", "audience_tags", "TEXT");
 addColumnIfMissing("project_outputs", "audience_tags", "TEXT");
 addColumnIfMissing("projects", "audience_tags", "TEXT");
+
+// Weekly Studio: source attribution + metadata (format hint, hook draft, source ref) on inbox.
+addColumnIfMissing("inspiration_inbox", "source", "TEXT");
+addColumnIfMissing("inspiration_inbox", "metadata", "TEXT"); // JSON-stringified

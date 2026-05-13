@@ -22,6 +22,7 @@ import type { CarouselVariant, CarouselAspect, SlideSpec } from "../lib/carousel
 import { generateAndCacheImage, generateAndCacheImageWithFallback } from "../lib/higgsfield-image-cache.js";
 import { BRAND_DEFAULT_SYSTEM, deserializeVisualSystem, summarizeVisualSystem, type VisualSystem } from "../lib/visual-system.js";
 import { buildHiggsfieldPrompt, modelForRole, fallbackModelForRole, parseImagePromptSchema, type ImagePromptSchema, type SlideRole } from "../lib/image-prompt-builder.js";
+import { getCurrentBrandVoice, formatBrandVoiceForPrompt } from "../lib/brand-voice.js";
 import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
 import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
@@ -389,14 +390,10 @@ Copy length rules (Instagram 1:1):
 NO emdashes. Use commas, periods, or sentence fragments.
 `.trim() : "";
 
-    // STYLE only. No audience-targeting, no subject framing.
-    // Subject matter comes from the user's topic seed and the brief sections.
-    const brandVoice = `Voice and style guide:
-- Warm, plain, friendly. Like an editor explaining something curious to a friend.
-- No emdashes. Use commas, periods, or sentence fragments instead.
-- No jargon. No marketing speak. No "in today's world" openers.
-- Concrete and specific. Show, do not tell.
-- Sentence-case headlines. No ALL CAPS unless emphasising a single key word.`;
+    // Living Brand Voice — reads the newest voice-*.md from industries/chiropractic/brand-voice/.
+    // Subject matter comes from the user's topic seed and brief sections; this is style only.
+    const industryDir = path.dirname(blueprintPath);
+    const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
     // For AI Suggest we want a complete draft, so we fill every section regardless of
     // the required flag — the flag just tells the human filling it themselves which can

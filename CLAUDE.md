@@ -393,6 +393,7 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 | Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
 | Watchlist Intelligence | sQXCCmZ7HspGFJME | Weekly (Wednesday 8am) | Monitors watchlist creators, finds non-obvious opportunities via cross-niche analysis, self-improves by reading previous outputs |
 | Carousel & Thumbnail Generator | 2RVLLlgoDcr7hs4f | Friday 8am / On demand | Generates branded carousel slides and YouTube thumbnails from HTML templates |
+| Weekly Studio Chain | *(import from `packages/dashboard/n8n-workflows/weekly-studio.json`)* | Sunday 8pm AEST + manual webhook | Refresh brand voice → gather signals → synthesize 10 ranked idea cards → bulk seed inbox → git commit voice doc → Telegram notify. The "Run Studio" button on Home posts to its webhook for off-schedule runs. |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
 
@@ -485,6 +486,43 @@ Composite score formula: `save_rate*0.4 + share_rate*0.3 + engagement*0.2 + ctr*
 
 - `generated_carousels` - Carousel metadata, version stamps, composite scores
 - `carousel_slides` - Individual slide records with image paths
+
+## Living Brand Voice + Weekly Studio
+
+The dashboard's AI routes read brand voice from `industries/chiropractic/brand-voice/voice-{date}.md` (newest dated file wins). `industries/chiropractic/brand.md` is the **constitution** — the voice can evolve above it but cannot contradict it.
+
+| Component | Path |
+|-----------|------|
+| Central reader (all routes import this) | `packages/dashboard/server/lib/brand-voice.ts` |
+| Constitution | `industries/chiropractic/brand.md` |
+| Living voice files | `industries/chiropractic/brand-voice/voice-*.md` |
+| Refresh skill | `/refresh-voice` (script: `skills/refresh-voice/refresh-voice.py`) |
+| Weekly chain | `packages/dashboard/n8n-workflows/weekly-studio.json` (import into n8n) |
+
+### Telegram setup (one-time, 5 minutes)
+
+1. Telegram → `@BotFather` → `/newbot` → save the HTTP API token
+2. Message your new bot once (any text)
+3. `curl "https://api.telegram.org/bot${TOKEN}/getUpdates"` → find `chat.id` (a numeric ID)
+4. Add to `packages/dashboard/.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=...
+   TELEGRAM_CHAT_ID=...
+   ```
+5. Restart the dashboard
+6. Test: `curl -X POST http://localhost:3001/api/studio/test-telegram` — message lands in Telegram
+
+### Bulk seed shared secret
+
+The Weekly Studio chain authenticates to `/api/inbox/bulk-seed` via a shared secret. Generate one and add to both `packages/dashboard/.env` and the n8n environment:
+
+```
+INBOX_BULK_SECRET=$(openssl rand -hex 24)
+```
+
+### IdeaRanker `historicalFit` sub-score
+
+The ranker reads `performance_metrics` (last 90 days, top decile by `saves + shares × 2 + likes × 0.2`) and computes a 0-100 `historicalFit` per idea — how well the idea's format + audience match what has actually performed on this account. Weight in the composite: 0.20. Visible on every idea card as the "Track" chip.
 
 ## Git
 
