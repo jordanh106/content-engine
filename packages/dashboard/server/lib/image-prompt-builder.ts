@@ -1,13 +1,13 @@
 /**
  * Structured image-prompt builder for carousel cinematic slides.
  *
- * Implements the JSON Prompt Generator schema from Alex's vault. The Haiku planner
- * produces an `ImageBrief` per cinematic slide (subject / setting / lighting /
- * camera / mood); this module composes those fields into a multi-paragraph prompt
- * with section labels (SCENE / STYLE / CAMERA / COMPOSITION / QUALITY / AVOID).
+ * Implements the JSON Prompt Generator schema from Alex's vault verbatim. The Haiku
+ * planner produces an `ImagePromptSchema` per cinematic slide (scene / style / technical
+ * / materials? / environment? / composition / quality); this module fills in Visual
+ * System + per-role defaults and serializes to a literal JSON string for Higgsfield.
  *
- * The schema lives in TypeScript so we can validate it; the output is paragraphed
- * text because Higgsfield's CLI takes a prompt string, not JSON.
+ * Modern image-gen models (ChatGPT Image 2, Nano Banana 2) interpret structured JSON
+ * prompts more faithfully than prose because every axis is explicit and unambiguous.
  */
 import type { HiggsfieldModelKey } from "./higgsfield-client.js";
 import type { VisualSystem } from "./visual-system.js";
@@ -21,45 +21,94 @@ export type SlideRole =
   | "payoff"
   | "cta";
 
-export type ImageBrief = {
-  /** What is literally in the frame. MUST contain topic-specific nouns (no generic mood). */
-  subject: string;
-  /** Where and when. Era, location, surface, light source. */
-  setting: string;
-  /** Usually "static museum still" or "static studio still". One short phrase. */
-  action: string;
-  /** Light direction, quality, and color temperature in Kelvin. */
-  lighting: string;
-  /** e.g. "85mm". 85mm hero, 50mm build close-up, 35mm tension. */
-  focalLength: string;
-  /** e.g. "f/2.8". Shallower for hero, moderate for build. */
-  aperture: string;
-  /** e.g. "three-quarter overhead, slight low angle". */
-  angle: string;
-  /** 3-5 mood-specific phrases. */
-  moodKeywords: string[];
-  /** 3-5 phrases to NOT include (modern materials, plastic, etc.). */
-  avoidKeywords: string[];
+export type ImagePromptSchema = {
+  scene: {
+    description: string;   // dense paragraph covering subject + action + setting + palette
+    subject: string;       // physical description; MUST contain topic-specific nouns
+    setting: string;
+    action: string;        // usually "static museum still"
+  };
+  style: {
+    primary: string;       // "editorial cinematic" / "hyperrealistic museum photography"
+    rendering_quality: string;
+    surface_textures: string;
+    lighting: string;      // direction + quality + color temperature
+  };
+  technical: {
+    camera: {
+      focal_length: string;
+      aperture: string;
+      depth_of_field: string;
+      angle: string;
+    };
+    resolution: string;
+    rendering: string;
+  };
+  materials?: {
+    skin?: string;
+    fabric?: string;
+    surfaces?: string;
+    transparency?: string;
+  };
+  environment?: {
+    atmosphere?: string;
+    time?: string;
+    particles?: string;
+  };
+  composition: {
+    perspective: string;
+    framing: string;
+    subject_placement: string;
+    ui_elements: string;   // always "NO TEXT in image — text composited as HTML overlay in post"
+  };
+  quality: {
+    include: string[];
+    avoid: string[];
+    reference_standard: string;
+  };
 };
 
-const ROLE_COMPOSITION: Record<SlideRole, string> = {
-  hook: "High-contrast hero composition. Dramatic single subject, lower-third and upper-left reserved as negative space for text overlay. Single vanishing point, shallow depth of field — subject crisp, background falls into shadow.",
-  context: "",
-  build_1: "Warm textural close-up. Subject fills mid-to-upper frame. Bottom 35% reserved as negative space for text overlay. Moderate depth of field — primary detail sharp, surrounding context softly out of focus.",
-  build_2: "Warm textural close-up. Subject fills mid-to-upper frame. Bottom 35% reserved as negative space for text overlay. Moderate depth of field — primary detail sharp, surrounding context softly out of focus.",
-  tension: "Conceptual / abstract / striking. Should feel different from the build slides — unexpected angle or framing. Subject occupies right half of frame, deep negative space on the left for text overlay. Look feels off-kilter, not safe.",
-  payoff: "",
-  cta: "",
+const UI_ELEMENTS_RULE = "NO TEXT in image — text is composited as HTML overlay in post. Reserve negative space described in subject_placement for the headline + body to land cleanly.";
+
+const SAFE_AVOID_FLOOR = [
+  "text in image",
+  "words in image",
+  "typography overlays",
+  "watermarks",
+  "blurry text artifacts",
+  "garbled lettering",
+];
+
+type RoleDefaults = {
+  framing: string;
+  subject_placement: string;
+  qualityKeywords: string[];
 };
 
-const ROLE_QUALITY: Record<SlideRole, string[]> = {
-  hook: ["scroll-stop dramatic stillness", "museum-archive composition", "deep shadow detail", "scroll-stop scroll-stop"],
-  context: [],
-  build_1: ["intimate close-up", "textural detail", "warm color grade"],
-  build_2: ["intimate close-up", "textural detail", "warm color grade"],
-  tension: ["conceptual reframe", "unexpected angle", "abstract composition", "off-kilter framing"],
-  payoff: [],
-  cta: [],
+const ROLE_DEFAULTS: Record<SlideRole, RoleDefaults> = {
+  hook: {
+    framing: "rule of thirds, lower-third negative space reserved for headline overlay",
+    subject_placement: "right-of-center, occupying ~35% of frame, deep shadow elsewhere",
+    qualityKeywords: ["scroll-stop dramatic stillness", "museum-archive composition", "deep shadow detail", "hero composition"],
+  },
+  context: { framing: "", subject_placement: "", qualityKeywords: [] },
+  build_1: {
+    framing: "centered, mid-frame fill, bottom 35% reserved as negative space for text",
+    subject_placement: "subject fills mid-to-upper frame, edges softly out of focus",
+    qualityKeywords: ["intimate close-up", "textural detail", "warm color grade"],
+  },
+  build_2: {
+    framing: "centered, mid-frame fill, bottom 35% reserved as negative space for text",
+    subject_placement: "subject fills mid-to-upper frame, edges softly out of focus",
+    qualityKeywords: ["intimate close-up", "textural detail", "warm color grade"],
+  },
+  tension: {
+    framing: "off-kilter, right-half subject, deep negative space on the left for text",
+    subject_placement: "subject right of center, unusual angle, feels different from build slides",
+    qualityKeywords: ["conceptual reframe", "unexpected angle", "abstract composition", "off-kilter framing"],
+  },
+  payoff: { framing: "", subject_placement: "", qualityKeywords: [] },
+  cta: { framing: "", subject_placement: "", qualityKeywords: [] },
 };
 
 /**
@@ -101,40 +150,84 @@ export function fallbackModelForRole(role: SlideRole): HiggsfieldModelKey | null
 }
 
 /**
- * Compose the multi-paragraph Higgsfield prompt from an ImageBrief + Visual System + role.
- * Sections are labeled (SCENE / STYLE / CAMERA / COMPOSITION / QUALITY / AVOID) so the
- * image model can pick out each axis. Visual System contributes style + mood baseline.
+ * Fill in any soft fields Haiku left empty. Priority order:
+ *   1. Haiku-supplied value (if present and non-empty)
+ *   2. Visual System baseline (style + mood)
+ *   3. Role hint (framing / subject_placement / quality keywords)
+ *
+ * Forced fields (always overwritten):
+ *   - composition.ui_elements (we never want text baked into the image)
+ *   - quality.avoid floor (always includes the "no text in image" guards)
+ */
+export function applyDefaults(
+  schema: ImagePromptSchema,
+  visualSystem: VisualSystem,
+  role: SlideRole,
+): ImagePromptSchema {
+  const roleDef = ROLE_DEFAULTS[role];
+  return {
+    scene: {
+      description: schema.scene.description || `${schema.scene.subject}. ${schema.scene.setting}. ${schema.scene.action}. Palette anchored to: ${visualSystem.palette.join(", ")}.`,
+      subject: schema.scene.subject,
+      setting: schema.scene.setting,
+      action: schema.scene.action || "static museum still",
+    },
+    style: {
+      primary: schema.style.primary || visualSystem.style,
+      rendering_quality: schema.style.rendering_quality || "hyperrealistic",
+      surface_textures: schema.style.surface_textures || "natural material detail, fine surface grain",
+      lighting: schema.style.lighting || "single soft warm light source from camera-left, gentle shadows, ~3200K",
+    },
+    technical: {
+      camera: {
+        focal_length: schema.technical.camera.focal_length || "85mm",
+        aperture: schema.technical.camera.aperture || "f/2.8",
+        depth_of_field: schema.technical.camera.depth_of_field || "shallow — subject sharp, background softly defocused",
+        angle: schema.technical.camera.angle || "three-quarter overhead",
+      },
+      resolution: schema.technical.resolution || "ultra high definition, 2K print-quality",
+      rendering: schema.technical.rendering || "medium-format aesthetic, fine film grain, subtle vignetting",
+    },
+    materials: schema.materials,
+    environment: schema.environment,
+    composition: {
+      perspective: schema.composition.perspective || "single vanishing point, layered depth",
+      framing: schema.composition.framing || roleDef.framing || "rule of thirds, negative space at bottom for text",
+      subject_placement: schema.composition.subject_placement || roleDef.subject_placement || "subject right-of-center, negative space at bottom",
+      ui_elements: UI_ELEMENTS_RULE,
+    },
+    quality: {
+      include: dedup([
+        ...(schema.quality.include ?? []),
+        ...roleDef.qualityKeywords,
+      ]),
+      avoid: dedup([
+        ...(schema.quality.avoid ?? []),
+        ...SAFE_AVOID_FLOOR,
+      ]),
+      reference_standard: schema.quality.reference_standard || `Visual System reference: ${visualSystem.style} · ${visualSystem.mood}`,
+    },
+  };
+}
+
+/**
+ * Serialize a prompt schema as literal JSON for Higgsfield's text prompt input.
+ * Wraps in `{ "prompt": { ... } }` exactly as Alex's vault docs specify.
  */
 export function buildHiggsfieldPrompt(
-  brief: ImageBrief,
+  schema: ImagePromptSchema,
   visualSystem: VisualSystem,
   role: SlideRole,
 ): string {
-  const composition = ROLE_COMPOSITION[role] || "Balanced composition with clear negative space at the bottom of the frame for text overlay.";
-  const roleQuality = ROLE_QUALITY[role] || [];
-  const moodAll = dedup([...brief.moodKeywords, ...roleQuality]);
-  const avoidAll = dedup([
-    ...brief.avoidKeywords,
-    "text in image",
-    "words in image",
-    "typography overlays",
-    "watermarks",
-  ]);
-
-  return [
-    `SCENE: ${brief.subject}. Setting: ${brief.setting}. ${brief.action}.`,
-    `STYLE: ${visualSystem.style} Surface and material rendering hyperrealistic. Lighting: ${brief.lighting}. Mood: ${visualSystem.mood}`,
-    `CAMERA: ${brief.focalLength}, ${brief.aperture}, ${brief.angle}.`,
-    `COMPOSITION: ${composition}`,
-    `QUALITY: ${moodAll.join(", ")}.`,
-    `AVOID: ${avoidAll.join(", ")}.`,
-  ].join("\n\n");
+  const filled = applyDefaults(schema, visualSystem, role);
+  return JSON.stringify({ prompt: filled }, null, 2);
 }
 
 function dedup(arr: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const s of arr) {
+    if (typeof s !== "string") continue;
     const k = s.trim().toLowerCase();
     if (!k || seen.has(k)) continue;
     seen.add(k);
@@ -143,19 +236,98 @@ function dedup(arr: string[]): string[] {
   return out;
 }
 
-/** Validate that an unknown blob looks like an ImageBrief. Used after parsing Haiku output. */
-export function isImageBrief(x: unknown): x is ImageBrief {
-  if (!x || typeof x !== "object") return false;
-  const b = x as Partial<Record<keyof ImageBrief, unknown>>;
-  return (
-    typeof b.subject === "string" && b.subject.length > 4 &&
-    typeof b.setting === "string" &&
-    typeof b.action === "string" &&
-    typeof b.lighting === "string" &&
-    typeof b.focalLength === "string" &&
-    typeof b.aperture === "string" &&
-    typeof b.angle === "string" &&
-    Array.isArray(b.moodKeywords) &&
-    Array.isArray(b.avoidKeywords)
-  );
+/**
+ * Tolerant parser for Haiku output. Validates the required top-level shape but accepts
+ * partial sub-field fills (empty strings) so applyDefaults can finish the job. Returns
+ * null if the input is unrecoverable (wrong type, missing entire sections).
+ */
+export function parseImagePromptSchema(x: unknown): ImagePromptSchema | null {
+  if (!x || typeof x !== "object") return null;
+  const obj = x as Record<string, unknown>;
+
+  const scene = asObject(obj.scene);
+  const style = asObject(obj.style);
+  const technical = asObject(obj.technical);
+  const composition = asObject(obj.composition);
+  const quality = asObject(obj.quality);
+  if (!scene || !style || !technical || !composition || !quality) return null;
+
+  const camera = asObject(technical.camera);
+  if (!camera) return null;
+
+  // Subject is the load-bearing field — refuse to accept a brief with empty/missing subject.
+  const subject = asString(scene.subject).trim();
+  if (subject.length < 8) return null;
+
+  return {
+    scene: {
+      description: asString(scene.description),
+      subject,
+      setting: asString(scene.setting),
+      action: asString(scene.action),
+    },
+    style: {
+      primary: asString(style.primary),
+      rendering_quality: asString(style.rendering_quality),
+      surface_textures: asString(style.surface_textures),
+      lighting: asString(style.lighting),
+    },
+    technical: {
+      camera: {
+        focal_length: asString(camera.focal_length),
+        aperture: asString(camera.aperture),
+        depth_of_field: asString(camera.depth_of_field),
+        angle: asString(camera.angle),
+      },
+      resolution: asString(technical.resolution),
+      rendering: asString(technical.rendering),
+    },
+    materials: asMaterials(obj.materials),
+    environment: asEnvironment(obj.environment),
+    composition: {
+      perspective: asString(composition.perspective),
+      framing: asString(composition.framing),
+      subject_placement: asString(composition.subject_placement),
+      ui_elements: asString(composition.ui_elements),
+    },
+    quality: {
+      include: asStringArray(quality.include),
+      avoid: asStringArray(quality.avoid),
+      reference_standard: asString(quality.reference_standard),
+    },
+  };
+}
+
+function asObject(x: unknown): Record<string, unknown> | null {
+  return x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, unknown>) : null;
+}
+
+function asString(x: unknown): string {
+  return typeof x === "string" ? x : "";
+}
+
+function asStringArray(x: unknown): string[] {
+  if (!Array.isArray(x)) return [];
+  return x.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+}
+
+function asMaterials(x: unknown): ImagePromptSchema["materials"] {
+  const obj = asObject(x);
+  if (!obj) return undefined;
+  const out: NonNullable<ImagePromptSchema["materials"]> = {};
+  if (typeof obj.skin === "string" && obj.skin.trim()) out.skin = obj.skin;
+  if (typeof obj.fabric === "string" && obj.fabric.trim()) out.fabric = obj.fabric;
+  if (typeof obj.surfaces === "string" && obj.surfaces.trim()) out.surfaces = obj.surfaces;
+  if (typeof obj.transparency === "string" && obj.transparency.trim()) out.transparency = obj.transparency;
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function asEnvironment(x: unknown): ImagePromptSchema["environment"] {
+  const obj = asObject(x);
+  if (!obj) return undefined;
+  const out: NonNullable<ImagePromptSchema["environment"]> = {};
+  if (typeof obj.atmosphere === "string" && obj.atmosphere.trim()) out.atmosphere = obj.atmosphere;
+  if (typeof obj.time === "string" && obj.time.trim()) out.time = obj.time;
+  if (typeof obj.particles === "string" && obj.particles.trim()) out.particles = obj.particles;
+  return Object.keys(out).length > 0 ? out : undefined;
 }

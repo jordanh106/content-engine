@@ -21,7 +21,7 @@ import { logStage, queueStages, readGenerationLog, failPendingStages, clearProje
 import type { CarouselVariant, CarouselAspect, SlideSpec } from "../lib/carousel-renderer.js";
 import { generateAndCacheImage, generateAndCacheImageWithFallback } from "../lib/higgsfield-image-cache.js";
 import { BRAND_DEFAULT_SYSTEM, deserializeVisualSystem, summarizeVisualSystem, type VisualSystem } from "../lib/visual-system.js";
-import { buildHiggsfieldPrompt, modelForRole, fallbackModelForRole, isImageBrief, type ImageBrief, type SlideRole } from "../lib/image-prompt-builder.js";
+import { buildHiggsfieldPrompt, modelForRole, fallbackModelForRole, parseImagePromptSchema, type ImagePromptSchema, type SlideRole } from "../lib/image-prompt-builder.js";
 import { parseBriefSections, serializeBriefSections } from "../../utils/project-steps.js";
 import { PROJECT_KIND_REGISTRY } from "../../shared/project-kinds.js";
 import type { Project, ProjectRef, ProjectOutput, ProjectStatus, ProjectKind, ProjectWithAssets, ViralityBreakdown } from "../../shared/types.js";
@@ -1204,7 +1204,7 @@ Return ONLY the caption text.`,
         slideStyle: "cinematic" | "text";
         headline: string;
         body: string;
-        imageBrief?: ImageBrief;
+        imagePrompt?: ImagePromptSchema;
         ctaButton?: string;
       };
 
@@ -1230,14 +1230,14 @@ Return ONLY the caption text.`,
         const client = new Anthropic();
         const styleOverrideRule =
           slideMix === "all_cinematic" ? "OVERRIDE: every slide except CONTEXT and CTA must use slideStyle: \"cinematic\". CONTEXT and CTA stay text by framework design."
-          : slideMix === "all_text"    ? "OVERRIDE: every slide must use slideStyle: \"text\". Omit imageBrief for every slide."
+          : slideMix === "all_text"    ? "OVERRIDE: every slide must use slideStyle: \"text\". Omit imagePrompt for every slide."
           : "Use the default slideStyle per role as listed in the framework below.";
 
         // When the user has pre-written exactly 7 slide hooks via AI Suggest (or by hand),
         // map line N to role N as a hard headline lock. Fewer than 7 lines = soft inspiration.
         const sevenLineHooks = providedHooks.length === 7;
         const promptHooks = sevenLineHooks
-          ? `PRE-WRITTEN HEADLINES (the user has authored exactly 7 lines, one per framework role). USE THESE VERBATIM AS THE HEADLINE for each role unless the line exceeds 6 words (then trim to the most important 6 words and preserve meaning). DO NOT rephrase, DO NOT rewrite. Your job is to generate body + imageBrief, not headlines.
+          ? `PRE-WRITTEN HEADLINES (the user has authored exactly 7 lines, one per framework role). USE THESE VERBATIM AS THE HEADLINE for each role unless the line exceeds 6 words (then trim to the most important 6 words and preserve meaning). DO NOT rephrase, DO NOT rewrite. Your job is to generate body + imagePrompt, not headlines.
 1. HOOK    headline = "${providedHooks[0]}"
 2. CONTEXT headline = "${providedHooks[1]}"
 3. BUILD_1 headline = "${providedHooks[2]}"
@@ -1251,7 +1251,7 @@ Return ONLY the caption text.`,
 
         const resp = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 3500,
+          max_tokens: 4500,
           messages: [{
             role: "user",
             content: `Build a 7-slide Instagram carousel following Alex's Carousel Framework. Warm, plain, editorial tone. NO emdashes. Plain English. Use commas and periods.
@@ -1270,7 +1270,7 @@ The Visual System describes the AESTHETIC, not the subject. Translate it to what
 Always preserve the Visual System's palette and mood. NEVER abandon the palette to chase the subject's "expected" look.
 
 TOPIC ANCHOR (load-bearing rule):
-Every slide and every imageBrief MUST reference specific nouns from the topic. If the topic mentions "chainsaw", the imageBrief.subject MUST mention "chainsaw" or "surgical chainsaw" or the specific era item, NOT generic "vintage medical equipment" or "old industrial tool". Stay strictly on the user's topic. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy or in the image.
+Every slide and every imagePrompt MUST reference specific nouns from the topic. If the topic mentions "chainsaw", scene.subject MUST mention "chainsaw" or "surgical chainsaw" or the specific era item, NOT generic "vintage medical equipment" or "old industrial tool". Stay strictly on the user's topic. Do not pivot to chiropractic, posture, or wellness unless those words are explicitly in the topic. Brand connection lives only in the footer brand mark on the rendered slide, not in the copy or in the image.
 
 THE FRAMEWORK (mandatory 7 slides in this exact order):
 1. HOOK     — slideStyle: cinematic. Stop the scroll. Provoke curiosity or tension. Headline must work standalone in the Explore feed.
@@ -1293,52 +1293,87 @@ RULES (non-negotiable):
 
 ${promptHooks}
 
-For every cinematic slide, fill in an imageBrief with these EXACT fields (no extras, no missing):
+For every cinematic slide, fill in an "imagePrompt" object matching the JSON Prompt Generator schema (Alex's vault). This is a STRUCTURED JSON object — every nested field must be a string or an array of strings. Image-gen models parse this directly.
 
-- subject: A complete physical description that lets a stranger draw the object from the words alone. INCLUDE:
-   • The OBJECT itself, named (e.g., "1786 hand-cranked surgical chainsaw", not "antique tool")
-   • Its KEY VISIBLE FEATURES (chain blade, sprockets, crank handle, guide bar, etc.)
-   • ITS MATERIALS (oxidized brass, dark steel, ivory grip, leather strap, etc.)
-   • A "LOOKS LIKE" comparison for obscure subjects ("resembles a modern chainsaw shrunk to the size of a pistol")
-   • The SCALE / SIZE if not obvious
-   BAD subject:  "antique medical equipment from 1786"
-   GOOD subject: "1786 hand-cranked surgical chainsaw, the size of a small pistol, with a short steel guide bar and a fine chain blade looping around two brass sprockets, polished brass crank handle on the right side, dark walnut grip. Looks like a miniature chainsaw scaled to fit in one hand."
+REQUIRED SECTIONS: scene, style, technical (with nested camera), composition, quality.
+OPTIONAL SECTIONS (include only when relevant): materials (only if people / fabric / glass / liquid in frame), environment (only outdoor or environmental shots; skip for studio).
 
-- setting:       Where and when. Specific era, location, surface, light source.
-- action:        Usually "static" — e.g., "static museum still", "static studio still"
-- lighting:      Direction, quality, color temperature in Kelvin
-- focalLength:   "85mm" for hero / "50mm" for build close-up / "35mm" for tension
-- aperture:      "f/2.8" or similar — shallower for hero, moderate for build
-- angle:         e.g. "three-quarter overhead", "low angle eye level", "overhead flat-lay"
-- moodKeywords:  Array of 3-5 mood phrases that match the locked Visual System palette + mood
-- avoidKeywords: Array of 3-5 phrases to NOT include — e.g. ["modern materials", "people", "color saturation", "plastic"]
+scene.subject is the LOAD-BEARING field. It must be a complete physical description that lets a stranger draw the object from the words alone. Include:
+- The OBJECT named (e.g., "1786 hand-cranked surgical chainsaw", not "antique tool")
+- Its KEY VISIBLE FEATURES (chain blade, sprockets, crank handle, guide bar, etc.)
+- ITS MATERIALS (oxidized brass, dark steel, ivory grip, leather strap, etc.)
+- A "LOOKS LIKE" comparison for obscure subjects ("resembles a modern chainsaw shrunk to the size of a pistol")
+- The SCALE / SIZE if not obvious
+
+BAD subject:  "antique medical equipment from 1786"
+GOOD subject: "1786 hand-cranked surgical chainsaw, the size of a small pistol, with a short steel guide bar and a fine chain blade looping around two brass sprockets, polished brass crank handle on the right side, dark walnut grip. Looks like a miniature chainsaw scaled to fit in one hand."
+
+Camera grammar: 85mm for HOOK, 50mm for BUILD close-up, 35mm for TENSION. Aperture shallower for hero (f/1.4-2.8), moderate for build (f/2.8-4). Angle = three-quarter overhead / low angle eye level / overhead flat-lay / etc.
 
 Output JSON ONLY (no preamble, no code fence, no markdown):
 {
   "slides": [
-    { "role": "hook",     "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { "subject": "...", "setting": "...", "action": "...", "lighting": "...", "focalLength": "85mm", "aperture": "f/2.8", "angle": "...", "moodKeywords": [...], "avoidKeywords": [...] } },
-    { "role": "context",  "slideStyle": "text",      "headline": "...", "body": "..." },
-    { "role": "build_1",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { ... } },
-    { "role": "build_2",  "slideStyle": "text",      "headline": "...", "body": "..." },
-    { "role": "tension",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imageBrief": { ... } },
-    { "role": "payoff",   "slideStyle": "text",      "headline": "...", "body": "..." },
-    { "role": "cta",      "slideStyle": "text",      "headline": "...", "body": "...", "ctaButton": "Save this" }
+    {
+      "role": "hook",
+      "slideStyle": "cinematic",
+      "headline": "...",
+      "body": "...",
+      "imagePrompt": {
+        "scene": {
+          "description": "<dense paragraph covering subject + setting + lighting + palette>",
+          "subject": "<load-bearing field, see rules above>",
+          "setting": "<where and when, specific era / surface / light source>",
+          "action": "static museum still"
+        },
+        "style": {
+          "primary": "<editorial cinematic / hyperrealistic museum photography / etc.>",
+          "rendering_quality": "hyperrealistic",
+          "surface_textures": "<dominant texture treatment across the scene>",
+          "lighting": "<direction + quality + color temperature in Kelvin>"
+        },
+        "technical": {
+          "camera": { "focal_length": "85mm", "aperture": "f/2.8", "depth_of_field": "<shallow / moderate / deep + description>", "angle": "three-quarter overhead" },
+          "resolution": "ultra high definition, 2K print-quality",
+          "rendering": "<grain / vignetting / post-processing notes>"
+        },
+        "composition": {
+          "perspective": "<perspective type, depth layering>",
+          "framing": "rule of thirds, lower-third negative space reserved for headline overlay",
+          "subject_placement": "<precise positioning, visual weight>",
+          "ui_elements": "NO TEXT in image — text is composited as HTML overlay in post"
+        },
+        "quality": {
+          "include": ["8-12 positive keywords specific to this image"],
+          "avoid": ["6-10 failure modes specific to this image"],
+          "reference_standard": "<real photographer / publication / film whose visual language matches>"
+        }
+      }
+    },
+    { "role": "context",  "slideStyle": "text", "headline": "...", "body": "..." },
+    { "role": "build_1",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imagePrompt": { /* same schema */ } },
+    { "role": "build_2",  "slideStyle": "text", "headline": "...", "body": "..." },
+    { "role": "tension",  "slideStyle": "cinematic", "headline": "...", "body": "...", "imagePrompt": { /* same schema */ } },
+    { "role": "payoff",   "slideStyle": "text", "headline": "...", "body": "..." },
+    { "role": "cta",      "slideStyle": "text", "headline": "...", "body": "...", "ctaButton": "Save this" }
   ]
-}`,
+}
+
+Worked example of scene.subject for the chainsaw topic, HOOK slide:
+"1786 hand-cranked surgical chainsaw, the size of a small pistol, with a short steel guide bar and a fine chain blade looping around two brass sprockets, polished brass crank handle on the right side, dark walnut grip. Looks like a miniature chainsaw scaled to fit in one hand. Resting on a wooden surgical table draped in faded linen."`,
           }],
         });
         const block = resp.content.find((b) => b.type === "text");
         if (!block || block.type !== "text") throw new Error("planner returned no text");
         const match = block.text.match(/\{[\s\S]*\}/);
         if (!match) throw new Error("planner returned no JSON object");
-        const parsed = JSON.parse(match[0]) as { slides?: PlannedSlide[] };
+        const parsed = JSON.parse(match[0]) as { slides?: Array<PlannedSlide & { imagePrompt?: unknown }> };
         const raw = Array.isArray(parsed.slides) ? parsed.slides : [];
         if (raw.length === 0) throw new Error("planner returned no slides");
 
-        // Reindex by role and enforce the exact 7-slide framework.
-        // If a role is missing from the model output, we fall back to a minimal placeholder
-        // so the carousel still renders (caller can re-run if any slide is weak).
-        const byRole: Record<string, PlannedSlide> = {};
+        // Reindex by role and enforce the exact 7-slide framework. parseImagePromptSchema
+        // is tolerant — it validates the shape but accepts partial sub-field fills (applyDefaults
+        // fills the rest at serialize-time). A null parse drops the slide back to text-only.
+        const byRole: Record<string, PlannedSlide & { imagePrompt?: unknown }> = {};
         for (const s of raw) byRole[s.role] = s;
         planned = FRAMEWORK_ROLES.map((role) => {
           const found = byRole[role];
@@ -1357,14 +1392,22 @@ Output JSON ONLY (no preamble, no code fence, no markdown):
             body: trimBodyToLines(found.body, 3),
             ctaButton: role === "cta" ? (found.ctaButton ?? "Save this") : undefined,
           };
-          // Attach imageBrief only when the slide is cinematic. Drop it otherwise.
-          if (slide.slideStyle === "cinematic" && found.imageBrief && isImageBrief(found.imageBrief)) {
-            slide.imageBrief = found.imageBrief;
+          // Attach imagePrompt only when the slide is cinematic AND the schema parses cleanly.
+          // A null parse leaves the slide cinematic-without-prompt; the image-gen loop will
+          // then skip it (no model call), and the slide renders as text.
+          if (slide.slideStyle === "cinematic") {
+            const promptSchema = parseImagePromptSchema(found.imagePrompt);
+            if (promptSchema) {
+              slide.imagePrompt = promptSchema;
+            } else {
+              // Drop to text — keeps the carousel intact even if Haiku failed to fill the schema.
+              slide.slideStyle = "text";
+            }
           }
           return slide;
         });
 
-        const cinematicCount = planned.filter((p) => p.slideStyle === "cinematic" && p.imageBrief).length;
+        const cinematicCount = planned.filter((p) => p.slideStyle === "cinematic" && p.imagePrompt).length;
         logStage(id, "plan_slides", "completed", `7 slides, ${cinematicCount} cinematic`);
       } catch (err) {
         logStage(id, "plan_slides", "failed", err instanceof Error ? err.message : String(err));
@@ -1382,13 +1425,13 @@ Output JSON ONLY (no preamble, no code fence, no markdown):
 
       for (let i = 0; i < planned.length; i++) {
         const slide = planned[i];
-        if (slide.slideStyle !== "cinematic" || !slide.imageBrief) continue;
+        if (slide.slideStyle !== "cinematic" || !slide.imagePrompt) continue;
         const primaryModel = modelForRole(slide.role);
         if (!primaryModel) continue;
         const fallbackModel = fallbackModelForRole(slide.role) ?? undefined;
         const stage = `slide_${i + 1}`;
         logStage(id, stage, "running", `image · ${primaryModel}`);
-        const imagePrompt = buildHiggsfieldPrompt(slide.imageBrief, visualSystem, slide.role);
+        const imagePrompt = buildHiggsfieldPrompt(slide.imagePrompt, visualSystem, slide.role);
 
         const outcome = await generateAndCacheImageWithFallback({
           prompt: imagePrompt,
@@ -1422,7 +1465,7 @@ Output JSON ONLY (no preamble, no code fence, no markdown):
           // composite step uses the editorial/minimal template instead of cinematic. The
           // carousel continues — we do NOT abort the whole run on a single image-gen miss.
           slide.slideStyle = "text";
-          slide.imageBrief = undefined;
+          slide.imagePrompt = undefined;
           logStage(id, stage, "running", `text fallback (image gen failed: ${outcome.error.slice(0, 80)})`);
         }
       }
@@ -1521,8 +1564,9 @@ ${planned.map((s, i) => {
     "",
     s.body,
   ];
-  if (s.imageBrief) {
-    lines.push("", `**Image brief:**`, `- Subject: ${s.imageBrief.subject}`, `- Setting: ${s.imageBrief.setting}`, `- Lighting: ${s.imageBrief.lighting}`, `- Camera: ${s.imageBrief.focalLength}, ${s.imageBrief.aperture}, ${s.imageBrief.angle}`, `- Mood: ${s.imageBrief.moodKeywords.join(", ")}`, `- Avoid: ${s.imageBrief.avoidKeywords.join(", ")}`);
+  if (s.imagePrompt) {
+    const finalPrompt = buildHiggsfieldPrompt(s.imagePrompt, visualSystem, s.role);
+    lines.push("", "**Image prompt** (JSON Prompt Generator schema, sent to Higgsfield verbatim):", "", "```json", finalPrompt, "```");
   }
   if (s.role === "cta" && s.ctaButton) lines.push("", `**CTA button:** ${s.ctaButton}`);
   return lines.join("\n");
