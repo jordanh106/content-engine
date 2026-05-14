@@ -1,0 +1,157 @@
+{
+  "name": "Weekly Studio Chain (HTTP-only)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 20 * * 0" }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Sunday 8pm AEST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "weekly-studio",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "manual-webhook",
+      "name": "Manual Trigger Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 480]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DASHBOARD_URL }}/api/metrics/top-decile?days=30",
+        "options": { "timeout": 15000 }
+      },
+      "id": "fetch-top-decile",
+      "name": "Fetch Top Decile Performers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 280]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DASHBOARD_URL }}/api/intel/recent?days=14",
+        "options": { "timeout": 15000 }
+      },
+      "id": "fetch-intel",
+      "name": "Fetch Recent Intel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DASHBOARD_URL }}/api/ideas/ranked?limit=25",
+        "options": { "timeout": 15000 }
+      },
+      "id": "fetch-ranked",
+      "name": "Fetch Current Ranked Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 520]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 3500,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"You are generating 10 ready-to-produce content idea cards for a chiropractic content creator. Today is the start of a new content week.\\n\\nTOP-DECILE PERFORMERS (last 30 days):\\n{{ JSON.stringify($node['Fetch Top Decile Performers'].json.topDecile) }}\\n\\nRECENT INTEL (viral-insights + creator-insights + audience-demand, last 14 days):\\n{{ JSON.stringify($node['Fetch Recent Intel'].json.files) }}\\n\\nCURRENT RANKED IDEAS (top 25 from the ranker — avoid duplicating these):\\n{{ JSON.stringify($node['Fetch Current Ranked Ideas'].json.ideas.map(i => ({ title: i.title, audienceTags: i.audienceTags }))) }}\\n\\nProduce EXACTLY 10 idea cards in this JSON schema:\\n{\\n  \\\"items\\\": [\\n    {\\n      \\\"content\\\": \\\"<headline (\\u22646 words) plus 1-2 line hook draft, max 3 lines total>\\\",\\n      \\\"audienceTags\\\": [\\\"prenatal\\\" | \\\"infant\\\" | \\\"kids\\\" | \\\"athlete\\\" | \\\"adult\\\" | \\\"senior\\\" | \\\"general\\\"],\\n      \\\"source\\\": \\\"weekly_studio\\\",\\n      \\\"sourceUrl\\\": \\\"<reference: which top-decile video or intel file this idea draws from>\\\",\\n      \\\"metadata\\\": {\\n        \\\"formatHint\\\": \\\"A\\\" | \\\"B\\\" | \\\"C\\\" | \\\"D\\\" | \\\"E\\\" | \\\"F\\\" | \\\"G\\\",\\n        \\\"hookPattern\\\": \\\"<myth_opener | stat_anchor | listicle | regret_frame | quick_win | contrarian>\\\",\\n        \\\"rationale\\\": \\\"<one sentence: why this idea now for this audience>\\\"\\n      }\\n    }\\n  ]\\n}\\n\\nRules:\\n- Each card targets ONE audience segment\\n- Mix audiences across the 10 (don't make all 10 for prenatal)\\n- Lean into formats and audiences that appeared in the top-decile performers\\n- Don't duplicate the current ranked ideas\\n- Output JSON only, no preamble, no code fence\"\n  }]\n}",
+        "options": { "timeout": 90000 }
+      },
+      "id": "haiku-synthesize",
+      "name": "Haiku Synthesize 10 Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Haiku JSON, shape for bulk-seed. Robust to leading/trailing whitespace.\nconst raw = $input.first().json.content?.[0]?.text ?? '';\nconst match = raw.match(/\\{[\\s\\S]*\\}/);\nif (!match) throw new Error('Haiku returned no JSON object');\nconst parsed = JSON.parse(match[0]);\nconst items = (parsed.items || []).slice(0, 10);\nreturn [{ json: { secret: $env.INBOX_BULK_SECRET, items } }];"
+      },
+      "id": "parse-haiku",
+      "name": "Parse Haiku JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DASHBOARD_URL }}/api/inbox/bulk-seed",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "bulk-seed",
+      "name": "POST inbox bulk-seed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1160, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHAT_ID }}\",\n  \"text\": \"*Weekly Studio complete*\\n\\n{{ $node['POST inbox bulk-seed'].json.inserted || 0 }} fresh ideas in your inbox.\\nTop-decile sample size: {{ $node['Fetch Top Decile Performers'].json.sampleSize || 0 }}\\nIntel files reviewed: {{ $node['Fetch Recent Intel'].json.count || 0 }}\\n\\nOpen the dashboard to pick tonight's idea.\",\n  \"parse_mode\": \"Markdown\"\n}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "telegram-notify",
+      "name": "Telegram Notify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1380, 400]
+    }
+  ],
+  "connections": {
+    "Sunday 8pm AEST": {
+      "main": [[
+        { "node": "Fetch Top Decile Performers", "type": "main", "index": 0 },
+        { "node": "Fetch Recent Intel", "type": "main", "index": 0 },
+        { "node": "Fetch Current Ranked Ideas", "type": "main", "index": 0 }
+      ]]
+    },
+    "Manual Trigger Webhook": {
+      "main": [[
+        { "node": "Fetch Top Decile Performers", "type": "main", "index": 0 },
+        { "node": "Fetch Recent Intel", "type": "main", "index": 0 },
+        { "node": "Fetch Current Ranked Ideas", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch Current Ranked Ideas": {
+      "main": [[{ "node": "Haiku Synthesize 10 Ideas", "type": "main", "index": 0 }]]
+    },
+    "Haiku Synthesize 10 Ideas": {
+      "main": [[{ "node": "Parse Haiku JSON", "type": "main", "index": 0 }]]
+    },
+    "Parse Haiku JSON": {
+      "main": [[{ "node": "POST inbox bulk-seed", "type": "main", "index": 0 }]]
+    },
+    "POST inbox bulk-seed": {
+      "main": [[{ "node": "Telegram Notify", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
