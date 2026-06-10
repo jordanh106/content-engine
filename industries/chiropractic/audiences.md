@@ -35,7 +35,7 @@ Educational explainers with anatomy visuals. Birth story testimonials from real 
 ### What they DM or ask in person
 - "I'm 32 weeks, is it too late to start care?"
 - "How many sessions before I feel better?"
-- "Do you take my insurance / extras?"
+- "Do you take my insurance?" (BCBS, Aetna, Cigna, UnitedHealthcare commonly asked)
 - "Are you ICPA / Webster certified?"
 - "Can my husband / partner come to the first visit?"
 - "Can I still come in if I'm cleared for delivery?"
@@ -258,7 +258,7 @@ The biggest segment by population. Adults 28-55 with a desk job, kids, a mortgag
 ### What they DM or ask in person
 - "How long until I feel better?"
 - "Will I need to keep coming forever?"
-- "Do you take Bupa / Medibank / NIB?"
+- "Do you take Blue Cross Blue Shield / Aetna / Cigna / UnitedHealthcare?"
 - "What if I have a herniated disc?"
 - "Can I keep working out / playing golf / running?"
 - "Are you accepting new patients?"

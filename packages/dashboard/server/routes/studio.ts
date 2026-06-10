@@ -1,7 +1,7 @@
 /**
  * /api/studio/* — Weekly Studio orchestration endpoints.
  *
- * The actual chain runs in n8n (Sunday 8pm Brisbane cron). This router exposes
+ * The actual chain runs in n8n (Sunday 8pm Eastern cron). This router exposes
  * a manual trigger so the dashboard's "Run Studio Now" button can fire the
  * chain off-schedule, and a voice-refresh endpoint so the chain can update the
  * Living Brand Voice remotely.

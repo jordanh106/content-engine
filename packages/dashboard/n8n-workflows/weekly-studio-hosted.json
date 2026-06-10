@@ -7,10 +7,11 @@
           "interval": [
             { "field": "cronExpression", "expression": "0 20 * * 0" }
           ]
-        }
+        },
+        "options": { "timezone": "America/New_York" }
       },
       "id": "cron-trigger",
-      "name": "Sunday 8pm AEST",
+      "name": "Sunday 8pm Eastern",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [200, 300]
@@ -126,7 +127,7 @@
     }
   ],
   "connections": {
-    "Sunday 8pm AEST": {
+    "Sunday 8pm Eastern": {
       "main": [[
         { "node": "Fetch Top Decile Performers", "type": "main", "index": 0 },
         { "node": "Fetch Recent Intel", "type": "main", "index": 0 },

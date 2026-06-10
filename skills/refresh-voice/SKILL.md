@@ -89,4 +89,4 @@ That's it. No args. The skill is idempotent — re-running on the same day overw
 
 - Read by: `packages/dashboard/server/lib/brand-voice.ts` (the central reader every route uses)
 - Constitution: `industries/chiropractic/brand.md`
-- Weekly cron: the n8n "Weekly Studio Chain" workflow runs this Sunday 8pm AEST before generating idea cards
+- Weekly cron: the n8n "Weekly Studio Chain" workflow runs this Sunday 8pm Eastern before generating idea cards

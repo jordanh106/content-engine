@@ -8,7 +8,7 @@ Weekly demand-signal digests, one file per audience segment. Produced by:
 python skills/audience-pulse/audience-pulse.py --audience all   # direct script
 ```
 
-Or by the **Audience Demand Weekly Digest** n8n workflow (Tuesdays 6am Brisbane), which commits and pushes these files automatically.
+Or by the **Audience Demand Weekly Digest** n8n workflow (Tuesdays 6am Eastern), which commits and pushes these files automatically.
 
 ## File naming
 

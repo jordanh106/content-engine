@@ -18,6 +18,7 @@ scripts/             Repo utilities (install, scaffold)
 ## Active Industry
 
 **Chiropractic** (Collective Family Chiropractic)
+- **Location:** Woodstock, GA / serving SE United States. Time zone: US Eastern (ET / America/New_York).
 - Config: `industries/chiropractic/config.json` (7 audiences, 65 conditions, 4 platforms)
 - Brand: `industries/chiropractic/brand.md` and `skills/brand-factory/presets/collective-family.md`
 - Content: `industries/chiropractic/content-library.md` (57 production-ready videos)
@@ -410,7 +411,7 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 | Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
 | Watchlist Intelligence | sQXCCmZ7HspGFJME | Weekly (Wednesday 8am) | Monitors watchlist creators, finds non-obvious opportunities via cross-niche analysis, self-improves by reading previous outputs |
 | Carousel & Thumbnail Generator | 2RVLLlgoDcr7hs4f | Friday 8am / On demand | Generates branded carousel slides and YouTube thumbnails from HTML templates |
-| Weekly Studio Chain | *(import from `packages/dashboard/n8n-workflows/weekly-studio.json`)* | Sunday 8pm AEST + manual webhook | Refresh brand voice → gather signals → synthesize 10 ranked idea cards → bulk seed inbox → git commit voice doc → Telegram notify. The "Run Studio" button on Home posts to its webhook for off-schedule runs. |
+| Weekly Studio Chain | *(import from `packages/dashboard/n8n-workflows/weekly-studio.json`)* | Sunday 8pm Eastern + manual webhook | Refresh brand voice → gather signals → synthesize 10 ranked idea cards → bulk seed inbox → git commit voice doc → Telegram notify. The "Run Studio" button on Home posts to its webhook for off-schedule runs. |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
 
