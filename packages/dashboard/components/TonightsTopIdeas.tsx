@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Sparkles, ArrowRight, Layers, TrendingUp, Target, Eye, History, Loader2, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, Layers, TrendingUp, Target, Eye, History, Loader2, Zap, Flag } from "lucide-react";
 import { Eyebrow } from "./ui/Eyebrow.js";
 import { Button } from "./ui/Button.js";
 import { cn } from "../utils/cn.js";
@@ -19,6 +19,7 @@ type RankedIdea = {
     formatFeasibility: number;
     competitiveGap: number;
     historicalFit: number;
+    goalAlignment: number;
     composite: number;
   };
   developCtaKind: string;
@@ -216,12 +217,13 @@ const IdeaCard: React.FC<{ rank: number; idea: RankedIdea; onDevelop?: (idea: Ra
         )}
       </div>
 
-      <div className="grid grid-cols-5 gap-1.5 mb-4 text-center">
+      <div className="grid grid-cols-6 gap-1.5 mb-4 text-center">
+        <ScoreChip label="Goal" value={idea.scores.goalAlignment} icon={<Flag size={10} />} />
         <ScoreChip label="Fit" value={idea.scores.audienceFit} icon={<Target size={10} />} />
         <ScoreChip label="Signal" value={idea.scores.viralitySignal} icon={<TrendingUp size={10} />} />
+        <ScoreChip label="Track" value={idea.scores.historicalFit} icon={<History size={10} />} />
         <ScoreChip label="Format" value={idea.scores.formatFeasibility} icon={<Layers size={10} />} />
         <ScoreChip label="Gap" value={idea.scores.competitiveGap} icon={<Eye size={10} />} />
-        <ScoreChip label="Track" value={idea.scores.historicalFit} icon={<History size={10} />} />
       </div>
 
       <div className="mt-auto">

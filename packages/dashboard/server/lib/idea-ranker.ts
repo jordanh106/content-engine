@@ -39,6 +39,7 @@ export type RankedIdea = {
     formatFeasibility: number;    // 0-100 — production guide / hook pattern exists?
     competitiveGap: number;       // 0-100 — not yet in scheduled / published content?
     historicalFit: number;        // 0-100 — matches format/audience of historical top performers
+    goalAlignment: number;        // 0-100 — serves the current quarter's locked goal (goal-lock.md)
     composite: number;            // weighted average
   };
   developCtaKind: string;         // ProjectKind hint for the Develop button
@@ -55,11 +56,12 @@ type InboxRow = {
 };
 
 const WEIGHTS = {
-  audienceFit: 0.30,
-  viralitySignal: 0.25,
-  formatFeasibility: 0.15,
+  audienceFit: 0.25,             // slightly reduced — goalAlignment now absorbs some of this role
+  viralitySignal: 0.20,
+  formatFeasibility: 0.10,
   competitiveGap: 0.10,
-  historicalFit: 0.20,           // actual outcome data on Jordan's account — meaningful weight
+  historicalFit: 0.15,
+  goalAlignment: 0.20,           // quarter goal anchor — meaningful weight to enforce focus
 };
 
 const FRESH_DAYS = 7;
@@ -100,6 +102,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
   const demandIdeas = readAudienceDemand(path.join(input.industryDir, "audience-demand"));
   const scheduledTopics = readScheduledTopics();
   const historicalSignals = readHistoricalSignals(path.join(input.industryDir, "content-library.md"));
+  const goalLock = readGoalLock(input.industryDir);
 
   const ranked: RankedIdea[] = [];
 
@@ -113,7 +116,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       hookAngle: idea.hookAngle,
       sources: [{ source: "idea_bank", reference: `idea-bank.md#${idea.category}-${idea.id}`, recency: classifyRecency(idea.dateAdded) }],
       raw: idea,
-      personas, viralIntel, scheduledTopics, historicalSignals,
+      personas, viralIntel, scheduledTopics, historicalSignals, goalLock,
     }));
   }
 
@@ -132,7 +135,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       }],
       raw: row,
       explicitAudienceTags: parseAudienceTags(row.audience_tags),
-      personas, viralIntel, scheduledTopics, historicalSignals,
+      personas, viralIntel, scheduledTopics, historicalSignals, goalLock,
     }));
   }
 
@@ -147,7 +150,7 @@ export async function rankIdeas(input: RankInput): Promise<RankedIdea[]> {
       sources: [{ source: "audience_demand", reference: d.reference, recency: d.recency }],
       raw: d as unknown as InboxRow,
       explicitAudienceTags: [d.audienceId],
-      personas, viralIntel, scheduledTopics, historicalSignals,
+      personas, viralIntel, scheduledTopics, historicalSignals, goalLock,
     }));
   }
 
@@ -233,6 +236,7 @@ type ScoreInput = {
   viralIntel: Set<string>;
   scheduledTopics: Set<string>;
   historicalSignals: HistoricalSignals;
+  goalLock: GoalLock | null;
 };
 
 function scoreIdea(s: ScoreInput): RankedIdea {
@@ -250,13 +254,15 @@ function scoreIdea(s: ScoreInput): RankedIdea {
   const formatFeasibility = computeFormatFeasibility(s.formatHint);
   const competitiveGap = computeCompetitiveGap(s.title, s.scheduledTopics);
   const historicalFit = computeHistoricalFit(s.formatHint, audienceTags, s.historicalSignals);
+  const goalAlignment = computeGoalAlignment(audienceTags, s.goalLock);
 
   const composite = Math.round(
     audienceFit * WEIGHTS.audienceFit +
     viralitySignal * WEIGHTS.viralitySignal +
     formatFeasibility * WEIGHTS.formatFeasibility +
     competitiveGap * WEIGHTS.competitiveGap +
-    historicalFit * WEIGHTS.historicalFit,
+    historicalFit * WEIGHTS.historicalFit +
+    goalAlignment * WEIGHTS.goalAlignment,
   );
 
   return {
@@ -267,10 +273,67 @@ function scoreIdea(s: ScoreInput): RankedIdea {
     formatHint: s.formatHint,
     hookAngle: s.hookAngle,
     sources: s.sources,
-    scores: { audienceFit, viralitySignal, formatFeasibility, competitiveGap, historicalFit, composite },
+    scores: { audienceFit, viralitySignal, formatFeasibility, competitiveGap, historicalFit, goalAlignment, composite },
     developCtaKind: s.formatHint ? (FORMAT_HINT_TO_KIND[s.formatHint] ?? "did_you_know") : "did_you_know",
     rawSource: s.raw,
   };
+}
+
+// ─── goalAlignment: does this serve the quarter's locked goal? ─────────────
+
+type GoalLock = {
+  anchorAudienceIds: string[];   // ["prenatal"]
+  goalSummary: string;            // for telemetry / debug
+  updatedAt: number;
+};
+
+// Adjacency: audiences that compound naturally with each other. An idea for an
+// adjacent audience still serves the locked goal at a discount, not zero.
+const AUDIENCE_ADJACENCY: Record<string, string[]> = {
+  prenatal: ["infant", "general"],
+  infant: ["prenatal", "kids", "general"],
+  kids: ["infant", "general"],
+  athlete: ["adult"],
+  adult: ["athlete", "senior", "general"],
+  senior: ["adult", "general"],
+  general: [],
+};
+
+let goalLockCache: GoalLock | null = null;
+let goalLockCacheTs = 0;
+
+function readGoalLock(industryDir: string): GoalLock | null {
+  const filePath = path.join(industryDir, "goal-lock.md");
+  if (!fs.existsSync(filePath)) return null;
+  const stat = fs.statSync(filePath);
+  if (goalLockCache && stat.mtimeMs <= goalLockCacheTs) return goalLockCache;
+
+  const content = fs.readFileSync(filePath, "utf-8");
+  // Parse: look for "Anchor audience: <id>" line (case-insensitive). Strip parenthetical asides.
+  const audienceMatch = content.match(/Anchor audience:\s*([a-z_, ]+)/i);
+  const anchorAudienceIds = audienceMatch
+    ? audienceMatch[1].split(",").map((s) => s.trim().replace(/\(.*$/, "").trim()).filter(Boolean)
+    : [];
+  const summaryMatch = content.match(/\*\*(.+?)\*\*/);
+  const goalSummary = summaryMatch ? summaryMatch[1].trim() : "";
+
+  goalLockCache = { anchorAudienceIds, goalSummary, updatedAt: stat.mtimeMs };
+  goalLockCacheTs = stat.mtimeMs;
+  return goalLockCache;
+}
+
+function computeGoalAlignment(audienceTags: string[], goalLock: GoalLock | null): number {
+  // No goal locked → neutral score so existing ranking is preserved.
+  if (!goalLock || goalLock.anchorAudienceIds.length === 0) return 50;
+  // Direct hit on the anchor audience.
+  if (audienceTags.some((t) => goalLock.anchorAudienceIds.includes(t))) return 100;
+  // Adjacent audience — compounds toward the goal at a discount.
+  for (const anchor of goalLock.anchorAudienceIds) {
+    const adjacent = AUDIENCE_ADJACENCY[anchor] || [];
+    if (audienceTags.some((t) => adjacent.includes(t))) return 60;
+  }
+  // Off-goal entirely — heavy penalty so ranking pulls it down.
+  return 20;
 }
 
 // ─── historicalFit: do format + audience match what's actually worked? ─────
