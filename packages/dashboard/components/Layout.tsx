@@ -62,6 +62,7 @@ const NAV_GROUPS: NavGroup[] = [
       { view: "PIPELINE", label: "Pipeline", icon: <Columns3 size={18} /> },
       { view: "CANVAS", label: "Canvas", icon: <Shuffle size={18} /> },
       { view: "CAROUSEL_LAB", label: "Carousel Lab", icon: <LayoutGrid size={18} /> },
+      { view: "CAPTIONS", label: "Captions", icon: <MessageSquareText size={18} /> },
       { view: "SESSION", label: "Session", icon: <Timer size={18} /> },
     ],
   },
