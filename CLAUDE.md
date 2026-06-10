@@ -44,6 +44,12 @@ scripts/             Repo utilities (install, scaffold)
 | audience-pulse | `/audience-pulse [audience\|all]` | Pull direct demand signal per audience (Reddit threads + Google PAA) → seeds the IdeaRanker |
 | content-planner | `/content-planner` | Research output to weekly content calendar (uses hook patterns, idea bank, viral insights) |
 | video-director | `/video-director` | Calendar entry to full production plan (hook variations, platform optimization, transcript analysis) |
+| goal-lock | `/goal-lock [goal text]` | Quarterly business goal anchor; every downstream output filtered through it (Alex's #1) |
+| the-bridge | `/the-bridge "<weak hook>"` | Hook surgery — replaces a generic opening with a climax-first one. Returns 3 options (Alex's #2) |
+| push-back | `/push-back "<topic>"` | Generates the credible contrarian counter-narrative for a saturated topic + 3 supports + objection handling (Alex's #4) |
+| audience-gaps | `/audience-gaps "<script>"` | Surfaces silent questions the viewer will silently ask while watching this specific piece — ranks them by save-rate impact (Alex's #8) |
+| series-planner | `/series-planner "<topic>"` | Plans a multi-part arc for one topic — angle/format/platform per part, climax-first ordering, standalone test per part (Alex's #14) |
+| skill-opportunity-finder | `/skill-opportunity-finder [days]` | Meta-skill: scans Claude chat + shell history for patterns you keep retyping → ranks as candidate skills to build (Alex's #16) |
 | remotion-best-practices | Auto-loaded when working with Remotion | Domain knowledge for Remotion video creation |
 | brand-factory | Auto-loaded when applying brand | Industry-specific brand colors, typography, voice |
 | theme-factory | `/theme-factory` | 11 pre-set styling themes for artifacts |
@@ -66,6 +72,17 @@ scripts/             Repo utilities (install, scaffold)
 ```
 
 The IdeaRanker (`packages/dashboard/server/lib/idea-ranker.ts`) reads from all signal sources and produces a ranked, audience-tagged queue. The Home screen surfaces the top of that queue as "Tonight's Top Ideas." See **Content Strategy** section above for the audience-first principle.
+
+### Skill design principle (from Grow with Alex's "17 INSANE Claude Skills" video)
+
+> Skills are reusable tools that save you hours every single week. Build it once. Set it up in minutes. It runs forever. One word and it triggers and starts. The two meta-skills (Skill Opportunity Finder + Skill Builder) are the game-changers — they compound because their output is more skills.
+
+Operationally:
+- **Tiny, focused, composable.** Each skill does one thing well. They chain together at the workflow level, not within a single skill.
+- **One-word trigger.** Every skill is invokable with a single `/command` and minimal args.
+- **Read what's already there.** Skills read existing files (audiences.md, goal-lock.md, brand-voice/voice-*.md, idea-bank.md) instead of asking for context every run.
+- **Write to canonical locations.** Outputs land in well-known directories (e.g., `industries/chiropractic/audience-demand/demand-*.md`, `industries/chiropractic/skill-opportunities/opps-*.md`) so the dashboard's IdeaRanker and other consumers can pick them up automatically.
+- **Run `/skill-opportunity-finder` monthly.** Let the data tell you what your next skill should be — don't guess.
 
 ## Video Formats
 
