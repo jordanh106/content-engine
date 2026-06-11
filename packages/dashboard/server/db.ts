@@ -941,3 +941,21 @@ try {
 } catch (e) {
   console.warn("[db] media_assets unique-index migration:", e);
 }
+
+// ─── Board chat (Poppy-parity Phase 2) ──────────────────────────────────────
+// Persistent chat history per board. The canvas is a single implicit board
+// today ('canvas-v1'); the board_id column is day-one insurance for Phase 3
+// multi-board without a data migration.
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS board_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  board_id TEXT NOT NULL DEFAULT 'canvas-v1',
+  role TEXT NOT NULL,                              -- user | assistant
+  content TEXT NOT NULL,
+  model TEXT,                                      -- model id that produced an assistant turn
+  refs_json TEXT,                                  -- @-references used: [{type:'media'|'node', id, label}]
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_board_messages_board ON board_messages(board_id, id);
+`);

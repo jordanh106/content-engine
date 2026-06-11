@@ -281,7 +281,7 @@ function scoreIdea(s: ScoreInput): RankedIdea {
 
 // ─── goalAlignment: does this serve the quarter's locked goal? ─────────────
 
-type GoalLock = {
+export type GoalLock = {
   anchorAudienceIds: string[];   // ["prenatal"]
   goalSummary: string;            // for telemetry / debug
   updatedAt: number;
@@ -302,7 +302,7 @@ const AUDIENCE_ADJACENCY: Record<string, string[]> = {
 let goalLockCache: GoalLock | null = null;
 let goalLockCacheTs = 0;
 
-function readGoalLock(industryDir: string): GoalLock | null {
+export function readGoalLock(industryDir: string): GoalLock | null {
   const filePath = path.join(industryDir, "goal-lock.md");
   if (!fs.existsSync(filePath)) return null;
   const stat = fs.statSync(filePath);

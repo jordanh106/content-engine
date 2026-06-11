@@ -43,11 +43,13 @@ import {
   ClipboardPaste,
   GitBranch,
   Film,
+  MessageCircle,
 } from "lucide-react";
 import type { DashboardView, CreatorVideo, IntelDigest, Idea } from "../shared/types.js";
 import { HiggsfieldPreflight } from "./ui/HiggsfieldPreflight.js";
 import { HiggsfieldCharactersPanel } from "./ui/HiggsfieldCharacters.js";
 import { StorytellingReelStarter } from "./ui/StorytellingReelStarter.js";
+import { BoardChat, type ChatNodeRef } from "./BoardChat.js";
 import { Button, IconButton, KebabMenu } from "./ui/index.js";
 import type { KebabItem } from "./ui/index.js";
 
@@ -533,6 +535,7 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [activePanel, setActivePanel] = useState<"creators" | "videos" | "ideas" | "source">("creators");
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -1542,6 +1545,9 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
       const tag = (e.target as HTMLElement)?.tagName;
       const isEditable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable;
       if (isEditable) return;
+      // Anything inside the BoardChat panel (incl. its buttons) is exempt —
+      // otherwise Backspace on a focused chat button deletes selected nodes.
+      if ((e.target as HTMLElement)?.closest?.("[data-board-chat]")) return;
 
       const cmd = e.metaKey || e.ctrlKey;
 
@@ -1652,6 +1658,31 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
 
     return { context: contextParts.join("\n\n"), urls };
   };
+
+  // Serialized node summaries for the BoardChat @-autocomplete + grounding.
+  const chatNodeRefs: ChatNodeRef[] = useMemo(() => {
+    return nodes.map((n) => {
+      const d = n.data as unknown as CanvasNodeData;
+      switch (d.kind) {
+        case "creator":
+          return { id: n.id, kind: "creator", label: `@${d.handle}`, text: `Creator @${d.handle} on ${d.platform}` };
+        case "video":
+          return { id: n.id, kind: "video", label: d.title || "video", text: `Video: "${d.title}" by @${d.creator}${d.outlierScore != null ? ` · ${d.outlierScore}x outlier` : ""}${d.videoUrl ? `\nURL: ${d.videoUrl}` : ""}` };
+        case "idea":
+          return { id: n.id, kind: "idea", label: d.topic || "idea", text: `Idea: ${d.topic}${d.format ? ` (Format ${d.format})` : ""}${d.priority ? ` [${d.priority}]` : ""}` };
+        case "script":
+          return { id: n.id, kind: "script", label: d.title || "script", text: `Script: ${d.title}\nHook: ${d.hook ?? ""}\n${d.script}` };
+        case "source":
+          return { id: n.id, kind: "source", label: d.source.slice(0, 40), text: d.sourceType === "url" ? `Source URL: ${d.source}` : `Source text:\n${d.source}` };
+        case "broll":
+          return { id: n.id, kind: "broll", label: d.title || "b-roll", text: `B-roll shot: ${d.title}\n${d.shotDescription ?? d.prompt ?? ""}` };
+        case "brollVideo":
+          return { id: n.id, kind: "brollVideo", label: d.title || "b-roll video", text: `B-roll motion clip: ${d.title}` };
+        default:
+          return { id: n.id, kind: "node", label: "node", text: "" };
+      }
+    }).filter((r) => r.text);
+  }, [nodes]);
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -1896,6 +1927,9 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
 
         {/* Primary action + overflow (RIGHT) */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          {!chatOpen && (
+            <IconButton icon={<MessageCircle />} label="Open board chat" onClick={() => setChatOpen(true)} />
+          )}
           <Button
             variant="primary"
             tone="slate"
@@ -2244,6 +2278,9 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
           );
         })()}
       </div>
+
+      {/* Board chat — AI wired to canvas nodes + ingested media (@-references) */}
+      <BoardChat open={chatOpen} onClose={() => setChatOpen(false)} nodeRefs={chatNodeRefs} />
     </div>
   );
 };

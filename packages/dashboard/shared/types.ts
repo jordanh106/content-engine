@@ -2026,6 +2026,38 @@ export type MediaPlatform = (typeof MEDIA_PLATFORMS)[number];
 export const TRANSCRIPT_STATUSES = ["none", "pending", "running", "ready", "failed"] as const;
 export type TranscriptStatus = (typeof TRANSCRIPT_STATUSES)[number];
 
+// ── Board chat ───────────────────────────────────────────────────────────────
+
+export const CHAT_MODELS = [
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet", provider: "anthropic" },
+  { id: "claude-haiku-4-5", label: "Claude Haiku", provider: "anthropic" },
+  { id: "gpt-5.1", label: "GPT-5.1", provider: "openai" },
+  { id: "gpt-5-mini", label: "GPT-5 Mini", provider: "openai" },
+  { id: "gemini-2.5-flash", label: "Gemini Flash", provider: "google" },
+  { id: "gemini-2.5-pro", label: "Gemini Pro", provider: "google" },
+] as const;
+export type ChatModelId = (typeof CHAT_MODELS)[number]["id"];
+export type ChatProvider = (typeof CHAT_MODELS)[number]["provider"];
+
+export type BoardChatRef = {
+  type: "media" | "node";
+  /** media_assets.id for media refs; canvas node id for node refs */
+  id: string;
+  label: string;
+  /** node refs carry their serialized text inline (canvas state lives client-side) */
+  text?: string;
+};
+
+export type BoardChatMessage = {
+  id: number;
+  boardId: string;
+  role: "user" | "assistant";
+  content: string;
+  model: string | null;
+  refs: BoardChatRef[];
+  createdAt: string;
+};
+
 export type MediaAsset = {
   id: number;
   kind: MediaAssetKind;
