@@ -18,7 +18,7 @@ import {
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles,
   Link2,
@@ -43,11 +43,13 @@ import {
   ClipboardPaste,
   GitBranch,
   Film,
+  MessageCircle,
 } from "lucide-react";
-import type { DashboardView, CreatorVideo, IntelDigest, Idea } from "../shared/types.js";
+import type { DashboardView, CreatorVideo, IntelDigest, Idea, MediaAsset, MediaAssetKind, TranscriptStatus, BoardSummary, Board } from "../shared/types.js";
 import { HiggsfieldPreflight } from "./ui/HiggsfieldPreflight.js";
 import { HiggsfieldCharactersPanel } from "./ui/HiggsfieldCharacters.js";
 import { StorytellingReelStarter } from "./ui/StorytellingReelStarter.js";
+import { BoardChat, type ChatNodeRef } from "./BoardChat.js";
 import { Button, IconButton, KebabMenu } from "./ui/index.js";
 import type { KebabItem } from "./ui/index.js";
 
@@ -145,7 +147,20 @@ type BRollVideoNodeData = {
   creditsExact?: number;
 };
 
-type CanvasNodeData = CreatorNodeData | VideoNodeData | IdeaNodeData | ScriptNodeData | SourceNodeData | BRollNodeData | BRollVideoNodeData;
+type MediaNodeData = {
+  kind: "media";
+  /** media_assets.id — the universal ingestion store (Phase 1). */
+  assetId: number;
+  mediaKind: MediaAssetKind;
+  title: string;
+  sourceUrl: string | null;
+  thumbnailUrl: string | null;
+  author?: string | null;
+  transcriptStatus: TranscriptStatus;
+  tokenCount: number;
+};
+
+type CanvasNodeData = CreatorNodeData | VideoNodeData | IdeaNodeData | ScriptNodeData | SourceNodeData | BRollNodeData | BRollVideoNodeData | MediaNodeData;
 
 // ── Node components ─────────────────────────────────────────────────────────
 
@@ -419,6 +434,52 @@ const BRollVideoNode: React.FC<NodeProps> = ({ data, id }) => {
   );
 };
 
+const MEDIA_KIND_LABEL: Record<MediaAssetKind, string> = {
+  video: "Video",
+  audio: "Audio",
+  pdf: "PDF",
+  image: "Image",
+  website: "Website",
+  tweet: "Tweet",
+};
+
+const TRANSCRIPT_BADGE: Partial<Record<TranscriptStatus, { text: string; cls: string }>> = {
+  pending: { text: "transcribing…", cls: "bg-amber-100 text-amber-700 animate-pulse" },
+  running: { text: "transcribing…", cls: "bg-amber-100 text-amber-700 animate-pulse" },
+  ready: { text: "transcript", cls: "bg-emerald-100 text-emerald-700" },
+  failed: { text: "no transcript", cls: "bg-rose-100 text-rose-600" },
+};
+
+const MediaNode: React.FC<NodeProps> = ({ data, id }) => {
+  const d = data as unknown as MediaNodeData & { onDelete?: (id: string) => void };
+  const badge = TRANSCRIPT_BADGE[d.transcriptStatus];
+  return (
+    <NodeShell tone="slate" icon={<Link2 size={12} strokeWidth={2.5} />} label={MEDIA_KIND_LABEL[d.mediaKind] ?? "Media"} onDelete={() => d.onDelete?.(id)}>
+      {d.thumbnailUrl && (
+        d.sourceUrl ? (
+          <a href={d.sourceUrl} target="_blank" rel="noopener" className="block rounded-lg overflow-hidden bg-slate-100 mb-2">
+            <img src={d.thumbnailUrl} alt="" className="w-full aspect-video object-cover" loading="lazy" />
+          </a>
+        ) : (
+          <div className="rounded-lg overflow-hidden bg-slate-100 mb-2">
+            <img src={d.thumbnailUrl} alt="" className="w-full aspect-video object-cover" loading="lazy" />
+          </div>
+        )
+      )}
+      <p className="text-[12px] font-semibold text-slate-900 leading-snug line-clamp-2">{d.title}</p>
+      <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-slate-500 flex-wrap">
+        {d.author && <span className="truncate max-w-[110px]">{d.author}</span>}
+        {badge && <span className={`px-1.5 py-0.5 rounded font-bold ${badge.cls}`}>{badge.text}</span>}
+        {d.tokenCount > 0 && (
+          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold tabular-nums" title="Context tokens when @-referenced in board chat">
+            {d.tokenCount >= 1000 ? `${(d.tokenCount / 1000).toFixed(1)}k` : d.tokenCount} tok
+          </span>
+        )}
+      </div>
+    </NodeShell>
+  );
+};
+
 const nodeTypes: import("@xyflow/react").NodeTypes = {
   creator: CreatorNode as React.ComponentType<unknown> as never,
   video: VideoNode as React.ComponentType<unknown> as never,
@@ -427,7 +488,23 @@ const nodeTypes: import("@xyflow/react").NodeTypes = {
   source: SourceNode as React.ComponentType<unknown> as never,
   broll: BRollNode as React.ComponentType<unknown> as never,
   brollVideo: BRollVideoNode as React.ComponentType<unknown> as never,
+  media: MediaNode as React.ComponentType<unknown> as never,
 };
+
+/** Node data for a freshly ingested media asset. */
+function mediaNodeDataFromAsset(asset: MediaAsset): MediaNodeData {
+  return {
+    kind: "media",
+    assetId: asset.id,
+    mediaKind: asset.kind,
+    title: asset.title || asset.sourceUrl || `${asset.kind} asset`,
+    sourceUrl: asset.sourceUrl,
+    thumbnailUrl: asset.thumbnailPath,  // already a public /media/thumbs/... path
+    author: asset.author,
+    transcriptStatus: asset.transcriptStatus,
+    tokenCount: asset.tokenCount,
+  };
+}
 
 // ── Main canvas ──────────────────────────────────────────────────────────────
 
@@ -447,8 +524,10 @@ type ContextMenuState =
   | { kind: "pane"; x: number; y: number; flowX: number; flowY: number }
   | null;
 
-const CANVAS_STATE_KEY = "ce-canvas-state-v1";
+const CANVAS_STATE_KEY = "ce-canvas-state-v1";          // legacy single-canvas state (migrated to boards)
 const CANVAS_IMPORT_QUEUE_KEY = "ce-canvas-pending-import-v1";
+const ACTIVE_BOARD_KEY = "ce-active-board-v1";
+const boardCacheKey = (id: number) => `ce-board-cache-v1:${id}`;
 
 /** Public helper: from anywhere (e.g. ProjectDetail), queue assets to land on the Canvas
  * next time the user opens it. The Canvas drains the queue on mount. */
@@ -533,6 +612,7 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodes, setSelectedNodes] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [activePanel, setActivePanel] = useState<"creators" | "videos" | "ideas" | "source">("creators");
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -544,8 +624,23 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
   const [charactersOpen, setCharactersOpen] = useState(false);
   const [storytellingOpen, setStorytellingOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [boardId, setBoardId] = useState<number | null>(null);
   const cursorScreenRef = React.useRef<{ x: number; y: number }>({ x: 400, y: 300 });
+  // Gate auto-save until the active board has loaded — otherwise the initial
+  // intro node would overwrite a real board's saved state.
+  const boardReadyRef = React.useRef(false);
+  // StrictMode double-invokes mount effects; the bootstrap must run once.
+  const bootRanRef = React.useRef(false);
+  // Set when the boards API was unreachable at mount — re-enables the legacy
+  // localStorage autosave so a degraded session still persists locally.
+  const bootFailedRef = React.useRef(false);
   const rf = useReactFlow();
+  const queryClient = useQueryClient();
+
+  const { data: boardsData } = useQuery<{ boards: BoardSummary[] }>({
+    queryKey: ["boards"],
+    queryFn: () => fetch("/api/boards").then((r) => r.json()),
+  });
 
   // Data sources
   const { data: outlierVideosData } = useQuery<{ videos: CreatorVideo[] }>({
@@ -698,6 +793,7 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
     const TIER: Record<CanvasNodeData["kind"], number> = {
       creator: 0,
       source: 0,
+      media: 0,
       video: 1,
       idea: 2,
       script: 3,
@@ -721,47 +817,186 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
     setNodes(updated);
   }, [nodes, setNodes]);
 
-  // ── Save / load canvas state ───────────────────────────────────────────────
-  const saveCanvasState = useCallback(() => {
+  // ── Save / load canvas state (server-persisted boards, Phase 3) ───────────
+  // The server is the source of truth; localStorage is a per-board
+  // write-through cache used as a fallback when the server is unreachable.
+
+  const serializeCanvas = useCallback((ns: Node[], es: Edge[]) => {
+    // Strip handler functions before saving
+    const serializableNodes = ns.map((n) => {
+      const data = Object.fromEntries(
+        Object.entries(n.data as Record<string, unknown>).filter(([, v]) => typeof v !== "function"),
+      );
+      return { ...n, data };
+    });
+    return { nodes: serializableNodes, edges: es };
+  }, []);
+
+  const rehydrateNodes = useCallback(
+    (ns: Node[]): Node[] =>
+      ns.map((n) => ({
+        ...n,
+        data: {
+          ...n.data,
+          onDelete: handleDeleteNode,
+          onExpand: handleExpandScript,
+          onEdit: commitNodeEdit,
+          onStartEdit: startEditNode,
+          onStopEdit: stopEditNode,
+        },
+      })),
+    [handleDeleteNode, handleExpandScript, commitNodeEdit, startEditNode, stopEditNode],
+  );
+
+  /** @returns true if the state was actually persisted somewhere. */
+  const saveCanvasState = useCallback((): boolean => {
     try {
-      // Strip handler functions before saving
-      const serializableNodes = nodes.map((n) => {
-        const { onDelete: _od, onExpand: _oe, ...rest } = n.data as Record<string, unknown>;
-        return { ...n, data: rest };
-      });
-      localStorage.setItem(CANVAS_STATE_KEY, JSON.stringify({ nodes: serializableNodes, edges, savedAt: Date.now() }));
+      const state = serializeCanvas(nodes, edges);
+      if (boardId == null) {
+        // Only after a FAILED bootstrap — while the bootstrap is still in
+        // flight, writing here would clobber the legacy state the migration
+        // is about to read.
+        if (bootFailedRef.current) {
+          localStorage.setItem(CANVAS_STATE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+          return true;
+        }
+        return false;
+      }
+      if (!boardReadyRef.current) return false; // board switch in flight
+      localStorage.setItem(boardCacheKey(boardId), JSON.stringify({ ...state, savedAt: Date.now() }));
+      void fetch(`/api/boards/${boardId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state),
+      }).then((res) => {
+        if (!res.ok) console.error(`Board save rejected (${res.status}) — state is cached locally`);
+      }).catch((e) => console.error("Board save failed (cached locally)", e));
+      return true;
     } catch (e) {
       console.error("Failed to save canvas", e);
+      return false;
     }
-  }, [nodes, edges]);
+  }, [boardId, nodes, edges, serializeCanvas]);
 
-  // Restore canvas state on mount + drain any pending imports from ProjectDetail / elsewhere
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(CANVAS_STATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as { nodes: Node[]; edges: Edge[] };
-        if (parsed.nodes && parsed.nodes.length > 0) {
-          const restored = parsed.nodes.map((n) => ({
-            ...n,
-            data: {
-              ...n.data,
-              onDelete: handleDeleteNode,
-              onExpand: handleExpandScript,
-              onEdit: commitNodeEdit,
-              onStartEdit: startEditNode,
-              onStopEdit: stopEditNode,
-            },
-          }));
-          setNodes(restored);
-          setEdges(parsed.edges || []);
+  const hydrateBoard = useCallback(
+    (id: number, ns: Node[], es: Edge[]) => {
+      // Drop ingest placeholders that never completed (assetId 0) — they were
+      // auto-saved mid-ingest and would render as eternal "Fetching…" nodes.
+      const keptIds = new Set<string>();
+      const kept = ns.filter((n) => {
+        const d = n.data as { kind?: string; assetId?: number } | undefined;
+        const ok = !(d?.kind === "media" && !d?.assetId);
+        if (ok) keptIds.add(n.id);
+        return ok;
+      });
+      setNodes(kept.length > 0 ? rehydrateNodes(kept) : initialNodes);
+      setEdges((es || []).filter((e) => keptIds.has(e.source) && keptIds.has(e.target)));
+      setBoardId(id);
+      localStorage.setItem(ACTIVE_BOARD_KEY, String(id));
+      boardReadyRef.current = true;
+    },
+    [rehydrateNodes, setNodes, setEdges],
+  );
+
+  const loadBoard = useCallback(
+    async (id: number) => {
+      boardReadyRef.current = false;
+      try {
+        const res = await fetch(`/api/boards/${id}`);
+        if (!res.ok) throw new Error(`board fetch failed (${res.status})`);
+        const { board } = (await res.json()) as { board: Board };
+        hydrateBoard(id, board.nodes as Node[], board.edges as Edge[]);
+      } catch (e) {
+        // Server unreachable — fall back to the local cache for this board.
+        console.error("Board load failed, trying cache", e);
+        let hydrated = false;
+        try {
+          const cached = localStorage.getItem(boardCacheKey(id));
+          if (cached) {
+            const parsed = JSON.parse(cached) as { nodes: Node[]; edges: Edge[] };
+            hydrateBoard(id, parsed.nodes ?? [], parsed.edges ?? []);
+            hydrated = true;
+          }
+        } catch { /* nothing usable */ }
+        if (!hydrated) {
+          // No server, no cache: stay on the board that's still on screen and
+          // re-enable saves against it — a stuck-false ready flag would
+          // silently discard every edit from here on.
+          boardReadyRef.current = true;
+          window.alert("Could not load that board (server unreachable and no local copy). Staying on the current board.");
         }
       }
-    } catch (e) {
-      console.error("Failed to restore canvas", e);
-    }
+    },
+    [hydrateBoard],
+  );
 
-    // Drain pending imports (Send to Canvas from ProjectDetail, etc.)
+  // Mount: pick (or create) the active board + drain any pending imports.
+  useEffect(() => {
+    // StrictMode double-invokes this effect; without the guard the empty-table
+    // bootstrap would POST twice and create duplicate boards.
+    if (bootRanRef.current) return;
+    bootRanRef.current = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/boards");
+        const { boards } = (await res.json()) as { boards: BoardSummary[] };
+        if (!boards.length) {
+          // First run after Phase 3: migrate the legacy single-canvas
+          // localStorage state (and its chat history) into board #1.
+          let legacyNodes: Node[] = [];
+          let legacyEdges: Edge[] = [];
+          try {
+            const saved = localStorage.getItem(CANVAS_STATE_KEY);
+            if (saved) {
+              const parsed = JSON.parse(saved) as { nodes?: Node[]; edges?: Edge[] };
+              legacyNodes = parsed.nodes ?? [];
+              legacyEdges = parsed.edges ?? [];
+            }
+          } catch { /* no legacy state */ }
+          const create = await fetch("/api/boards", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: "My board",
+              ...serializeCanvas(legacyNodes, legacyEdges),
+              migrateChatFromCanvasV1: true,
+            }),
+          });
+          const { board } = (await create.json()) as { board: Board };
+          hydrateBoard(board.id, board.nodes as Node[], board.edges as Edge[]);
+          void queryClient.invalidateQueries({ queryKey: ["boards"] });
+        } else {
+          const savedActive = Number(localStorage.getItem(ACTIVE_BOARD_KEY));
+          const target = boards.find((b) => b.id === savedActive)?.id ?? boards[0].id;
+          await loadBoard(target);
+        }
+      } catch (e) {
+        // Server down on mount — restore the legacy localStorage canvas and
+        // re-enable the legacy autosave (bootFailedRef) so this degraded
+        // session still persists locally and migrates on the next mount.
+        console.error("Boards unavailable, restoring legacy canvas", e);
+        bootFailedRef.current = true;
+        try {
+          const saved = localStorage.getItem(CANVAS_STATE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved) as { nodes: Node[]; edges: Edge[] };
+            if (parsed.nodes?.length) {
+              setNodes(rehydrateNodes(parsed.nodes));
+              setEdges(parsed.edges || []);
+            }
+          }
+        } catch { /* nothing usable */ }
+      }
+    })();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Drain pending imports (Send to Canvas from ProjectDetail, etc.) — only
+  // AFTER the active board has hydrated, otherwise hydrateBoard's setNodes
+  // would replace (and lose) the freshly appended imports.
+  useEffect(() => {
+    if (boardId == null) return;
     try {
       const raw = localStorage.getItem(CANVAS_IMPORT_QUEUE_KEY);
       if (raw) {
@@ -798,16 +1033,185 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
     } catch (e) {
       console.error("Failed to drain canvas import queue", e);
     }
+    // Drain once per mount, as soon as the first board is ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [boardId != null]);
 
-  // Auto-save on changes (debounced)
+  // Auto-save on changes (debounced). saveCanvasState itself no-ops until the
+  // board has loaded, so deletions persist but the intro node never clobbers.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (nodes.length > 1 || edges.length > 0) saveCanvasState();
-    }, 800);
+    const timer = setTimeout(() => saveCanvasState(), 800);
     return () => clearTimeout(timer);
   }, [nodes, edges, saveCanvasState]);
+
+  // ── Board management ───────────────────────────────────────────────────────
+  const switchBoard = useCallback(
+    (id: number) => {
+      if (id === boardId) return;
+      saveCanvasState(); // flush the outgoing board before loading the next
+      void loadBoard(id);
+    },
+    [boardId, saveCanvasState, loadBoard],
+  );
+
+  const createBoard = useCallback(async () => {
+    const name = window.prompt("Board name:", "New board");
+    if (!name?.trim()) return;
+    try {
+      const res = await fetch("/api/boards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), nodes: initialNodes, edges: [] }),
+      });
+      const { board } = (await res.json()) as { board: Board };
+      saveCanvasState();
+      hydrateBoard(board.id, board.nodes as Node[], board.edges as Edge[]);
+      void queryClient.invalidateQueries({ queryKey: ["boards"] });
+    } catch (e) {
+      window.alert(`Could not create board: ${e instanceof Error ? e.message : e}`);
+    }
+  }, [saveCanvasState, hydrateBoard, queryClient]);
+
+  const renameBoard = useCallback(async () => {
+    if (boardId == null) return;
+    const current = boardsData?.boards.find((b) => b.id === boardId)?.name ?? "";
+    const name = window.prompt("Rename board:", current);
+    if (!name?.trim() || name.trim() === current) return;
+    await fetch(`/api/boards/${boardId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() }),
+    });
+    void queryClient.invalidateQueries({ queryKey: ["boards"] });
+  }, [boardId, boardsData, queryClient]);
+
+  const deleteBoard = useCallback(async () => {
+    if (boardId == null) return;
+    const others = (boardsData?.boards ?? []).filter((b) => b.id !== boardId);
+    if (!others.length) {
+      window.alert("This is your only board — create another before deleting it.");
+      return;
+    }
+    const name = boardsData?.boards.find((b) => b.id === boardId)?.name ?? "this board";
+    if (!window.confirm(`Delete "${name}" and its chat history? This cannot be undone.`)) return;
+    await fetch(`/api/boards/${boardId}`, { method: "DELETE" });
+    localStorage.removeItem(boardCacheKey(boardId));
+    void queryClient.invalidateQueries({ queryKey: ["boards"] });
+    void loadBoard(others[0].id);
+  }, [boardId, boardsData, queryClient, loadBoard]);
+
+  // ── Media ingestion: paste a URL / drop a file → live media node ──────────
+  // Routes through Phase 1's universal ingestion (/api/media) so the node
+  // gets a real thumbnail, metadata, and a background transcript.
+  const ingestUrlAsMediaNode = useCallback(
+    async (url: string, position?: { x: number; y: number }) => {
+      // Optimistic placeholder so the paste feels instant
+      const placeholderId = addNode("media", {
+        kind: "media", assetId: 0, mediaKind: "website", title: "Fetching…",
+        sourceUrl: url, thumbnailUrl: null, transcriptStatus: "none", tokenCount: 0,
+      }, { position });
+      try {
+        const res = await fetch("/api/media/ingest-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error((body as { error?: string }).error || `ingest failed (${res.status})`);
+        const asset = (body as { asset: MediaAsset }).asset;
+        setNodes((nds) => nds.map((n) =>
+          n.id === placeholderId ? { ...n, data: { ...n.data, ...mediaNodeDataFromAsset(asset) } } : n,
+        ));
+      } catch (e) {
+        // Fall back to a plain source node so the URL isn't lost
+        console.error("Media ingest failed, keeping URL as source node", e);
+        handleDeleteNode(placeholderId);
+        addNode("source", { kind: "source", source: url, sourceType: "url" }, { position });
+      }
+    },
+    [addNode, setNodes, handleDeleteNode],
+  );
+
+  const ingestFileAsMediaNode = useCallback(
+    async (file: File, position: { x: number; y: number }) => {
+      const placeholderId = addNode("media", {
+        kind: "media", assetId: 0, mediaKind: "image", title: `Uploading ${file.name}…`,
+        sourceUrl: null, thumbnailUrl: null, transcriptStatus: "none", tokenCount: 0,
+      }, { position });
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/api/media/ingest-file", { method: "POST", body: form });
+        const body = await res.json();
+        if (!res.ok) throw new Error((body as { error?: string }).error || `upload failed (${res.status})`);
+        const asset = (body as { asset: MediaAsset }).asset;
+        setNodes((nds) => nds.map((n) =>
+          n.id === placeholderId ? { ...n, data: { ...n.data, ...mediaNodeDataFromAsset(asset) } } : n,
+        ));
+      } catch (e) {
+        handleDeleteNode(placeholderId);
+        window.alert(`Upload failed: ${e instanceof Error ? e.message : e}`);
+      }
+    },
+    [addNode, setNodes, handleDeleteNode],
+  );
+
+  // Poll transcript status for the exact pending assets on this board.
+  // Per-id fetches (not the newest-100 list) so an asset that was deleted or
+  // aged out of the list page still reaches a terminal state.
+  const pendingMediaIds = useMemo(() => {
+    const ids: number[] = [];
+    for (const n of nodes) {
+      const d = n.data as unknown as CanvasNodeData;
+      if (d.kind === "media" && d.assetId && (d.transcriptStatus === "pending" || d.transcriptStatus === "running")) {
+        ids.push(d.assetId);
+      }
+    }
+    return ids;
+  }, [nodes]);
+  const { data: mediaPoll } = useQuery<{ assets: MediaAsset[]; missing: number[] }>({
+    queryKey: ["canvas-media-poll", pendingMediaIds.join(",")],
+    queryFn: async () => {
+      const results = await Promise.all(pendingMediaIds.map(async (id) => {
+        try {
+          const r = await fetch(`/api/media/${id}`);
+          if (!r.ok) return { id, asset: null };
+          const b = (await r.json()) as { asset: MediaAsset };
+          return { id, asset: b.asset };
+        } catch {
+          return { id, asset: undefined }; // network error — not terminal
+        }
+      }));
+      return {
+        assets: results.flatMap((r) => (r.asset ? [r.asset] : [])),
+        missing: results.filter((r) => r.asset === null).map((r) => r.id),
+      };
+    },
+    enabled: pendingMediaIds.length > 0,
+    refetchInterval: pendingMediaIds.length > 0 ? 5000 : false,
+  });
+  useEffect(() => {
+    if (!mediaPoll) return;
+    const byId = new Map(mediaPoll.assets.map((a) => [a.id, a]));
+    const missing = new Set(mediaPoll.missing);
+    setNodes((nds) => {
+      let changed = false;
+      const next = nds.map((n) => {
+        const d = n.data as unknown as CanvasNodeData;
+        if (d.kind !== "media" || !d.assetId) return n;
+        if (missing.has(d.assetId) && (d.transcriptStatus === "pending" || d.transcriptStatus === "running")) {
+          changed = true;
+          return { ...n, data: { ...n.data, transcriptStatus: "failed" as TranscriptStatus } };
+        }
+        const asset = byId.get(d.assetId);
+        if (!asset) return n;
+        if (asset.transcriptStatus === d.transcriptStatus && asset.tokenCount === d.tokenCount) return n;
+        changed = true;
+        return { ...n, data: { ...n.data, transcriptStatus: asset.transcriptStatus, tokenCount: asset.tokenCount, thumbnailUrl: asset.thumbnailPath } };
+      });
+      return changed ? next : nds;
+    });
+  }, [mediaPoll, setNodes]);
 
   // ── Paste at cursor from clipboard ─────────────────────────────────────────
   const handlePasteFromClipboard = useCallback(async () => {
@@ -815,17 +1219,16 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
       const text = await navigator.clipboard.readText();
       if (!text || text.trim().length < 3) return;
       const trimmed = text.trim();
-      const isUrl = /^https?:\/\//i.test(trimmed);
-      addNode("source", {
-        kind: "source",
-        source: trimmed,
-        sourceType: isUrl ? "url" : "text",
-      });
+      if (/^https?:\/\//i.test(trimmed)) {
+        void ingestUrlAsMediaNode(trimmed);
+      } else {
+        addNode("source", { kind: "source", source: trimmed, sourceType: "text" });
+      }
     } catch (e) {
       console.error("Clipboard read failed", e);
       window.alert("Clipboard access denied. Use the Source panel instead.");
     }
-  }, [addNode]);
+  }, [addNode, ingestUrlAsMediaNode]);
 
   // ── Expand idea into format mutations (3 angles or all 7 formats) ──────────
   const expandIdeaMutations = useCallback(
@@ -1542,6 +1945,9 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
       const tag = (e.target as HTMLElement)?.tagName;
       const isEditable = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable;
       if (isEditable) return;
+      // Anything inside the BoardChat panel (incl. its buttons) is exempt —
+      // otherwise Backspace on a focused chat button deletes selected nodes.
+      if ((e.target as HTMLElement)?.closest?.("[data-board-chat]")) return;
 
       const cmd = e.metaKey || e.ctrlKey;
 
@@ -1561,12 +1967,13 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
         return;
       }
 
-      // ⌘S — save canvas
+      // ⌘S — save canvas (only flash when a save actually happened)
       if (cmd && e.key === "s") {
         e.preventDefault();
-        saveCanvasState();
-        setSavedFlash(true);
-        setTimeout(() => setSavedFlash(false), 1500);
+        if (saveCanvasState()) {
+          setSavedFlash(true);
+          setTimeout(() => setSavedFlash(false), 1500);
+        }
         return;
       }
 
@@ -1647,11 +2054,44 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
         } else {
           contextParts.push(`User-provided source text:\n${d.source}`);
         }
+      } else if (d.kind === "media") {
+        if (d.sourceUrl && /^https?:\/\//i.test(d.sourceUrl)) urls.push(d.sourceUrl);
+        else contextParts.push(`Media asset (${d.mediaKind}): "${d.title}"`);
       }
     }
 
     return { context: contextParts.join("\n\n"), urls };
   };
+
+  // Serialized node summaries for the BoardChat @-autocomplete + grounding.
+  const chatNodeRefs: ChatNodeRef[] = useMemo(() => {
+    return nodes.map((n) => {
+      const d = n.data as unknown as CanvasNodeData;
+      switch (d.kind) {
+        case "creator":
+          return { id: n.id, kind: "creator", label: `@${d.handle}`, text: `Creator @${d.handle} on ${d.platform}` };
+        case "video":
+          return { id: n.id, kind: "video", label: d.title || "video", text: `Video: "${d.title}" by @${d.creator}${d.outlierScore != null ? ` · ${d.outlierScore}x outlier` : ""}${d.videoUrl ? `\nURL: ${d.videoUrl}` : ""}` };
+        case "idea":
+          return { id: n.id, kind: "idea", label: d.topic || "idea", text: `Idea: ${d.topic}${d.format ? ` (Format ${d.format})` : ""}${d.priority ? ` [${d.priority}]` : ""}` };
+        case "script":
+          return { id: n.id, kind: "script", label: d.title || "script", text: `Script: ${d.title}\nHook: ${d.hook ?? ""}\n${d.script}` };
+        case "source":
+          return { id: n.id, kind: "source", label: d.source.slice(0, 40), text: d.sourceType === "url" ? `Source URL: ${d.source}` : `Source text:\n${d.source}` };
+        case "broll":
+          return { id: n.id, kind: "broll", label: d.title || "b-roll", text: `B-roll shot: ${d.title}\n${d.shotDescription ?? d.prompt ?? ""}` };
+        case "brollVideo":
+          return { id: n.id, kind: "brollVideo", label: d.title || "b-roll video", text: `B-roll motion clip: ${d.title}` };
+        case "media":
+          // Empty text → filtered out below. Media assets already appear in the
+          // chat's @-candidates via /api/media, where the server expands the
+          // full transcript — a node ref here would just duplicate them.
+          return { id: n.id, kind: "media", label: d.title, text: "" };
+        default:
+          return { id: n.id, kind: "node", label: "node", text: "" };
+      }
+    }).filter((r) => r.text);
+  }, [nodes]);
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -1877,25 +2317,60 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
             spawnIdeaAtCursor(e.clientX, e.clientY);
           }
         }}
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer.files.length) return;
+          e.preventDefault();
+          let pos = { x: 200, y: 200 };
+          try {
+            pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+          } catch { /* fallback */ }
+          const files = Array.from(e.dataTransfer.files);
+          if (files.length > 5) window.alert(`Only the first 5 of ${files.length} files will be added.`);
+          files.slice(0, 5).forEach((f, i) => {
+            void ingestFileAsMediaNode(f, { x: pos.x + i * 40, y: pos.y + i * 40 });
+          });
+        }}
       >
-        {!drawerOpen && (
-          <div className="absolute top-4 left-4 z-10">
+
+        {/* Top bar: switcher · status strip · actions in ONE flex row so they
+            can never overlap at narrow canvas widths (drawer + chat open). */}
+        <div className="absolute top-4 inset-x-4 z-10 flex items-center gap-2 pointer-events-none [&>*]:pointer-events-auto">
+          {!drawerOpen && (
             <IconButton icon={<Layers />} label="Open assets drawer" onClick={() => setDrawerOpen(true)} />
+          )}
+          <div className="surface-floating pl-3 pr-1 py-1 flex items-center gap-1 shrink-0">
+            <select
+              value={boardId ?? ""}
+              onChange={(e) => switchBoard(Number(e.target.value))}
+              className="text-[12px] font-semibold text-slate-700 bg-transparent outline-none cursor-pointer max-w-[160px]"
+              title="Switch board"
+            >
+              {(boardsData?.boards ?? []).map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+              {boardId != null && !boardsData?.boards.some((b) => b.id === boardId) && (
+                <option value={boardId}>Current board</option>
+              )}
+            </select>
+            <IconButton icon={<Plus />} label="New board" onClick={() => void createBoard()} />
           </div>
-        )}
 
-        {/* Status strip (LEFT) */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-          <CanvasStatusStrip
-            selectedCount={selectedNodes.size}
-            nodeCount={nodes.length}
-            onOpenCharacters={() => setCharactersOpen(true)}
-            saved={savedFlash}
-          />
-        </div>
+          <div className="mx-auto min-w-0 hidden lg:block">
+            <CanvasStatusStrip
+              selectedCount={selectedNodes.size}
+              nodeCount={nodes.length}
+              onOpenCharacters={() => setCharactersOpen(true)}
+              saved={savedFlash}
+            />
+          </div>
 
-        {/* Primary action + overflow (RIGHT) */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
+          {!chatOpen && (
+            <IconButton icon={<MessageCircle />} label="Open board chat" onClick={() => setChatOpen(true)} />
+          )}
           <Button
             variant="primary"
             tone="slate"
@@ -1938,8 +2413,24 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
                 icon: <Users />,
                 onSelect: () => setCharactersOpen(true),
               },
+              "divider" as const,
+              {
+                id: "rename-board",
+                label: "Rename board",
+                icon: <FileText />,
+                onSelect: () => void renameBoard(),
+                disabled: boardId == null,
+              },
+              {
+                id: "delete-board",
+                label: "Delete board",
+                icon: <Trash2 />,
+                onSelect: () => void deleteBoard(),
+                disabled: boardId == null,
+              },
             ] as (KebabItem | "divider")[]}
           />
+          </div>
         </div>
 
         {/* Keyboard shortcut hint (bottom left) */}
@@ -2052,7 +2543,7 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
               setEdges([]);
               setSelectedNodes(new Set());
               setContextMenu(null);
-              localStorage.removeItem(CANVAS_STATE_KEY);
+              if (boardId != null) localStorage.removeItem(boardCacheKey(boardId));
             }}
             onAddIdea={() => {
               const x = (contextMenu as { kind: "pane"; flowX: number }).flowX || cursorScreenRef.current.x;
@@ -2079,10 +2570,12 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
               setContextMenu(null);
             }}
             onSaveCanvas={() => {
-              saveCanvasState();
+              const saved = saveCanvasState();
               setContextMenu(null);
-              setSavedFlash(true);
-              setTimeout(() => setSavedFlash(false), 1500);
+              if (saved) {
+                setSavedFlash(true);
+                setTimeout(() => setSavedFlash(false), 1500);
+              }
             }}
             onOpenUrl={(url) => {
               if (url) window.open(url, "_blank", "noopener");
@@ -2244,6 +2737,14 @@ const CanvasInner: React.FC<CanvasViewProps> = ({ onNavigate }) => {
           );
         })()}
       </div>
+
+      {/* Board chat — AI wired to canvas nodes + ingested media (@-references) */}
+      <BoardChat
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        nodeRefs={chatNodeRefs}
+        boardId={boardId != null ? `board-${boardId}` : "canvas-v1"}
+      />
     </div>
   );
 };

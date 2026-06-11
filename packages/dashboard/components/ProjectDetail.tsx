@@ -33,6 +33,7 @@ import {
   ProjectGenerationTimeline,
   OutputActionsMenu,
 } from "./ui/index.js";
+import { VisualSystemLock } from "./ui/VisualSystemLock.js";
 import { PROJECT_KIND_REGISTRY, PROJECT_STATUS_LABELS } from "../shared/project-kinds.js";
 import { computeStepStatuses, activeStepId } from "../utils/project-steps.js";
 import { enqueueCanvasImport } from "./CanvasView.js";
@@ -72,9 +73,22 @@ export const ProjectDetail: React.FC<Props> = ({
     refetchInterval: (data) => (data?.state?.data?.project?.status === "generating" ? 5_000 : 30_000),
   });
 
+  // Shared cache hit with ProjectGenerationTimeline: poll the log so we can also
+  // render placeholder tiles in the Outputs panel for stages that haven't shipped output yet.
+  const isGeneratingForLog = data?.project?.status === "generating";
+  const { data: logData } = useQuery<{ log: Array<{ stage: string; status: "queued" | "running" | "completed" | "failed" }> }>({
+    queryKey: ["project-log", projectId],
+    queryFn: () => fetch(`/api/projects/${projectId}/generation-log`).then((r) => r.json()),
+    refetchInterval: isGeneratingForLog ? 2_000 : 30_000,
+    staleTime: 1_000,
+    enabled: !!data?.project,
+  });
+
   const [briefDraft, setBriefDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [activeOutput, setActiveOutput] = useState<ProjectOutput | null>(null);
+  const [carouselVariant, setCarouselVariant] = useState<"cinematic" | "editorial" | "bold" | "minimal">("cinematic");
+  const [carouselSlideMix, setCarouselSlideMix] = useState<"mixed" | "all_cinematic" | "all_text">("mixed");
   const briefHydratedRef = useRef(false);
 
   useEffect(() => {
@@ -159,6 +173,13 @@ export const ProjectDetail: React.FC<Props> = ({
   const activeStep = activeStepId(steps);
   const isGenerating = project.status === "generating";
 
+  // Placeholder tiles: every queued/running stage that doesn't already have an output
+  const existingLabels = new Set(project.outputs.map((o) => o.label).filter(Boolean));
+  const pendingStages = isGenerating
+    ? (logData?.log ?? [])
+        .filter((r) => (r.status === "queued" || r.status === "running") && !existingLabels.has(r.stage))
+    : [];
+
   return (
     <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-7">
       {/* Top bar — back button */}
@@ -209,7 +230,11 @@ export const ProjectDetail: React.FC<Props> = ({
         project={project}
         kindDef={def}
         activeStep={activeStep}
-        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc })}
+        onGenerate={() => triggerGenerate({ project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant, carouselSlideMix })}
+        carouselVariant={carouselVariant}
+        onCarouselVariantChange={setCarouselVariant}
+        carouselSlideMix={carouselSlideMix}
+        onCarouselSlideMixChange={setCarouselSlideMix}
         onMarkPublished={() => updateStatus.mutate("published")}
         onAddRef={() => fileInputRef.current?.click()}
         onRetry={() => retry.mutate()}
@@ -226,8 +251,14 @@ export const ProjectDetail: React.FC<Props> = ({
           schema={def.briefSections}
           disabled={isGenerating}
           onChange={setBriefDraft}
+          projectId={projectId}
         />
       </section>
+
+      {/* Visual style anchor — only for did_you_know (cinematic carousels) */}
+      {project.kind === "did_you_know" && (
+        <VisualSystemLock projectId={projectId} refs={project.refs} disabled={isGenerating} />
+      )}
 
       {/* References */}
       {def.refsMinimum > 0 && (
@@ -278,7 +309,7 @@ export const ProjectDetail: React.FC<Props> = ({
             <span className="type-meta">{project.outputs.filter((o) => o.predictedVirality != null).length} scored</span>
           )}
         </div>
-        {project.outputs.length === 0 ? (
+        {project.outputs.length === 0 && pendingStages.length === 0 ? (
           <div className="surface-secondary text-center py-12">
             <Sparkles size={28} className="text-teal-300 mx-auto mb-3" />
             <p className="type-body max-w-md mx-auto">
@@ -293,6 +324,7 @@ export const ProjectDetail: React.FC<Props> = ({
               <OutputTile
                 key={o.id}
                 output={o}
+                projectId={projectId}
                 onClick={() => setActiveOutput(o)}
                 onSendToCanvas={(out) => {
                   if (!out.url) return;
@@ -304,6 +336,13 @@ export const ProjectDetail: React.FC<Props> = ({
                   });
                   onNavigateToCanvas?.();
                 }}
+              />
+            ))}
+            {pendingStages.map((stage) => (
+              <PlaceholderTile
+                key={`pending-${stage.stage}`}
+                stage={stage.stage}
+                status={stage.status as "queued" | "running"}
               />
             ))}
           </div>
@@ -328,14 +367,21 @@ function triggerGenerate(args: {
   onOpenStorytellingReelForProject?: (id: string) => void;
   onOpenMarketingStudioForProject?: (id: string) => void;
   qc: ReturnType<typeof useQueryClient>;
+  carouselVariant?: "cinematic" | "editorial" | "bold" | "minimal";
+  carouselSlideMix?: "mixed" | "all_cinematic" | "all_text";
 }) {
-  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc } = args;
+  const { project, def, briefDraft, onOpenStorytellingReelForProject, onOpenMarketingStudioForProject, qc, carouselVariant, carouselSlideMix } = args;
   const mode = def.generationMode;
   if (mode.type === "orchestrator") {
+    const body: Record<string, unknown> = { briefMd: briefDraft };
+    if (project.kind === "did_you_know") {
+      if (carouselVariant) body.variant = carouselVariant;
+      if (carouselSlideMix) body.slideMix = carouselSlideMix;
+    }
     fetch(`/api/projects/${project.id}/${mode.endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ briefMd: briefDraft }),
+      body: JSON.stringify(body),
     }).then(() => qc.invalidateQueries({ queryKey: ["project", project.id] }));
     return;
   }
@@ -359,7 +405,11 @@ const CurrentStepPanel: React.FC<{
   onAddRef: () => void;
   onRetry: () => void;
   savedFlash: boolean;
-}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash }) => {
+  carouselVariant?: "cinematic" | "editorial" | "bold" | "minimal";
+  onCarouselVariantChange?: (v: "cinematic" | "editorial" | "bold" | "minimal") => void;
+  carouselSlideMix?: "mixed" | "all_cinematic" | "all_text";
+  onCarouselSlideMixChange?: (v: "mixed" | "all_cinematic" | "all_text") => void;
+}> = ({ project, kindDef, activeStep, onGenerate, onMarkPublished, onAddRef, onRetry, savedFlash, carouselVariant, onCarouselVariantChange, carouselSlideMix, onCarouselSlideMixChange }) => {
   const isGenerating = project.status === "generating";
   const isTemplateOnly = kindDef.generationMode.type === "template_only";
 
@@ -478,6 +528,8 @@ const CurrentStepPanel: React.FC<{
   }
 
   if (activeStep === "generate") {
+    const isCarousel = project.kind === "did_you_know";
+    const willUseHiggsfield = isCarousel && carouselSlideMix !== "all_text";
     return (
       <div className="surface-primary !py-5">
         <div className="flex items-start gap-4">
@@ -488,6 +540,58 @@ const CurrentStepPanel: React.FC<{
             <Eyebrow tone="accent">Ready to generate</Eyebrow>
             <h3 className="type-h3 mt-1">{kindDef.generateCtaLabel}</h3>
             <p className="type-body mt-1">{kindDef.generateBlurb}</p>
+            {isCarousel && carouselVariant && onCarouselVariantChange && onCarouselSlideMixChange && carouselSlideMix && (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="type-meta w-20">Look:</span>
+                  {([
+                    { v: "cinematic", label: "Cinematic" },
+                    { v: "editorial", label: "Editorial" },
+                    { v: "bold",      label: "Bold" },
+                    { v: "minimal",   label: "Minimal" },
+                  ] as const).map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => onCarouselVariantChange(v)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-full border transition-colors",
+                        carouselVariant === v
+                          ? "bg-teal-600 text-white border-teal-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="type-meta w-20">Slide mix:</span>
+                  {([
+                    { v: "mixed",          label: "Mixed (recommended)" },
+                    { v: "all_cinematic",  label: "All cinematic" },
+                    { v: "all_text",       label: "All text" },
+                  ] as const).map(({ v, label }) => (
+                    <button
+                      key={v}
+                      onClick={() => onCarouselSlideMixChange(v)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-full border transition-colors",
+                        carouselSlideMix === v
+                          ? "bg-rose-600 text-white border-rose-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-rose-400 hover:text-rose-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="type-meta italic">
+                  {willUseHiggsfield
+                    ? "~$0.20 estimated · HOOK uses ChatGPT Image 2, BUILD + TENSION use Nano Banana 2. CONTEXT, PAYOFF, CTA are text-only."
+                    : "Free · no AI image credits used."}
+                </p>
+              </div>
+            )}
           </div>
           <Button
             variant="primary"
@@ -545,7 +649,7 @@ const RefTile: React.FC<{ refItem: ProjectRef; onDelete: () => void }> = ({ refI
   );
 };
 
-const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; onSendToCanvas?: (output: ProjectOutput) => void }> = ({ output, onClick, onSendToCanvas }) => {
+const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; projectId?: string; onSendToCanvas?: (output: ProjectOutput) => void }> = ({ output, onClick, projectId, onSendToCanvas }) => {
   const isVideo = output.kind === "video";
   const isHtml = output.kind === "html";
   const isText = output.kind === "text";
@@ -590,8 +694,73 @@ const OutputTile: React.FC<{ output: ProjectOutput; onClick: () => void; onSendT
         {output.label ?? output.kind}
       </span>
       <div className="absolute top-1.5 right-1.5">
-        <OutputActionsMenu output={output} onSendToCanvas={onSendToCanvas} />
+        <OutputActionsMenu output={output} projectId={projectId} onSendToCanvas={onSendToCanvas} />
       </div>
+    </div>
+  );
+};
+
+const STAGE_LABEL_FRIENDLY: Record<string, string> = {
+  hero_v1: "Hero still 1",
+  hero_v2: "Hero still 2",
+  hero_v3: "Hero still 3",
+  motion_piece: "Motion piece",
+  social_cutdown: "Social cutdown",
+  landing_page: "Landing page",
+  hook_score: "Hook scoring",
+  shot_1: "Teaching shot 1",
+  shot_2: "Teaching shot 2",
+  shot_3: "Teaching shot 3",
+  shot_4: "Teaching shot 4",
+  hero_motion: "Hero motion",
+  script_draft: "Script draft",
+  scene_1: "Scene 1",
+  scene_2: "Scene 2",
+  scene_3: "Scene 3",
+  hero_clip: "Hero clip",
+  caption_draft: "Caption draft",
+  variant_1: "Themed variant 1",
+  variant_2: "Themed variant 2",
+  variant_3: "Themed variant 3",
+  variant_4: "Variant 4",
+  variant_5: "Variant 5",
+  variant_6: "Variant 6",
+  motion_variant: "Motion variant",
+  hook_variant: "Hook variant",
+  rebuilt_motion: "Rebuilt motion clip",
+  frame_1: "Rotation frame 1",
+  frame_2: "Rotation frame 2",
+  frame_3: "Rotation frame 3",
+  frame_4: "Rotation frame 4",
+  frame_5: "Rotation frame 5",
+  frame_6: "Rotation frame 6",
+  frame_7: "Rotation frame 7",
+  frame_8: "Rotation frame 8",
+  square_1x1: "Square hero",
+  portrait_4x5: "Portrait hero",
+  wide_16x9: "Wide hero",
+  story_9x16: "Story hero",
+};
+
+const PlaceholderTile: React.FC<{ stage: string; status: "queued" | "running" }> = ({ stage, status }) => {
+  const label = STAGE_LABEL_FRIENDLY[stage] ?? stage.replace(/_/g, " ");
+  const isRunning = status === "running";
+  return (
+    <div
+      className={cn(
+        "surface-secondary aspect-[3/4] flex flex-col items-center justify-center text-center p-3 border border-dashed",
+        isRunning ? "border-amber-300 bg-amber-50/30" : "border-slate-200",
+      )}
+    >
+      {isRunning ? (
+        <Loader2 size={20} className="text-amber-500 animate-spin mb-2" />
+      ) : (
+        <Sparkles size={20} className="text-slate-300 mb-2" />
+      )}
+      <p className={cn("text-[12px] font-semibold leading-tight", isRunning ? "text-amber-700" : "text-slate-500")}>
+        {label}
+      </p>
+      <p className="type-meta mt-1">{isRunning ? "Generating…" : "Queued"}</p>
     </div>
   );
 };

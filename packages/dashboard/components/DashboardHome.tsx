@@ -45,6 +45,7 @@ import { Sparkline } from "./ui/Sparkline.js";
 import { MetricBadge } from "./ui/MetricBadge.js";
 import { CreatorLevelBadge } from "./ui/CreatorLevelBadge.js";
 import { Button, Heading, Eyebrow, Pill, HomeNowStrip, RecentGenerationsGrid, QuickStartGallery } from "./ui/index.js";
+import { TonightsTopIdeas } from "./TonightsTopIdeas.js";
 import { QuestChain } from "./ui/QuestChain.js";
 import { GoalRing } from "./ui/GoalRing.js";
 
@@ -853,6 +854,14 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
 
       {/* ═══ What's Next Hero ═══════════════════════════════════════════════ */}
       <WhatsNextHero whatsNext={whatsNext} onNavigate={onNavigate} />
+
+      {/* ═══ Tonight's Top Ideas (audience-tagged, ranked) ══════════════════ */}
+      <TonightsTopIdeas
+        onDevelop={(_idea) => {
+          // Route to IdeasView for now; a future pass wires one-click project creation pre-tagged with audience.
+          onNavigate?.("IDEAS");
+        }}
+      />
 
       {/* ═══ Quick Start template gallery ═══════════════════════════════════ */}
       {onOpenProject && (

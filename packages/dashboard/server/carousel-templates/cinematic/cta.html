@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: {{BG_DARK}};
+  }
+  .cta-slide {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background-image: url('{{BG_IMAGE_URL}}');
+    background-size: cover;
+    background-position: center;
+    background-color: {{BG_DARK}};
+  }
+  .veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(0,0,0,0.55) 0%,
+      rgba(0,0,0,0.65) 45%,
+      rgba(0,0,0,0.85) 100%
+    );
+  }
+  .frame {
+    position: absolute;
+    inset: calc({{PADDING}}px * 1.0);
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+  }
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.22);
+  }
+  .masthead-brand {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.86);
+  }
+  .masthead-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.6);
+  }
+  .body-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 36px 0;
+  }
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .eyebrow-mark {
+    width: 12px;
+    height: 12px;
+    background: {{ACCENT}};
+    border-radius: 2px;
+    box-shadow: 0 0 0 4px rgba(225,29,72,0.18);
+  }
+  .eyebrow-text {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
+  }
+  .cta-headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{HEADLINE_SIZE}}px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.0;
+    letter-spacing: -0.022em;
+    margin-bottom: 32px;
+    max-width: 96%;
+    text-shadow:
+      0 2px 14px rgba(0,0,0,0.6),
+      0 4px 28px rgba(0,0,0,0.4);
+  }
+  .cta-subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.48;
+    margin-bottom: 52px;
+    max-width: 86%;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.22);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  }
+  .cta-button {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: {{ACCENT}};
+    color: #ffffff;
+    font-size: {{BUTTON_SIZE}}px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    padding: {{BUTTON_PV}}px {{BUTTON_PH}}px;
+    border-radius: {{BUTTON_RADIUS}}px;
+    box-shadow: 0 16px 40px rgba(225,29,72,0.42);
+  }
+  .cta-button .icon {
+    font-size: 18px;
+    line-height: 1;
+    transform: translateY(-1px);
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 22px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: {{ACCENT}};
+    border-radius: 999px;
+    width: 100%;
+    box-shadow: 0 0 12px rgba(225,29,72,0.55);
+  }
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+  }
+  .footer-label {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.62);
+  }
+  .footer-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: rgba(255,255,255,0.62);
+  }
+</style>
+</head>
+<body>
+<div class="cta-slide">
+  <div class="veil"></div>
+  <div class="frame">
+    <div class="masthead">
+      <div class="masthead-brand">Collective Family Chiropractic</div>
+      <div class="masthead-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+    </div>
+    <div class="body-zone">
+      <div class="eyebrow-row">
+        <div class="eyebrow-mark"></div>
+        <div class="eyebrow-text">One last thing</div>
+      </div>
+      <div class="cta-headline">{{CTA_HEADLINE}}</div>
+      <div class="cta-subhead">{{CTA_SUBHEAD}}</div>
+      <div class="cta-button"><span class="icon">&#9733;</span><span>{{CTA_BUTTON_TEXT}}</span></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+    <div class="footer-row">
+      <div class="footer-label">End of issue</div>
+      <div class="footer-counter">Did you know, a series</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

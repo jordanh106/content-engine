@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: {{BACKGROUND}};
+  }
+  .cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc({{PADDING}}px * 1.1);
+    background: {{BACKGROUND}};
+    position: relative;
+  }
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(26,26,26,0.12);
+  }
+  .masthead-brand {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: {{TEXT}};
+  }
+  .masthead-counter {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: {{MUTED}};
+  }
+  .body-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px 0;
+  }
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+  .eyebrow-mark {
+    width: 12px;
+    height: 12px;
+    background: {{ACCENT}};
+    border-radius: 2px;
+  }
+  .eyebrow-text {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: {{ACCENT}};
+  }
+  .headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: {{HEADLINE_SIZE}}px;
+    font-weight: 700;
+    color: {{TEXT}};
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    max-width: 98%;
+  }
+  .subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 400;
+    color: {{MUTED}};
+    line-height: 1.5;
+    max-width: 84%;
+    margin-top: 36px;
+    padding-top: 36px;
+    border-top: 1px solid rgba(26,26,26,0.12);
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: rgba(26,26,26,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: {{ACCENT}};
+    border-radius: 999px;
+    width: calc((1 / {{TOTAL_SLIDES}}) * 100%);
+  }
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+  }
+  .footer-label {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: {{MUTED}};
+  }
+  .swipe-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: {{ACCENT}};
+    color: {{TEXT_LIGHT}};
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 999px;
+  }
+  .swipe-pill .arrow {
+    font-size: 16px;
+    line-height: 1;
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="masthead">
+    <div class="masthead-brand">Collective Family Chiropractic</div>
+    <div class="masthead-counter">01 / {{TOTAL_SLIDES}}</div>
+  </div>
+  <div class="body-zone">
+    <div class="eyebrow-row">
+      <div class="eyebrow-mark"></div>
+      <div class="eyebrow-text">Did you know</div>
+    </div>
+    <div class="headline">{{HOOK_LINE}}</div>
+    <div class="subhead">{{SUBTITLE}}</div>
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <div class="footer-row">
+    <div class="footer-label">Issue No. 01</div>
+    <div class="swipe-pill"><span>Swipe to read</span><span class="arrow">&rarr;</span></div>
+  </div>
+</div>
+</body>
+</html>

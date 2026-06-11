@@ -168,6 +168,58 @@ export function createMetricsRouter(contentLibraryPath: string) {
     res.json({ metrics: filtered });
   });
 
+  // GET /api/metrics/top-decile?days=30 — Top-decile performers in the window,
+  // joined with content-library video info. Used by the Weekly Studio chain to
+  // ground idea generation in actual outcome data, and by the IdeaRanker's
+  // historicalFit scorer.
+  router.get("/top-decile", (req, res) => {
+    const days = req.query.days ? Math.max(1, Math.min(365, Number(req.query.days))) : 30;
+    try {
+      const rows = sqlite.prepare(
+        `SELECT video_code,
+                SUM(saves) AS saves,
+                SUM(shares) AS shares,
+                SUM(likes) AS likes,
+                SUM(views) AS views,
+                SUM(comments) AS comments,
+                MAX(hook_pattern_used) AS hook_pattern,
+                MAX(format_id) AS format_id
+         FROM performance_metrics
+         WHERE recorded_at >= date('now', '-' || ? || ' days')
+         GROUP BY video_code
+         ORDER BY (COALESCE(SUM(saves),0) + COALESCE(SUM(shares),0) * 2 + COALESCE(SUM(likes),0) * 0.2) DESC`,
+      ).all(days) as Array<{
+        video_code: string; saves: number; shares: number; likes: number; views: number; comments: number;
+        hook_pattern: string | null; format_id: string | null;
+      }>;
+
+      const cutoffIdx = Math.max(1, Math.ceil(rows.length * 0.1));
+      const topDecile = rows.slice(0, cutoffIdx);
+
+      // Annotate with audience derived from code prefix (P/B/K/A/D/S/G → audiences)
+      const PREFIX_TO_AUDIENCE: Record<string, string> = {
+        P: "prenatal", B: "infant", K: "kids", A: "athlete",
+        D: "adult", S: "senior", G: "general",
+      };
+      const enriched = topDecile.map((r) => ({
+        videoCode: r.video_code,
+        audience: PREFIX_TO_AUDIENCE[r.video_code.charAt(0).toUpperCase()] ?? "unknown",
+        format: r.format_id,
+        hookPattern: r.hook_pattern,
+        saves: r.saves ?? 0,
+        shares: r.shares ?? 0,
+        likes: r.likes ?? 0,
+        views: r.views ?? 0,
+        comments: r.comments ?? 0,
+        compositeScore: (r.saves ?? 0) + (r.shares ?? 0) * 2 + (r.likes ?? 0) * 0.2,
+      }));
+
+      res.json({ days, sampleSize: rows.length, topDecile: enriched });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : "top-decile query failed" });
+    }
+  });
+
   // GET /api/metrics/top-performers - Aggregate top performers by total engagement
   router.get("/top-performers", (_req, res) => {
     // Fetch all videos with views to compute median

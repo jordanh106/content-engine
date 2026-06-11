@@ -139,6 +139,10 @@ export type ParsedVideo = {
 export type Audience = {
   id: string;
   label: string;
+  /** Optional deep-link to the audience's persona profile in audiences.md */
+  personaRef?: string;
+  /** Optional video-code range (e.g. "P1-P9") */
+  videos?: string;
 };
 
 export type Condition = {
@@ -2009,6 +2013,86 @@ export type ProjectOutput = {
 export type ProjectWithAssets = Project & {
   refs: ProjectRef[];
   outputs: ProjectOutput[];
+};
+
+// ── Media assets (universal ingestion) ──────────────────────────────────────
+
+export const MEDIA_ASSET_KINDS = ["video", "audio", "pdf", "image", "website", "tweet"] as const;
+export type MediaAssetKind = (typeof MEDIA_ASSET_KINDS)[number];
+
+export const MEDIA_PLATFORMS = ["youtube", "tiktok", "instagram", "twitter", "loom", "web", "upload"] as const;
+export type MediaPlatform = (typeof MEDIA_PLATFORMS)[number];
+
+export const TRANSCRIPT_STATUSES = ["none", "pending", "running", "ready", "failed"] as const;
+export type TranscriptStatus = (typeof TRANSCRIPT_STATUSES)[number];
+
+// ── Board chat ───────────────────────────────────────────────────────────────
+
+export const CHAT_MODELS = [
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet", provider: "anthropic" },
+  { id: "claude-haiku-4-5", label: "Claude Haiku", provider: "anthropic" },
+  { id: "gpt-5.1", label: "GPT-5.1", provider: "openai" },
+  { id: "gpt-5-mini", label: "GPT-5 Mini", provider: "openai" },
+  { id: "gemini-2.5-flash", label: "Gemini Flash", provider: "google" },
+  { id: "gemini-2.5-pro", label: "Gemini Pro", provider: "google" },
+] as const;
+export type ChatModelId = (typeof CHAT_MODELS)[number]["id"];
+export type ChatProvider = (typeof CHAT_MODELS)[number]["provider"];
+
+export type BoardChatRef = {
+  type: "media" | "node";
+  /** media_assets.id for media refs; canvas node id for node refs */
+  id: string;
+  label: string;
+  /** node refs carry their serialized text inline (canvas state lives client-side) */
+  text?: string;
+};
+
+export type BoardChatMessage = {
+  id: number;
+  boardId: string;
+  role: "user" | "assistant";
+  content: string;
+  model: string | null;
+  refs: BoardChatRef[];
+  createdAt: string;
+};
+
+// ── Boards (persistent multi-canvas) ─────────────────────────────────────────
+
+export type BoardSummary = {
+  id: number;
+  name: string;
+  nodeCount: number;
+  updatedAt: string;
+};
+
+export type Board = {
+  id: number;
+  name: string;
+  /** Serialized React Flow nodes/edges — opaque to the server. */
+  nodes: unknown[];
+  edges: unknown[];
+  updatedAt: string;
+};
+
+export type MediaAsset = {
+  id: number;
+  kind: MediaAssetKind;
+  platform: MediaPlatform | null;
+  sourceUrl: string | null;
+  title: string | null;
+  author: string | null;
+  thumbnailPath: string | null;
+  filePath: string | null;
+  publicUrl: string | null;
+  transcript: string | null;
+  transcriptStatus: TranscriptStatus;
+  transcriptError: string | null;
+  textContent: string | null;
+  metadataJson: string | null;
+  tokenCount: number;
+  createdAt: string;
 };
 
 // ── Virality predictor ─────────────────────────────────────────────────────

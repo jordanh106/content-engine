@@ -1,5 +1,5 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Circle, AlertCircle, RefreshCw } from "lucide-react";
 import { clsx } from "clsx";
 import { Eyebrow } from "./Eyebrow.js";
@@ -54,6 +54,27 @@ const STAGE_LABELS: Record<string, string> = {
   variant_2: "Themed variant 2",
   variant_3: "Themed variant 3",
   motion_variant: "Motion variant",
+  // viral replication
+  hook_variant: "Hook variant",
+  rebuilt_motion: "Rebuilt motion clip",
+  // ad variants
+  variant_4: "Variant 4",
+  variant_5: "Variant 5",
+  variant_6: "Variant 6",
+  // product 360
+  frame_1: "Rotation frame 1 (0°)",
+  frame_2: "Rotation frame 2 (45°)",
+  frame_3: "Rotation frame 3 (90°)",
+  frame_4: "Rotation frame 4 (135°)",
+  frame_5: "Rotation frame 5 (180°)",
+  frame_6: "Rotation frame 6 (225°)",
+  frame_7: "Rotation frame 7 (270°)",
+  frame_8: "Rotation frame 8 (315°)",
+  // press kit
+  square_1x1: "Square hero (1:1)",
+  portrait_4x5: "Portrait hero (4:5)",
+  wide_16x9: "Wide hero (16:9)",
+  story_9x16: "Story hero (9:16)",
 };
 
 export const ProjectGenerationTimeline: React.FC<Props> = ({ projectId, isActive }) => {
@@ -79,12 +100,35 @@ export const ProjectGenerationTimeline: React.FC<Props> = ({ projectId, isActive
   );
 };
 
-const StageRow: React.FC<{ row: LogRow; projectId: string }> = ({ row }) => {
+const StageRow: React.FC<{ row: LogRow; projectId: string }> = ({ row, projectId }) => {
   const label = STAGE_LABELS[row.stage] ?? row.stage.replace(/_/g, " ");
   const icon = row.status === "completed" ? <Check size={14} className="text-teal-600" />
     : row.status === "running" ? <Loader2 size={14} className="text-amber-500 animate-spin" />
     : row.status === "failed" ? <AlertCircle size={14} className="text-rose-500" />
     : <Circle size={14} className="text-slate-300" />;
+
+  const qc = useQueryClient();
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const retry = useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`/api/projects/${projectId}/retry-stage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: row.stage }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.hint || body.error || `retry failed (${r.status})`);
+      }
+      return r.json();
+    },
+    onMutate: () => setRetryError(null),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-log", projectId] });
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+    onError: (err: Error) => setRetryError(err.message),
+  });
 
   return (
     <div className={clsx(
@@ -106,6 +150,17 @@ const StageRow: React.FC<{ row: LogRow; projectId: string }> = ({ row }) => {
           </span>
           {row.status === "queued" && <span className="type-meta">queued</span>}
           {row.status === "running" && <span className="type-meta text-amber-700">running…</span>}
+          {row.status === "failed" && (
+            <button
+              type="button"
+              onClick={() => retry.mutate()}
+              disabled={retry.isPending}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 hover:text-rose-900 disabled:opacity-50"
+            >
+              <RefreshCw size={11} className={retry.isPending ? "animate-spin" : ""} />
+              {retry.isPending ? "Retrying…" : "Retry"}
+            </button>
+          )}
         </div>
         {row.message && (
           <p className={clsx(
@@ -114,6 +169,9 @@ const StageRow: React.FC<{ row: LogRow; projectId: string }> = ({ row }) => {
           )}>
             {row.message}
           </p>
+        )}
+        {retryError && (
+          <p className="text-[11px] mt-0.5 text-rose-600">{retryError}</p>
         )}
       </div>
     </div>

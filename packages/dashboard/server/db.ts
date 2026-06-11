@@ -887,3 +887,90 @@ CREATE INDEX IF NOT EXISTS idx_project_outputs_project ON project_outputs(projec
 CREATE INDEX IF NOT EXISTS idx_project_refs_project ON project_refs(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_log_project_created ON project_generation_log(project_id, created_at DESC);
 `);
+
+addColumnIfMissing("projects", "visual_system_json", "TEXT");
+
+// Audience-first pivot: tag ideas + assets with the audience segment(s) they serve.
+addColumnIfMissing("inspiration_inbox", "audience_tags", "TEXT"); // CSV of audience segment IDs
+addColumnIfMissing("creator_videos", "audience_tags", "TEXT");
+addColumnIfMissing("project_outputs", "audience_tags", "TEXT");
+addColumnIfMissing("projects", "audience_tags", "TEXT");
+
+// Weekly Studio: source attribution + metadata (format hint, hook draft, source ref) on inbox.
+addColumnIfMissing("inspiration_inbox", "source", "TEXT");
+addColumnIfMissing("inspiration_inbox", "metadata", "TEXT"); // JSON-stringified
+
+// ─── Media assets (Poppy-parity Phase 1: universal ingestion) ───────────────
+// The universal source store: any URL or file ingested anywhere in the app
+// becomes a media_asset row. Boards, chat, and the ranker all read from here.
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS media_assets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,                              -- video | audio | pdf | image | website | tweet
+  platform TEXT,                                   -- youtube | tiktok | instagram | twitter | loom | web | upload
+  source_url TEXT,                                 -- original URL (null for uploads)
+  title TEXT,
+  author TEXT,
+  thumbnail_path TEXT,                             -- public URL path (/media/thumbs/...)
+  file_path TEXT,                                  -- absolute disk path for uploaded files
+  public_url TEXT,                                 -- public URL path for uploaded files (/media/files/...)
+  transcript TEXT,
+  transcript_status TEXT NOT NULL DEFAULT 'none',  -- none | pending | running | ready | failed
+  transcript_error TEXT,
+  text_content TEXT,                               -- extracted text (pdf / website / tweet)
+  metadata_json TEXT,                              -- raw oEmbed / yt-dlp / upload metadata
+  token_count INTEGER DEFAULT 0,                   -- ~chars/4 estimate across transcript + text_content
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_assets_kind ON media_assets(kind);
+CREATE INDEX IF NOT EXISTS idx_media_assets_tstatus ON media_assets(transcript_status);
+`);
+
+// Upgrade source_url to a UNIQUE index. Must DROP the prior non-unique index of
+// the same name first (CREATE ... IF NOT EXISTS would no-op on the name clash),
+// and dedupe any dirty rows (keep lowest id) before the unique constraint binds.
+try {
+  sqlite.exec(`
+    DROP INDEX IF EXISTS idx_media_assets_source_url;
+    DELETE FROM media_assets
+    WHERE source_url IS NOT NULL
+      AND id NOT IN (SELECT MIN(id) FROM media_assets WHERE source_url IS NOT NULL GROUP BY source_url);
+    CREATE UNIQUE INDEX idx_media_assets_source_url ON media_assets(source_url);
+  `);
+} catch (e) {
+  console.warn("[db] media_assets unique-index migration:", e);
+}
+
+// ─── Board chat (Poppy-parity Phase 2) ──────────────────────────────────────
+// Persistent chat history per board. The canvas is a single implicit board
+// today ('canvas-v1'); the board_id column is day-one insurance for Phase 3
+// multi-board without a data migration.
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS board_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  board_id TEXT NOT NULL DEFAULT 'canvas-v1',
+  role TEXT NOT NULL,                              -- user | assistant
+  content TEXT NOT NULL,
+  model TEXT,                                      -- model id that produced an assistant turn
+  refs_json TEXT,                                  -- @-references used: [{type:'media'|'node', id, label}]
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_board_messages_board ON board_messages(board_id, id);
+`);
+
+// ─── Boards (Poppy-parity Phase 3) ──────────────────────────────────────────
+// Named, DB-persisted canvases replacing the single localStorage board.
+// nodes_json/edges_json store the serialized React Flow state (handlers
+// stripped client-side before save).
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS boards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  nodes_json TEXT NOT NULL DEFAULT '[]',
+  edges_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+`);

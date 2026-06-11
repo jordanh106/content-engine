@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Code, AlertCircle } from "lucide-react";
+import { Check, Code, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { Eyebrow } from "./Eyebrow.js";
 import { Button } from "./Button.js";
@@ -11,6 +11,8 @@ type Props = {
   schema: ProjectKindBriefSection[];
   disabled?: boolean;
   onChange: (next: string) => void;
+  /** Optional: enable the AI Suggest button. Hits /api/projects/:id/suggest-brief. */
+  projectId?: string;
 };
 
 /**
@@ -20,14 +22,17 @@ type Props = {
  * per `## Heading`. Each section card shows: heading, required tag, completion indicator,
  * placeholder hint, and an auto-resizing textarea.
  *
- * Always reads/writes the same markdown shape the orchestrators consume, so the editor is
- * transparent to the rest of the system. Power-users can toggle to raw markdown.
+ * When projectId is supplied, an "AI Suggest" affordance lets the user type a topic seed
+ * and auto-fill every required section via Claude Haiku.
  */
-export const BriefEditor: React.FC<Props> = ({ briefMd, schema, disabled, onChange }) => {
+export const BriefEditor: React.FC<Props> = ({ briefMd, schema, disabled, onChange, projectId }) => {
   const [rawMode, setRawMode] = useState(false);
   const [localSections, setLocalSections] = useState<Record<string, string>>(() => parseBriefSections(briefMd));
+  const [topicSeed, setTopicSeed] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [confirmReplace, setConfirmReplace] = useState(false);
 
-  // When the parent briefMd changes externally (e.g. just-loaded project), resync local state
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (!hydratedRef.current) {
@@ -39,11 +44,54 @@ export const BriefEditor: React.FC<Props> = ({ briefMd, schema, disabled, onChan
   const completion = useMemo(() => briefCompletionPercent(briefMd, schema), [briefMd, schema]);
   const requiredCount = schema.filter((s) => s.required).length;
   const filledRequired = schema.filter((s) => s.required && (localSections[s.heading] ?? "").trim().length >= (s.minLength ?? 1)).length;
+  const briefHasMeaningfulContent = Object.values(localSections).some((v) => v.trim().length > 12);
 
   const updateSection = (heading: string, value: string) => {
     const next = { ...localSections, [heading]: value };
     setLocalSections(next);
     onChange(serializeBriefSections(next, schema));
+  };
+
+  const runAiSuggest = async (seed: string) => {
+    if (!projectId) return;
+    if (seed.trim().length < 6) {
+      setAiError("Add a bit more detail to your topic first.");
+      return;
+    }
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const r = await fetch(`/api/projects/${projectId}/suggest-brief`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicSeed: seed }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || `Suggest failed (${r.status})`);
+      }
+      const { suggestedBrief } = await r.json() as { suggestedBrief: string };
+      const parsed = parseBriefSections(suggestedBrief);
+      setLocalSections(parsed);
+      onChange(suggestedBrief);
+      setConfirmReplace(false);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI suggest failed");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const handleAiClick = () => {
+    if (!projectId) return;
+    // If the brief already has meaningful content, ask before replacing.
+    if (briefHasMeaningfulContent && !confirmReplace) {
+      setConfirmReplace(true);
+      return;
+    }
+    // Use the topic-seed input if filled, otherwise fall back to the first non-empty section
+    const seed = topicSeed.trim() || schema.map((s) => localSections[s.heading]?.trim()).find((v) => v && v.length > 6) || "";
+    runAiSuggest(seed);
   };
 
   if (rawMode) {
@@ -82,11 +130,74 @@ export const BriefEditor: React.FC<Props> = ({ briefMd, schema, disabled, onChan
           <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-teal-500 transition-all duration-500" style={{ width: `${completion}%` }} />
           </div>
+          {projectId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={aiBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              onClick={handleAiClick}
+              disabled={aiBusy || disabled}
+            >
+              {aiBusy ? "Thinking…" : confirmReplace ? "Replace brief?" : "AI Suggest"}
+            </Button>
+          )}
           <Button variant="ghost" size="sm" icon={<Code />} onClick={() => setRawMode(true)}>
             Raw
           </Button>
         </div>
       </div>
+
+      {/* Topic-seed banner — visible until the brief has real content */}
+      {projectId && !briefHasMeaningfulContent && !disabled && (
+        <div className="rounded-xl border border-teal-200/60 bg-teal-50/40 px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Sparkles size={12} className="text-teal-600" />
+            <p className="text-xs font-semibold text-teal-900">Need ideas?</p>
+          </div>
+          <p className="text-xs text-slate-600 mb-2.5">Drop a topic and we'll draft the rest of the brief for you.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={topicSeed}
+              onChange={(e) => { setTopicSeed(e.target.value); setAiError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runAiSuggest(topicSeed); } }}
+              placeholder="e.g. The origin of the chainsaw"
+              disabled={aiBusy}
+              className="flex-1 px-3 py-2 rounded-lg border border-teal-200/60 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm bg-white text-slate-800 placeholder:text-slate-400"
+            />
+            <Button
+              variant="primary"
+              tone="teal"
+              size="sm"
+              icon={aiBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              onClick={() => runAiSuggest(topicSeed)}
+              disabled={aiBusy || topicSeed.trim().length < 6}
+            >
+              {aiBusy ? "Drafting…" : "AI Suggest"}
+            </Button>
+          </div>
+          {aiError && (
+            <p className="text-xs text-rose-600 mt-2 flex items-center gap-1">
+              <AlertCircle size={11} /> {aiError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Confirm-replace banner when AI Suggest button hit on already-populated brief */}
+      {confirmReplace && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-amber-900">
+            <strong>Replace the current brief?</strong> This will overwrite every section.
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmReplace(false)}>Cancel</Button>
+            <Button variant="primary" tone="amber" size="sm" onClick={handleAiClick} disabled={aiBusy}>
+              Replace
+            </Button>
+          </div>
+        </div>
+      )}
 
       {disabled && (
         <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">

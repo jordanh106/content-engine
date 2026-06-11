@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Download, ExternalLink, Copy, Wand2, FileCode, Image as ImageIcon, Film, FileText, Check } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal, Download, ExternalLink, Copy, Wand2, FileCode, Image as ImageIcon, Film, FileText, Check, Crop, Sparkles, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import type { ProjectOutput } from "../../shared/types.js";
 
+type Aspect = "1:1" | "4:5" | "9:16" | "16:9";
+
 type Props = {
   output: ProjectOutput;
+  projectId?: string;
   onSendToCanvas?: (output: ProjectOutput) => void;
 };
 
@@ -16,10 +20,59 @@ type Props = {
  *  - HTML: + Open in new tab / Preview
  *  - Text: + Copy contents
  */
-export const OutputActionsMenu: React.FC<Props> = ({ output, onSendToCanvas }) => {
+export const OutputActionsMenu: React.FC<Props> = ({ output, projectId, onSendToCanvas }) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [busyMsg, setBusyMsg] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
+  const qc = useQueryClient();
+
+  const cropMutation = useMutation({
+    mutationFn: async (aspect: Aspect) => {
+      if (!projectId) throw new Error("projectId required");
+      const r = await fetch(`/api/projects/${projectId}/outputs/${output.id}/crop`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aspect }),
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || `crop failed (${r.status})`);
+      }
+      return r.json();
+    },
+    onMutate: () => setBusyMsg("Cropping…"),
+    onSuccess: () => {
+      setBusyMsg(null);
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      setOpen(false);
+      setCropOpen(false);
+    },
+    onError: (err: Error) => setBusyMsg(err.message),
+  });
+
+  const variantMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) throw new Error("projectId required");
+      const r = await fetch(`/api/projects/${projectId}/outputs/${output.id}/variant`, {
+        method: "POST",
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || `variant failed (${r.status})`);
+      }
+      return r.json();
+    },
+    onMutate: () => setBusyMsg("Generating variant…"),
+    onSuccess: () => {
+      setBusyMsg(null);
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+      qc.invalidateQueries({ queryKey: ["project-log", projectId] });
+      setOpen(false);
+    },
+    onError: (err: Error) => setBusyMsg(err.message),
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -119,6 +172,52 @@ export const OutputActionsMenu: React.FC<Props> = ({ output, onSendToCanvas }) =
               label="Send to Canvas"
               onClick={(e) => { e.stopPropagation(); onSendToCanvas(output); setOpen(false); }}
             />
+          )}
+
+          {projectId && output.url && (output.kind === "image" || output.kind === "video") && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              {!cropOpen ? (
+                <MenuItem
+                  icon={<Crop size={14} />}
+                  label="Crop to aspect…"
+                  onClick={(e) => { e.stopPropagation(); setCropOpen(true); }}
+                />
+              ) : (
+                <div className="px-3 py-1.5 space-y-1">
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Crop to</div>
+                  {(["1:1", "4:5", "9:16", "16:9"] as Aspect[]).map((a) => (
+                    <button
+                      key={a}
+                      onClick={(e) => { e.stopPropagation(); cropMutation.mutate(a); }}
+                      disabled={cropMutation.isPending}
+                      className="w-full text-left px-2 py-1 text-sm text-slate-700 hover:bg-slate-50 rounded disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {cropMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Crop size={12} className="text-slate-400" />}
+                      {a}
+                    </button>
+                  ))}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCropOpen(false); }}
+                    className="w-full text-left px-2 py-1 text-[11px] text-slate-400 hover:text-slate-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {projectId && output.kind === "image" && output.prompt && (
+            <MenuItem
+              icon={variantMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              label={variantMutation.isPending ? "Generating variant…" : "Generate variant"}
+              onClick={(e) => { e.stopPropagation(); variantMutation.mutate(); }}
+            />
+          )}
+
+          {busyMsg && (
+            <p className="px-3 py-1.5 text-[11px] text-slate-500 border-t border-slate-100 mt-1">{busyMsg}</p>
           )}
         </div>
       )}

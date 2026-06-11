@@ -18,6 +18,7 @@ scripts/             Repo utilities (install, scaffold)
 ## Active Industry
 
 **Chiropractic** (Collective Family Chiropractic)
+- **Location:** Woodstock, GA / serving SE United States. Time zone: US Eastern (ET / America/New_York).
 - Config: `industries/chiropractic/config.json` (7 audiences, 65 conditions, 4 platforms)
 - Brand: `industries/chiropractic/brand.md` and `skills/brand-factory/presets/collective-family.md`
 - Content: `industries/chiropractic/content-library.md` (57 production-ready videos)
@@ -41,8 +42,15 @@ scripts/             Repo utilities (install, scaffold)
 | viral-scout | `/viral-scout [niche]` | Find top-performing niche content across platforms, extract patterns |
 | creator-analysis | `/creator-analysis @handle` | Deep-dive on a specific creator's patterns, hooks, and formats |
 | competitor-research | `/competitor-research [niche]` | Broad competitive landscape analysis and positioning |
+| audience-pulse | `/audience-pulse [audience\|all]` | Pull direct demand signal per audience (Reddit threads + Google PAA) → seeds the IdeaRanker |
 | content-planner | `/content-planner` | Research output to weekly content calendar (uses hook patterns, idea bank, viral insights) |
 | video-director | `/video-director` | Calendar entry to full production plan (hook variations, platform optimization, transcript analysis) |
+| goal-lock | `/goal-lock [goal text]` | Quarterly business goal anchor; every downstream output filtered through it (Alex's #1) |
+| the-bridge | `/the-bridge "<weak hook>"` | Hook surgery — replaces a generic opening with a climax-first one. Returns 3 options (Alex's #2) |
+| push-back | `/push-back "<topic>"` | Generates the credible contrarian counter-narrative for a saturated topic + 3 supports + objection handling (Alex's #4) |
+| audience-gaps | `/audience-gaps "<script>"` | Surfaces silent questions the viewer will silently ask while watching this specific piece — ranks them by save-rate impact (Alex's #8) |
+| series-planner | `/series-planner "<topic>"` | Plans a multi-part arc for one topic — angle/format/platform per part, climax-first ordering, standalone test per part (Alex's #14) |
+| skill-opportunity-finder | `/skill-opportunity-finder [days]` | Meta-skill: scans Claude chat + shell history for patterns you keep retyping → ranks as candidate skills to build (Alex's #16) |
 | remotion-best-practices | Auto-loaded when working with Remotion | Domain knowledge for Remotion video creation |
 | brand-factory | Auto-loaded when applying brand | Industry-specific brand colors, typography, voice |
 | theme-factory | `/theme-factory` | 11 pre-set styling themes for artifacts |
@@ -57,11 +65,25 @@ scripts/             Repo utilities (install, scaffold)
 
 ### Skill Pipeline
 ```
-/last30days ─┐
-/viral-scout ─┼→ /content-planner → /video-director → Remotion + Cinema Studio → Assembly
-/creator-analysis ─┘         ↑                ↑
-                     idea-bank.md      hook-patterns.md
+/audience-pulse ─┐
+/last30days ─────┤
+/viral-scout ────┼→ IdeaRanker → "Tonight's Top Ideas" → /content-planner → /video-director → Remotion + Cinema Studio → Assembly
+/creator-analysis ┘         ↑              ↑                  ↑                    ↑
+                  audiences.md     idea-bank.md       hook-patterns.md      production guides
 ```
+
+The IdeaRanker (`packages/dashboard/server/lib/idea-ranker.ts`) reads from all signal sources and produces a ranked, audience-tagged queue. The Home screen surfaces the top of that queue as "Tonight's Top Ideas." See **Content Strategy** section above for the audience-first principle.
+
+### Skill design principle (from Grow with Alex's "17 INSANE Claude Skills" video)
+
+> Skills are reusable tools that save you hours every single week. Build it once. Set it up in minutes. It runs forever. One word and it triggers and starts. The two meta-skills (Skill Opportunity Finder + Skill Builder) are the game-changers — they compound because their output is more skills.
+
+Operationally:
+- **Tiny, focused, composable.** Each skill does one thing well. They chain together at the workflow level, not within a single skill.
+- **One-word trigger.** Every skill is invokable with a single `/command` and minimal args.
+- **Read what's already there.** Skills read existing files (audiences.md, goal-lock.md, brand-voice/voice-*.md, idea-bank.md) instead of asking for context every run.
+- **Write to canonical locations.** Outputs land in well-known directories (e.g., `industries/chiropractic/audience-demand/demand-*.md`, `industries/chiropractic/skill-opportunities/opps-*.md`) so the dashboard's IdeaRanker and other consumers can pick them up automatically.
+- **Run `/skill-opportunity-finder` monthly.** Let the data tell you what your next skill should be — don't guess.
 
 ## Video Formats
 
@@ -288,6 +310,40 @@ Jordan's natural humor style, calibrated from the chainsaw video and production 
 - **Humor lives inside narrative**, not on top of it
 - **Formula**: Serious setups earn the humor. Humor earns trust. Trust earns the takeaway.
 
+## Content Strategy: Audience-First, Resource-First
+
+Default operating principle for every content decision. Read this before any planning session.
+
+1. **Pick the idea for the audience, not the algorithm.** Every video and carousel exists to answer a real question a specific audience segment has. If you cannot name the segment and the question, do not make it.
+
+2. **Become a resource, not a hook.** Scroll-stop tactics work once. Being the place someone returns to for trustworthy chiropractic information compounds for years. The metric is repeat engagement — saves, shares with a friend, DMs asking follow-up — not first-impression virality.
+
+3. **The 80/20 rule on tooling.** The carousel pipeline, Higgsfield, Cinema Studio, Remotion compositions, AI templates — these get content 80-90% of the way. The last 10-20% is taste: pick the winning idea, edit the cuts, polish the language. Stop optimizing the 80; start optimizing the picking.
+
+4. **One audience per piece.** Multi-audience content is mush. Pick one segment, write to them specifically, and the others will sometimes happen to engage. The reverse never works.
+
+5. **Source every idea.** Every idea in the bank has a source signal: a Reddit thread, a creator pattern, an evergreen audience question, a performance-metric outlier. "Vibes" is not a source. The chain is: audience → signal → idea → production. Skip the first two and the production is wasted effort.
+
+When in doubt, ask: "Which of the 7 segments is this for? What specific question is it answering? What's the source signal that says this question matters to them right now?"
+
+### Audience personas
+
+The 7 audience segments are defined in `industries/chiropractic/config.json` and deeply profiled in `industries/chiropractic/audiences.md` (demographics, fears, search terms, save patterns, conversion triggers, hook archetypes that work and that flop). Every content decision references these personas — they are the source of truth for who the work is for.
+
+### The Ideation pipeline (high level)
+
+```
+audiences.md (who) + viral-insights/ + creator-insights/ + audience-demand/ (what signals)
+        ↓
+IdeaRanker → composite score (audience fit + virality signal + format feasibility + competitive gap)
+        ↓
+"Tonight's Top Ideas" on the Home screen
+        ↓
+Develop into Project → existing carousel / marketing studio / storytelling reel pipeline
+```
+
+The execution layer (Higgsfield, templates, Cinema Studio, Remotion) is unchanged. The ideation layer feeds it audience-tagged ideas with explicit source signals.
+
 ## Production Methodology
 
 ### Batch-by-Category Model
@@ -355,6 +411,7 @@ Instance: `https://n8n.srv1290877.hstgr.cloud` (via MCP)
 | Content Intelligence - Weekly Digest | D0jO8S647x12BxCg | Weekly (Monday 8am) | Searches for trending niche content, extracts patterns, generates markdown digest |
 | Watchlist Intelligence | sQXCCmZ7HspGFJME | Weekly (Wednesday 8am) | Monitors watchlist creators, finds non-obvious opportunities via cross-niche analysis, self-improves by reading previous outputs |
 | Carousel & Thumbnail Generator | 2RVLLlgoDcr7hs4f | Friday 8am / On demand | Generates branded carousel slides and YouTube thumbnails from HTML templates |
+| Weekly Studio Chain | *(import from `packages/dashboard/n8n-workflows/weekly-studio.json`)* | Sunday 8pm Eastern + manual webhook | Refresh brand voice → gather signals → synthesize 10 ranked idea cards → bulk seed inbox → git commit voice doc → Telegram notify. The "Run Studio" button on Home posts to its webhook for off-schedule runs. |
 
 The n8n instance is connected via MCP tools for workflow management. Workflows complement the Claude skills pipeline by automating periodic research tasks.
 
@@ -447,6 +504,43 @@ Composite score formula: `save_rate*0.4 + share_rate*0.3 + engagement*0.2 + ctr*
 
 - `generated_carousels` - Carousel metadata, version stamps, composite scores
 - `carousel_slides` - Individual slide records with image paths
+
+## Living Brand Voice + Weekly Studio
+
+The dashboard's AI routes read brand voice from `industries/chiropractic/brand-voice/voice-{date}.md` (newest dated file wins). `industries/chiropractic/brand.md` is the **constitution** — the voice can evolve above it but cannot contradict it.
+
+| Component | Path |
+|-----------|------|
+| Central reader (all routes import this) | `packages/dashboard/server/lib/brand-voice.ts` |
+| Constitution | `industries/chiropractic/brand.md` |
+| Living voice files | `industries/chiropractic/brand-voice/voice-*.md` |
+| Refresh skill | `/refresh-voice` (script: `skills/refresh-voice/refresh-voice.py`) |
+| Weekly chain | `packages/dashboard/n8n-workflows/weekly-studio.json` (import into n8n) |
+
+### Telegram setup (one-time, 5 minutes)
+
+1. Telegram → `@BotFather` → `/newbot` → save the HTTP API token
+2. Message your new bot once (any text)
+3. `curl "https://api.telegram.org/bot${TOKEN}/getUpdates"` → find `chat.id` (a numeric ID)
+4. Add to `packages/dashboard/.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=...
+   TELEGRAM_CHAT_ID=...
+   ```
+5. Restart the dashboard
+6. Test: `curl -X POST http://localhost:3001/api/studio/test-telegram` — message lands in Telegram
+
+### Bulk seed shared secret
+
+The Weekly Studio chain authenticates to `/api/inbox/bulk-seed` via a shared secret. Generate one and add to both `packages/dashboard/.env` and the n8n environment:
+
+```
+INBOX_BULK_SECRET=$(openssl rand -hex 24)
+```
+
+### IdeaRanker `historicalFit` sub-score
+
+The ranker reads `performance_metrics` (last 90 days, top decile by `saves + shares × 2 + likes × 0.2`) and computes a 0-100 `historicalFit` per idea — how well the idea's format + audience match what has actually performed on this account. Weight in the composite: 0.20. Visible on every idea card as the "Track" chip.
 
 ## Git
 

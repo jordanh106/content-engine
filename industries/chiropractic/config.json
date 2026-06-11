@@ -3,13 +3,13 @@
   "slug": "chiropractic",
   "description": "Family-first, whole-body chiropractic practice with specialties in prenatal and pediatric care. Serving whole families from newborns to grandparents.",
   "audiences": [
-    { "id": "prenatal", "label": "Pregnancy & Postpartum", "videos": "P1-P9" },
-    { "id": "infant", "label": "Babies & Infants", "videos": "B1-B10" },
-    { "id": "kids", "label": "Kids & Teens", "videos": "K1-K8" },
-    { "id": "athlete", "label": "Active Adults & Athletes", "videos": "A1-A6" },
-    { "id": "adult", "label": "Adults & Daily Life", "videos": "D1-D11" },
-    { "id": "senior", "label": "Seniors & Aging Well", "videos": "S1-S5" },
-    { "id": "general", "label": "Whole Family & General", "videos": "G1-G8" }
+    { "id": "prenatal", "label": "Pregnancy & Postpartum", "videos": "P1-P9", "personaRef": "industries/chiropractic/audiences.md#pregnancy--postpartum-prenatal--video-codes-p1-p9" },
+    { "id": "infant", "label": "Babies & Infants", "videos": "B1-B10", "personaRef": "industries/chiropractic/audiences.md#babies--infants-infant--video-codes-b1-b10" },
+    { "id": "kids", "label": "Kids & Teens", "videos": "K1-K8", "personaRef": "industries/chiropractic/audiences.md#kids--teens-kids--video-codes-k1-k8" },
+    { "id": "athlete", "label": "Active Adults & Athletes", "videos": "A1-A6", "personaRef": "industries/chiropractic/audiences.md#active-adults--athletes-athlete--video-codes-a1-a6" },
+    { "id": "adult", "label": "Adults & Daily Life", "videos": "D1-D11", "personaRef": "industries/chiropractic/audiences.md#adults--daily-life-adult--video-codes-d1-d11" },
+    { "id": "senior", "label": "Seniors & Aging Well", "videos": "S1-S5", "personaRef": "industries/chiropractic/audiences.md#seniors--aging-well-senior--video-codes-s1-s5" },
+    { "id": "general", "label": "Whole Family & General", "videos": "G1-G8", "personaRef": "industries/chiropractic/audiences.md#whole-family--general-general--video-codes-g1-g8" }
   ],
   "conditions": [
     { "id": "pelvic-pain", "audience": "prenatal", "label": "Pelvic Pain" },

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .content-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: {{PADDING}}px;
+    background: {{TEXT_LIGHT}};
+    position: relative;
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    background: {{TEXT}};
+    color: {{ACCENT}};
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    border-radius: 999px;
+  }
+  .page-counter {
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: {{TEXT}};
+  }
+  .header-zone {
+    margin-bottom: 28px;
+  }
+  .number-block {
+    background: {{TEXT}};
+    color: {{ACCENT}};
+    display: inline-block;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 60px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 16px 28px;
+    border-radius: 14px;
+    margin-bottom: 32px;
+    letter-spacing: -0.02em;
+  }
+  .point-title {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: calc({{TITLE_SIZE}}px * 1.25);
+    font-weight: 900;
+    color: {{TEXT}};
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-bottom: 24px;
+    max-width: 94%;
+    text-transform: uppercase;
+  }
+  .point-body {
+    font-size: calc({{BODY_SIZE}}px * 1.05);
+    font-weight: 700;
+    color: {{TEXT}};
+    line-height: 1.42;
+    max-width: 90%;
+  }
+  .footer-row {
+    position: absolute;
+    bottom: 36px;
+    left: {{PADDING}}px;
+    right: {{PADDING}}px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-mark {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: {{MUTED}};
+  }
+  .accent-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: {{ACCENT}};
+  }
+</style>
+</head>
+<body>
+<div class="content-slide">
+  <div class="top-row">
+    <div class="eyebrow">Fact {{POINT_NUMBER}}</div>
+    <div class="page-counter">{{SLIDE_INDEX}} / {{TOTAL_SLIDES}}</div>
+  </div>
+  <div class="header-zone">
+    <div class="number-block">{{POINT_NUMBER}}</div>
+    <div class="point-title">{{POINT_TITLE}}</div>
+    <div class="point-body">{{POINT_BODY}}</div>
+  </div>
+  <div class="footer-row">
+    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="accent-dot"></div>
+  </div>
+</div>
+</body>
+</html>

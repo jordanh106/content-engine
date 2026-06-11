@@ -8,6 +8,7 @@ import { savedCaptions, calendarEntries, hashtagGroups, captionTemplates, perfor
 import { parseContentLibrary } from "../parsers/content-library.js";
 import { parseHookPatterns } from "../parsers/hook-patterns.js";
 import { parseConfig } from "../parsers/config.js";
+import { getCurrentBrandVoice, formatBrandVoiceForPrompt } from "../lib/brand-voice.js";
 import { FORMATS } from "../../shared/types.js";
 import type { ConversationMessage } from "../../shared/types.js";
 
@@ -232,9 +233,7 @@ export function createCaptionsRouter(contentLibraryPath: string) {
         return;
       }
 
-      const brandVoice = fs.existsSync(brandPath)
-        ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
-        : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const hookCategories = parseHookPatterns(hookPatternsPath);
       const hookText = hookCategories
@@ -513,9 +512,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
     const results: Array<{ videoCode: string; status: string; error?: string }> = [];
     const videos = parseContentLibrary(contentLibraryPath);
 
-    const brandVoice = fs.existsSync(brandPath)
-      ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
-      : "";
+    const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
     const hookCategories = parseHookPatterns(hookPatternsPath);
     const hookText = hookCategories
       .map((c) => `${c.name}:\n${c.patterns.map((p) => `- ${p.pattern}: "${p.example}" (${p.platform}, optimizes ${p.optimizes})`).join("\n")}`)
@@ -675,9 +672,7 @@ Return ONLY a JSON array of hashtag strings (including the # symbol). No other t
     const targetPlatformNames = targetPlatformKeys.map((k) => platformMap[k]);
 
     try {
-      const brandVoice = fs.existsSync(brandPath)
-        ? fs.readFileSync(brandPath, "utf-8").slice(0, 1500)
-        : "";
+      const brandVoice = formatBrandVoiceForPrompt(getCurrentBrandVoice(industryDir));
 
       const hookCategories = parseHookPatterns(hookPatternsPath);
       const hookText = hookCategories

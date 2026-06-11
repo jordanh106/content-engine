@@ -20,6 +20,7 @@
     "@xyflow/react": "^12.10.2",
     "archiver": "^8.0.0",
     "better-sqlite3": "^11.7.0",
+    "cheerio": "^1.2.0",
     "chokidar": "^4.0.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -37,6 +38,7 @@
     "recharts": "^3.7.0",
     "remotion": "^4.0.242",
     "tailwind-merge": "^3.0.0",
+    "unpdf": "^1.6.2",
     "vite-express": "^0.22.0",
     "zod": "^3.22.3"
   },

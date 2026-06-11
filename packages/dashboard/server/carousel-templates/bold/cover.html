@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: {{WIDTH}}px;
+    height: {{HEIGHT}}px;
+    overflow: hidden;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: {{PADDING}}px;
+    background: {{TEXT}};
+    position: relative;
+  }
+  .stripe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: {{ACCENT}};
+  }
+  .badge {
+    position: absolute;
+    top: {{PADDING}}px;
+    left: {{PADDING}}px;
+    background: {{TEXT}};
+    color: {{ACCENT}};
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 14px 22px;
+    border-radius: 999px;
+  }
+  .headline {
+    position: relative;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: calc({{HEADLINE_SIZE}}px * 1.15);
+    font-weight: 900;
+    color: {{TEXT_LIGHT}};
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+    max-width: 96%;
+    text-transform: uppercase;
+  }
+  .subhead {
+    font-size: {{SUBHEAD_SIZE}}px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.4;
+    max-width: 78%;
+  }
+  .footer-row {
+    position: absolute;
+    bottom: 36px;
+    left: {{PADDING}}px;
+    right: {{PADDING}}px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand-mark {
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.5);
+  }
+  .swipe-indicator {
+    font-size: 14px;
+    font-weight: 900;
+    color: {{ACCENT}};
+    letter-spacing: 0.18em;
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="stripe"></div>
+  <div class="badge">Did you know</div>
+  <div class="headline">{{HOOK_LINE}}</div>
+  <div class="subhead">{{SUBTITLE}}</div>
+  <div class="footer-row">
+    <div class="brand-mark">Collective Family Chiropractic</div>
+    <div class="swipe-indicator">SWIPE &rarr;</div>
+  </div>
+</div>
+</body>
+</html>

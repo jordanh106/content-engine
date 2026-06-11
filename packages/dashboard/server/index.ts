@@ -49,6 +49,11 @@ import { createN8nRunnerRouter } from "./routes/n8n-runner.js";
 import { createResearchRouter } from "./routes/research.js";
 import { createViralInsightsRouter } from "./routes/viral-insights.js";
 import { createInboxRouter } from "./routes/inbox.js";
+import { createIntelRouter } from "./routes/intel.js";
+import { createStudioRouter } from "./routes/studio.js";
+import { createMediaRouter } from "./routes/media.js";
+import { createBoardChatRouter } from "./routes/board-chat.js";
+import { createBoardsRouter } from "./routes/boards.js";
 import { createIdeaLabRouter } from "./routes/idea-lab.js";
 import { createPersonasRouter } from "./routes/personas.js";
 import { createCarouselsRouter } from "./routes/carousels.js";
@@ -77,7 +82,9 @@ import { invalidateWatchlistIntelCache } from "./parsers/watchlist-insights.js";
 import "./db.js";
 
 const app = express();
-app.use(express.json());
+// 2mb (up from the 100kb default) so routes that carry extracted text bodies
+// don't 413. Localhost-only single-user app, so the larger ceiling is low risk.
+app.use(express.json({ limit: "2mb" }));
 
 // Resolve content-engine root (two levels up from packages/dashboard)
 const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..");
@@ -118,6 +125,15 @@ const projectsDir = path.join(dataDir, "projects");
 if (!fs.existsSync(projectsDir)) fs.mkdirSync(projectsDir, { recursive: true });
 app.use("/projects", express.static(projectsDir));
 
+// Media assets (universal ingestion) — files/ + thumbs/ both live under here.
+// Harden the static serve: nosniff + attachment so an uploaded HTML/SVG can't
+// execute in the dashboard's same origin against the no-auth API.
+const mediaDir = path.join(dataDir, "media");
+if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+app.use("/media", express.static(mediaDir, {
+  setHeaders: (res) => res.setHeader("X-Content-Type-Options", "nosniff"),
+}));
+
 // API routes
 app.use("/api/videos", createVideosRouter(contentLibraryPath, configPath, formatsDir));
 app.use("/api/pipeline", createPipelineRouter(contentLibraryPath));
@@ -149,6 +165,11 @@ app.use("/api/n8n", createN8nRunnerRouter(contentLibraryPath));
 app.use("/api/research", createResearchRouter(contentLibraryPath));
 app.use("/api/viral-insights", createViralInsightsRouter(viralInsightsDir));
 app.use("/api/inbox", createInboxRouter(contentLibraryPath));
+app.use("/api/intel", createIntelRouter(industryDir));
+app.use("/api/studio", createStudioRouter());
+app.use("/api/media", createMediaRouter(mediaDir));
+app.use("/api/board-chat", createBoardChatRouter(industryDir));
+app.use("/api/boards", createBoardsRouter());
 app.use("/api/idea-lab", createIdeaLabRouter(contentLibraryPath));
 app.use("/api/personas", createPersonasRouter());
 app.use("/api/carousels", createCarouselsRouter(contentLibraryPath, carouselImagesDir));

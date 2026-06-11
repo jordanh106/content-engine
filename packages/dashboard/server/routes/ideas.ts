@@ -208,6 +208,22 @@ export function createIdeasRouter(contentLibraryPath: string) {
     res.json({ ideas, total: ideas.length });
   });
 
+  // GET /api/ideas/ranked - composite-scored idea queue
+  // Reads idea-bank + inspiration_inbox + viral-insights + scheduled topics.
+  // Returns ranked list with per-axis sub-scores (auditable in UI).
+  router.get("/ranked", async (req, res) => {
+    try {
+      const { rankIdeas } = await import("../lib/idea-ranker.js");
+      const audience = typeof req.query.audience === "string" && req.query.audience !== "all" ? req.query.audience : undefined;
+      const limit = req.query.limit ? Math.max(1, Math.min(100, Number(req.query.limit))) : 25;
+      const ideas = await rankIdeas({ industryDir, audienceFilter: audience, limit });
+      res.json({ ideas, total: ideas.length });
+    } catch (err) {
+      console.error("[ideas/ranked] failed:", err);
+      res.status(500).json({ error: err instanceof Error ? err.message : "ranking failed" });
+    }
+  });
+
   // GET /api/ideas/summary - category counts
   router.get("/summary", (_req, res) => {
     const ideas = parseIdeaBank(ideaBankPath);
