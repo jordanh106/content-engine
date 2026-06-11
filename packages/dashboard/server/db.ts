@@ -899,3 +899,45 @@ addColumnIfMissing("projects", "audience_tags", "TEXT");
 // Weekly Studio: source attribution + metadata (format hint, hook draft, source ref) on inbox.
 addColumnIfMissing("inspiration_inbox", "source", "TEXT");
 addColumnIfMissing("inspiration_inbox", "metadata", "TEXT"); // JSON-stringified
+
+// ─── Media assets (Poppy-parity Phase 1: universal ingestion) ───────────────
+// The universal source store: any URL or file ingested anywhere in the app
+// becomes a media_asset row. Boards, chat, and the ranker all read from here.
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS media_assets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,                              -- video | audio | pdf | image | website | tweet
+  platform TEXT,                                   -- youtube | tiktok | instagram | twitter | loom | web | upload
+  source_url TEXT,                                 -- original URL (null for uploads)
+  title TEXT,
+  author TEXT,
+  thumbnail_path TEXT,                             -- public URL path (/media/thumbs/...)
+  file_path TEXT,                                  -- absolute disk path for uploaded files
+  public_url TEXT,                                 -- public URL path for uploaded files (/media/files/...)
+  transcript TEXT,
+  transcript_status TEXT NOT NULL DEFAULT 'none',  -- none | pending | running | ready | failed
+  transcript_error TEXT,
+  text_content TEXT,                               -- extracted text (pdf / website / tweet)
+  metadata_json TEXT,                              -- raw oEmbed / yt-dlp / upload metadata
+  token_count INTEGER DEFAULT 0,                   -- ~chars/4 estimate across transcript + text_content
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_assets_kind ON media_assets(kind);
+CREATE INDEX IF NOT EXISTS idx_media_assets_tstatus ON media_assets(transcript_status);
+`);
+
+// Upgrade source_url to a UNIQUE index. Must DROP the prior non-unique index of
+// the same name first (CREATE ... IF NOT EXISTS would no-op on the name clash),
+// and dedupe any dirty rows (keep lowest id) before the unique constraint binds.
+try {
+  sqlite.exec(`
+    DROP INDEX IF EXISTS idx_media_assets_source_url;
+    DELETE FROM media_assets
+    WHERE source_url IS NOT NULL
+      AND id NOT IN (SELECT MIN(id) FROM media_assets WHERE source_url IS NOT NULL GROUP BY source_url);
+    CREATE UNIQUE INDEX idx_media_assets_source_url ON media_assets(source_url);
+  `);
+} catch (e) {
+  console.warn("[db] media_assets unique-index migration:", e);
+}

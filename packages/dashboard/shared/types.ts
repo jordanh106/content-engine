@@ -2015,6 +2015,36 @@ export type ProjectWithAssets = Project & {
   outputs: ProjectOutput[];
 };
 
+// ── Media assets (universal ingestion) ──────────────────────────────────────
+
+export const MEDIA_ASSET_KINDS = ["video", "audio", "pdf", "image", "website", "tweet"] as const;
+export type MediaAssetKind = (typeof MEDIA_ASSET_KINDS)[number];
+
+export const MEDIA_PLATFORMS = ["youtube", "tiktok", "instagram", "twitter", "loom", "web", "upload"] as const;
+export type MediaPlatform = (typeof MEDIA_PLATFORMS)[number];
+
+export const TRANSCRIPT_STATUSES = ["none", "pending", "running", "ready", "failed"] as const;
+export type TranscriptStatus = (typeof TRANSCRIPT_STATUSES)[number];
+
+export type MediaAsset = {
+  id: number;
+  kind: MediaAssetKind;
+  platform: MediaPlatform | null;
+  sourceUrl: string | null;
+  title: string | null;
+  author: string | null;
+  thumbnailPath: string | null;
+  filePath: string | null;
+  publicUrl: string | null;
+  transcript: string | null;
+  transcriptStatus: TranscriptStatus;
+  transcriptError: string | null;
+  textContent: string | null;
+  metadataJson: string | null;
+  tokenCount: number;
+  createdAt: string;
+};
+
 // ── Virality predictor ─────────────────────────────────────────────────────
 
 export type ViralityBreakdown = {
