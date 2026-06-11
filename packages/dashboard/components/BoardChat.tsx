@@ -21,8 +21,6 @@ import { IconButton } from "./ui/index.js";
 import { cn } from "../utils/cn.js";
 import type { BoardChatMessage, BoardChatRef, MediaAsset } from "../shared/types.js";
 
-const BOARD_ID = "canvas-v1";
-
 export type ChatNodeRef = { id: string; kind: string; label: string; text: string };
 
 type Props = {
@@ -30,6 +28,8 @@ type Props = {
   onClose: () => void;
   /** Serialized summaries of the canvas nodes, for @-autocomplete + grounding. */
   nodeRefs: ChatNodeRef[];
+  /** Chat history scope — `board-{id}` for Phase 3 boards ('canvas-v1' legacy). */
+  boardId: string;
 };
 
 type LocalMessage = Pick<BoardChatMessage, "role" | "content" | "model"> & { id?: number; streaming?: boolean };
@@ -43,7 +43,7 @@ const KIND_ICON: Record<string, React.ReactNode> = {
   tweet: <MessageSquare size={11} />,
 };
 
-export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
+export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs, boardId }) => {
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
@@ -61,8 +61,8 @@ export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const { data: historyData } = useQuery<{ messages: BoardChatMessage[] }>({
-    queryKey: ["board-chat", BOARD_ID],
-    queryFn: () => fetch(`/api/board-chat/${BOARD_ID}/messages`).then((r) => r.json()),
+    queryKey: ["board-chat", boardId],
+    queryFn: () => fetch(`/api/board-chat/${boardId}/messages`).then((r) => r.json()),
     enabled: open,
     staleTime: 60_000,
   });
@@ -80,13 +80,26 @@ export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
     staleTime: 60_000,
   });
 
+  // Board switched — drop the previous board's local state. MUST be declared
+  // BEFORE the hydrate effect: on switch-back within staleTime both fire in
+  // the same commit (useQuery returns cached data synchronously), and only
+  // reset-then-hydrate leaves the cached history visible.
+  useEffect(() => {
+    setMessages([]);
+    setDevelopedKeys(new Set());
+    setPendingRefs([]);
+    abortRef.current?.abort();
+    setStreaming(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
   // Hydrate local messages from persisted history (skip while streaming).
   useEffect(() => {
     if (historyData?.messages && !streaming) {
       setMessages(historyData.messages.map((m) => ({ id: m.id, role: m.role, content: m.content, model: m.model })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyData]);
+  }, [historyData, boardId]);
 
   // Autoscroll on new content.
   useEffect(() => {
@@ -171,7 +184,7 @@ export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
     setMessages((prev) => [...prev, { role: "user", content: message, model: null }, { role: "assistant", content: "", model: modelId, streaming: true }]);
 
     try {
-      const res = await fetch(`/api/board-chat/${BOARD_ID}/messages`, {
+      const res = await fetch(`/api/board-chat/${boardId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, modelId, refs }),
@@ -231,7 +244,7 @@ export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
     } finally {
       setStreaming(false);
       setMessages((prev) => prev.map((m) => ({ ...m, streaming: false })));
-      void queryClient.invalidateQueries({ queryKey: ["board-chat", BOARD_ID] });
+      void queryClient.invalidateQueries({ queryKey: ["board-chat", boardId] });
     }
   };
 
@@ -263,10 +276,10 @@ export const BoardChat: React.FC<Props> = ({ open, onClose, nodeRefs }) => {
 
   const clearChat = async () => {
     if (streaming) return; // mid-stream clear would resurrect an orphan row on completion
-    await fetch(`/api/board-chat/${BOARD_ID}/messages`, { method: "DELETE" });
+    await fetch(`/api/board-chat/${boardId}/messages`, { method: "DELETE" });
     setMessages([]);
     setDevelopedKeys(new Set());
-    void queryClient.invalidateQueries({ queryKey: ["board-chat", BOARD_ID] });
+    void queryClient.invalidateQueries({ queryKey: ["board-chat", boardId] });
   };
 
   if (!open) return null;

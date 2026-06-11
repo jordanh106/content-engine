@@ -2058,6 +2058,24 @@ export type BoardChatMessage = {
   createdAt: string;
 };
 
+// ── Boards (persistent multi-canvas) ─────────────────────────────────────────
+
+export type BoardSummary = {
+  id: number;
+  name: string;
+  nodeCount: number;
+  updatedAt: string;
+};
+
+export type Board = {
+  id: number;
+  name: string;
+  /** Serialized React Flow nodes/edges — opaque to the server. */
+  nodes: unknown[];
+  edges: unknown[];
+  updatedAt: string;
+};
+
 export type MediaAsset = {
   id: number;
   kind: MediaAssetKind;

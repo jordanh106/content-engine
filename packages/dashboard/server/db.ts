@@ -959,3 +959,18 @@ CREATE TABLE IF NOT EXISTS board_messages (
 
 CREATE INDEX IF NOT EXISTS idx_board_messages_board ON board_messages(board_id, id);
 `);
+
+// ─── Boards (Poppy-parity Phase 3) ──────────────────────────────────────────
+// Named, DB-persisted canvases replacing the single localStorage board.
+// nodes_json/edges_json store the serialized React Flow state (handlers
+// stripped client-side before save).
+sqlite.exec(`
+CREATE TABLE IF NOT EXISTS boards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  nodes_json TEXT NOT NULL DEFAULT '[]',
+  edges_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+`);
