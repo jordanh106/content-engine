@@ -32,6 +32,7 @@ scripts/             Repo utilities (install, scaffold)
 - Watchlist intelligence: `industries/chiropractic/watchlist-insights/` (weekly competitive intelligence reports)
 - Carousel strategy: `industries/chiropractic/carousel-strategy.md` (autoresearch-optimized content rules for carousels)
 - Carousel optimizer: `industries/chiropractic/carousel-optimizer/` (autoresearch loop configurations for templates + strategy)
+- Patient comms: `industries/chiropractic/patient-comms/` (reactivation, nurture sequences, value resources, call scripts)
 
 ## Skills
 
