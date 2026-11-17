@@ -30,7 +30,7 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 type Range = { start: number; end: number }
 
-function parseHours(text: string): Range[][] {
+export function parseHours(text: string): Range[][] {
     const week: Range[][] = DAYS.map(() => [])
     text.split(/[;\n]/).forEach((line) => {
         const m = line.trim().match(/^([A-Za-z]{3})\s+(.+)$/)
