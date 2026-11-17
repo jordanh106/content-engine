@@ -152,11 +152,11 @@ export default function OfficeStatus(props: Props) {
 OfficeStatus.defaultProps = {
     hours: "Tue 09:00-13:00, 15:30-18:00; Wed 09:00-13:00; Thu 09:00-13:00, 15:30-18:00; Fri 09:00-13:00, 15:30-18:00",
     timeZone: "America/New_York",
-    openColor: "#3F5E52",
-    closedColor: "#C0705A",
-    textColor: "#5C534B",
-    fontSize: 15,
-    fontFamily: "Figtree, sans-serif",
+    openColor: "#4E9C72",
+    closedColor: "#C1D1C7",
+    textColor: "#425C57",
+    fontSize: 14,
+    fontFamily: '"Geist", "Geist Variable", Inter, system-ui, sans-serif',
     fallback: "Office hours",
 }
 
